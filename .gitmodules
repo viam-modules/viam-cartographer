@@ -1,0 +1,3 @@
+[submodule "viam-cartographer/cartographer"]
+	path = viam-cartographer/cartographer
+	url = https://github.com/cartographer-project/cartographer
