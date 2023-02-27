@@ -1,2 +1,22 @@
+# Will remove this in next PR
+.github
 demo-code
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+
+*~
+*#
+*.#*
+*.DS_Store
+*.swp
+
+# generate folders
+grpc/
+bin/
+
+# code editor settings
 .vscode
