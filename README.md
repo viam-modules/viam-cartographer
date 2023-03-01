@@ -50,7 +50,7 @@ You can install the latest AppImages using:
 
 ### Build from source: Download 
 ```bash
-git clone --recurse-submodules https://github.com:viamrobotics/viam-cartographer
+git clone --recurse-submodules https://github.com/viamrobotics/viam-cartographer.git
 ```
 
 If you happened to use `git clone` only, you won't see the `cartographer` folder and will need to fetch it:
