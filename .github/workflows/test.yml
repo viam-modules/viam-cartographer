@@ -1,0 +1,94 @@
+name: Test
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: [x64, qemu-host]
+    container:
+      image: ghcr.io/viamrobotics/canon:amd64-cache
+      options: --platform linux/amd64
+    timeout-minutes: 10
+    steps:
+    - name: Check out code in viam-cartographer directory
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: Verify no uncommitted changes from make lint
+      run: |
+        git init
+        git add .
+        chown -R testbot .
+        sudo -u testbot bash -lc 'make lint-setup lint'
+        GEN_DIFF=$(git status -s)
+
+        if [ -n "$GEN_DIFF" ]; then
+            echo '"make lint" resulted in changes not in git' 1>&2
+            git status
+            exit 1
+        fi
+
+  build_and_test:
+    name: Build and Test Cartographer
+    strategy:
+      matrix:
+        include:
+          - arch: [x64, qemu-host]
+            image: ghcr.io/viamrobotics/canon:amd64-cache
+            platform: linux/amd64
+          - arch: [arm64, qemu-host]
+            image: ghcr.io/viamrobotics/canon:arm64-cache
+            platform: linux/arm64
+    runs-on: ${{ matrix.arch }}
+    container:
+      image: ${{ matrix.image }}
+      options: --platform ${{ matrix.platform }}
+    timeout-minutes: 10
+
+    steps:
+    - name: Check out code in viam-cartographer directory
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+        path: viam-cartographer
+
+    - name: make bufinstall buf setup
+      uses: nick-fields/retry@v2
+      with:
+        timeout_minutes: 5
+        max_attempts: 3
+        retry_on: timeout
+        shell: bash
+        command: |
+          chown -R testbot .
+          sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
+
+    - name: make build
+      run: |
+        sudo -u testbot bash -lc 'cd viam-cartographer && make build'
+
+    - name: make test
+      run: |
+        sudo -u testbot bash -lc 'cd viam-cartographer && make test'
+
+    - name: Copy carto_grpc_server binary
+      if: matrix.platform == 'linux/amd64'
+      run: |
+        sudo cp viam-cartographer/viam-cartographer/bin/carto_grpc_server /usr/local/bin/carto_grpc_server
+
+    - name: Check out code in rdk directory
+      if: matrix.platform == 'linux/amd64'
+      uses: actions/checkout@v3
+      # Pulls main/HEAD from rdk to ensure no accidental regressions
+      with:
+        repository: viamrobotics/rdk 
+        path: rdk
+
+    - name: Run rdk cartographer integration tests
+      if: matrix.platform == 'linux/amd64'
+      run: |
+        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration2D'
