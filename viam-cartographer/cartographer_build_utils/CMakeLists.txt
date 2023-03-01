@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 
 project(cartographer)
+add_definitions(-DABSL_LEGACY_THREAD_ANNOTATIONS)
 
 set(CARTOGRAPHER_MAJOR_VERSION 1)
 set(CARTOGRAPHER_MINOR_VERSION 0)
@@ -35,12 +36,6 @@ if (NOT WIN32)
   PKG_SEARCH_MODULE(CAIRO REQUIRED cairo>=1.12.16)
 else()
   find_library(CAIRO_LIBRARIES cairo)
-endif()
-
-# Only build the documentation if we can find Sphinx.
-find_package(Sphinx)
-if(SPHINX_FOUND)
-  add_subdirectory("docs")
 endif()
 
 # Install catkin package.xml

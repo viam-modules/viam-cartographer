@@ -1,4 +1,4 @@
-# Will remove this in next PR
+# TODO[kat] will remove this in next PRs
 .github
 demo-code
 
@@ -14,7 +14,7 @@ demo-code
 *.DS_Store
 *.swp
 
-# generate folders
+# generated folders
 grpc/
 bin/
 

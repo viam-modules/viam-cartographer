@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.2)
 
 project(viam-cartographer)
+add_definitions(-DABSL_LEGACY_THREAD_ANNOTATIONS)
 
 set(VIAM_CARTOGRAPHER_MAJOR_VERSION 1)
 set(VIAM_CARTOGRAPHER_MINOR_VERSION 0)

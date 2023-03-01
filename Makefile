@@ -9,9 +9,9 @@ bufsetup:
 	pkg-config openssl || export PKG_CONFIG_PATH=$$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
 
 buf: bufsetup
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf.gen.yaml buf.build/viamrobotics/api
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf.grpc.gen.yaml buf.build/viamrobotics/api
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf.gen.yaml buf.build/googleapis/googleapis
+	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
+	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
+	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
 
 clean:
 	rm -rf grpc
@@ -26,6 +26,7 @@ format:
 		-and ! -path '*viam-cartographer/cartographer*' \
 		-and ! -path '*viam-cartographer/build*' \
 		-and ! -path '*api*' \
+		-and ! -path '*grpc*' \
 		-and \( -iname '*.h' -o -iname '*.cpp' -o -iname '*.cc' \) \
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
@@ -51,6 +52,9 @@ install-lua-files:
 
 test:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
+
+install:
+	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 
 all: bufinstall buf setup build install-lua-files test
 
