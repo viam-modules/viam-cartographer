@@ -1,4 +1,6 @@
 BUILD_CHANNEL?=local
+TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
+PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):${PATH}"
 
 set-pkg-config-openssl:
 	pkg-config openssl || export PKG_CONFIG_PATH=$$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
@@ -20,14 +22,22 @@ clean:
 	rm -rf viam-cartographer/build
 	rm -rf viam-cartographer/cartographer/build
 
-lint-setup:
+lint-setup-cpp:
 ifeq ("Darwin", "$(shell uname -s)")
 	brew install clang-format
 else
 	sudo apt-get install -y clang-format
 endif
 
-lint:
+lint-setup-go:
+	GOBIN=`pwd`/$(TOOL_BIN) go install \
+		github.com/edaniels/golinters/cmd/combined \
+		github.com/golangci/golangci-lint/cmd/golangci-lint \
+		github.com/rhysd/actionlint/cmd/actionlint
+
+lint-setup: lint-setup-cpp lint-setup-go
+
+lint-cpp:
 	find . -type f -not -path \
 		-and ! -path '*viam-cartographer/cartographer*' \
 		-and ! -path '*viam-cartographer/build*' \
@@ -35,6 +45,13 @@ lint:
 		-and ! -path '*grpc*' \
 		-and \( -iname '*.h' -o -iname '*.cpp' -o -iname '*.cc' \) \
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
+
+lint-go:
+	go vet -vettool=$(TOOL_BIN)/combined ./...
+	GOGC=50 $(TOOL_BIN)/golangci-lint run -v --fix --config=./etc/golangci.yaml
+	PATH=$(PATH_WITH_TOOLS) actionlint
+
+lint: lint-cpp lint-go
 
 setup: set-pkg-config-openssl
 ifeq ("Darwin", "$(shell uname -s)")
@@ -56,8 +73,13 @@ install-lua-files:
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 	sudo cp viam-cartographer/cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
 
-test:
+test-cpp:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
+
+test-go:
+	go test -race ./...
+
+test: test-cpp test-go
 
 install:
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server

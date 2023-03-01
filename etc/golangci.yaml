@@ -1,0 +1,93 @@
+service:
+  golangci-lint-version: 1.50.x
+run:
+  deadline: 900s
+  modules-download-mode: readonly
+  tests: true
+linters:
+  enable-all: true
+  disable:
+    - asasalint
+    - containedctx
+    - contextcheck
+    - cyclop
+    - deadcode
+    - exhaustivestruct
+    - exhaustruct
+    - forcetypeassert
+    - funlen
+    - gocognit
+    - godox
+    - goerr113
+    - gochecknoglobals
+    - gochecknoinits
+    - gocyclo
+    - gofmt
+    - goimports
+    - golint
+    - gomnd
+    - ifshort
+    - importas
+    - interfacebloat
+    - interfacer
+    - ireturn
+    - maintidx
+    - maligned
+    - makezero
+    - nestif
+    - nlreturn
+    - nosnakecase
+    - nonamedreturns
+    - nosprintfhostport
+    - paralleltest
+    - prealloc
+    - scopelint
+    - structcheck
+    - tagliatelle
+    - testpackage
+    - thelper # false positives
+    - varcheck
+    - varnamelen
+    - wrapcheck
+    - wsl
+linters-settings:
+  errcheck:
+    check-blank: true
+  gci:
+    sections:
+      - standard
+      - default
+      - prefix(github.com/viamrobotics/viam-orb-slam3)
+  gofumpt:
+    lang-version: "1.19"
+    extra-rules: true
+  gosec:
+    excludes:
+      - G601
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+      - shadow
+  lll:
+    line-length: 140
+issues:
+  exclude:
+    - composites
+  exclude-rules:
+    - path: _test\.go$|^tests/|^examples/
+      linters:
+        - dupword
+        - errcheck
+        - exhaustive
+        - forcetypeassert
+        - goconst
+        - gosec
+        - govet
+        - noctx
+    - path: /doc.go$
+      linters:
+        - lll
+  exclude-use-default: false
+  max-per-linter: 0
+  max-same-issues: 0
