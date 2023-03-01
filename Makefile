@@ -21,11 +21,11 @@ clean:
 	rm -rf viam-cartographer/cartographer/build
 
 lint-setup:
-	ifeq ("Darwin", "$(shell uname -s)")
-		brew install clang-format
-	else
-		sudo apt-get install -y clang-format
-	endif
+ifeq ("Darwin", "$(shell uname -s)")
+	brew install clang-format
+else
+	sudo apt-get install -y clang-format
+endif
 
 lint:
 	find . -type f -not -path \
