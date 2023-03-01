@@ -32,7 +32,23 @@ For next steps, see the [Run Cartographer SLAM on your Robot with a LIDAR Tutori
 
 ## Development
 
-### Download 
+You can either install the latest AppImages for testing, or build the code from source.
+
+### Latest AppImages
+
+You can install the latest AppImages using:
+* Linux aarch64:
+    ```bash
+    sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-latest-aarch64.AppImage
+    sudo chmod a+rx /usr/local/bin/carto_grpc_server
+    ```
+ * Linux x86_64:
+    ```bash
+    sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-latest-x86_64.AppImage
+    sudo chmod a+rx /usr/local/bin/carto_grpc_server
+    ```
+
+### Build from source: Download 
 ```bash
 git clone --recurse-submodules https://github.com:viamrobotics/viam-cartographer
 ```
@@ -50,39 +66,18 @@ make bufinstall buf
 make setup
 # Build & install the binary
 make build
-sudo cp ./viam-cartographer/bin/orb_grpc_server /usr/local/bin
+sudo cp ./viam-cartographer/build/carto_grpc_server /usr/local/bin
 # Run the binary
-orb_grpc_server
-```
-
-#### Alternative: Manual Dependency Install (x64 or arm64)
-```bash
-# Install & build Pangolin (includes eigen)
-git clone --recursive https://github.com/stevenlovegrove/Pangolin.git
-cd Pangolin 
-./scripts/install_prerequisites.sh recommended
-mkdir build && cd build
-cmake ..
-make -j4 
-sudo make install
-# Install openCV
-sudo apt install libopencv-dev
-# Install Eigen3
-sudo apt install libeigen3-dev
-# Other dependencies
-sudo apt install libssl-dev 
-sudo apt-get install libboost-all-dev
+carto_grpc_server
 ```
 
 ### Linting
 
 ```bash
-brew install clang-format
+make format-setup
 make format
 ```
 ### Testing
-
-You can also run:
 
 ```bash
 make test
@@ -90,11 +85,11 @@ make test
 ### Working with submodules
 
 #### Commit and push
-1. Commit and push changes in the submodules first.
-2. Commit and push changes in the `slam` library last.
+1. Commit and push changes in the `cartographer` submodule first.
+2. Commit and push changes in the `viam-cartographer` library last.
 
 Or, alternatively:
-1. Commit changes in the submodules
+1. Commit changes in the `cartographer` submodule
 1. Commit changes in the main repo
 1. Push all changes by running `git push --recurse-submodules=on-demand`
 
@@ -103,8 +98,8 @@ When changing branches in a submodule, update `.gitmodules`, e.g., changing to a
 
 ```bash
 ...
-[submodule "slam-libraries/cartographer"]
-        path = slam-libraries/cartographer
+[submodule "viam-cartographer/cartographer"]
+        path = viam-cartographer/cartographer
         url = git@github.com:kkufieta/cartographer.git
         branch=kk/fix-install
 ```
