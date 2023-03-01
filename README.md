@@ -68,7 +68,7 @@ make bufinstall buf
 make setup
 # Build & install the binary
 make build
-sudo cp ./viam-cartographer/build/carto_grpc_server /usr/local/bin
+sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin
 # Run the binary
 carto_grpc_server
 ```
