@@ -14,9 +14,11 @@ demo-code
 *.DS_Store
 *.swp
 
-# generated folders
+# Generated files and folders
+protoc-gen-grpc-cpp
 grpc/
 bin/
+viam-cartographer/build
 
-# code editor settings
+# Code editor settings
 .vscode
