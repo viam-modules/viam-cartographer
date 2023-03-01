@@ -74,8 +74,8 @@ carto_grpc_server
 ### Linting
 
 ```bash
-make format-setup
-make format
+make lint-setup
+make lint
 ```
 ### Testing
 

@@ -20,14 +20,14 @@ clean:
 	rm -rf viam-cartographer/build
 	rm -rf viam-cartographer/cartographer/build
 
-format-setup:
+lint-setup:
 	ifeq ("Darwin", "$(shell uname -s)")
 		brew install clang-format
 	else
 		sudo apt-get install -y clang-format
 	endif
 
-format:
+lint:
 	find . -type f -not -path \
 		-and ! -path '*viam-cartographer/cartographer*' \
 		-and ! -path '*viam-cartographer/build*' \
