@@ -48,7 +48,9 @@ You can install the latest AppImages using:
     sudo chmod a+rx /usr/local/bin/carto_grpc_server
     ```
 
-### Build from source: Download 
+### Build from source
+
+#### Download
 ```bash
 git clone --recurse-submodules https://github.com/viamrobotics/viam-cartographer.git
 ```
@@ -57,7 +59,7 @@ If you happened to use `git clone` only, you won't see the `cartographer` folder
 
 `git submodule update --init`
 
-### Setup, build, and run the binary
+#### Setup, build, and run the binary
 
 ```bash
 # Setup the gRPC files
