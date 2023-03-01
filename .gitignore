@@ -1,7 +1,3 @@
-# TODO[kat] will remove this in next PRs
-.github
-demo-code
-
 # Binaries for programs and plugins
 *.exe
 *.exe~
