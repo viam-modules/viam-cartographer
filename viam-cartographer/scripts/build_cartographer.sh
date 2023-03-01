@@ -18,7 +18,7 @@ rm -rf build
 mkdir build
 pushd build
 
-echo building cartogropher
+echo building cartographer
 cmake .. -G Ninja -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH=`brew --prefix`
 ninja
 popd
