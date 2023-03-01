@@ -92,8 +92,8 @@ make test
 
 Or, alternatively:
 1. Commit changes in the `cartographer` submodule
-1. Commit changes in the main repo
-1. Push all changes by running `git push --recurse-submodules=on-demand`
+2. Commit changes in the main repo
+3. Push all changes by running `git push --recurse-submodules=on-demand`
 
 #### Changing branches in a submodule
 When changing branches in a submodule, update `.gitmodules`, e.g., changing to a branch called `kk/fix-install`:
