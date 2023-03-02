@@ -14,7 +14,7 @@
 protoc-gen-grpc-cpp
 grpc/
 bin/
-viam-cartographer/build
+build/
 
 # Code editor settings
 .vscode
