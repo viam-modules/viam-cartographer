@@ -87,7 +87,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
         slamService.configuration_directory = relativePathToLuas.string();
     } else {
         LOG(ERROR) << "No lua files found, looked in " << relativePathToLuas;
-        LOG(ERROR) << "Use 'make install-lua-file' to install lua files into "
+        LOG(ERROR) << "Use 'make install-lua-files' to install lua files into "
                       "/usr/local/share";
     }
 
