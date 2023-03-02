@@ -52,6 +52,10 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'cd viam-cartographer && make build'
 
+    - name: make install-lua-files
+      run: |
+        sudo -u testbot bash -lc 'make install-lua-files'
+
     - name: make test
       run: |
         sudo -u testbot bash -lc 'cd viam-cartographer && make test'
