@@ -29,7 +29,6 @@ DEFINE_int64(
     map_rate_sec, defaultMapRateSec,
     "Frequency at which we want to print map pictures while cartographer "
     "is running.");
-DEFINE_string(input_file_pattern, "", "Input file pattern");
 DEFINE_bool(delete_processed_data, false,
             "Deletes data after it has been processed");
 DEFINE_bool(use_live_data, false,
