@@ -47,16 +47,20 @@ jobs:
         command: |
           chown -R testbot .
           sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
+
     - name: make build
       run: |
         sudo -u testbot bash -lc 'cd viam-cartographer && make build'
+
     - name: make test
       run: |
         sudo -u testbot bash -lc 'cd viam-cartographer && make test'
+
     - name: Copy carto_grpc_server binary
       if: matrix.platform == 'linux/amd64'
       run: |
         sudo cp viam-cartographer/viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
+
     - name: Check out code in rdk directory
       if: matrix.platform == 'linux/amd64'
       uses: actions/checkout@v3
@@ -67,8 +71,9 @@ jobs:
     - name: Run rdk slam integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration2D'
-    - name: Build appimage
+        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration'
+
+    - name: Build AppImage
       run: sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="latest" appimage'
 
     - name: Authorize GCP Upload
@@ -80,7 +85,7 @@ jobs:
       uses: google-github-actions/upload-cloud-storage@v0.10.4
       with:
         headers: "cache-control: no-cache"
-        path: 'viam-orb-slam3/etc/packaging/appimages/deploy/'
+        path: 'viam-cartographer/etc/packaging/appimages/deploy/'
         destination: 'packages.viam.com/apps/slam-servers/'
         glob: '*'
         parent: false
