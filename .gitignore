@@ -1,0 +1,24 @@
+# TODO[kat] will remove this in next PRs
+.github
+demo-code
+
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+
+*~
+*#
+*.#*
+*.DS_Store
+*.swp
+
+# Generated files and folders
+protoc-gen-grpc-cpp
+grpc/
+bin/
+viam-cartographer/build
+
+# Code editor settings
+.vscode
