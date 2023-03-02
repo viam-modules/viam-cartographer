@@ -23,7 +23,7 @@ Install viam-cartographer:
     sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-stable-x86_64.AppImage
     sudo chmod a+rx /usr/local/bin/carto_grpc_server
     ```
-* MacOS
+* MacOS/Linux
     ```bash
     brew tap viamrobotics/brews && brew install carto-grpc-server
     ```
