@@ -62,8 +62,6 @@ test:
 install:
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 
-all: bufinstall buf setup build install-lua-files test
-
 appimage: build
 	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe carto_grpc_server-`uname -m`.yml
 	cd etc/packaging/appimages && ./package_release_carto.sh
