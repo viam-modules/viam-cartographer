@@ -11,6 +11,8 @@ And Mapping ([SLAM](https://en.wikipedia.org/wiki/Simultaneous_localization_and_
 
 ## Getting started
 
+### Stable AppImages
+
 Install viam-cartographer:
 
 * Linux aarch64:
