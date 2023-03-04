@@ -22,6 +22,14 @@ clean:
 	rm -rf viam-cartographer/build
 	rm -rf viam-cartographer/cartographer/build
 
+ensure-submodule-initialized:
+	@if [ ! -d "viam-cartographer/cartographer/cartographer" ]; then \
+		echo "Submodule was not found. Initializing..."; \
+		git submodule update --init; \
+	else \
+		echo "Submodule found successfully"; \
+	fi
+
 lint-setup-cpp:
 ifeq ("Darwin", "$(shell uname -s)")
 	brew install clang-format
@@ -51,9 +59,9 @@ lint-go:
 	GOGC=50 $(TOOL_BIN)/golangci-lint run -v --fix --config=./etc/golangci.yaml
 	PATH=$(PATH_WITH_TOOLS) actionlint
 
-lint: lint-cpp lint-go
+lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: set-pkg-config-openssl
+setup: ensure-submodule-initialized set-pkg-config-openssl
 ifeq ("Darwin", "$(shell uname -s)")
 	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
 else
