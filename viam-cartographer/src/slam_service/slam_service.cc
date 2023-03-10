@@ -158,9 +158,9 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-::grpc::Status SLAMServiceImpl::GetPosition(
-    ServerContext *context, const GetPositionRequest *request,
-    GetPositionResponse *response) {
+::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
+                                            const GetPositionRequest *request,
+                                            GetPositionResponse *response) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
