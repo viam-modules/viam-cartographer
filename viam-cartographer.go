@@ -946,7 +946,7 @@ func (slamSvc *builtIn) getAndSaveDataDense(ctx context.Context, cams []camera.C
 
 	var fileType string
 	switch slamSvc.slamMode {
-	case slam.Dim2d:
+	case slam.Dim2d, slam.Dim3d:
 		fileType = ".pcd"
 	case slam.Dim3d:
 		return "", errors.New("Dim3d is not implemented")
