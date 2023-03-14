@@ -23,10 +23,10 @@ jobs:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   slack-workflow-status:
-      if: ${{ failure() }}
+      # if: ${{ failure() }}
       name: Post Workflow Status To Slack
-      needs:
-        - appimage
+      # needs:
+      #   - appimage
       runs-on: ubuntu-latest
       permissions:
         actions: 'read'
@@ -36,5 +36,5 @@ jobs:
           with:
             repo_token: ${{secrets.GITHUB_TOKEN}}
             slack_webhook_url: ${{secrets.SLACK_WEBHOOK_URL}}
-            channel: '#team-slam-dev'
+            channel: '#team-slam-github-notifs'
             name: 'Workflow Status'
