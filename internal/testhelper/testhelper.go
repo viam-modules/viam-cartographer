@@ -6,9 +6,8 @@ import (
 	"bufio"
 	"context"
 
-	"go.viam.com/utils/pexec"
-
 	"go.viam.com/rdk/components/camera"
+	"go.viam.com/utils/pexec"
 )
 
 // Service in the internal package includes additional exported functions relating to the data and
