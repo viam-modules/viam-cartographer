@@ -17,6 +17,7 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
 	slamConfig "go.viam.com/slam/config"
+	"go.viam.com/slam/dataprocess"
 	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
 	"go.viam.com/utils"
@@ -25,8 +26,7 @@ import (
 )
 
 const (
-	cartoSleepMs   = 100
-	slamTimeFormat = "2006-01-02T15:04:05.0000Z"
+	cartoSleepMs = 100
 )
 
 // Checks the cartographer map and confirms there at least 100 map points.
@@ -72,7 +72,7 @@ func testCartographerInternalState(t *testing.T, svc slam.Service, dataDir strin
 
 	// Save the data from the call to GetInternalStateStream for use in next test.
 	timeStamp := time.Now()
-	filename := filepath.Join(dataDir, "map", "map_data_"+timeStamp.UTC().Format(slamTimeFormat)+".pbstream")
+	filename := filepath.Join(dataDir, "map", "map_data_"+timeStamp.UTC().Format(dataprocess.SlamTimeFormat)+".pbstream")
 	err = os.WriteFile(filename, internalStateStream, 0o644)
 	test.That(t, err, test.ShouldBeNil)
 }
