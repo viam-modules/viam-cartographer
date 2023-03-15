@@ -16,6 +16,7 @@ And Mapping ([SLAM](https://en.wikipedia.org/wiki/Simultaneous_localization_and_
 Install viam-cartographer:
 
 
+
 * Linux aarch64:
     ```bash
     sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-stable-aarch64.AppImage
