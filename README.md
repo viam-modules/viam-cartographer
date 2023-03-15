@@ -63,6 +63,7 @@ If you happened to use `git clone` only, you won't see the `cartographer` folder
 
 #### Setup, build, and run the binary
 
+
 ```bash
 # Setup the gRPC files
 make bufinstall && make buf 
