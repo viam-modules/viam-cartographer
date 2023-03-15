@@ -1369,6 +1369,8 @@ go.viam.com/rdk v0.2.25-0.20230314221515-fcae3e91d937 h1:l5pCpRpiL2XSWByWmb2n1PA
 go.viam.com/rdk v0.2.25-0.20230314221515-fcae3e91d937/go.mod h1:iqXkJFSSTe146IUVJvPdTGsn2b1S2BHxLZw9juKo6+Y=
 go.viam.com/slam v0.1.31 h1:KLdleZpWrr5GjErEodpL6nh5CcU8U05yE90yIVRzIBc=
 go.viam.com/slam v0.1.31/go.mod h1:tQ+TwrNgdJ8Lkq593cdSOwuRMQrTW6vejDNQXudLw+s=
+go.viam.com/slam v0.1.32-0.20230315154454-6c1e77a1e31b h1:zSK0ScVoMnudfruKVgsAtaBpLlnDtIVgj7kqz7ojvzw=
+go.viam.com/slam v0.1.32-0.20230315154454-6c1e77a1e31b/go.mod h1:tQ+TwrNgdJ8Lkq593cdSOwuRMQrTW6vejDNQXudLw+s=
 go.viam.com/test v1.1.1-0.20220909204145-f61b7c01c33e h1:1tJIJv/zsobFV5feR2ZiG/+VGZkRPVHqJrSTkXbWfqQ=
 go.viam.com/test v1.1.1-0.20220909204145-f61b7c01c33e/go.mod h1:XM0tej6riszsiNLT16uoyq1YjuYPWlRBweTPRDanIts=
 go.viam.com/utils v0.1.16 h1:JyEZkdvoZPS+p/mKa9UhMw275dGLOygTrLgSDmCP+ks=
