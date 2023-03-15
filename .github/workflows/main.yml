@@ -16,8 +16,8 @@ on:
 # and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
 # Don't forget to tag back to @main before merge.
 
-jobs:
-  appimage:
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@kk/rsdk-2027-ci-integration-test
-    secrets:
-      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+# jobs:
+#   appimage:
+#     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@kk/rsdk-2027-ci-integration-test
+#     secrets:
+#       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
