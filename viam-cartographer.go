@@ -414,8 +414,12 @@ func (cartoSvc *cartographerService) GetInternalStateStream(ctx context.Context,
 }
 
 // New returns a new slam service for the given robot.
-func New(ctx context.Context, deps registry.Dependencies, config config.Service,
-	logger golog.Logger, bufferSLAMProcessLogs bool,
+func New(
+	ctx context.Context,
+	deps registry.Dependencies,
+	config config.Service,
+	logger golog.Logger,
+	bufferSLAMProcessLogs bool,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "slam::slamService::New")
 	defer span.End()
