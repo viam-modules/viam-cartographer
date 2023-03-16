@@ -197,7 +197,7 @@ func (cartoSvc *cartographerService) Position(
 	name string,
 	extra map[string]interface{},
 ) (*referenceframe.PoseInFrame, error) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::Position")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::Position")
 	defer span.End()
 
 	ext, err := protoutils.StructToStructPb(extra)
@@ -260,7 +260,7 @@ func (cartoSvc *cartographerService) Position(
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
 // it is unpacked into a Pose and a component reference string.
 func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name string) (spatialmath.Pose, string, error) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::GetPosition")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
 
 	req := &pb.GetPositionNewRequest{Name: name}
@@ -287,7 +287,7 @@ func (cartoSvc *cartographerService) GetMap(
 ) (
 	string, image.Image, *vision.Object, error,
 ) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::GetMap")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetMap")
 	defer span.End()
 
 	var cameraPosition *v1.Pose
@@ -383,7 +383,7 @@ func (cartoSvc *cartographerService) GetMap(
 // GetInternalState forwards the request for the SLAM algorithms's internal state. Once a response is received, it is returned
 // to the user.
 func (cartoSvc *cartographerService) GetInternalState(ctx context.Context, name string) ([]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::GetInternalState")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
 	defer span.End()
 
 	//nolint:staticcheck
@@ -402,7 +402,7 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context, name 
 // GetPointCloudMapStream creates a request, calls the slam algorithms GetPointCloudMapStream endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
 func (cartoSvc *cartographerService) GetPointCloudMapStream(ctx context.Context, name string) (func() ([]byte, error), error) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::GetPointCloudMapStream")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMapStream")
 	defer span.End()
 
 	return grpchelper.GetPointCloudMapStreamCallback(ctx, name, cartoSvc.clientAlgo)
@@ -411,7 +411,7 @@ func (cartoSvc *cartographerService) GetPointCloudMapStream(ctx context.Context,
 // GetInternalStateStream creates a request, calls the slam algorithms GetInternalStateStream endpoint and returns a callback
 // function which will return the next chunk of the current internal state of the slam algo.
 func (cartoSvc *cartographerService) GetInternalStateStream(ctx context.Context, name string) (func() ([]byte, error), error) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::GetInternalStateStream")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalStateStream")
 	defer span.End()
 
 	return grpchelper.GetInternalStateStreamCallback(ctx, name, cartoSvc.clientAlgo)
@@ -425,7 +425,7 @@ func New(
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 ) (slam.Service, error) {
-	ctx, span := trace.StartSpan(ctx, "slam::slamService::New")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
 
 	svcConfig, ok := config.ConvertedAttributes.(*slamConfig.AttrConfig)
@@ -622,7 +622,7 @@ func (cartoSvc *cartographerService) GetSLAMProcessBufferedLogReader() bufio.Rea
 
 // startSLAMProcess starts up the SLAM library process by calling the executable binary and giving it the necessary arguments.
 func (cartoSvc *cartographerService) StartSLAMProcess(ctx context.Context) error {
-	ctx, span := trace.StartSpan(ctx, "slam::slamService::StartSLAMProcess")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::StartSLAMProcess")
 	defer span.End()
 
 	processConfig := cartoSvc.GetSLAMProcessConfig()
@@ -705,7 +705,7 @@ func (cartoSvc *cartographerService) StopSLAMProcess() error {
 // getAndSaveData implements the data extraction for dense algos and saving to the directory path (data subfolder) specified in
 // the config. It returns the full filepath for each file saved along with any error associated with the data creation or saving.
 func (cartoSvc *cartographerService) getAndSaveData(ctx context.Context, cams []camera.Camera) (string, error) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::getAndSaveData")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::getAndSaveData")
 	defer span.End()
 
 	if len(cams) != 1 {
