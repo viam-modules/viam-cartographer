@@ -30,6 +30,7 @@ import (
 	"go.viam.com/rdk/registry"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
+	"go.viam.com/rdk/services/slam/grpchelper"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/rdk/vision"
@@ -39,14 +40,12 @@ import (
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
 	"go.viam.com/utils/protoutils"
-
-	"github.com/viamrobotics/viam-cartographer/internal/grpchelper"
 )
 
-var (
-	cameraValidationMaxTimeoutSec = 30 // reconfigurable for testing
-	dialMaxTimeoutSec             = 30 // reconfigurable for testing
-)
+// SubAlgo defines the cartographer specific sub-algorithms that we support.
+type SubAlgo string
+
+const dim2d SubAlgo = "2d"
 
 const (
 	defaultDataRateMsec         = 200
@@ -55,6 +54,15 @@ const (
 	parsePortMaxTimeoutSec      = 60
 	opTimeoutErrorMessage       = "bad scan: OpTimeout"
 	localhost0                  = "localhost:0"
+)
+
+var (
+	// BinaryLocation contains the name of the cartographer grpc server.
+	BinaryLocation = "carto_grpc_server"
+	// Model is the model name of cartographer.
+	Model                         = resource.NewModel("viam", "slam", "cartographer")
+	cameraValidationMaxTimeoutSec = 30 // reconfigurable for testing
+	dialMaxTimeoutSec             = 30 // reconfigurable for testing
 )
 
 // SetCameraValidationMaxTimeoutSecForTesting sets cameraValidationMaxTimeoutSec for testing.
@@ -67,23 +75,20 @@ func SetDialMaxTimeoutSecForTesting(val int) {
 	dialMaxTimeoutSec = val
 }
 
-// Model is the cartographer model.
-var Model = resource.NewModel("viam", "slam", "cartographer")
-
 func init() {
 	registry.RegisterService(slam.Subtype, Model, registry.Service{Constructor: newCartographer})
 
 	config.RegisterServiceAttributeMapConverter(slam.Subtype, Model,
 		func(attributes config.AttributeMap) (interface{}, error) {
-			var attrs slamConfig.AttrConfig
-			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "json", Result: &attrs})
+			var attrCfg slamConfig.AttrConfig
+			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "json", Result: &attrCfg})
 			if err != nil {
 				return nil, err
 			}
 			if err := decoder.Decode(attributes); err != nil {
 				return nil, err
 			}
-			return &attrs, nil
+			return &attrCfg, nil
 		}, &slamConfig.AttrConfig{})
 }
 
@@ -91,7 +96,7 @@ func newCartographer(ctx context.Context, deps registry.Dependencies, config con
 	return New(ctx, deps, config, logger, false)
 }
 
-// runtimeServiceValidation ensures the service's data processing and saving is valid for the mode and
+// runtimeServiceValidation ensures the service's data processing and saving is valid for the subAlgo and
 // cameras given.
 func runtimeServiceValidation(
 	ctx context.Context,
@@ -108,7 +113,7 @@ func runtimeServiceValidation(
 	startTime := time.Now()
 
 	for {
-		path, err = cartoSvc.getAndSaveDataDense(ctx, cams)
+		path, err = cartoSvc.getAndSaveData(ctx, cams)
 		paths = append(paths, path)
 
 		if err == nil {
@@ -117,7 +122,7 @@ func runtimeServiceValidation(
 
 		// This takes about 5 seconds, so the timeout should be sufficient.
 		if time.Since(startTime) >= time.Duration(cameraValidationMaxTimeoutSec)*time.Second {
-			return errors.Wrap(err, "error getting data in desired mode")
+			return errors.Wrap(err, "error getting data from sensor")
 		}
 		if !goutils.SelectContextOrWait(ctx, cameraValidationIntervalSec*time.Second) {
 			return ctx.Err()
@@ -137,8 +142,7 @@ func runtimeServiceValidation(
 type cartographerService struct {
 	generic.Unimplemented
 	primarySensorName string
-	slamLib           slam.LibraryMetadata
-	slamMode          slam.Mode
+	subAlgo           SubAlgo
 	slamProcess       pexec.ProcessManager
 	clientAlgo        pb.SLAMServiceClient
 	clientAlgoClose   func() error
@@ -434,16 +438,10 @@ func New(
 		return nil, errors.Wrap(err, "configuring camera error")
 	}
 
-	modelName := string(config.Model.Name)
-	slamLib, ok := slam.SLAMLibraries[modelName]
-	if !ok {
-		return nil, errors.Errorf("%v algorithm specified not in implemented list", modelName)
-	}
-
-	slamMode, ok := slamLib.SlamMode[svcConfig.ConfigParams["mode"]]
-	if !ok {
-		return nil, errors.Errorf("getting data with specified algorithm %v, and desired mode %v",
-			modelName, svcConfig.ConfigParams["mode"])
+	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
+	if subAlgo != dim2d {
+		return nil, errors.Errorf("%v does not have a subAlgo %v",
+			string(config.Model.Name), svcConfig.ConfigParams["mode"])
 	}
 
 	err = slamConfig.SetupDirectories(svcConfig.DataDirectory, logger)
@@ -451,8 +449,13 @@ func New(
 		return nil, err
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := slamConfig.GetOptionalParameters(svcConfig,
-		localhost0, defaultDataRateMsec, defaultMapRateSec, logger)
+	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := slamConfig.GetOptionalParameters(
+		svcConfig,
+		localhost0,
+		defaultDataRateMsec,
+		defaultMapRateSec,
+		logger,
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -461,8 +464,7 @@ func New(
 	// SLAM Service Object
 	cartoSvc := &cartographerService{
 		primarySensorName:     primarySensorName,
-		slamLib:               slam.SLAMLibraries[string(config.Model.Name)],
-		slamMode:              slamMode,
+		subAlgo:               subAlgo,
 		slamProcess:           pexec.NewProcessManager(logger),
 		configParams:          svcConfig.ConfigParams,
 		dataDirectory:         svcConfig.DataDirectory,
@@ -518,12 +520,12 @@ func (cartoSvc *cartographerService) Close() error {
 	if cartoSvc.bufferSLAMProcessLogs {
 		if cartoSvc.slamProcessLogReader != nil {
 			if err := cartoSvc.slamProcessLogReader.Close(); err != nil {
-				return err
+				return errors.Wrap(err, "error occurred during closeout of slam log reader")
 			}
 		}
 		if cartoSvc.slamProcessLogWriter != nil {
 			if err := cartoSvc.slamProcessLogWriter.Close(); err != nil {
-				return err
+				return errors.Wrap(err, "error occurred during closeout of slam log writer")
 			}
 		}
 	}
@@ -534,7 +536,7 @@ func (cartoSvc *cartographerService) Close() error {
 	return nil
 }
 
-// startDataProcess is the background control loop for sending data from camera to the data directory for processing.
+// StartDataProcess is the background control loop for sending data from camera to the data directory for processing.
 func (cartoSvc *cartographerService) StartDataProcess(
 	cancelCtx context.Context,
 	cams []camera.Camera,
@@ -579,7 +581,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 				}
 				goutils.PanicCapturingGo(func() {
 					defer cartoSvc.activeBackgroundWorkers.Done()
-					if _, err := cartoSvc.getAndSaveDataDense(cancelCtx, cams); err != nil {
+					if _, err := cartoSvc.getAndSaveData(cancelCtx, cams); err != nil {
 						cartoSvc.logger.Warn(err)
 					}
 					if c != nil {
@@ -606,8 +608,8 @@ func (cartoSvc *cartographerService) GetSLAMProcessConfig() pexec.ProcessConfig 
 	args = append(args, "--aix-auto-update")
 
 	return pexec.ProcessConfig{
-		ID:      "slam_" + cartoSvc.slamLib.AlgoName,
-		Name:    slam.SLAMLibraries[cartoSvc.slamLib.AlgoName].BinaryLocation,
+		ID:      "slam_cartographer",
+		Name:    BinaryLocation,
 		Args:    args,
 		Log:     true,
 		OneShot: false,
@@ -700,14 +702,14 @@ func (cartoSvc *cartographerService) StopSLAMProcess() error {
 	return nil
 }
 
-// getAndSaveDataDense implements the data extraction for dense algos and saving to the directory path (data subfolder) specified in
+// getAndSaveData implements the data extraction for dense algos and saving to the directory path (data subfolder) specified in
 // the config. It returns the full filepath for each file saved along with any error associated with the data creation or saving.
-func (cartoSvc *cartographerService) getAndSaveDataDense(ctx context.Context, cams []camera.Camera) (string, error) {
-	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::getAndSaveDataDense")
+func (cartoSvc *cartographerService) getAndSaveData(ctx context.Context, cams []camera.Camera) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "slam::cartographerService::getAndSaveData")
 	defer span.End()
 
 	if len(cams) != 1 {
-		return "", errors.Errorf("expected 1 camera for this slam algorithm, found %v", len(cams))
+		return "", errors.Errorf("expected one lidar camera for cartographer, found %v", len(cams))
 	}
 
 	pointcloud, err := cams[0].NextPointCloud(ctx)
@@ -719,40 +721,15 @@ func (cartoSvc *cartographerService) getAndSaveDataDense(ctx context.Context, ca
 		return "", err
 	}
 
-	var fileType string
-	switch cartoSvc.slamMode {
-	case slam.Dim2d:
-		fileType = ".pcd"
-	case slam.Dim3d:
-		return "", errors.New("Dim3d is not implemented")
-	case slam.Rgbd, slam.Mono:
-		return "", errors.Errorf("bad slamMode %v specified for this algorithm", cartoSvc.slamMode)
-	}
-	filenames, err := createTimestampFilenames(cartoSvc.dataDirectory, cartoSvc.primarySensorName, fileType, cartoSvc.slamMode)
-	if err != nil {
-		return "", err
-	}
-	filename := filenames[0]
+	fileType := ".pcd"
+	filename := createTimestampFilenames(cartoSvc.dataDirectory, cartoSvc.primarySensorName, fileType)
 	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
 }
 
 // Creates a file for camera data with the specified sensor name and timestamp written into the filename.
 // For RGBD cameras, two filenames are created with the same timestamp in different directories.
-func createTimestampFilenames(dataDirectory, primarySensorName, fileType string, slamMode slam.Mode) ([]string, error) {
+func createTimestampFilenames(dataDirectory, primarySensorName, fileType string) string {
 	timeStamp := time.Now()
 	dataDir := filepath.Join(dataDirectory, "data")
-
-	switch slamMode {
-	case slam.Dim2d:
-		filename := dataprocess.CreateTimestampFilename(dataDir, primarySensorName, fileType, timeStamp)
-		return []string{filename}, nil
-	case slam.Dim3d:
-		return nil, errors.New("Dim3d is not implemented")
-	case slam.Mono:
-		return nil, errors.Errorf("bad slamMode %v specified for this algorithm", slamMode)
-	case slam.Rgbd:
-		return nil, errors.Errorf("bad slamMode %v specified for this algorithm", slamMode)
-	default:
-		return nil, errors.Errorf("Invalid slam mode: %v", slamMode)
-	}
+	return dataprocess.CreateTimestampFilename(dataDir, primarySensorName, fileType, timeStamp)
 }
