@@ -7,7 +7,7 @@ concurrency:
 on:
   workflow_dispatch:
   pull_request:
-    branches: [ 'kk/rsdk-2027-add-ci-integration-test-clean' ]
+    branches: [ 'kk/rsdk-2014-implement-cartographer-model' ]
     types: [ 'opened', 'reopened', 'synchronize' ]
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
@@ -16,4 +16,4 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@kk/rsdk-2027-add-ci-integration-test-clean
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@kk/rsdk-2014-implement-cartographer-model
