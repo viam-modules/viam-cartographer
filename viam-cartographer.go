@@ -63,7 +63,7 @@ const (
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
 type SubAlgo string
 
-const dim2d SubAlgo = "2d"
+const Dim2d SubAlgo = "2d"
 
 // SetCameraValidationMaxTimeoutSecForTesting sets cameraValidationMaxTimeoutSec for testing.
 func SetCameraValidationMaxTimeoutSecForTesting(val int) {
@@ -441,7 +441,7 @@ func New(
 	}
 
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
-	if subAlgo != dim2d {
+	if subAlgo != Dim2d {
 		return nil, errors.Errorf("%v does not have a subAlgo %v",
 			string(config.Model.Name), svcConfig.ConfigParams["mode"])
 	}

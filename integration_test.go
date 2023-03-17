@@ -386,5 +386,5 @@ func testCartographerDir(t *testing.T, path string, expectedMaps int) {
 }
 
 func TestCartographerIntegration2D(t *testing.T) {
-	integrationtestHelperCartographer(t, slam.Dim2d)
+	integrationtestHelperCartographer(t, slam.Mode(viamcartographer.Dim2d))
 }
