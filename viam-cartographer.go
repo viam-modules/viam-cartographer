@@ -44,14 +44,14 @@ import (
 
 var (
 	// Model is the model name of cartographer.
-	Model = resource.NewModel("viam", "slam", "cartographer")
-	// BinaryLocation contains the name of the cartographer grpc server.
-	BinaryLocation                = "carto_grpc_server"
+	Model                         = resource.NewModel("viam", "slam", "cartographer")
 	cameraValidationMaxTimeoutSec = 30 // reconfigurable for testing
 	dialMaxTimeoutSec             = 30 // reconfigurable for testing
 )
 
 const (
+	// DefaultExecutableName contains the name of the cartographer grpc server executable.
+	DefaultExecutableName       = "carto_grpc_server"
 	defaultDataRateMsec         = 200
 	defaultMapRateSec           = 60
 	cameraValidationIntervalSec = 1.
@@ -93,7 +93,7 @@ func init() {
 }
 
 func newCartographer(ctx context.Context, deps registry.Dependencies, config config.Service, logger golog.Logger) (interface{}, error) {
-	return New(ctx, deps, config, logger, false)
+	return New(ctx, deps, config, logger, false, DefaultExecutableName)
 }
 
 // runtimeServiceValidation ensures the service's data processing and saving is valid for the subAlgo and
@@ -142,6 +142,7 @@ func runtimeServiceValidation(
 type cartographerService struct {
 	generic.Unimplemented
 	primarySensorName string
+	executableName    string
 	subAlgo           SubAlgo
 	slamProcess       pexec.ProcessManager
 	clientAlgo        pb.SLAMServiceClient
@@ -424,6 +425,7 @@ func New(
 	config config.Service,
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
+	executableName string,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -464,6 +466,7 @@ func New(
 	// SLAM Service Object
 	cartoSvc := &cartographerService{
 		primarySensorName:     primarySensorName,
+		executableName:        executableName,
 		subAlgo:               subAlgo,
 		slamProcess:           pexec.NewProcessManager(logger),
 		configParams:          svcConfig.ConfigParams,
@@ -609,7 +612,7 @@ func (cartoSvc *cartographerService) GetSLAMProcessConfig() pexec.ProcessConfig 
 
 	return pexec.ProcessConfig{
 		ID:      "slam_cartographer",
-		Name:    BinaryLocation,
+		Name:    cartoSvc.executableName,
 		Args:    args,
 		Log:     true,
 		OneShot: false,

@@ -39,6 +39,7 @@ import (
 )
 
 const (
+	testExecutableName         = "true"
 	validDataRateMS            = 200
 	numCartographerPointClouds = 15
 	dataBufferSize             = 4
@@ -67,10 +68,6 @@ func setupTestGRPCServer(tb testing.TB) (*grpc.Server, int) {
 	go grpcServer.Serve(listener)
 
 	return grpcServer, listener.Addr().(*net.TCPAddr).Port
-}
-
-func setBinaryLocationForTesting(val string) {
-	viamcartographer.BinaryLocation = val
 }
 
 func setupDeps(attr *slamConfig.AttrConfig) registry.Dependencies {
@@ -156,6 +153,7 @@ func createSLAMService(
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 	success bool,
+	executableName string,
 ) (slam.Service, error) {
 	t.Helper()
 
@@ -174,7 +172,7 @@ func createSLAMService(
 	viamcartographer.SetCameraValidationMaxTimeoutSecForTesting(1)
 	viamcartographer.SetDialMaxTimeoutSecForTesting(1)
 
-	svc, err := viamcartographer.New(ctx, deps, cfgService, logger, bufferSLAMProcessLogs)
+	svc, err := viamcartographer.New(ctx, deps, cfgService, logger, bufferSLAMProcessLogs, executableName)
 
 	if success {
 		if err != nil {
@@ -193,10 +191,6 @@ func TestGeneralNew(t *testing.T) {
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	originalBinaryLocation := viamcartographer.BinaryLocation
-	setBinaryLocationForTesting("true")
-	defer setBinaryLocationForTesting(originalBinaryLocation)
-
 	t.Run("New slam service with no camera", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
@@ -208,7 +202,7 @@ func TestGeneralNew(t *testing.T) {
 			UseLiveData:   &_false,
 		}
 
-		svc, err := createSLAMService(t, attrCfg, logger, false, true)
+		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
@@ -224,7 +218,7 @@ func TestGeneralNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		_, err := createSLAMService(t, attrCfg, logger, false, false)
+		_, err := createSLAMService(t, attrCfg, logger, false, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring camera error: error getting camera gibberish for slam service: \"gibberish\" missing from dependencies"))
 	})
@@ -237,10 +231,6 @@ func TestCartographerNew(t *testing.T) {
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	originalBinaryLocation := viamcartographer.BinaryLocation
-	setBinaryLocationForTesting("true")
-	defer setBinaryLocationForTesting(originalBinaryLocation)
-
 	t.Run("New cartographer service with good lidar in slam mode 2d", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
@@ -252,7 +242,7 @@ func TestCartographerNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		svc, err := createSLAMService(t, attrCfg, logger, false, true)
+		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
@@ -268,7 +258,7 @@ func TestCartographerNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		_, err = createSLAMService(t, attrCfg, logger, false, false)
+		_, err = createSLAMService(t, attrCfg, logger, false, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.Errorf("runtime slam service error: error getting data from sensor: %v", attrCfg.Sensors[0]))
 	})
@@ -282,7 +272,7 @@ func TestCartographerNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		_, err = createSLAMService(t, attrCfg, logger, false, false)
+		_, err = createSLAMService(t, attrCfg, logger, false, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("runtime slam service error: error getting data from sensor: camera not lidar"))
 	})
@@ -293,10 +283,6 @@ func TestCartographerDataProcess(t *testing.T) {
 	logger, obs := golog.NewObservedTestLogger(t)
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
-
-	originalBinaryLocation := viamcartographer.BinaryLocation
-	setBinaryLocationForTesting("true")
-	defer setBinaryLocationForTesting(originalBinaryLocation)
 
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.AttrConfig{
@@ -309,7 +295,7 @@ func TestCartographerDataProcess(t *testing.T) {
 	}
 
 	// Create slam service
-	svc, err := createSLAMService(t, attrCfg, logger, false, true)
+	svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer.Stop()
@@ -369,10 +355,6 @@ func TestEndpointFailures(t *testing.T) {
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	originalBinaryLocation := viamcartographer.BinaryLocation
-	setBinaryLocationForTesting("true")
-	defer setBinaryLocationForTesting(originalBinaryLocation)
-
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.AttrConfig{
 		Sensors:       []string{"good_lidar"},
@@ -385,7 +367,7 @@ func TestEndpointFailures(t *testing.T) {
 	}
 
 	// Create slam service
-	svc, err := createSLAMService(t, attrCfg, logger, false, true)
+	svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	p, err := svc.Position(context.Background(), "hi", map[string]interface{}{})
@@ -436,10 +418,6 @@ func TestSLAMProcessSuccess(t *testing.T) {
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	originalBinaryLocation := viamcartographer.BinaryLocation
-	setBinaryLocationForTesting("true")
-	defer setBinaryLocationForTesting(originalBinaryLocation)
-
 	t.Run("Test online SLAM process with default parameters", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
@@ -451,7 +429,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		}
 
 		// Create slam service
-		svc, err := createSLAMService(t, attrCfg, logger, false, true)
+		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		slamSvc := svc.(testhelper.Service)
@@ -459,7 +437,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		cmd := append([]string{processCfg.Name}, processCfg.Args...)
 
 		cmdResult := [][]string{
-			{viamcartographer.BinaryLocation},
+			{testExecutableName},
 			{"-sensors=good_lidar"},
 			{"-config_param={test_param=viam,mode=2d}", "-config_param={mode=2d,test_param=viam}"},
 			{"-data_rate_ms=200"},
@@ -492,7 +470,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		}
 
 		// Create slam service
-		svc, err := createSLAMService(t, attrCfg, logger, false, true)
+		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		slamSvc := svc.(testhelper.Service)
@@ -500,7 +478,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		cmd := append([]string{processCfg.Name}, processCfg.Args...)
 
 		cmdResult := [][]string{
-			{viamcartographer.BinaryLocation},
+			{testExecutableName},
 			{"-sensors="},
 			{"-config_param={mode=2d,test_param=viam}", "-config_param={test_param=viam,mode=2d}"},
 			{"-data_rate_ms=200"},
@@ -530,10 +508,6 @@ func TestSLAMProcessFail(t *testing.T) {
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	originalBinaryLocation := viamcartographer.BinaryLocation
-	setBinaryLocationForTesting("true")
-	defer setBinaryLocationForTesting(originalBinaryLocation)
-
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.AttrConfig{
 		Sensors:       []string{"good_lidar"},
@@ -545,34 +519,11 @@ func TestSLAMProcessFail(t *testing.T) {
 		UseLiveData:   &_true,
 	}
 
-	// Create slam service
-	svc, err := createSLAMService(t, attrCfg, logger, false, true)
-	test.That(t, err, test.ShouldBeNil)
-
-	slamSvc := svc.(testhelper.Service)
-
 	t.Run("Run SLAM process that errors out due to invalid binary location", func(t *testing.T) {
-		cancelCtx, cancelFunc := context.WithCancel(context.Background())
-
-		delete(slam.SLAMLibraries, "fake_cartographer")
-		originalBinaryLocation := viamcartographer.BinaryLocation
-		// This test ensures that we get the correct error if the user does
-		// not have the correct binary installed. This sets the binary path to some
-		// unused value and then tests to ensure that creating a SLAM process fails
-		setBinaryLocationForTesting("fail_this_binary_does_not_exist")
-		defer setBinaryLocationForTesting(originalBinaryLocation)
-
-		err := slamSvc.StartSLAMProcess(cancelCtx)
-		test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "problem adding slam process:")
-
-		cancelFunc()
-
-		err = slamSvc.StopSLAMProcess()
-		test.That(t, err, test.ShouldBeNil)
+		_, err := createSLAMService(t, attrCfg, logger, false, true, "hokus_pokus_does_not_exist_filename")
+		test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "executable file not found in $PATH")
 	})
 
 	grpcServer.Stop()
-	test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
-
 	closeOutSLAMService(t, name)
 }
