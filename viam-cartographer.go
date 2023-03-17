@@ -57,10 +57,10 @@ const (
 )
 
 var (
-	// BinaryLocation contains the name of the cartographer grpc server.
-	BinaryLocation = "carto_grpc_server"
 	// Model is the model name of cartographer.
-	Model                         = resource.NewModel("viam", "slam", "cartographer")
+	Model = resource.NewModel("viam", "slam", "cartographer")
+	// BinaryLocation contains the name of the cartographer grpc server.
+	BinaryLocation                = "carto_grpc_server"
 	cameraValidationMaxTimeoutSec = 30 // reconfigurable for testing
 	dialMaxTimeoutSec             = 30 // reconfigurable for testing
 )
