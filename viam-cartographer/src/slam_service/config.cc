@@ -81,7 +81,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     auto programLocation = boost::dll::program_location();
     auto relativePathToLuas = programLocation.parent_path().parent_path();
     relativePathToLuas.append("share/cartographer/lua_files");
-    boost::filesystem::path absolutePathToLuas("/usr/local/share/cartographer/lua_files");
+    boost::filesystem::path absolutePathToLuas(
+        "/usr/local/share/cartographer/lua_files");
     if (exists(relativePathToLuas)) {
         VLOG(1) << "Using lua files from relative path";
         slamService.configuration_directory = relativePathToLuas.string();

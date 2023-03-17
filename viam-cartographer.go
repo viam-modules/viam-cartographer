@@ -63,6 +63,7 @@ const (
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
 type SubAlgo string
 
+// Dim2d runs cartographer with a 2D LIDAR only.
 const Dim2d SubAlgo = "2d"
 
 // SetCameraValidationMaxTimeoutSecForTesting sets cameraValidationMaxTimeoutSec for testing.
