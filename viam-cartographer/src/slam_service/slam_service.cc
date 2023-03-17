@@ -559,6 +559,107 @@ std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
     return image.WriteJpegToString(jpegQuality);
 }
 
+// void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
+//     std::string &pointcloud) {
+//     std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
+//         nullptr;
+//     try {
+//         painted_slices =
+//             std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
+//                 GetLatestPaintedMapSlices());
+//     } catch (std::exception &e) {
+//         if (e.what() == errorNoSubmaps) {
+//             LOG(INFO) << "Error creating pcd map: " << e.what();
+//             return;
+//         } else {
+//             std::string errorLog = "Error writing submap to proto: ";
+//             errorLog += e.what();
+//             LOG(ERROR) << errorLog;
+//             throw std::runtime_error(errorLog);
+//         }
+//     }
+
+//     auto painted_surface = painted_slices->surface.get();
+//     int width = cairo_image_surface_get_width(painted_surface);
+//     int height = cairo_image_surface_get_height(painted_surface);
+//     // Get all pixels from the painted surface in RGBA format
+//     auto data = cairo_image_surface_get_data(painted_surface);
+
+//     // Total number of bytes in image (4 bytes per pixel)
+//     int size_data = width * height * 4;
+
+//     // Each pixel contains 4 bytes of information in RGBA format
+//     // data_vect[i + 0] is the R channel
+//     // data_vect[i + 1] is the B channel
+//     // data_vect[i + 2] is the G channel
+//     // data_vect[i + 3] is the A channel
+//     std::vector<unsigned char> data_vect(data, data + size_data);
+
+//     int num_points = 0;
+
+//     // Sample the image based on the number of pixels. Output is the number of
+//     // pixels to skip. skip_count will reduce the size of the PCD to under 32
+//     // MB, with additional tuning provided by the samplingFactor. If the PCD
+//     //  would already be smaller than 32MB, do not sample the image.
+//     // When moving to streaming this behavior may change.
+//     int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
+//                      samplingFactor;
+//     if (skip_count == 0) {
+//         skip_count = 1;
+//     }
+
+//     std::string data_buffer;
+
+//     // Loop to sample data and reduce resolution. Increments multiplied
+//     // by 4 to represent 4 bytes per pixel
+//     for (int i = 0; i < size_data; i += skip_count * 4) {
+//         // skip pixels that are not in our map(black/past walls)
+//         // this check represents [102,102,102]
+//         if ((data_vect[i + 0] == defaultCairosEmptyPaintedSlice) &&
+//             (data_vect[i + 1] == defaultCairosEmptyPaintedSlice) &&
+//             (data_vect[i + 2] == defaultCairosEmptyPaintedSlice))
+//             continue;
+
+//         // Determine probability based on color pixel
+//         int prob = viam::ViamColorToProbability((int)data_vect[i + 2]);
+//         if (prob == 0) continue;
+
+//         num_points++;
+
+//         int pixel_index = i / 4;
+//         int pixel_x = pixel_index % width;
+//         int pixel_y = pixel_index / width;
+
+//         // Convert pixel location to pointcloud point in meters
+//         float x_pos = (pixel_x - painted_slices->origin.x()) * resolution;
+//         // Y is inverted to match output from getPosition()
+//         float y_pos = -(pixel_y - painted_slices->origin.y()) * resolution;
+//         // 2D SLAM so Z is set to 0
+//         float z_pos = 0;
+
+//         // Turn the map point into a vector to perform transformations with.
+//         // Current transformation rotates coordinates to match slam service
+//         // expectation (XZ plane)
+//         Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
+//         auto rotated_map_point = pcdRotation * map_point;
+
+//         viam::utils::writeFloatToBufferInBytes(data_buffer,
+//                                                rotated_map_point.x());
+//         viam::utils::writeFloatToBufferInBytes(data_buffer,
+//                                                rotated_map_point.y());
+//         viam::utils::writeFloatToBufferInBytes(data_buffer,
+//                                                rotated_map_point.z());
+//         viam::utils::writeIntToBufferInBytes(data_buffer, prob);
+//     }
+
+//     // Write our PCD file, which is written as a binary.
+//     pointcloud = viam::utils::pcdHeader(num_points, true);
+
+//     // Writes data buffer to the pointcloud string
+//     pointcloud += data_buffer;
+//     return;
+// }
+
 void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     std::string &pointcloud) {
     std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
@@ -579,67 +680,44 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         }
     }
 
+    // Get data from painted surface in RGBA format
     auto painted_surface = painted_slices->surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-    // Get all pixels from the painted surface in RGBA format
     auto data = cairo_image_surface_get_data(painted_surface);
+    // // Each pixel contains 4 bytes of information in RGBA format
+    // // data_vect[i + 0] is the R channel
+    // // data_vect[i + 1] is the B channel
+    // // data_vect[i + 2] is the G channel
+    // // data_vect[i + 3] is the A channel
 
-    // Total number of bytes in image (4 bytes per pixel)
-    int size_data = width * height * 4;
-
-    // Each pixel contains 4 bytes of information in RGBA format
-    // data_vect[i + 0] is the R channel
-    // data_vect[i + 1] is the B channel
-    // data_vect[i + 2] is the G channel
-    // data_vect[i + 3] is the A channel
-    std::vector<unsigned char> data_vect(data, data + size_data);
-
+    // Iterate over image data and add to pointcloud buffer
     int num_points = 0;
+    std::string data_buffer;    
+    for (int pixel_y = 0; pixel_y < height; pixel_y++) { 
+        for (int pixel_x = 0; pixel_x < width; pixel_x++) { 
 
-    // Sample the image based on the number of pixels. Output is the number of
-    // pixels to skip. skip_count will reduce the size of the PCD to under 32
-    // MB, with additional tuning provided by the samplingFactor. If the PCD
-    //  would already be smaller than 32MB, do not sample the image.
-    // When moving to streaming this behavior may change.
-    int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
-                     samplingFactor;
-    if (skip_count == 0) {
-        skip_count = 1;
-    }
+        // Get data
+        int pixel_index = pixel_x + pixel_y * width;
+        int byte_index = pixel_index * bytesPerPixel;
+        std::vector<unsigned char> pixel_data(byte_index, byte_index + bytesPerPixel);
 
-    std::string data_buffer;
-
-    // Loop to sample data and reduce resolution. Increments multiplied
-    // by 4 to represent 4 bytes per pixel
-    for (int i = 0; i < size_data; i += skip_count * 4) {
-        // skip pixels that are not in our map(black/past walls)
-        // this check represents [102,102,102]
-        if ((data_vect[i + 0] == defaultCairosEmptyPaintedSlice) &&
-            (data_vect[i + 1] == defaultCairosEmptyPaintedSlice) &&
-            (data_vect[i + 2] == defaultCairosEmptyPaintedSlice))
+        // Check if valid point
+        if (checkIfEmptyPixel(pixel_data)) 
             continue;
 
-        // Determine probability based on color pixel
-        int prob = viam::ViamColorToProbability((int)data_vect[i + 2]);
-        if (prob == 0) continue;
-
-        num_points++;
-
-        int pixel_index = i / 4;
-        int pixel_x = pixel_index % width;
-        int pixel_y = pixel_index / width;
+        // Determine probability based on color pixel and skip if 0
+        int prob = calculateViamProbabilityFromColorChannel(pixel_data);
+        if (prob == 0)
+            continue;
 
         // Convert pixel location to pointcloud point in meters
-        float x_pos = (pixel_x - painted_slices->origin.x()) * kPixelSize;
+        float x_pos = (pixel_x - painted_slices->origin.x()) * resolution;
         // Y is inverted to match output from getPosition()
-        float y_pos = -(pixel_y - painted_slices->origin.y()) * kPixelSize;
-        // 2D SLAM so Z is set to 0
-        float z_pos = 0;
-
-        // Turn the map point into a vector to perform transformations with.
-        // Current transformation rotates coordinates to match slam service
-        // expectation (XZ plane)
+        float y_pos = -(pixel_y - painted_slices->origin.y()) * resolution; // is this the flip???
+        float z_pos = 0; // Z is 0 in 2D SLAM
+        
+        // Add point to buffer
         Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
         auto rotated_map_point = pcdRotation * map_point;
 
@@ -650,6 +728,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         viam::utils::writeFloatToBufferInBytes(data_buffer,
                                                rotated_map_point.z());
         viam::utils::writeIntToBufferInBytes(data_buffer, prob);
+
+        num_points++;
+        }
     }
 
     // Write our PCD file, which is written as a binary.
@@ -660,11 +741,19 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     return;
 }
 
-unsigned char ViamColorToProbability(unsigned char color) {
+bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data) {
+    return (pixel_data[0] == defaultCairosEmptyPaintedSlice) &&
+           (pixel_data[1] == defaultCairosEmptyPaintedSlice) &&
+           (pixel_data[2] == defaultCairosEmptyPaintedSlice);
+    }
+
+int calculateViamProbabilityFromColorChannel(std::vector<unsigned char> pixel_data) {
     unsigned char maxVal = CHAR_MAX;
     unsigned char minVal = defaultCairosEmptyPaintedSlice;
     unsigned char maxProb = 100;
     unsigned char minProb = 0;
+
+    unsigned char color = (int)pixel_data[probabilityColorChannel];
     unsigned char prob =
         (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
     return prob = std::min(std::max(prob, minProb), maxProb);
@@ -740,7 +829,7 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             &submap_slice.cairo_data);
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
-        viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
+        viam::io::PaintSubmapSlices(submap_slices, resolution);
 
     return painted_slices;
 }
@@ -752,7 +841,7 @@ void SLAMServiceImpl::PaintMarker(
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-    viam::io::DrawPoseOnSurface(painted_slices, global_pose, kPixelSize);
+    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolution);
 }
 
 double SLAMServiceImpl::SetUpSLAM() {

@@ -53,7 +53,7 @@ static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis
-static const int maximumGRPCByteChunkSize = 64 * 1024;
+static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
 // Coeffient to adjust the skip count for the PCD to ensure the file is within
 // grpc limitations. Increase the value if you expect dense feature-rich maps
 static const int samplingFactor = 1;
@@ -66,6 +66,11 @@ static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // Error log for when no submaps exist
+
+// Number of bytes in a pixel
+const int bytesPerPixel = 4;
+const int probabilityColorChannel = 2;
+
 static const std::string errorNoSubmaps = "No submaps to paint";
 
 extern std::atomic<bool> b_continue_session;
@@ -77,7 +82,10 @@ const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 // For a given color channel convert the scale from the given 102-255 range to
 // 100-0. This is an initial solution for extracting probability information
 // from cartographer
-unsigned char ViamColorToProbability(unsigned char color);
+int calculateViamProbabilityFromColorChannel(std::vector<unsigned char> pixel_data);
+
+// Check if pixel is not in our map(black/past walls) this check represents [102,102,102]
+bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -210,7 +218,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
    private:
     // kPixelSize defines the pixel size for drawing the jpeg map
-    const double kPixelSize = 0.01;
+    const double resolution = 0.01;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 
