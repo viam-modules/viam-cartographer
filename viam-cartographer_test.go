@@ -14,13 +14,11 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
-	"go.viam.com/rdk/components/camera"
-	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/referenceframe"
 	spatial "go.viam.com/rdk/spatialmath"
-	"go.viam.com/rdk/testutils/inject"
 	rdkutils "go.viam.com/rdk/utils"
 	slamConfig "go.viam.com/slam/config"
+	"go.viam.com/slam/sensors/lidar"
 	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
 	"go.viam.com/utils"
@@ -28,12 +26,12 @@ import (
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 )
 
-func TestGeneralNew(t *testing.T) {
+func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	t.Run("New slam service with no camera", func(t *testing.T) {
+	t.Run("New cartographer slam service with no sensor", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &slamConfig.AttrConfig{
@@ -51,7 +49,7 @@ func TestGeneralNew(t *testing.T) {
 		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 	})
 
-	t.Run("New slam service with more than one camera", func(t *testing.T) {
+	t.Run("New cartographer slam service with more than one sensor", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &slamConfig.AttrConfig{
@@ -64,41 +62,34 @@ func TestGeneralNew(t *testing.T) {
 
 		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("configuring camera error: 'sensors' must contain only one lidar camera, but is 'sensors: [lidar, one-too-many]'"))
+			errors.New("configuring lidar camera error: 'sensors' must contain only one lidar camera, but is 'sensors: [lidar, one-too-many]'"))
 
 		grpcServer.Stop()
 		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 	})
 
-	t.Run("New slam service with bad camera", func(t *testing.T) {
+	t.Run("New cartographer slam service with non-existing sensor", func(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: name,
-			DataRateMsec:  validDataRateMS,
+			DataRateMsec:  validDataRateMsec,
 			UseLiveData:   &_true,
 		}
 
 		_, err := createSLAMService(t, attrCfg, logger, false, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("configuring camera error: error getting camera gibberish for slam service: \"gibberish\" missing from dependencies"))
+			errors.New("configuring lidar camera error: error getting lidar camera "+
+				"gibberish for slam service: \"gibberish\" missing from dependencies"))
 	})
 
-	closeOutSLAMService(t, name)
-}
-
-func TestCartographerNew(t *testing.T) {
-	logger := golog.NewTestLogger(t)
-	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	t.Run("New cartographer service with good lidar in slam mode 2d", func(t *testing.T) {
+	t.Run("New cartographer slam service with good lidar in slam mode 2d", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: name,
-			DataRateMsec:  validDataRateMS,
+			DataRateMsec:  validDataRateMsec,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_true,
 		}
@@ -110,26 +101,12 @@ func TestCartographerNew(t *testing.T) {
 		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 	})
 
-	t.Run("New cartographer service with lidar that errors during call to NextPointCloud", func(t *testing.T) {
-		attrCfg := &slamConfig.AttrConfig{
-			Sensors:       []string{"bad_lidar"},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: name,
-			DataRateMsec:  validDataRateMS,
-			UseLiveData:   &_true,
-		}
-
-		_, err = createSLAMService(t, attrCfg, logger, false, false, testExecutableName)
-		test.That(t, err, test.ShouldBeError,
-			errors.Errorf("runtime slam service error: error getting data from sensor: %v", attrCfg.Sensors[0]))
-	})
-
-	t.Run("New cartographer service with camera without NextPointCloud implementation", func(t *testing.T) {
+	t.Run("New cartographer slam service with invalid sensor that errors during call to NextPointCloud", func(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"invalid_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: name,
-			DataRateMsec:  validDataRateMS,
+			DataRateMsec:  validDataRateMsec,
 			UseLiveData:   &_true,
 		}
 
@@ -137,6 +114,7 @@ func TestCartographerNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeError,
 			errors.New("runtime slam service error: error getting data from sensor: camera not lidar"))
 	})
+
 	closeOutSLAMService(t, name)
 }
 
@@ -150,7 +128,7 @@ func TestCartographerDataProcess(t *testing.T) {
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d"},
 		DataDirectory: name,
-		DataRateMsec:  validDataRateMS,
+		DataRateMsec:  validDataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}
@@ -165,18 +143,13 @@ func TestCartographerDataProcess(t *testing.T) {
 	slamSvc := svc.(testhelper.Service)
 
 	t.Run("Cartographer Data Process with lidar in slam mode 2d", func(t *testing.T) {
-		goodCam := &inject.Camera{}
-		goodCam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-			return pointcloud.New(), nil
-		}
-		goodCam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-			return camera.Properties{}, nil
-		}
-		cams := []camera.Camera{goodCam}
+		sensors := []string{"good_lidar"}
+		lidar, err := lidar.New(context.Background(), setupDeps(sensors), sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		c := make(chan int, 100)
-		slamSvc.StartDataProcess(cancelCtx, cams, c)
+		slamSvc.StartDataProcess(cancelCtx, lidar, c)
 
 		<-c
 		cancelFunc()
@@ -186,24 +159,19 @@ func TestCartographerDataProcess(t *testing.T) {
 	})
 
 	t.Run("Cartographer Data Process with lidar that errors during call to NextPointCloud", func(t *testing.T) {
-		badCam := &inject.Camera{}
-		badCam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-			return nil, errors.New("bad_lidar")
-		}
-		badCam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-			return camera.Properties{}, nil
-		}
-		cams := []camera.Camera{badCam}
+		sensors := []string{"invalid_sensor"}
+		lidar, err := lidar.New(context.Background(), setupDeps(sensors), sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		c := make(chan int, 100)
-		slamSvc.StartDataProcess(cancelCtx, cams, c)
+		slamSvc.StartDataProcess(cancelCtx, lidar, c)
 
 		<-c
 		allObs := obs.All()
 		latestLoggedEntry := allObs[len(allObs)-1]
 		cancelFunc()
-		test.That(t, fmt.Sprint(latestLoggedEntry), test.ShouldContainSubstring, "bad_lidar")
+		test.That(t, fmt.Sprint(latestLoggedEntry), test.ShouldContainSubstring, "camera not lidar")
 	})
 
 	test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
@@ -221,8 +189,8 @@ func TestEndpointFailures(t *testing.T) {
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: name,
-		MapRateSec:    &validMapRate,
-		DataRateMsec:  validDataRateMS,
+		MapRateSec:    &validMapRateMsec,
+		DataRateMsec:  validDataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}
@@ -374,8 +342,8 @@ func TestSLAMProcessFail(t *testing.T) {
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: name,
-		MapRateSec:    &validMapRate,
-		DataRateMsec:  validDataRateMS,
+		MapRateSec:    &validMapRateMsec,
+		DataRateMsec:  validDataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}

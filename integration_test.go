@@ -27,7 +27,7 @@ import (
 )
 
 const (
-	cartoSleepMs = 100
+	cartoSleepMsec = 100
 )
 
 // Checks the cartographer map and confirms there at least 100 map points.
@@ -155,7 +155,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	closeOutSLAMService(t, "")
 
 	// Sleep to ensure cartographer stops
-	time.Sleep(time.Millisecond * cartoSleepMs)
+	time.Sleep(time.Millisecond * cartoSleepMsec)
 
 	// Delete the last .pcd file in the data directory, so that offline mode runs on the
 	// same data as online mode. (Online mode will not read the last .pcd file, since it
@@ -229,7 +229,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	closeOutSLAMService(t, "")
 
 	// Sleep to ensure cartographer stops
-	time.Sleep(time.Millisecond * cartoSleepMs)
+	time.Sleep(time.Millisecond * cartoSleepMsec)
 
 	// Remove existing pointclouds, but leave maps and config (so we keep the lua files).
 	test.That(t, slamTesthelper.ResetFolder(name+"/data"), test.ShouldBeNil)
@@ -308,7 +308,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	closeOutSLAMService(t, "")
 
 	// Sleep to ensure cartographer stops
-	time.Sleep(time.Millisecond * cartoSleepMs)
+	time.Sleep(time.Millisecond * cartoSleepMsec)
 
 	// Remove existing pointclouds, but leave maps and config (so we keep the lua files).
 	test.That(t, slamTesthelper.ResetFolder(name+"/data"), test.ShouldBeNil)

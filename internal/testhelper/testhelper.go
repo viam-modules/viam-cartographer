@@ -6,7 +6,7 @@ import (
 	"bufio"
 	"context"
 
-	"go.viam.com/rdk/components/camera"
+	"go.viam.com/slam/sensors/lidar"
 	"go.viam.com/utils/pexec"
 )
 
@@ -14,7 +14,7 @@ import (
 // slam processes in the slam service. These functions are not exported to the user. This resolves
 // a circular import caused by the inject package.
 type Service interface {
-	StartDataProcess(cancelCtx context.Context, cam []camera.Camera, c chan int)
+	StartDataProcess(cancelCtx context.Context, lidar lidar.Lidar, c chan int)
 	StartSLAMProcess(ctx context.Context) error
 	StopSLAMProcess() error
 	Close() error
