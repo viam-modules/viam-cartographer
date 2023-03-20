@@ -105,7 +105,8 @@ func TestGetAndSaveData(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	// Will uncomment & update this test once this PR is merged: https://github.com/viamrobotics/slam/pull/182
+	// Will uncomment & update or delete this test once
+	// this PR is merged: https://github.com/viamrobotics/slam/pull/182
 	// t.Run("Test with invalid lidar", func(t *testing.T) {
 	// 	invalidLidar := lidar.Lidar{}
 	// 	test.That(t, invalidLidar.Name, test.ShouldEqual, "")
