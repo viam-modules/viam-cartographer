@@ -28,7 +28,7 @@ import (
 
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("New cartographer slam service with no sensor", func(t *testing.T) {
@@ -37,7 +37,7 @@ func TestNew(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_false,
 		}
@@ -55,7 +55,7 @@ func TestNew(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"lidar", "one-too-many"},
 			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_false,
 		}
@@ -72,7 +72,7 @@ func TestNew(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			DataRateMsec:  validDataRateMsec,
 			UseLiveData:   &_true,
 		}
@@ -88,7 +88,7 @@ func TestNew(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			DataRateMsec:  validDataRateMsec,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_true,
@@ -105,7 +105,7 @@ func TestNew(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"invalid_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			DataRateMsec:  validDataRateMsec,
 			UseLiveData:   &_true,
 		}
@@ -115,19 +115,19 @@ func TestNew(t *testing.T) {
 			errors.New("runtime slam service error: error getting data from sensor: camera not lidar"))
 	})
 
-	clearDirectory(t, name)
+	testhelper.ClearDirectory(t, dataDir)
 }
 
 func TestDataProcess(t *testing.T) {
 	logger, obs := golog.NewObservedTestLogger(t)
-	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.AttrConfig{
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d"},
-		DataDirectory: name,
+		DataDirectory: dataDir,
 		DataRateMsec:  validDataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
@@ -143,7 +143,7 @@ func TestDataProcess(t *testing.T) {
 
 	t.Run("Test data process with lidar in slam mode 2d", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
-		lidar, err := lidar.New(context.Background(), setupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(context.Background(), testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -152,14 +152,14 @@ func TestDataProcess(t *testing.T) {
 
 		<-c
 		cancelFunc()
-		files, err := os.ReadDir(name + "/data/")
+		files, err := os.ReadDir(dataDir + "/data/")
 		test.That(t, len(files), test.ShouldBeGreaterThanOrEqualTo, 1)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run("Test data process with invalid sensor that errors during call to NextPointCloud", func(t *testing.T) {
 		sensors := []string{"invalid_sensor"}
-		lidar, err := lidar.New(context.Background(), setupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(context.Background(), testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -175,19 +175,19 @@ func TestDataProcess(t *testing.T) {
 
 	test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 
-	clearDirectory(t, name)
+	testhelper.ClearDirectory(t, dataDir)
 }
 
 func TestEndpointFailures(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.AttrConfig{
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
-		DataDirectory: name,
+		DataDirectory: dataDir,
 		MapRateSec:    &validMapRateMsec,
 		DataRateMsec:  validDataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
@@ -238,12 +238,12 @@ func TestEndpointFailures(t *testing.T) {
 	grpcServer.Stop()
 	test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 
-	clearDirectory(t, name)
+	testhelper.ClearDirectory(t, dataDir)
 }
 
 func TestSLAMProcess(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successfully start live SLAM process with default parameters", func(t *testing.T) {
@@ -251,7 +251,7 @@ func TestSLAMProcess(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_true,
 		}
@@ -270,7 +270,7 @@ func TestSLAMProcess(t *testing.T) {
 			{"-config_param={test_param=viam,mode=2d}", "-config_param={mode=2d,test_param=viam}"},
 			{"-data_rate_ms=200"},
 			{"-map_rate_sec=60"},
-			{"-data_dir=" + name},
+			{"-data_dir=" + dataDir},
 			{"-delete_processed_data=true"},
 			{"-use_live_data=true"},
 			{"-port=localhost:" + strconv.Itoa(port)},
@@ -292,7 +292,7 @@ func TestSLAMProcess(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_false,
 		}
@@ -311,7 +311,7 @@ func TestSLAMProcess(t *testing.T) {
 			{"-config_param={mode=2d,test_param=viam}", "-config_param={test_param=viam,mode=2d}"},
 			{"-data_rate_ms=200"},
 			{"-map_rate_sec=60"},
-			{"-data_dir=" + name},
+			{"-data_dir=" + dataDir},
 			{"-delete_processed_data=false"},
 			{"-use_live_data=false"},
 			{"-port=localhost:" + strconv.Itoa(port)},
@@ -333,7 +333,7 @@ func TestSLAMProcess(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
-			DataDirectory: name,
+			DataDirectory: dataDir,
 			MapRateSec:    &validMapRateMsec,
 			DataRateMsec:  validDataRateMsec,
 			Port:          "localhost:" + strconv.Itoa(port),
@@ -344,5 +344,5 @@ func TestSLAMProcess(t *testing.T) {
 		grpcServer.Stop()
 	})
 
-	clearDirectory(t, name)
+	testhelper.ClearDirectory(t, dataDir)
 }
