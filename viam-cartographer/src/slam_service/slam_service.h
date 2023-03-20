@@ -82,9 +82,11 @@ const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 // For a given color channel convert the scale from the given 102-255 range to
 // 100-0. This is an initial solution for extracting probability information
 // from cartographer
-int calculateViamProbabilityFromColorChannel(std::vector<unsigned char> pixel_data);
+int calculateViamProbabilityFromColorChannel(
+    std::vector<unsigned char> pixel_data);
 
-// Check if pixel is not in our map(black/past walls) this check represents [102,102,102]
+// Check if pixel is not in our map(black/past walls) this check represents
+// [102,102,102]
 bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data);
 
 class SLAMServiceImpl final : public SLAMService::Service {
@@ -218,7 +220,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
    private:
     // kPixelSize defines the pixel size for drawing the jpeg map
-    const double resolution = 0.01;
+    const double resolution = 1;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 
