@@ -25,12 +25,14 @@ import (
 )
 
 const (
-	NumCartographerPointClouds = 15
+	// NumPointClouds is the number of pointclouds saved in artifact
+	// for the cartographer integration tests.
+	NumPointClouds = 15
 )
 
-var (
-	CartographerIntLidarReleasePointCloudChan = make(chan int, 1)
-)
+// IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
+// channel for the cartographer integration tests.
+var IntegrationLidarReleasePointCloudChan = make(chan int, 1)
 
 // Service in the internal package includes additional exported functions relating to the data and
 // slam processes in the slam service. These functions are not exported to the user. This resolves
@@ -44,6 +46,7 @@ type Service interface {
 	GetSLAMProcessBufferedLogReader() bufio.Reader
 }
 
+// SetupDeps returns the dependencies based on the sensors passed as arguments.
 func SetupDeps(sensors []string) registry.Dependencies {
 	deps := make(registry.Dependencies)
 
@@ -100,9 +103,9 @@ func getIntegrationLidar() *inject.Camera {
 	var index uint64
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		select {
-		case <-CartographerIntLidarReleasePointCloudChan:
+		case <-IntegrationLidarReleasePointCloudChan:
 			i := atomic.AddUint64(&index, 1) - 1
-			if i >= NumCartographerPointClouds {
+			if i >= NumPointClouds {
 				return nil, errors.New("No more cartographer point clouds")
 			}
 			file, err := os.Open(artifact.MustPath("slam/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
@@ -130,6 +133,8 @@ func getIntegrationLidar() *inject.Camera {
 	return cam
 }
 
+// ClearDirectory deletes the contents in the path directory
+// without deleting path itself.
 func ClearDirectory(t *testing.T, path string) {
 	t.Helper()
 

@@ -111,13 +111,13 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	}
 
 	// Release point cloud for service validation
-	testhelper.CartographerIntLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
 	svc, err := createSLAMService(t, attrCfg, logger, true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
-	testhelper.CartographerIntLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 
 	// Make sure we initialize in mapping mode
 	logReader := svc.(testhelper.Service).GetSLAMProcessBufferedLogReader()
@@ -133,9 +133,9 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	}
 
 	// Wait for cartographer to finish processing data
-	for i := 0; i < testhelper.NumCartographerPointClouds-2; i++ {
+	for i := 0; i < testhelper.NumPointClouds-2; i++ {
 		t.Logf("Find log line for point cloud %v", i)
-		testhelper.CartographerIntLidarReleasePointCloudChan <- 1
+		testhelper.IntegrationLidarReleasePointCloudChan <- 1
 		for {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
@@ -253,7 +253,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	}
 
 	// Release point cloud for service validation
-	testhelper.CartographerIntLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
 	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
@@ -271,10 +271,10 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	}
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
-	testhelper.CartographerIntLidarReleasePointCloudChan <- 1
-	for i := 0; i < testhelper.NumCartographerPointClouds-2; i++ {
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
+	for i := 0; i < testhelper.NumPointClouds-2; i++ {
 		t.Logf("Find log line for point cloud %v", i)
-		testhelper.CartographerIntLidarReleasePointCloudChan <- 1
+		testhelper.IntegrationLidarReleasePointCloudChan <- 1
 		for {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
@@ -323,7 +323,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	}
 
 	// Release point cloud for service validation
-	testhelper.CartographerIntLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
 	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
@@ -341,10 +341,10 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	}
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
-	testhelper.CartographerIntLidarReleasePointCloudChan <- 1
-	for i := 0; i < testhelper.NumCartographerPointClouds-2; i++ {
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
+	for i := 0; i < testhelper.NumPointClouds-2; i++ {
 		t.Logf("Find log line for point cloud %v", i)
-		testhelper.CartographerIntLidarReleasePointCloudChan <- 1
+		testhelper.IntegrationLidarReleasePointCloudChan <- 1
 		for {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)

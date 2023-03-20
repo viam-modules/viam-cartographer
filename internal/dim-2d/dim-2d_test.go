@@ -8,11 +8,12 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	slamConfig "go.viam.com/slam/config"
 	"go.viam.com/slam/sensors/lidar"
 	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
+
+	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 )
 
 func TestNewLidar(t *testing.T) {
@@ -44,7 +45,6 @@ func TestNewLidar(t *testing.T) {
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring lidar camera error: 'sensors' must contain only one lidar camera, but is 'sensors: [lidar, one-too-many]'"))
-
 	})
 
 	t.Run("New cartographer slam service with non-existing sensor", func(t *testing.T) {
