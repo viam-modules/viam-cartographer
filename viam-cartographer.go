@@ -77,7 +77,11 @@ func SetDialMaxTimeoutSecForTesting(val int) {
 }
 
 func init() {
-	registry.RegisterService(slam.Subtype, Model, registry.Service{Constructor: newCartographer})
+	registry.RegisterService(slam.Subtype, Model, registry.Service{
+		Constructor: func(ctx context.Context, deps registry.Dependencies, config config.Service, logger golog.Logger) (interface{}, error) {
+			return New(ctx, deps, config, logger, false, DefaultExecutableName)
+		},
+	})
 
 	config.RegisterServiceAttributeMapConverter(slam.Subtype, Model,
 		func(attributes config.AttributeMap) (interface{}, error) {
@@ -91,10 +95,6 @@ func init() {
 			}
 			return &attrCfg, nil
 		}, &slamConfig.AttrConfig{})
-}
-
-func newCartographer(ctx context.Context, deps registry.Dependencies, config config.Service, logger golog.Logger) (interface{}, error) {
-	return New(ctx, deps, config, logger, false, DefaultExecutableName)
 }
 
 // runtimeServiceValidation ensures the service's data processing and saving is valid for the subAlgo and
@@ -175,21 +175,22 @@ type cartographerService struct {
 func configureCameras(
 	svcConfig *slamConfig.AttrConfig,
 	deps registry.Dependencies,
-	logger golog.Logger,
 ) (string, []camera.Camera, error) {
-	if len(svcConfig.Sensors) > 0 {
-		logger.Debug("Running in live mode")
-		cams := make([]camera.Camera, 0, len(svcConfig.Sensors))
-		// The first camera is expected to be LIDAR.
-		primarySensorName := svcConfig.Sensors[0]
-		cam, err := camera.FromDependencies(deps, primarySensorName)
-		if err != nil {
-			return "", nil, errors.Wrapf(err, "error getting camera %v for slam service", primarySensorName)
-		}
-		cams = append(cams, cam)
-		return primarySensorName, cams, nil
+	if len(svcConfig.Sensors) == 0 {
+		return "", nil, nil
 	}
-	return "", nil, nil
+	if len(svcConfig.Sensors) != 1 {
+		return "", nil, errors.Errorf("'sensors' must contain only one lidar camera, but is 'sensors: [%v]'", strings.Join(svcConfig.Sensors, ", "))
+	}
+	cams := make([]camera.Camera, 0, len(svcConfig.Sensors))
+	// The first camera is expected to be LIDAR.
+	primarySensorName := svcConfig.Sensors[0]
+	cam, err := camera.FromDependencies(deps, primarySensorName)
+	if err != nil {
+		return "", nil, errors.Wrapf(err, "error getting camera %v for slam service", primarySensorName)
+	}
+	cams = append(cams, cam)
+	return primarySensorName, cams, nil
 }
 
 // Position forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -436,14 +437,14 @@ func New(
 		return nil, rdkutils.NewUnexpectedTypeError(svcConfig, config.ConvertedAttributes)
 	}
 
-	primarySensorName, cams, err := configureCameras(svcConfig, deps, logger)
+	primarySensorName, cams, err := configureCameras(svcConfig, deps)
 	if err != nil {
 		return nil, errors.Wrap(err, "configuring camera error")
 	}
 
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
 	if subAlgo != Dim2d {
-		return nil, errors.Errorf("%v does not have a subAlgo %v",
+		return nil, errors.Errorf("%v does not have a 'mode: %v'",
 			string(config.Model.Name), svcConfig.ConfigParams["mode"])
 	}
 
@@ -459,6 +460,11 @@ func New(
 		defaultMapRateSec,
 		logger,
 	)
+	if useLiveData {
+		logger.Debug("Running in live mode")
+	} else {
+		logger.Debug("Running in offline mode")
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -726,13 +732,12 @@ func (cartoSvc *cartographerService) getAndSaveData(ctx context.Context, cams []
 	}
 
 	fileType := ".pcd"
-	filename := createTimestampFilenames(cartoSvc.dataDirectory, cartoSvc.primarySensorName, fileType)
+	filename := createTimestampFilename(cartoSvc.dataDirectory, cartoSvc.primarySensorName, fileType)
 	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
 }
 
 // Creates a file for camera data with the specified sensor name and timestamp written into the filename.
-// For RGBD cameras, two filenames are created with the same timestamp in different directories.
-func createTimestampFilenames(dataDirectory, primarySensorName, fileType string) string {
+func createTimestampFilename(dataDirectory, primarySensorName, fileType string) string {
 	timeStamp := time.Now()
 	dataDir := filepath.Join(dataDirectory, "data")
 	return dataprocess.CreateTimestampFilename(dataDir, primarySensorName, fileType, timeStamp)

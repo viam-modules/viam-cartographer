@@ -101,7 +101,7 @@ func setupDeps(attr *slamConfig.AttrConfig) registry.Dependencies {
 				return nil, transform.NewNoIntrinsicsError("")
 			}
 			deps[camera.Named(sensor)] = cam
-		case "good_camera":
+		case "invalid_sensor":
 			cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 				return nil, errors.New("camera not lidar")
 			}
@@ -209,6 +209,25 @@ func TestGeneralNew(t *testing.T) {
 		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 	})
 
+	t.Run("New slam service with more than one camera", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		test.That(t, err, test.ShouldBeNil)
+		attrCfg := &slamConfig.AttrConfig{
+			Sensors:       []string{"lidar", "one-too-many"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: name,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_false,
+		}
+
+		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("configuring camera error: 'sensors' must contain only one lidar camera, but is 'sensors: [lidar, one-too-many]'"))
+
+		grpcServer.Stop()
+		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
+	})
+
 	t.Run("New slam service with bad camera", func(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"gibberish"},
@@ -265,7 +284,7 @@ func TestCartographerNew(t *testing.T) {
 
 	t.Run("New cartographer service with camera without NextPointCloud implementation", func(t *testing.T) {
 		attrCfg := &slamConfig.AttrConfig{
-			Sensors:       []string{"good_camera"},
+			Sensors:       []string{"invalid_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: name,
 			DataRateMsec:  validDataRateMS,
