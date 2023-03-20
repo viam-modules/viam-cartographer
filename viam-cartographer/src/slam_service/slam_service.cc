@@ -598,10 +598,10 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             // Get bytes associated with pixel
             int pixel_index = pixel_x + pixel_y * width;
             int byte_index = pixel_index * bytesPerPixel;
-            std::vector<unsigned char> pixel_data = {data + byte_index,
-                                                  data + byte_index + bytesPerPixel};
+            std::vector<unsigned char> pixel_data = {
+                data + byte_index, data + byte_index + bytesPerPixel};
 
-            // Skip pixel if it contains empty data (default color) 
+            // Skip pixel if it contains empty data (default color)
             if (checkIfEmptyPixel(pixel_data)) continue;
 
             // Determine probability based on color pixel and skip if 0
@@ -611,9 +611,8 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             // Convert pixel location to pointcloud point in meters
             float x_pos = (pixel_x - painted_slices->origin.x()) * resolution;
             // Y is inverted to match output from getPosition()
-            float y_pos = -(pixel_y - painted_slices->origin.y()) *
-                          resolution;
-            float z_pos = 0;           // Z is 0 in 2D SLAM
+            float y_pos = -(pixel_y - painted_slices->origin.y()) * resolution;
+            float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
             Eigen::Vector3d map_point(x_pos, y_pos, z_pos);

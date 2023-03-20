@@ -70,7 +70,7 @@ static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // Number of bytes in a pixel
 const int bytesPerPixel = 4;
 // Color channel (RGBA) used to determine probability of point
-const int probabilityColorChannel = 2; // Green
+const int probabilityColorChannel = 2;  // Green
 
 static const std::string errorNoSubmaps = "No submaps to paint";
 
@@ -80,13 +80,14 @@ using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 
-// For a given color channel (probabilityColorChannel) convert the scale from 
-// the given 102-255 range to 100-0. This is an initial solution for extracting 
+// For a given color channel (probabilityColorChannel) convert the scale from
+// the given 102-255 range to 100-0. This is an initial solution for extracting
 // probability information from cartographer
 int calculateViamProbabilityFromColorChannel(
     std::vector<unsigned char> pixel_data);
 
-// Check if pixel is not in our map and is the default color (i.e. RGB = [102,102,102])
+// Check if pixel is not in our map and is the default color (i.e. RGB =
+// [102,102,102])
 bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data);
 
 class SLAMServiceImpl final : public SLAMService::Service {
@@ -219,9 +220,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
-    // resolution defines the area in meters that each pixel represent. This 
-    // is used by drawing the jpeg map as well as the resolution of the outputted 
-    // PCD
+    // resolution defines the area in meters that each pixel represent. This
+    // is used by drawing the jpeg map as well as the resolution of the
+    // outputted PCD
     const double resolution = 0.05;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
