@@ -18,17 +18,9 @@ import (
 	goutils "go.viam.com/utils"
 )
 
-var cameraValidationMaxTimeoutSec = 30 // reconfigurable for testing
-
 const (
-	cameraValidationIntervalSec = 1.
-	opTimeoutErrorMessage       = "bad scan: OpTimeout"
+	opTimeoutErrorMessage = "bad scan: OpTimeout"
 )
-
-// SetCameraValidationMaxTimeoutSecForTesting sets cameraValidationMaxTimeoutSec for testing.
-func SetCameraValidationMaxTimeoutSecForTesting(val int) {
-	cameraValidationMaxTimeoutSec = val
-}
 
 // NewLidar returns a new lidar.Lidar for the 2D cartographer mode.
 func NewLidar(
@@ -78,6 +70,8 @@ func TestLidar(
 	ctx context.Context,
 	lidar lidar.Lidar,
 	dataDirectory string,
+	sensorTestMaxTimeoutSec int,
+	sensorTestIntervalSec int,
 	logger golog.Logger,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::TestLidar")
@@ -97,10 +91,10 @@ func TestLidar(
 		}
 
 		// This takes about 5 seconds, so the timeout should be sufficient.
-		if time.Since(startTime) >= time.Duration(cameraValidationMaxTimeoutSec)*time.Second {
+		if time.Since(startTime) >= time.Duration(sensorTestMaxTimeoutSec)*time.Second {
 			return errors.Wrap(err, "error getting data from sensor")
 		}
-		if !goutils.SelectContextOrWait(ctx, cameraValidationIntervalSec*time.Second) {
+		if !goutils.SelectContextOrWait(ctx, time.Duration(sensorTestIntervalSec)*time.Second) {
 			return ctx.Err()
 		}
 	}

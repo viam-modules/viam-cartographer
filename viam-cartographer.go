@@ -41,19 +41,19 @@ import (
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 )
 
-var (
-	// Model is the model name of cartographer.
-	Model             = resource.NewModel("viam", "slam", "cartographer")
-	dialMaxTimeoutSec = 30 // reconfigurable for testing
-)
+// Model is the model name of cartographer.
+var Model = resource.NewModel("viam", "slam", "cartographer")
 
 const (
-	// DefaultExecutableName contains the name of the cartographer grpc server executable.
-	DefaultExecutableName  = "carto_grpc_server"
-	defaultDataRateMsec    = 200
-	defaultMapRateSec      = 60
-	parsePortMaxTimeoutSec = 60
-	localhost0             = "localhost:0"
+	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
+	DefaultExecutableName          = "carto_grpc_server"
+	defaultDataRateMsec            = 200
+	defaultMapRateSec              = 60
+	defaultDialMaxTimeoutSec       = 30
+	defaultSensorTestMaxTimeoutSec = 30
+	defaultSensorTestIntervalSec   = 30
+	parsePortMaxTimeoutSec         = 60
+	localhost0                     = "localhost:0"
 )
 
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
@@ -62,15 +62,20 @@ type SubAlgo string
 // Dim2d runs cartographer with a 2D LIDAR only.
 const Dim2d SubAlgo = "2d"
 
-// SetDialMaxTimeoutSecForTesting sets dialMaxTimeoutSec for testing.
-func SetDialMaxTimeoutSecForTesting(val int) {
-	dialMaxTimeoutSec = val
-}
-
 func init() {
 	registry.RegisterService(slam.Subtype, Model, registry.Service{
 		Constructor: func(ctx context.Context, deps registry.Dependencies, config config.Service, logger golog.Logger) (interface{}, error) {
-			return New(ctx, deps, config, logger, false, DefaultExecutableName)
+			return New(
+				ctx,
+				deps,
+				config,
+				logger,
+				false,
+				DefaultExecutableName,
+				defaultSensorTestMaxTimeoutSec,
+				defaultSensorTestIntervalSec,
+				defaultDialMaxTimeoutSec,
+			)
 		},
 	})
 
@@ -96,6 +101,9 @@ func New(
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 	executableName string,
+	sensorTestMaxTimeoutSec int,
+	sensorTestIntervalSec int,
+	dialMaxTimeoutSec int,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -164,7 +172,8 @@ func New(
 	}()
 
 	if cartoSvc.useLiveData {
-		if err := dim2d.TestLidar(cancelCtx, lidar, cartoSvc.dataDirectory, cartoSvc.logger); err != nil {
+		if err := dim2d.TestLidar(cancelCtx, lidar, cartoSvc.dataDirectory,
+			sensorTestMaxTimeoutSec, sensorTestIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "runtime slam service error")
 		}
 		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)

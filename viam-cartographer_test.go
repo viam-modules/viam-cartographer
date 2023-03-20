@@ -115,7 +115,7 @@ func TestNew(t *testing.T) {
 			errors.New("runtime slam service error: error getting data from sensor: camera not lidar"))
 	})
 
-	closeOutSLAMService(t, name)
+	clearDirectory(t, name)
 }
 
 func TestCartographerDataProcess(t *testing.T) {
@@ -176,7 +176,7 @@ func TestCartographerDataProcess(t *testing.T) {
 
 	test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 
-	closeOutSLAMService(t, name)
+	clearDirectory(t, name)
 }
 
 func TestEndpointFailures(t *testing.T) {
@@ -239,7 +239,7 @@ func TestEndpointFailures(t *testing.T) {
 	grpcServer.Stop()
 	test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 
-	closeOutSLAMService(t, name)
+	clearDirectory(t, name)
 }
 
 func TestSLAMProcessSuccess(t *testing.T) {
@@ -329,7 +329,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 	})
 
-	closeOutSLAMService(t, name)
+	clearDirectory(t, name)
 }
 
 func TestSLAMProcessFail(t *testing.T) {
@@ -354,5 +354,5 @@ func TestSLAMProcessFail(t *testing.T) {
 	})
 
 	grpcServer.Stop()
-	closeOutSLAMService(t, name)
+	clearDirectory(t, name)
 }

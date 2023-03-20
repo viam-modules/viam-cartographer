@@ -28,14 +28,16 @@ import (
 	"google.golang.org/grpc"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 )
 
 const (
-	testExecutableName         = "true"
+	testExecutableName         = "true" // the program "true", not the boolean value
 	validDataRateMsec          = 200
 	numCartographerPointClouds = 15
 	dataBufferSize             = 4
+	sensorTestMaxTimeoutSec    = 1
+	sensorTestIntervalSec      = 1
+	dialMaxTimeoutSec          = 1
 )
 
 var (
@@ -45,13 +47,11 @@ var (
 	_false                                    = false
 )
 
-func closeOutSLAMService(t *testing.T, name string) {
+func clearDirectory(t *testing.T, path string) {
 	t.Helper()
 
-	if name != "" {
-		err := slamTesthelper.ResetFolder(name)
-		test.That(t, err, test.ShouldBeNil)
-	}
+	err := slamTesthelper.ResetFolder(path)
+	test.That(t, err, test.ShouldBeNil)
 }
 
 func setupTestGRPCServer(tb testing.TB) (*grpc.Server, int) {
@@ -171,10 +171,17 @@ func createSLAMService(
 	}
 	test.That(t, sensorDeps, test.ShouldResemble, attrCfg.Sensors)
 
-	dim2d.SetCameraValidationMaxTimeoutSecForTesting(1)
-	viamcartographer.SetDialMaxTimeoutSecForTesting(1)
-
-	svc, err := viamcartographer.New(ctx, deps, cfgService, logger, bufferSLAMProcessLogs, executableName)
+	svc, err := viamcartographer.New(
+		ctx,
+		deps,
+		cfgService,
+		logger,
+		bufferSLAMProcessLogs,
+		executableName,
+		sensorTestMaxTimeoutSec,
+		sensorTestIntervalSec,
+		dialMaxTimeoutSec,
+	)
 
 	if success {
 		if err != nil {
