@@ -80,9 +80,9 @@ using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 
-// For a given color channel convert the scale from the given 102-255 range to
-// 100-0. This is an initial solution for extracting probability information
-// from cartographer
+// For a given color channel (probabilityColorChannel) convert the scale from 
+// the given 102-255 range to 100-0. This is an initial solution for extracting 
+// probability information from cartographer
 int calculateViamProbabilityFromColorChannel(
     std::vector<unsigned char> pixel_data);
 
