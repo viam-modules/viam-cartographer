@@ -154,7 +154,6 @@ func createSLAMService(
 	attrCfg *slamConfig.AttrConfig,
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
-	success bool,
 	executableName string,
 ) (slam.Service, error) {
 	t.Helper()
@@ -182,15 +181,11 @@ func createSLAMService(
 		sensorTestIntervalSec,
 		dialMaxTimeoutSec,
 	)
-
-	if success {
-		if err != nil {
-			return nil, err
-		}
-		test.That(t, svc, test.ShouldNotBeNil)
-		return svc, nil
+	if err != nil {
+		test.That(t, svc, test.ShouldBeNil)
+		return nil, err
 	}
 
-	test.That(t, svc, test.ShouldBeNil)
-	return nil, err
+	test.That(t, svc, test.ShouldNotBeNil)
+	return svc, nil
 }

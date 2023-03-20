@@ -113,7 +113,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Release point cloud for service validation
 	cartographerIntLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err := createSLAMService(t, attrCfg, logger, true, true, viamcartographer.DefaultExecutableName)
+	svc, err := createSLAMService(t, attrCfg, logger, true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
@@ -187,7 +187,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	}
 
 	// Create slam service using a real cartographer binary
-	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, true, viamcartographer.DefaultExecutableName)
+	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in mapping mode
@@ -255,7 +255,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Release point cloud for service validation
 	cartographerIntLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, true, viamcartographer.DefaultExecutableName)
+	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in localization mode
@@ -325,7 +325,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Release point cloud for service validation
 	cartographerIntLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, true, viamcartographer.DefaultExecutableName)
+	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in updating mode

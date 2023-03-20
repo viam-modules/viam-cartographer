@@ -42,7 +42,7 @@ func TestNew(t *testing.T) {
 			UseLiveData:   &_false,
 		}
 
-		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+		svc, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
@@ -60,7 +60,7 @@ func TestNew(t *testing.T) {
 			UseLiveData:   &_false,
 		}
 
-		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+		svc, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring lidar camera error: 'sensors' must contain only one lidar camera, but is 'sensors: [lidar, one-too-many]'"))
 
@@ -77,7 +77,7 @@ func TestNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		_, err := createSLAMService(t, attrCfg, logger, false, false, testExecutableName)
+		_, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring lidar camera error: error getting lidar camera "+
 				"gibberish for slam service: \"gibberish\" missing from dependencies"))
@@ -94,7 +94,7 @@ func TestNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+		svc, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
@@ -110,7 +110,7 @@ func TestNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		_, err = createSLAMService(t, attrCfg, logger, false, false, testExecutableName)
+		_, err = createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("runtime slam service error: error getting data from sensor: camera not lidar"))
 	})
@@ -118,7 +118,7 @@ func TestNew(t *testing.T) {
 	clearDirectory(t, name)
 }
 
-func TestCartographerDataProcess(t *testing.T) {
+func TestDataProcess(t *testing.T) {
 	logger, obs := golog.NewObservedTestLogger(t)
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
@@ -133,8 +133,7 @@ func TestCartographerDataProcess(t *testing.T) {
 		UseLiveData:   &_true,
 	}
 
-	// Create slam service
-	svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+	svc, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer.Stop()
@@ -142,7 +141,7 @@ func TestCartographerDataProcess(t *testing.T) {
 
 	slamSvc := svc.(testhelper.Service)
 
-	t.Run("Cartographer Data Process with lidar in slam mode 2d", func(t *testing.T) {
+	t.Run("Test data process with lidar in slam mode 2d", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
 		lidar, err := lidar.New(context.Background(), setupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
@@ -158,7 +157,7 @@ func TestCartographerDataProcess(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run("Cartographer Data Process with lidar that errors during call to NextPointCloud", func(t *testing.T) {
+	t.Run("Test data process with invalid sensor that errors during call to NextPointCloud", func(t *testing.T) {
 		sensors := []string{"invalid_sensor"}
 		lidar, err := lidar.New(context.Background(), setupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
@@ -196,7 +195,7 @@ func TestEndpointFailures(t *testing.T) {
 	}
 
 	// Create slam service
-	svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+	svc, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	p, err := svc.Position(context.Background(), "hi", map[string]interface{}{})
@@ -242,12 +241,12 @@ func TestEndpointFailures(t *testing.T) {
 	clearDirectory(t, name)
 }
 
-func TestSLAMProcessSuccess(t *testing.T) {
+func TestSLAMProcess(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	t.Run("Test online SLAM process with default parameters", func(t *testing.T) {
+	t.Run("Successfully start live SLAM process with default parameters", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
@@ -258,7 +257,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		}
 
 		// Create slam service
-		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+		svc, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		slamSvc := svc.(testhelper.Service)
@@ -288,7 +287,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 	})
 
-	t.Run("Test offline SLAM process with default parameters", func(t *testing.T) {
+	t.Run("Successfully start offline SLAM process with default parameters", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{},
@@ -299,7 +298,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		}
 
 		// Create slam service
-		svc, err := createSLAMService(t, attrCfg, logger, false, true, testExecutableName)
+		svc, err := createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
 		slamSvc := svc.(testhelper.Service)
@@ -329,30 +328,21 @@ func TestSLAMProcessSuccess(t *testing.T) {
 		test.That(t, utils.TryClose(context.Background(), svc), test.ShouldBeNil)
 	})
 
-	clearDirectory(t, name)
-}
-
-func TestSLAMProcessFail(t *testing.T) {
-	logger := golog.NewTestLogger(t)
-	name, err := slamTesthelper.CreateTempFolderArchitecture(logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	grpcServer, port := setupTestGRPCServer(t)
-	attrCfg := &slamConfig.AttrConfig{
-		Sensors:       []string{"good_lidar"},
-		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
-		DataDirectory: name,
-		MapRateSec:    &validMapRateMsec,
-		DataRateMsec:  validDataRateMsec,
-		Port:          "localhost:" + strconv.Itoa(port),
-		UseLiveData:   &_true,
-	}
-
-	t.Run("Run SLAM process that errors out due to invalid binary location", func(t *testing.T) {
-		_, err := createSLAMService(t, attrCfg, logger, false, true, "hokus_pokus_does_not_exist_filename")
+	t.Run("Unsuccessfully start SLAM process that errors out due to invalid binary location", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		attrCfg := &slamConfig.AttrConfig{
+			Sensors:       []string{"good_lidar"},
+			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
+			DataDirectory: name,
+			MapRateSec:    &validMapRateMsec,
+			DataRateMsec:  validDataRateMsec,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_true,
+		}
+		_, err := createSLAMService(t, attrCfg, logger, false, "hokus_pokus_does_not_exist_filename")
 		test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "executable file not found in $PATH")
+		grpcServer.Stop()
 	})
 
-	grpcServer.Stop()
 	clearDirectory(t, name)
 }

@@ -135,7 +135,7 @@ func New(
 		return nil, err
 	}
 
-	// Set up sensors & start data process for Dim2d cartographer sub algorithm.
+	// Get the lidar for the Dim2D cartographer sub algorithm
 	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig, logger)
 	if err != nil {
 		return nil, err
