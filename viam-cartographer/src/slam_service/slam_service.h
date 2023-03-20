@@ -70,7 +70,11 @@ static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // Number of bytes in a pixel
 const int bytesPerPixel = 4;
 // Color channel (RGBA) used to determine probability of point
-const int probabilityColorChannel = 2;  // Green
+// - 0 is the R channel
+// - 1 is the B channel
+// - 2 is the G channel
+// - 3 is the A channel
+const int probabilityColorChannel = 2;
 
 static const std::string errorNoSubmaps = "No submaps to paint";
 
@@ -221,8 +225,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
    private:
     // resolution defines the area in meters that each pixel represent. This
-    // is used by drawing the jpeg map as well as the resolution of the
-    // outputted PCD
+    // is used to draw the jpeg map and in so doing defines the resolution of
+    // the outputted PCD
     const double resolution = 0.05;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
