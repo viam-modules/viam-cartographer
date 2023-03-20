@@ -69,7 +69,8 @@ static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 
 // Number of bytes in a pixel
 const int bytesPerPixel = 4;
-const int probabilityColorChannel = 2;
+// Color channel (RGBA) used to determine probability of point
+const int probabilityColorChannel = 2; // Green
 
 static const std::string errorNoSubmaps = "No submaps to paint";
 
@@ -85,8 +86,7 @@ const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 int calculateViamProbabilityFromColorChannel(
     std::vector<unsigned char> pixel_data);
 
-// Check if pixel is not in our map(black/past walls) this check represents
-// [102,102,102]
+// Check if pixel is not in our map and is the default color (i.e. RGB = [102,102,102])
 bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data);
 
 class SLAMServiceImpl final : public SLAMService::Service {
@@ -219,8 +219,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
-    // kPixelSize defines the pixel size for drawing the jpeg map
-    const double resolution = 1;
+    // resolution defines the area in meters that each pixel represent. This 
+    // is used by drawing the jpeg map as well as the resolution of the outputted 
+    // PCD
+    const double resolution = 0.05;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 

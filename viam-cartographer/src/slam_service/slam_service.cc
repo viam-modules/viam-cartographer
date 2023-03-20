@@ -595,13 +595,13 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     std::string data_buffer;
     for (int pixel_y = 0; pixel_y < height; pixel_y++) {
         for (int pixel_x = 0; pixel_x < width; pixel_x++) {
-            // Get data
+            // Get bytes associated with pixel
             int pixel_index = pixel_x + pixel_y * width;
             int byte_index = pixel_index * bytesPerPixel;
-            std::vector<unsigned char> pixel_data(byte_index,
-                                                  byte_index + bytesPerPixel);
+            std::vector<unsigned char> pixel_data = {data + byte_index,
+                                                  data + byte_index + bytesPerPixel};
 
-            // Check if valid point
+            // Skip pixel if it contains empty data (default color) 
             if (checkIfEmptyPixel(pixel_data)) continue;
 
             // Determine probability based on color pixel and skip if 0
@@ -612,7 +612,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             float x_pos = (pixel_x - painted_slices->origin.x()) * resolution;
             // Y is inverted to match output from getPosition()
             float y_pos = -(pixel_y - painted_slices->origin.y()) *
-                          resolution;  // is this the flip???
+                          resolution;
             float z_pos = 0;           // Z is 0 in 2D SLAM
 
             // Add point to buffer
