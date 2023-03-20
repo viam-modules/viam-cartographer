@@ -64,9 +64,9 @@ func getLidar(
 	return lidar.New(ctx, deps, svcConfig.Sensors, lidar2DIndex)
 }
 
-// TestLidar makes sure that the provided sensor is actually a lidar and can
+// ValidateLidar makes sure that the provided sensor is actually a lidar and can
 // return pointclouds.
-func TestLidar(
+func ValidateLidar(
 	ctx context.Context,
 	lidar lidar.Lidar,
 	dataDirectory string,
@@ -74,7 +74,7 @@ func TestLidar(
 	sensorTestIntervalSec int,
 	logger golog.Logger,
 ) error {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::TestLidar")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateLidar")
 	defer span.End()
 
 	var err error

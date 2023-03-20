@@ -172,7 +172,7 @@ func New(
 	}()
 
 	if cartoSvc.useLiveData {
-		if err := dim2d.TestLidar(cancelCtx, lidar, cartoSvc.dataDirectory,
+		if err := dim2d.ValidateLidar(cancelCtx, lidar, cartoSvc.dataDirectory,
 			sensorTestMaxTimeoutSec, sensorTestIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "runtime slam service error")
 		}
