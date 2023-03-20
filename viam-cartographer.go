@@ -180,7 +180,8 @@ func configureCameras(
 		return "", nil, nil
 	}
 	if len(svcConfig.Sensors) != 1 {
-		return "", nil, errors.Errorf("'sensors' must contain only one lidar camera, but is 'sensors: [%v]'", strings.Join(svcConfig.Sensors, ", "))
+		return "", nil, errors.Errorf("'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
+			strings.Join(svcConfig.Sensors, ", "))
 	}
 	cams := make([]camera.Camera, 0, len(svcConfig.Sensors))
 	// The first camera is expected to be LIDAR.
