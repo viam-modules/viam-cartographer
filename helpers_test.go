@@ -1,6 +1,8 @@
 // Package viamcartographer_test tests the functions that require injected components (such as robot and camera)
 // in order to be run. It utilizes the internal package located in testhelper.go to access
-// certain exported functions which we do not want to make available to the user.
+// certain exported functions which we do not want to make available to the user. It also runs integration tests
+// that test the interaction with the core C++ viam-cartographer code and the Golang implementation of the
+// cartographer slam service.
 package viamcartographer_test
 
 import (
@@ -21,15 +23,15 @@ import (
 
 const (
 	testExecutableName = "true" // the program "true", not the boolean value
-	validDataRateMsec  = 200
+	dataRateMsec       = 200
 	dataBufferSize     = 4
 	dialMaxTimeoutSec  = 1
 )
 
 var (
-	validMapRateMsec = 200
-	_true            = true
-	_false           = false
+	mapRateMsec = 200
+	_true       = true
+	_false      = false
 )
 
 func setupTestGRPCServer(tb testing.TB) (*grpc.Server, int) {

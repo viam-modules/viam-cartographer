@@ -1,5 +1,5 @@
-// Package viamcartographer implements simultaneous localization and mapping
-// This is an Experimental package
+// Package viamcartographer implements simultaneous localization and mapping.
+// This is an Experimental package.
 package viamcartographer
 
 import (
@@ -143,7 +143,7 @@ func New(
 
 	cancelCtx, cancelFunc := context.WithCancel(ctx)
 
-	// SLAM Service Object
+	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
 		primarySensorName:     lidar.Name,
 		executableName:        executableName,
@@ -174,7 +174,7 @@ func New(
 	if cartoSvc.useLiveData {
 		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
 			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
-			return nil, errors.Wrap(err, "runtime slam service error")
+			return nil, errors.Wrap(err, "getting and saving data failed")
 		}
 		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
 		logger.Debug("Running in live mode")
@@ -489,7 +489,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 				cartoSvc.activeBackgroundWorkers.Add(1)
 				if err := cancelCtx.Err(); err != nil {
 					if !errors.Is(err, context.Canceled) {
-						cartoSvc.logger.Errorw("unexpected error in SLAM service", "error", err)
+						cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
 					}
 					cartoSvc.activeBackgroundWorkers.Done()
 					return

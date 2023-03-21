@@ -1,5 +1,6 @@
 // Package testhelper implements a slam service definition with additional exported functions for
-// the purpose of testing
+// the purpose of testing. It does also contain helper variables and functions that are
+// used across all tests in the viam-cartographer repo.
 package testhelper
 
 import (
@@ -39,7 +40,7 @@ const (
 )
 
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
-// channel for the cartographer integration tests.
+// channel for the integration tests.
 var IntegrationLidarReleasePointCloudChan = make(chan int, 1)
 
 // Service in the internal package includes additional exported functions relating to the data and

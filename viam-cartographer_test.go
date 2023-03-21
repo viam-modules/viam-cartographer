@@ -1,6 +1,8 @@
 // Package viamcartographer_test tests the functions that require injected components (such as robot and camera)
 // in order to be run. It utilizes the internal package located in testhelper.go to access
-// certain exported functions which we do not want to make available to the user.
+// certain exported functions which we do not want to make available to the user. It also runs integration tests
+// that test the interaction with the core C++ viam-cartographer code and the Golang implementation of the
+// cartographer slam service.
 package viamcartographer_test
 
 import (
@@ -74,7 +76,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
-			DataRateMsec:  validDataRateMsec,
+			DataRateMsec:  dataRateMsec,
 			UseLiveData:   &_true,
 		}
 
@@ -90,7 +92,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
-			DataRateMsec:  validDataRateMsec,
+			DataRateMsec:  dataRateMsec,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_true,
 		}
@@ -108,13 +110,13 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"invalid_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
-			DataRateMsec:  validDataRateMsec,
+			DataRateMsec:  dataRateMsec,
 			UseLiveData:   &_true,
 		}
 
 		_, err = createSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("runtime slam service error: error getting data from sensor: invalid sensor"))
+			errors.New("getting and saving data failed: error getting data from sensor: invalid sensor"))
 	})
 
 	testhelper.ClearDirectory(t, dataDir)
@@ -130,7 +132,7 @@ func TestDataProcess(t *testing.T) {
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d"},
 		DataDirectory: dataDir,
-		DataRateMsec:  validDataRateMsec,
+		DataRateMsec:  dataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}
@@ -191,8 +193,8 @@ func TestEndpointFailures(t *testing.T) {
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDir,
-		MapRateSec:    &validMapRateMsec,
-		DataRateMsec:  validDataRateMsec,
+		MapRateSec:    &mapRateMsec,
+		DataRateMsec:  dataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}
@@ -335,8 +337,8 @@ func TestSLAMProcess(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
-			MapRateSec:    &validMapRateMsec,
-			DataRateMsec:  validDataRateMsec,
+			MapRateSec:    &mapRateMsec,
+			DataRateMsec:  dataRateMsec,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_true,
 		}
