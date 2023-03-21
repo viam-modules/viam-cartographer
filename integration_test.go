@@ -98,7 +98,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 
 	t.Log("\n=== Testing online mode ===\n")
 
-	mapRate := 9999
+	mapRateSec := 9999
 	deleteProcessedData := false
 	useLiveData := true
 
@@ -109,7 +109,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 			"v":     "1",
 			"debug": "true",
 		},
-		MapRateSec:          &mapRate,
+		MapRateSec:          &mapRateSec,
 		DataDirectory:       dataDir,
 		DeleteProcessedData: &deleteProcessedData,
 		UseLiveData:         &useLiveData,
@@ -118,7 +118,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Release point cloud for service validation
 	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err := createSLAMService(t, attrCfg, logger, true, viamcartographer.DefaultExecutableName)
+	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
@@ -177,7 +177,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	t.Log("\n=== Testing offline mode ===\n")
 
 	useLiveData = false
-	mapRate = 1
+	mapRateSec = 1
 
 	attrCfg = &slamConfig.AttrConfig{
 		Sensors: []string{},
@@ -185,14 +185,14 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 			"mode": reflect.ValueOf(mode).String(),
 			"v":    "1",
 		},
-		MapRateSec:          &mapRate,
+		MapRateSec:          &mapRateSec,
 		DataDirectory:       dataDir,
 		DeleteProcessedData: &deleteProcessedData,
 		UseLiveData:         &useLiveData,
 	}
 
 	// Create slam service using a real cartographer binary
-	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
+	svc, err = testhelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in mapping mode
@@ -241,7 +241,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Test online mode using the map generated in the offline test
 	t.Log("\n=== Testing online localization mode ===\n")
 
-	mapRate = 0
+	mapRateSec = 0
 	deleteProcessedData = true
 	useLiveData = true
 
@@ -251,7 +251,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 			"mode": reflect.ValueOf(mode).String(),
 			"v":    "1",
 		},
-		MapRateSec:          &mapRate,
+		MapRateSec:          &mapRateSec,
 		DataDirectory:       dataDir,
 		DeleteProcessedData: &deleteProcessedData,
 		UseLiveData:         &useLiveData,
@@ -260,7 +260,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Release point cloud for service validation
 	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
+	svc, err = testhelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in localization mode
@@ -314,7 +314,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Test online mode using the map generated in the offline test
 	t.Log("\n=== Testing online mode with saved map ===\n")
 
-	mapRate = 1
+	mapRateSec = 1
 
 	attrCfg = &slamConfig.AttrConfig{
 		Sensors: []string{"cartographer_int_lidar"},
@@ -322,7 +322,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 			"mode": reflect.ValueOf(mode).String(),
 			"v":    "1",
 		},
-		MapRateSec:    &mapRate,
+		MapRateSec:    &mapRateSec,
 		DataDirectory: dataDir,
 		UseLiveData:   &useLiveData,
 	}
@@ -330,7 +330,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// Release point cloud for service validation
 	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err = createSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
+	svc, err = testhelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in updating mode
