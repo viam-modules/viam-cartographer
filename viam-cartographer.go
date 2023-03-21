@@ -46,14 +46,14 @@ var Model = resource.NewModel("viam", "slam", "cartographer")
 
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
-	DefaultExecutableName          = "carto_grpc_server"
-	defaultDataRateMsec            = 200
-	defaultMapRateSec              = 60
-	defaultDialMaxTimeoutSec       = 30
-	defaultSensorTestMaxTimeoutSec = 30
-	defaultSensorTestIntervalSec   = 30
-	parsePortMaxTimeoutSec         = 60
-	localhost0                     = "localhost:0"
+	DefaultExecutableName                = "carto_grpc_server"
+	defaultDataRateMsec                  = 200
+	defaultMapRateSec                    = 60
+	defaultDialMaxTimeoutSec             = 30
+	defaultSensorValidationMaxTimeoutSec = 30
+	defaultSensorValidationIntervalSec   = 30
+	parsePortMaxTimeoutSec               = 60
+	localhost0                           = "localhost:0"
 )
 
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
@@ -72,8 +72,8 @@ func init() {
 				logger,
 				false,
 				DefaultExecutableName,
-				defaultSensorTestMaxTimeoutSec,
-				defaultSensorTestIntervalSec,
+				defaultSensorValidationMaxTimeoutSec,
+				defaultSensorValidationIntervalSec,
 				defaultDialMaxTimeoutSec,
 			)
 		},
@@ -101,8 +101,8 @@ func New(
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 	executableName string,
-	sensorTestMaxTimeoutSec int,
-	sensorTestIntervalSec int,
+	sensorValidationMaxTimeoutSec int,
+	sensorValidationIntervalSec int,
 	dialMaxTimeoutSec int,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
@@ -136,7 +136,7 @@ func New(
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig, logger)
+	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig.Sensors, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -172,8 +172,8 @@ func New(
 	}()
 
 	if cartoSvc.useLiveData {
-		if err := dim2d.ValidateLidar(cancelCtx, lidar, cartoSvc.dataDirectory,
-			sensorTestMaxTimeoutSec, sensorTestIntervalSec, cartoSvc.logger); err != nil {
+		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
+			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "runtime slam service error")
 		}
 		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)

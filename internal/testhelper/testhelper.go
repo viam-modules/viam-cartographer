@@ -28,6 +28,14 @@ const (
 	// NumPointClouds is the number of pointclouds saved in artifact
 	// for the cartographer integration tests.
 	NumPointClouds = 15
+	// SensorValidationMaxTimeoutSec is used in the ValidateGetAndSaveData
+	// function to ensure that the sensor in the GetAndSaveData function
+	// returns data within an acceptable time.
+	SensorValidationMaxTimeoutSec = 1
+	// SensorValidationIntervalSec is used in the ValidateGetAndSaveData
+	// function for the while loop that attempts to grab data from the
+	// sensor that is used in the GetAndSaveData function.
+	SensorValidationIntervalSec = 1
 )
 
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
@@ -87,10 +95,10 @@ func getGoodLidar() *inject.Camera {
 func getInvalidSensor() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, errors.New("camera not lidar")
+		return nil, errors.New("invalid sensor")
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
+		return nil, errors.New("invalid sensor")
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")

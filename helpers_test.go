@@ -20,12 +20,10 @@ import (
 )
 
 const (
-	testExecutableName      = "true" // the program "true", not the boolean value
-	validDataRateMsec       = 200
-	dataBufferSize          = 4
-	sensorTestMaxTimeoutSec = 1
-	sensorTestIntervalSec   = 1
-	dialMaxTimeoutSec       = 1
+	testExecutableName = "true" // the program "true", not the boolean value
+	validDataRateMsec  = 200
+	dataBufferSize     = 4
+	dialMaxTimeoutSec  = 1
 )
 
 var (
@@ -71,8 +69,8 @@ func createSLAMService(
 		logger,
 		bufferSLAMProcessLogs,
 		executableName,
-		sensorTestMaxTimeoutSec,
-		sensorTestIntervalSec,
+		testhelper.SensorValidationMaxTimeoutSec,
+		testhelper.SensorValidationIntervalSec,
 		dialMaxTimeoutSec,
 	)
 	if err != nil {

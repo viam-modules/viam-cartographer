@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/registry"
-	slamConfig "go.viam.com/slam/config"
 	"go.viam.com/slam/dataprocess"
 	"go.viam.com/slam/sensors/lidar"
 	goutils "go.viam.com/utils"
@@ -26,13 +25,13 @@ const (
 func NewLidar(
 	ctx context.Context,
 	deps registry.Dependencies,
-	svcConfig *slamConfig.AttrConfig,
+	sensors []string,
 	logger golog.Logger,
 ) (lidar.Lidar, error) {
 	ctx, span := trace.StartSpan(ctx, "dim2d::NewLidar")
 	defer span.End()
 
-	lidar, err := getLidar(ctx, svcConfig, deps, logger)
+	lidar, err := getLidar(ctx, sensors, deps, logger)
 	if err != nil {
 		return lidar, errors.Wrap(err, "configuring lidar camera error")
 	}
@@ -44,37 +43,38 @@ func NewLidar(
 // grab the cameras from the robot. We assume there is at most one lidar camera.
 func getLidar(
 	ctx context.Context,
-	svcConfig *slamConfig.AttrConfig,
+	sensors []string,
 	deps registry.Dependencies,
 	logger golog.Logger,
 ) (lidar.Lidar, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::getLidar")
 	defer span.End()
 
-	if len(svcConfig.Sensors) == 0 {
+	// An empty `sensors: []` array is allowed in offline mode.
+	if len(sensors) == 0 {
 		logger.Debug("no sensor provided in 'sensors' config parameter")
 		return lidar.Lidar{}, nil
 	}
 	// If there is a sensor provided in the 'sensors' array, we enforce that only one
 	// sensor has to be provided.
-	if len(svcConfig.Sensors) != 1 {
+	if len(sensors) != 1 {
 		return lidar.Lidar{}, errors.Errorf("'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
-			strings.Join(svcConfig.Sensors, ", "))
+			strings.Join(sensors, ", "))
 	}
-	return lidar.New(ctx, deps, svcConfig.Sensors, lidar2DIndex)
+	return lidar.New(ctx, deps, sensors, lidar2DIndex)
 }
 
-// ValidateLidar makes sure that the provided sensor is actually a lidar and can
-// return pointclouds.
-func ValidateLidar(
+// ValidateGetAndSaveData makes sure that the provided sensor is actually a lidar and can
+// return pointclouds. It also ensures that saving the data to files works as intended.
+func ValidateGetAndSaveData(
 	ctx context.Context,
-	lidar lidar.Lidar,
 	dataDirectory string,
-	sensorTestMaxTimeoutSec int,
-	sensorTestIntervalSec int,
+	lidar lidar.Lidar,
+	sensorValidationMaxTimeoutSec int,
+	sensorValidationIntervalSec int,
 	logger golog.Logger,
 ) error {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateLidar")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateGetAndSaveData")
 	defer span.End()
 
 	var err error
@@ -90,11 +90,13 @@ func ValidateLidar(
 			break
 		}
 
-		// This takes about 5 seconds, so the timeout should be sufficient.
-		if time.Since(startTime) >= time.Duration(sensorTestMaxTimeoutSec)*time.Second {
+		// This takes about 5 seconds in real life, so a default timeout of
+		// defaultSensorValidationMaxTimeoutSec = 30 as it is used for the Constructor in
+		// viam-cartographer.go should be sufficient.
+		if time.Since(startTime) >= time.Duration(sensorValidationMaxTimeoutSec)*time.Second {
 			return errors.Wrap(err, "error getting data from sensor")
 		}
-		if !goutils.SelectContextOrWait(ctx, time.Duration(sensorTestIntervalSec)*time.Second) {
+		if !goutils.SelectContextOrWait(ctx, time.Duration(sensorValidationIntervalSec)*time.Second) {
 			return ctx.Err()
 		}
 	}
