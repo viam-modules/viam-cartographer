@@ -76,7 +76,8 @@ func TestGetAndSaveData(t *testing.T) {
 		test.That(t, actualLidar.Name, test.ShouldEqual, sensors[0])
 		test.That(t, err, test.ShouldBeNil)
 
-		dim2d.GetAndSaveData(ctx, dataDir, actualLidar, logger)
+		_, err = dim2d.GetAndSaveData(ctx, dataDir, actualLidar, logger)
+		test.That(t, err, test.ShouldBeNil)
 
 		files, err := os.ReadDir(dataDir + "/data/")
 		test.That(t, len(files), test.ShouldEqual, 1)
@@ -89,7 +90,9 @@ func TestGetAndSaveData(t *testing.T) {
 	// 	invalidLidar := lidar.Lidar{}
 	// 	test.That(t, invalidLidar.Name, test.ShouldEqual, "")
 
-	// 	GetAndSaveData(ctx, dataDir, invalidLidar, logger)
+	// 	_, err := dim2d.GetAndSaveData(ctx, dataDir, invalidLidar, logger)
+	// 	test.That(t, err, test.ShouldNotBeNil)
+	// 	test.That(t, err, test.ShouldEqual, errors.New("lidar is nil, can not get a pointcloud"))
 
 	// 	files, err := os.ReadDir(dataDir + "/data/")
 	// 	test.That(t, len(files), test.ShouldEqual, 0)
@@ -132,7 +135,7 @@ func TestValidateGetAndSaveData(t *testing.T) {
 	// 	invalidLidar := lidar.Lidar{}
 	// 	test.That(t, invalidLidar.Name, test.ShouldEqual, "")
 
-	// 	err = ValidateGetAndSaveData(ctx,
+	// 	err = dim2d.ValidateGetAndSaveData(ctx,
 	// 		dataDir,
 	// 		invalidLidar,
 	// 		testhelper.SensorValidationMaxTimeoutSec,
