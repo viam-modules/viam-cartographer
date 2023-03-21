@@ -67,6 +67,11 @@ static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // Error log for when no submaps exist
 
+// resolution defines the area in meters that each pixel represent. This
+// is used to draw the jpeg map and in so doing defines the resolution of
+// the outputted PCD
+const double resolution = 0.05;
+
 // Number of bytes in a pixel
 const int bytesPerPixel = 4;
 // Color channel (RGBA) used to determine probability of point
@@ -76,6 +81,7 @@ const int bytesPerPixel = 4;
 // - 3 is the A channel
 const int probabilityColorChannel = 2;
 
+// Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
 
 extern std::atomic<bool> b_continue_session;
@@ -224,10 +230,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
-    // resolution defines the area in meters that each pixel represent. This
-    // is used to draw the jpeg map and in so doing defines the resolution of
-    // the outputted PCD
-    const double resolution = 0.05;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 
