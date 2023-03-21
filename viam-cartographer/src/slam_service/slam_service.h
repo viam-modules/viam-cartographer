@@ -47,18 +47,12 @@ namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
-// This RGB value represents "no input" from a Cario pained map
-static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis
 static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
-// Coeffient to adjust the skip count for the PCD to ensure the file is within
-// grpc limitations. Increase the value if you expect dense feature-rich maps
-static const int samplingFactor = 1;
-// Conversion to number of bytes used in colored PCD encoding
-static const int pixelBytetoPCDByte = 16 / 4;
+
 // Quaternion to rotate axes to the XZ plane
 static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // Static offset quaternion, so orientation matches physical intuition.
@@ -70,7 +64,6 @@ static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // is used to draw the jpeg map and in so doing defines the resolution of
 // the outputted PCD
 const double resolution = 0.05;
-
 // Number of bytes in a pixel
 const int bytesPerPixel = 4;
 // Color channel (RGBA) used to determine probability of point
@@ -79,6 +72,8 @@ const int bytesPerPixel = 4;
 // - 2 is the G channel
 // - 3 is the A channel
 const int probabilityColorChannel = 2;
+// This RGB value represents "no input" from a Cario pained map
+static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
