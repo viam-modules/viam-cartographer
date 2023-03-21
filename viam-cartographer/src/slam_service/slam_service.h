@@ -65,7 +65,6 @@ static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // This will result in rotations occurring within the y axis to match 2D mapping
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
-// Error log for when no submaps exist
 
 // resolution defines the area in meters that each pixel represent. This
 // is used to draw the jpeg map and in so doing defines the resolution of
