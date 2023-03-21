@@ -162,7 +162,7 @@ func New(
 		dev:                   svcConfig.Dev,
 	}
 
-	var success bool
+	success := false
 	defer func() {
 		if !success {
 			if err := cartoSvc.Close(); err != nil {

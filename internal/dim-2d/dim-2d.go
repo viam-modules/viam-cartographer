@@ -31,25 +31,6 @@ func NewLidar(
 	ctx, span := trace.StartSpan(ctx, "dim2d::NewLidar")
 	defer span.End()
 
-	lidar, err := getLidar(ctx, sensors, deps, logger)
-	if err != nil {
-		return lidar, errors.Wrap(err, "configuring lidar camera error")
-	}
-
-	return lidar, nil
-}
-
-// getLidar will check the config to see if any lidar camera is provided. If yes,
-// grab the cameras from the robot. We assume there is at most one lidar camera.
-func getLidar(
-	ctx context.Context,
-	sensors []string,
-	deps registry.Dependencies,
-	logger golog.Logger,
-) (lidar.Lidar, error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::getLidar")
-	defer span.End()
-
 	// An empty `sensors: []` array is allowed in offline mode.
 	if len(sensors) == 0 {
 		logger.Debug("no sensor provided in 'sensors' config parameter")
@@ -58,10 +39,17 @@ func getLidar(
 	// If there is a sensor provided in the 'sensors' array, we enforce that only one
 	// sensor has to be provided.
 	if len(sensors) != 1 {
-		return lidar.Lidar{}, errors.Errorf("'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
+		return lidar.Lidar{}, errors.Errorf("configuring lidar camera error: "+
+			"'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
 			strings.Join(sensors, ", "))
 	}
-	return lidar.New(ctx, deps, sensors, lidar2DIndex)
+
+	lidar, err := lidar.New(ctx, deps, sensors, lidar2DIndex)
+	if err != nil {
+		return lidar, errors.Wrap(err, "configuring lidar camera error")
+	}
+
+	return lidar, nil
 }
 
 // ValidateGetAndSaveData makes sure that the provided sensor is actually a lidar and can
@@ -103,7 +91,7 @@ func ValidateGetAndSaveData(
 
 	for _, path := range paths {
 		if err := os.RemoveAll(path); err != nil {
-			return errors.Wrap(err, "error removing generated file during validation")
+			return errors.Wrap(err, "error removing generated file during lidar validation")
 		}
 	}
 
