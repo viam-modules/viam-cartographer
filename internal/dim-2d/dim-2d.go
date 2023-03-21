@@ -28,7 +28,7 @@ func NewLidar(
 	sensors []string,
 	logger golog.Logger,
 ) (lidar.Lidar, error) {
-	ctx, span := trace.StartSpan(ctx, "dim2d::NewLidar")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::NewLidar")
 	defer span.End()
 
 	// An empty `sensors: []` array is allowed in offline mode.
@@ -114,13 +114,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 		return "", err
 	}
 
-	filename := createTimestampFilename(dataDirectory, lidar.Name, ".pcd")
-	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
-}
-
-// Creates a file for camera data with the specified sensor name and timestamp written into the filename.
-func createTimestampFilename(dataDirectory, primarySensorName, fileType string) string {
-	timeStamp := time.Now()
 	dataDir := filepath.Join(dataDirectory, "data")
-	return dataprocess.CreateTimestampFilename(dataDir, primarySensorName, fileType, timeStamp)
+	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", time.Now())
+	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
 }
