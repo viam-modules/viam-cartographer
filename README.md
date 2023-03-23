@@ -61,6 +61,20 @@ If you happened to use `git clone` only, you won't see the `cartographer` folder
 
 `git submodule update --init`
 
+#### (optional) Using Canon Images
+
+Once downloaded, you can enter the repo and create a docker container for building either an `arm64` or `amd64` binaries by using one of the following commands respectively:
+
+```bash
+canon -arch arm64
+```
+
+```bash
+canon -arch amd64
+```
+
+These containers are set to persist between sessions via the `persistent` parameter in the `.canon.yaml` file located in the root of viam-cartographer. Please read viam's [canon documentation](https://github.com/viamrobotics/canon) here for more details.
+
 #### Setup, build, and run the binary
 
 ```bash
