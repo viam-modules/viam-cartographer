@@ -73,7 +73,7 @@ canon -arch arm64
 canon -arch amd64
 ```
 
-These containers are set to persist between sessions via the `persistent` parameter in the `.canon.yaml` file located in the root of viam-cartographer. More details regarding these images and Viam's canon tool can be found here [here](https://github.com/viamrobotics/canon).
+These containers are set to persist between sessions via the `persistent` parameter in the `.canon.yaml` file located in the root of viam-cartographer. More details regarding the use of Viam's canon tool can be found [here](https://github.com/viamrobotics/canon).
 
 #### Setup, build, and run the binary
 
