@@ -63,7 +63,7 @@ If you happened to use `git clone` only, you won't see the `cartographer` folder
 
 #### (optional) Using Canon Images
 
-Once downloaded, you can enter the repo and create a docker container for building either an `arm64` or `amd64` binaries  using Viam's canon tool and running one of the following commands:
+Once downloaded, you can enter the repo and create a docker container for building either an `arm64` or `amd64` binaries  using Viam's canon tool by running one of the following commands:
 
 ```bash
 canon -arch arm64
