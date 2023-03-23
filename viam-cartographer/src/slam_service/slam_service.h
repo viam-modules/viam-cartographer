@@ -60,10 +60,10 @@ static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 
-// resolution defines the area in meters that each pixel represent. This
-// is used to draw the jpeg map and in so doing defines the resolution of
-// the outputted PCD
-const double resolution = 0.05;
+// The resolution_meters variable defines the area in meters that each pixel
+// represents. This is used to draw the jpeg map and in so doing defines the
+// resolution of the outputted PCD
+const double resolution_meters = 0.05;
 // Number of bytes in a pixel
 const int bytesPerPixel = 4;
 // Color channel (RGBA) used to determine probability of point
@@ -72,8 +72,6 @@ const int bytesPerPixel = 4;
 // - 2 is the G channel
 // - 3 is the A channel
 const int probabilityColorChannel = 2;
-// This RGB value represents "no input" from a Cario pained map
-static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
@@ -90,9 +88,12 @@ const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 int calculateViamProbabilityFromColorChannel(
     std::vector<unsigned char> pixel_data);
 
-// Check if pixel is not in our map and is the default color (i.e. RGB =
-// [102,102,102])
+// Check if pixel is the default color signalling no data is present
 bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data);
+// The default value Cairo when coloring the image if no data is present. A
+// pixel representing no data will have all 3 channels of its color channels
+// (RGB) as the default value([102,102,102])
+static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:

@@ -583,7 +583,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     auto painted_surface = painted_slices->surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-    auto data = cairo_image_surface_get_data(painted_surface);
+    unsigned char *image_data = cairo_image_surface_get_data(painted_surface);
     // // Each pixel contains 4 bytes of information in RGBA format
     // // data_vect[i + 0] is the R channel
     // // data_vect[i + 1] is the B channel
@@ -599,7 +599,8 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             int pixel_index = pixel_x + pixel_y * width;
             int byte_index = pixel_index * bytesPerPixel;
             std::vector<unsigned char> pixel_data = {
-                data + byte_index, data + byte_index + bytesPerPixel};
+                image_data + byte_index,
+                image_data + byte_index + bytesPerPixel};
 
             // Skip pixel if it contains empty data (default color)
             if (checkIfEmptyPixel(pixel_data)) continue;
@@ -609,14 +610,16 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             if (prob == 0) continue;
 
             // Convert pixel location to pointcloud point in meters
-            float x_pos = (pixel_x - painted_slices->origin.x()) * resolution;
+            float x_pos =
+                (pixel_x - painted_slices->origin.x()) * resolution_meters;
             // Y is inverted to match output from getPosition()
-            float y_pos = -(pixel_y - painted_slices->origin.y()) * resolution;
+            float y_pos =
+                -(pixel_y - painted_slices->origin.y()) * resolution_meters;
             float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
             Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
-            auto rotated_map_point = pcdRotation * map_point;
+            Eigen::Vector3d rotated_map_point = pcdRotation * map_point;
 
             viam::utils::writeFloatToBufferInBytes(data_buffer,
                                                    rotated_map_point.x());
@@ -727,7 +730,7 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             &submap_slice.cairo_data);
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
-        viam::io::PaintSubmapSlices(submap_slices, resolution);
+        viam::io::PaintSubmapSlices(submap_slices, resolution_meters);
 
     return painted_slices;
 }
@@ -739,7 +742,7 @@ void SLAMServiceImpl::PaintMarker(
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolution);
+    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolution_meters);
 }
 
 double SLAMServiceImpl::SetUpSLAM() {
