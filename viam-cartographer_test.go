@@ -30,13 +30,13 @@ import (
 
 const (
 	testExecutableName = "true" // the program "true", not the boolean value
-	dataRateMsec       = 200
+	testDataRateMsec   = 200
 )
 
 var (
-	mapRateSec = 200
-	_true      = true
-	_false     = false
+	testMapRateSec = 200
+	_true          = true
+	_false         = false
 )
 
 func TestNew(t *testing.T) {
@@ -87,7 +87,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
-			DataRateMsec:  dataRateMsec,
+			DataRateMsec:  testDataRateMsec,
 			UseLiveData:   &_true,
 		}
 
@@ -103,7 +103,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
-			DataRateMsec:  dataRateMsec,
+			DataRateMsec:  testDataRateMsec,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_true,
 		}
@@ -121,7 +121,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"invalid_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
-			DataRateMsec:  dataRateMsec,
+			DataRateMsec:  testDataRateMsec,
 			UseLiveData:   &_true,
 		}
 
@@ -143,7 +143,7 @@ func TestDataProcess(t *testing.T) {
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d"},
 		DataDirectory: dataDir,
-		DataRateMsec:  dataRateMsec,
+		DataRateMsec:  testDataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}
@@ -204,8 +204,8 @@ func TestEndpointFailures(t *testing.T) {
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDir,
-		MapRateSec:    &mapRateSec,
-		DataRateMsec:  dataRateMsec,
+		MapRateSec:    &testMapRateSec,
+		DataRateMsec:  testDataRateMsec,
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}
@@ -348,8 +348,8 @@ func TestSLAMProcess(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
-			MapRateSec:    &mapRateSec,
-			DataRateMsec:  dataRateMsec,
+			MapRateSec:    &testMapRateSec,
+			DataRateMsec:  testDataRateMsec,
 			Port:          "localhost:" + strconv.Itoa(port),
 			UseLiveData:   &_true,
 		}

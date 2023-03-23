@@ -51,7 +51,7 @@ const (
 	defaultMapRateSec                    = 60
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
-	defaultSensorValidationIntervalSec   = 30
+	defaultSensorValidationIntervalSec   = 1
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
 )

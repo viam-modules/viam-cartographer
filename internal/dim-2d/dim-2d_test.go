@@ -118,8 +118,8 @@ func TestValidateGetAndSaveData(t *testing.T) {
 		err = dim2d.ValidateGetAndSaveData(ctx,
 			dataDir,
 			actualLidar,
-			testhelper.SensorValidationMaxTimeoutSec,
-			testhelper.SensorValidationMaxTimeoutSec,
+			testhelper.TestSensorValidationMaxTimeoutSec,
+			testhelper.TestSensorValidationMaxTimeoutSec,
 			logger,
 		)
 		test.That(t, err, test.ShouldBeNil)

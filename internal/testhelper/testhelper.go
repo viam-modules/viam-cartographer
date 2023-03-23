@@ -41,12 +41,12 @@ const (
 	// SensorValidationMaxTimeoutSec is used in the ValidateGetAndSaveData
 	// function to ensure that the sensor in the GetAndSaveData function
 	// returns data within an acceptable time.
-	SensorValidationMaxTimeoutSec = 1
+	TestSensorValidationMaxTimeoutSec = 1
 	// SensorValidationIntervalSec is used in the ValidateGetAndSaveData
 	// function for the while loop that attempts to grab data from the
 	// sensor that is used in the GetAndSaveData function.
-	SensorValidationIntervalSec = 1
-	dialMaxTimeoutSec           = 1
+	TestSensorValidationIntervalSec = 1
+	testDialMaxTimeoutSec           = 1
 )
 
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
@@ -206,9 +206,9 @@ func CreateSLAMService(
 		logger,
 		bufferSLAMProcessLogs,
 		executableName,
-		SensorValidationMaxTimeoutSec,
-		SensorValidationIntervalSec,
-		dialMaxTimeoutSec,
+		TestSensorValidationMaxTimeoutSec,
+		TestSensorValidationIntervalSec,
+		testDialMaxTimeoutSec,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
