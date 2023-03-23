@@ -583,7 +583,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     auto painted_surface = painted_slices->surface.get();
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-    unsigned char *image_data = cairo_image_surface_get_data(painted_surface);
+    auto image_data = cairo_image_surface_get_data(painted_surface);
     // // Each pixel contains 4 bytes of information in RGBA format
     // // data_vect[i + 0] is the R channel
     // // data_vect[i + 1] is the B channel
