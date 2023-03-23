@@ -158,7 +158,7 @@ func TestDataProcess(t *testing.T) {
 
 	t.Run("Successful startup of data process with good lidar", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
-		lidar, err := lidar.New(context.Background(), testhelper.SetupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -175,7 +175,7 @@ func TestDataProcess(t *testing.T) {
 	t.Run("Failed startup of data process with invalid sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
 		sensors := []string{"invalid_sensor"}
-		lidar, err := lidar.New(context.Background(), testhelper.SetupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())

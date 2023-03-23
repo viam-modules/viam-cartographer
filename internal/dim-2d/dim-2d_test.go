@@ -84,21 +84,6 @@ func TestGetAndSaveData(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	// Will uncomment & update or delete this test once
-	// this PR is merged: https://github.com/viamrobotics/slam/pull/182
-	// t.Run("Failed call to GetAndSaveData with invalid lidar", func(t *testing.T) {
-	// 	invalidLidar := lidar.Lidar{}
-	// 	test.That(t, invalidLidar.Name, test.ShouldEqual, "")
-
-	// 	_, err := dim2d.GetAndSaveData(ctx, dataDir, invalidLidar, logger)
-	// 	test.That(t, err, test.ShouldNotBeNil)
-	// 	test.That(t, err, test.ShouldEqual, errors.New("lidar is nil, can not get a pointcloud"))
-
-	// 	files, err := os.ReadDir(dataDir + "/data/")
-	// 	test.That(t, len(files), test.ShouldEqual, 0)
-	// 	test.That(t, err, test.ShouldEqual, errors.New("lidar is nil, can not get a pointcloud"))
-	// })
-
 	testhelper.ClearDirectory(t, dataDir)
 }
 
@@ -118,8 +103,8 @@ func TestValidateGetAndSaveData(t *testing.T) {
 		err = dim2d.ValidateGetAndSaveData(ctx,
 			dataDir,
 			actualLidar,
-			testhelper.TestSensorValidationMaxTimeoutSec,
-			testhelper.TestSensorValidationMaxTimeoutSec,
+			testhelper.SensorValidationMaxTimeoutSecForTest,
+			testhelper.SensorValidationMaxTimeoutSecForTest,
 			logger,
 		)
 		test.That(t, err, test.ShouldBeNil)
@@ -128,26 +113,6 @@ func TestValidateGetAndSaveData(t *testing.T) {
 		test.That(t, len(files), test.ShouldEqual, 0)
 		test.That(t, err, test.ShouldBeNil)
 	})
-
-	// Will uncomment & update or delete this test once
-	// this PR is merged: https://github.com/viamrobotics/slam/pull/182
-	// t.Run("Failed call to ValidateGetAndSaveData with invalid lidar", func(t *testing.T) {
-	// 	invalidLidar := lidar.Lidar{}
-	// 	test.That(t, invalidLidar.Name, test.ShouldEqual, "")
-
-	// 	err = dim2d.ValidateGetAndSaveData(ctx,
-	// 		dataDir,
-	// 		invalidLidar,
-	// 		testhelper.SensorValidationMaxTimeoutSec,
-	// 		testhelper.SensorValidationMaxTimeoutSec,
-	// 		logger,
-	// 	)
-	// 	test.That(t, err, test.ShouldNotBeNil)
-
-	// 	files, err := os.ReadDir(dataDir + "/data/")
-	// 	test.That(t, len(files), test.ShouldEqual, 0)
-	// 	test.That(t, err, test.ShouldEqual, errors.New("lidar is nil, can not get a pointcloud"))
-	// })
 
 	testhelper.ClearDirectory(t, dataDir)
 }

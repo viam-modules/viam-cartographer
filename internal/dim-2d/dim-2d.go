@@ -28,7 +28,7 @@ func NewLidar(
 	sensors []string,
 	logger golog.Logger,
 ) (lidar.Lidar, error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::NewLidar")
+	_, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::NewLidar")
 	defer span.End()
 
 	// An empty `sensors: []` array is allowed in offline mode.
@@ -44,7 +44,7 @@ func NewLidar(
 			strings.Join(sensors, ", "))
 	}
 
-	lidar, err := lidar.New(ctx, deps, sensors, lidar2DIndex)
+	lidar, err := lidar.New(deps, sensors, lidar2DIndex)
 	if err != nil {
 		return lidar, errors.Wrap(err, "configuring lidar camera error")
 	}
