@@ -438,7 +438,6 @@ func setupDeps(attr *slamConfig.AttrConfig) registry.Dependencies {
 		case "gibberish":
 			return deps
 		case "cartographer_int_lidar":
-			var mu sync.Mutex
 			var index uint64
 			cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 				select {
@@ -457,7 +456,7 @@ func setupDeps(attr *slamConfig.AttrConfig) registry.Dependencies {
 					}
 					return pointCloud, nil
 				default:
-					return nil, errors.Errorf("Lidar not ready to return point cloud %v", index)
+					return nil, errors.Errorf("Lidar not ready to return point cloud %v", atomic.LoadUint64(&index))
 				}
 			}
 			cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
