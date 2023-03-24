@@ -4,10 +4,7 @@ package viamcartographer
 
 import (
 	"bufio"
-	"bytes"
 	"context"
-	"image"
-	"image/jpeg"
 	"io"
 	"strconv"
 	"strings"
@@ -18,25 +15,20 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
-	v1 "go.viam.com/api/common/v1"
 	pb "go.viam.com/api/service/slam/v1"
 	"go.viam.com/rdk/components/generic"
 	"go.viam.com/rdk/config"
-	pc "go.viam.com/rdk/pointcloud"
-	"go.viam.com/rdk/referenceframe"
 	"go.viam.com/rdk/registry"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/services/slam/grpchelper"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
-	"go.viam.com/rdk/vision"
 	slamConfig "go.viam.com/slam/config"
 	"go.viam.com/slam/sensors/lidar"
 	slamUtils "go.viam.com/slam/utils"
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
-	"go.viam.com/utils/protoutils"
 
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 )
@@ -228,73 +220,6 @@ type cartographerService struct {
 	slamProcessBufferedLogReader bufio.Reader
 }
 
-// Position forwards the request for positional data to the slam library's gRPC service. Once a response is received,
-// it is unpacked into a PoseInFrame.
-func (cartoSvc *cartographerService) Position(
-	ctx context.Context,
-	name string,
-	extra map[string]interface{},
-) (*referenceframe.PoseInFrame, error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::Position")
-	defer span.End()
-
-	ext, err := protoutils.StructToStructPb(extra)
-	if err != nil {
-		return nil, err
-	}
-
-	var pInFrame *referenceframe.PoseInFrame
-	var returnedExt map[string]interface{}
-
-	// TODO: Once RSDK-1053 (https://viam.atlassian.net/browse/RSDK-1066) is complete the original code before extracting position
-	// from GetPosition will be removed and the GetPositionNew -> GetPosition
-	if cartoSvc.dev {
-		cartoSvc.logger.Debug("IN DEV MODE (position request)")
-		req := &pb.GetPositionNewRequest{Name: name}
-
-		resp, err := cartoSvc.clientAlgo.GetPositionNew(ctx, req)
-		if err != nil {
-			return nil, errors.Wrap(err, "error getting SLAM position")
-		}
-
-		pInFrame = referenceframe.NewPoseInFrame(resp.GetComponentReference(), spatialmath.NewPoseFromProtobuf(resp.GetPose()))
-		returnedExt = resp.Extra.AsMap()
-	} else {
-		//nolint:staticcheck
-		req := &pb.GetPositionRequest{Name: name, Extra: ext}
-
-		resp, err := cartoSvc.clientAlgo.GetPosition(ctx, req)
-		if err != nil {
-			return nil, errors.Wrap(err, "error getting SLAM position")
-		}
-
-		pInFrame = referenceframe.ProtobufToPoseInFrame(resp.Pose)
-		returnedExt = resp.Extra.AsMap()
-	}
-
-	// TODO DATA-531: https://viam.atlassian.net/jira/software/c/projects/DATA/boards/30?modal=detail&selectedIssue=DATA-531
-	// Remove extraction and conversion of quaternion from the extra field in the response once the Rust
-	// spatial math library is available and the desired math can be implemented on the orbSLAM side
-	if val, ok := returnedExt["quat"]; ok {
-		q := val.(map[string]interface{})
-
-		valReal, ok1 := q["real"].(float64)
-		valIMag, ok2 := q["imag"].(float64)
-		valJMag, ok3 := q["jmag"].(float64)
-		valKMag, ok4 := q["kmag"].(float64)
-
-		if !ok1 || !ok2 || !ok3 || !ok4 {
-			cartoSvc.logger.Debugf("quaternion given, but invalid format detected, %v, skipping quaternion transform", q)
-			return pInFrame, nil
-		}
-		newPose := spatialmath.NewPose(pInFrame.Pose().Point(),
-			&spatialmath.Quaternion{Real: valReal, Imag: valIMag, Jmag: valJMag, Kmag: valKMag})
-		pInFrame = referenceframe.NewPoseInFrame(pInFrame.Parent(), newPose)
-	}
-
-	return pInFrame, nil
-}
-
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
 // it is unpacked into a Pose and a component reference string.
 func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name string) (spatialmath.Pose, string, error) {
@@ -312,129 +237,6 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name strin
 	returnedExt := resp.Extra.AsMap()
 
 	return slamUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
-}
-
-// GetMap forwards the request for map data to the slam library's gRPC service. Once a response is received it is unpacked
-// into a mimeType and either a vision.Object or image.Image.
-func (cartoSvc *cartographerService) GetMap(
-	ctx context.Context,
-	name, mimeType string,
-	cp *referenceframe.PoseInFrame,
-	include bool,
-	extra map[string]interface{},
-) (
-	string, image.Image, *vision.Object, error,
-) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetMap")
-	defer span.End()
-
-	var cameraPosition *v1.Pose
-	if cp != nil {
-		cameraPosition = referenceframe.PoseInFrameToProtobuf(cp).Pose
-	}
-
-	ext, err := protoutils.StructToStructPb(extra)
-	if err != nil {
-		return "", nil, nil, err
-	}
-
-	var imData image.Image
-	var vObj *vision.Object
-
-	// TODO: Once RSDK-1053 (https://viam.atlassian.net/browse/RSDK-1066) is complete the original code that extracts
-	// the map will be removed and GetMap will be changed to GetPointCloudMap
-	if cartoSvc.dev {
-		cartoSvc.logger.Debug("IN DEV MODE (map request)")
-
-		//nolint:staticcheck
-		reqPCMap := &pb.GetPointCloudMapRequest{
-			Name: name,
-		}
-
-		if mimeType != rdkutils.MimeTypePCD {
-			return "", nil, nil, errors.New("non-pcd return type is impossible in while in dev mode")
-		}
-
-		//nolint:staticcheck
-		resp, err := cartoSvc.clientAlgo.GetPointCloudMap(ctx, reqPCMap)
-		if err != nil {
-			return "", imData, vObj, errors.Errorf("error getting SLAM map (%v) : %v", mimeType, err)
-		}
-		pointcloudData := resp.GetPointCloudPcd()
-		if pointcloudData == nil {
-			return "", nil, nil, errors.New("get map read pointcloud unavailable")
-		}
-		pc, err := pc.ReadPCD(bytes.NewReader(pointcloudData))
-		if err != nil {
-			return "", nil, nil, errors.Wrap(err, "get map read pointcloud failed")
-		}
-
-		vObj, err = vision.NewObject(pc)
-		if err != nil {
-			return "", nil, nil, errors.Wrap(err, "get map creating vision object failed")
-		}
-
-		mimeType = rdkutils.MimeTypePCD
-	} else {
-		//nolint:staticcheck
-		req := &pb.GetMapRequest{
-			Name:               name,
-			MimeType:           mimeType,
-			CameraPosition:     cameraPosition,
-			IncludeRobotMarker: include,
-			Extra:              ext,
-		}
-
-		//nolint:staticcheck
-		resp, err := cartoSvc.clientAlgo.GetMap(ctx, req)
-		if err != nil {
-			return "", imData, vObj, errors.Errorf("error getting SLAM map (%v) : %v", mimeType, err)
-		}
-
-		switch mimeType {
-		case rdkutils.MimeTypeJPEG:
-			imData, err = jpeg.Decode(bytes.NewReader(resp.GetImage()))
-			if err != nil {
-				return "", nil, nil, errors.Wrap(err, "get map decode image failed")
-			}
-		case rdkutils.MimeTypePCD:
-			pointcloudData := resp.GetPointCloud()
-			if pointcloudData == nil {
-				return "", nil, nil, errors.New("get map read pointcloud unavailable")
-			}
-			pc, err := pc.ReadPCD(bytes.NewReader(pointcloudData.PointCloud))
-			if err != nil {
-				return "", nil, nil, errors.Wrap(err, "get map read pointcloud failed")
-			}
-
-			vObj, err = vision.NewObject(pc)
-			if err != nil {
-				return "", nil, nil, errors.Wrap(err, "get map creating vision object failed")
-			}
-		}
-		mimeType = resp.MimeType
-	}
-
-	return mimeType, imData, vObj, nil
-}
-
-// GetInternalState forwards the request for the SLAM algorithms's internal state. Once a response is received, it is returned
-// to the user.
-func (cartoSvc *cartographerService) GetInternalState(ctx context.Context, name string) ([]byte, error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
-	defer span.End()
-
-	//nolint:staticcheck
-	req := &pb.GetInternalStateRequest{Name: name}
-
-	//nolint:staticcheck
-	resp, err := cartoSvc.clientAlgo.GetInternalState(ctx, req)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting the internal state from the SLAM client")
-	}
-
-	internalState := resp.GetInternalState()
-	return internalState, err
 }
 
 // GetPointCloudMapStream creates a request, calls the slam algorithms GetPointCloudMapStream endpoint and returns a callback

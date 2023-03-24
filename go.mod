@@ -13,13 +13,15 @@ require (
 	github.com/rhysd/actionlint v1.6.23
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.94
-	go.viam.com/rdk v0.2.28
+	go.viam.com/rdk v0.2.29-0.20230324193918-cc7f18eecfcc
+	// github.com/viamrobotics/rdk v0.2.28-cc7f18eecfccb321372b373f045500d0f6a8308d
 	go.viam.com/slam v0.1.33
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.17
+	go.viam.com/utils v0.1.18-0.20230324114625-1a10df5b59df
 	google.golang.org/grpc v1.54.0
 )
 
+// replace go.viam.com/rdk v0.2.28 => github.com/viamrobotics/rdk@cc7f18eecfccb321372b373f045500d0f6a8308d
 require (
 	4d63.com/gocheckcompilerdirectives v1.2.1 // indirect
 	4d63.com/gochecknoglobals v0.2.1 // indirect
