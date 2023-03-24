@@ -95,9 +95,9 @@ jobs:
     - name: Run rdk cartographer integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration'
+        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -race -run TestCartographerIntegration'
 
     - name: Run viam-cartographer cartographer integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && sudo go test -v -run TestCartographerIntegration'
+        sudo -u testbot bash -lc 'cd viam-cartographer && sudo go test -v -race -run TestCartographerIntegration'
