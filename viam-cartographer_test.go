@@ -1,5 +1,5 @@
-// Package viamcartographer_test tests the functions that require injected components (such as robot and camera)
-// in order to be run. It utilizes the internal package located in testhelper.go to access
+// Package viamcartographer_test tests the functions that required injected components (such as robot and camera)
+// in order to be run. It utilizes the internal package located in slam_test_helper.go to access
 // certain exported functions which we do not want to make available to the user.
 package viamcartographer_test
 
@@ -21,6 +21,13 @@ import (
 	"github.com/edaniels/gostream"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
+	"go.viam.com/test"
+	"go.viam.com/utils"
+	"go.viam.com/utils/artifact"
+	"google.golang.org/grpc"
+
+	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/config"
 	"go.viam.com/rdk/pointcloud"
@@ -35,13 +42,6 @@ import (
 	rdkutils "go.viam.com/rdk/utils"
 	slamConfig "go.viam.com/slam/config"
 	slamTesthelper "go.viam.com/slam/testhelper"
-	"go.viam.com/test"
-	"go.viam.com/utils"
-	"go.viam.com/utils/artifact"
-	"google.golang.org/grpc"
-
-	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 )
 
 const (
@@ -139,8 +139,7 @@ func setupDeps(attr *slamConfig.AttrConfig) registry.Dependencies {
 		RadialK2:     -0.485405,
 		RadialK3:     0.435342,
 		TangentialP1: -0.00143327,
-		TangentialP2: -0.000705919,
-	}
+		TangentialP2: -0.000705919}
 	projRealSense = intrinsicsRealSense
 
 	var projWebcam transform.Projector
@@ -157,8 +156,7 @@ func setupDeps(attr *slamConfig.AttrConfig) registry.Dependencies {
 		RadialK2:     0.8002516496932317,
 		RadialK3:     -5.408034254951954,
 		TangentialP1: -8.996658362365533e-06,
-		TangentialP2: -0.002828504714921335,
-	}
+		TangentialP2: -0.002828504714921335}
 	projWebcam = intrinsicsWebcam
 
 	for _, sensor := range attr.Sensors {
@@ -440,6 +438,7 @@ func setupDeps(attr *slamConfig.AttrConfig) registry.Dependencies {
 		case "gibberish":
 			return deps
 		case "cartographer_int_lidar":
+			var mu sync.Mutex
 			var index uint64
 			cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 				select {
@@ -503,7 +502,7 @@ func createSLAMService(
 	viamcartographer.SetCameraValidationMaxTimeoutSecForTesting(1)
 	viamcartographer.SetDialMaxTimeoutSecForTesting(1)
 
-	svc, err := viamcartographer.New(ctx, deps, cfgService, logger, bufferSLAMProcessLogs)
+	svc, err := viamcartographer.NewBuiltIn(ctx, deps, cfgService, logger, bufferSLAMProcessLogs)
 
 	if success {
 		if err != nil {
@@ -558,6 +557,7 @@ func TestGeneralNew(t *testing.T) {
 		_, err := createSLAMService(t, attrCfg, "fake_cartographer", logger, false, false)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring camera error: error getting camera gibberish for slam service: \"gibberish\" missing from dependencies"))
+
 	})
 
 	t.Run("New slam service with invalid slam algo type", func(t *testing.T) {
@@ -1033,6 +1033,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 	createFakeSLAMLibraries()
 
 	t.Run("Test online SLAM process with default parameters", func(t *testing.T) {
+
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
@@ -1074,6 +1075,7 @@ func TestSLAMProcessSuccess(t *testing.T) {
 	})
 
 	t.Run("Test offline SLAM process with default parameters", func(t *testing.T) {
+
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{},

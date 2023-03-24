@@ -21,6 +21,10 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	goutils "go.viam.com/utils"
+	"go.viam.com/utils/pexec"
+	"go.viam.com/utils/protoutils"
+
 	v1 "go.viam.com/api/common/v1"
 	pb "go.viam.com/api/service/slam/v1"
 	"go.viam.com/rdk/components/camera"
@@ -33,17 +37,13 @@ import (
 	"go.viam.com/rdk/rimage"
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
+	"go.viam.com/rdk/services/slam/grpchelper"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/rdk/vision"
 	slamConfig "go.viam.com/slam/config"
 	"go.viam.com/slam/dataprocess"
 	slamUtils "go.viam.com/slam/utils"
-	goutils "go.viam.com/utils"
-	"go.viam.com/utils/pexec"
-	"go.viam.com/utils/protoutils"
-
-	"github.com/viamrobotics/viam-cartographer/internal/grpchelper"
 )
 
 var (
@@ -79,7 +79,7 @@ func init() {
 		sModel := resource.NewDefaultModel(resource.ModelName(slamLibrary.AlgoName))
 		registry.RegisterService(slam.Subtype, sModel, registry.Service{
 			Constructor: func(ctx context.Context, deps registry.Dependencies, c config.Service, logger golog.Logger) (interface{}, error) {
-				return New(ctx, deps, c, logger, false)
+				return NewBuiltIn(ctx, deps, c, logger, false)
 			},
 		})
 		cType := slam.Subtype
@@ -186,9 +186,7 @@ type builtIn struct {
 // configureCameras will check the config to see if any cameras are desired and if so, grab the cameras from
 // the robot. We assume there are at most two cameras and that we only require intrinsics from the first one.
 // Returns the name of the first camera.
-func configureCameras(ctx context.Context, svcConfig *slamConfig.AttrConfig,
-	deps registry.Dependencies, logger golog.Logger,
-) (string, []camera.Camera, error) {
+func configureCameras(ctx context.Context, svcConfig *slamConfig.AttrConfig, deps registry.Dependencies, logger golog.Logger) (string, []camera.Camera, error) {
 	if len(svcConfig.Sensors) > 0 {
 		logger.Debug("Running in live mode")
 		cams := make([]camera.Camera, 0, len(svcConfig.Sensors))
@@ -226,11 +224,11 @@ func configureCameras(ctx context.Context, svcConfig *slamConfig.AttrConfig,
 
 			brownConrady, ok := props.DistortionParams.(*transform.BrownConrady)
 			if !ok {
-				return "", nil, errors.New("error getting distortion_parameters for slam service," +
-					"only BrownConrady distortion parameters are supported")
+				return "", nil, errors.New("error getting distortion_parameters for slam service, only BrownConrady distortion parameters are supported")
 			}
 			if err := brownConrady.CheckValid(); err != nil {
 				return "", nil, errors.Wrapf(err, "error validating distortion_parameters for slam service")
+
 			}
 		}
 
@@ -280,6 +278,7 @@ func (slamSvc *builtIn) Position(ctx context.Context, name string, extra map[str
 
 		pInFrame = referenceframe.NewPoseInFrame(resp.GetComponentReference(), spatialmath.NewPoseFromProtobuf(resp.GetPose()))
 		returnedExt = resp.Extra.AsMap()
+
 	} else {
 		req := &pb.GetPositionRequest{Name: name, Extra: ext}
 
@@ -375,6 +374,7 @@ func (slamSvc *builtIn) GetMap(
 		}
 
 		resp, err := slamSvc.clientAlgo.GetPointCloudMap(ctx, reqPCMap)
+
 		if err != nil {
 			return "", imData, vObj, errors.Errorf("error getting SLAM map (%v) : %v", mimeType, err)
 		}
@@ -394,6 +394,7 @@ func (slamSvc *builtIn) GetMap(
 
 		mimeType = rdkutils.MimeTypePCD
 	} else {
+
 		req := &pb.GetMapRequest{
 			Name:               name,
 			MimeType:           mimeType,
@@ -403,6 +404,7 @@ func (slamSvc *builtIn) GetMap(
 		}
 
 		resp, err := slamSvc.clientAlgo.GetMap(ctx, req)
+
 		if err != nil {
 			return "", imData, vObj, errors.Errorf("error getting SLAM map (%v) : %v", mimeType, err)
 		}
@@ -469,8 +471,8 @@ func (slamSvc *builtIn) GetInternalStateStream(ctx context.Context, name string)
 	return grpchelper.GetInternalStateStreamCallback(ctx, name, slamSvc.clientAlgo)
 }
 
-// New returns a new slam service for the given robot.
-func New(ctx context.Context, deps registry.Dependencies, config config.Service, logger golog.Logger, bufferSLAMProcessLogs bool) (slam.Service, error) {
+// NewBuiltIn returns a new slam service for the given robot.
+func NewBuiltIn(ctx context.Context, deps registry.Dependencies, config config.Service, logger golog.Logger, bufferSLAMProcessLogs bool) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "slam::slamService::New")
 	defer span.End()
 
@@ -496,10 +498,7 @@ func New(ctx context.Context, deps registry.Dependencies, config config.Service,
 			modelName, svcConfig.ConfigParams["mode"])
 	}
 
-	err = slamConfig.SetupDirectories(svcConfig.DataDirectory, logger)
-	if err != nil {
-		return nil, err
-	}
+	slamConfig.SetupDirectories(svcConfig.DataDirectory, logger)
 
 	if slamMode == slam.Rgbd || slamMode == slam.Mono {
 		var directoryNames []string
@@ -519,7 +518,8 @@ func New(ctx context.Context, deps registry.Dependencies, config config.Service,
 		}
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := slamConfig.GetOptionalParameters(svcConfig, localhost0, defaultDataRateMsec, defaultMapRateSec, logger)
+	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err :=
+		slamConfig.GetOptionalParameters(svcConfig, localhost0, defaultDataRateMsec, defaultMapRateSec, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -584,14 +584,10 @@ func (slamSvc *builtIn) Close() error {
 	slamSvc.cancelFunc()
 	if slamSvc.bufferSLAMProcessLogs {
 		if slamSvc.slamProcessLogReader != nil {
-			if err := slamSvc.slamProcessLogReader.Close(); err != nil {
-				return err
-			}
+			slamSvc.slamProcessLogReader.Close()
 		}
 		if slamSvc.slamProcessLogWriter != nil {
-			if err := slamSvc.slamProcessLogWriter.Close(); err != nil {
-				return err
-			}
+			slamSvc.slamProcessLogWriter.Close()
 		}
 	}
 	if err := slamSvc.StopSLAMProcess(); err != nil {
@@ -863,8 +859,6 @@ func (slamSvc *builtIn) getAndSaveDataSparse(
 		}
 		return filenames, nil
 	case slam.Dim2d:
-		return nil, errors.Errorf("bad slamMode %v specified for this algorithm", slamSvc.slamMode)
-	case slam.Dim3d:
 		return nil, errors.Errorf("bad slamMode %v specified for this algorithm", slamSvc.slamMode)
 	default:
 		return nil, errors.Errorf("invalid slamMode %v specified", slamSvc.slamMode)

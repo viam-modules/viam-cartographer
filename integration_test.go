@@ -3,6 +3,7 @@ package viamcartographer_test
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
+	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
@@ -20,13 +22,11 @@ import (
 	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
 	"go.viam.com/utils"
-
-	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 )
 
 const (
-	cartoSleepMs   = 100
 	slamTimeFormat = "2006-01-02T15:04:05.0000Z"
+	cartoSleepMs   = 100
 )
 
 // Checks the cartographer map and confirms there at least 100 map points.
@@ -35,7 +35,7 @@ func testCartographerMap(t *testing.T, svc slam.Service) {
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, pcd, test.ShouldNotBeNil)
 
-	pointcloudStream, _ := pointcloud.ReadPCD(bytes.NewReader(pcd))
+	pointcloudStream, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
 	t.Logf("Pointcloud points: %v", pointcloudStream.Size())
 	test.That(t, pointcloudStream.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
 }
@@ -73,7 +73,7 @@ func testCartographerInternalState(t *testing.T, svc slam.Service, dataDir strin
 	// Save the data from the call to GetInternalStateStream for use in next test.
 	timeStamp := time.Now()
 	filename := filepath.Join(dataDir, "map", "map_data_"+timeStamp.UTC().Format(slamTimeFormat)+".pbstream")
-	err = os.WriteFile(filename, internalStateStream, 0o644)
+	err = os.WriteFile(filename, internalStateStream, 0644)
 	test.That(t, err, test.ShouldBeNil)
 }
 
@@ -160,11 +160,11 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	// same data as online mode. (Online mode will not read the last .pcd file, since it
 	// always processes the second-most-recent .pcd file, in case the most-recent .pcd
 	// file is currently being written.)
-	files, err := os.ReadDir(name + "/data/")
+	files, err := ioutil.ReadDir(name + "/data/")
 	test.That(t, err, test.ShouldBeNil)
 	lastFileName := files[len(files)-1].Name()
 	test.That(t, os.Remove(name+"/data/"+lastFileName), test.ShouldBeNil)
-	prevNumFiles--
+	prevNumFiles -= 1
 
 	// Check that no maps were generated during previous test
 	testCartographerDir(t, name, 0)
@@ -377,9 +377,9 @@ func integrationtestHelperCartographer(t *testing.T, mode slam.Mode) {
 	closeOutSLAMService(t, name)
 }
 
-// Checks the current slam directory to see if the number of files matches the expected amount.
+// Checks the current slam directory to see if the number of files matches the expected amount
 func testCartographerDir(t *testing.T, path string, expectedMaps int) {
-	mapsInDir, err := os.ReadDir(path + "/map/")
+	mapsInDir, err := ioutil.ReadDir(path + "/map/")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, len(mapsInDir), test.ShouldBeGreaterThanOrEqualTo, expectedMaps)
 }
