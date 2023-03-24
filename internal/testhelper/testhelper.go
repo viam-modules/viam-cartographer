@@ -137,7 +137,7 @@ func getIntegrationLidar() *inject.Camera {
 			}
 			return pointCloud, nil
 		default:
-			return nil, errors.Errorf("Lidar not ready to return point cloud %v", index)
+			return nil, errors.Errorf("Lidar not ready to return point cloud %v", atomic.LoadUint64(&index))
 		}
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
