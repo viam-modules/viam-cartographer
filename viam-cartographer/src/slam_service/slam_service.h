@@ -53,7 +53,7 @@ static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis
-static const int maximumGRPCByteChunkSize = 64 * 1024;
+static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
 // Coeffient to adjust the skip count for the PCD to ensure the file is within
 // grpc limitations. Increase the value if you expect dense feature-rich maps
 static const int samplingFactor = 1;
