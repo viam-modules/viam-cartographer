@@ -12,11 +12,11 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/actionlint v1.6.23
 	go.opencensus.io v0.24.0
-	go.viam.com/api v0.1.94
-	go.viam.com/rdk v0.2.29-0.20230324193918-cc7f18eecfcc
+	go.viam.com/api v0.1.96
+	go.viam.com/rdk v0.2.31
 	go.viam.com/slam v0.1.33
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.18-0.20230324114625-1a10df5b59df
+	go.viam.com/utils v0.1.18-0.20230327140716-bfeb34d89117
 	google.golang.org/grpc v1.54.0
 )
 
