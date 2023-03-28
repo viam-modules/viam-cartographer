@@ -8,6 +8,7 @@ package viamcartographer_test
 import (
 	"context"
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"testing"
@@ -19,6 +20,7 @@ import (
 	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
 	"go.viam.com/utils"
+	"google.golang.org/grpc"
 
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 )
@@ -40,7 +42,7 @@ func TestNew(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful creation of cartographer slam service with no sensor", func(t *testing.T) {
-		grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{},
@@ -58,7 +60,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
-		grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"lidar", "one-too-many"},
@@ -93,7 +95,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Successful creation of cartographer slam service with good lidar", func(t *testing.T) {
-		grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
@@ -133,7 +135,7 @@ func TestDataProcess(t *testing.T) {
 	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.AttrConfig{
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d"},
@@ -194,7 +196,7 @@ func TestEndpointFailures(t *testing.T) {
 	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.AttrConfig{
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
@@ -239,7 +241,7 @@ func TestSLAMProcess(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful start of live SLAM process with default parameters", func(t *testing.T) {
-		grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
@@ -279,7 +281,7 @@ func TestSLAMProcess(t *testing.T) {
 	})
 
 	t.Run("Successful start of offline SLAM process with default parameters", func(t *testing.T) {
-		grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
@@ -319,7 +321,7 @@ func TestSLAMProcess(t *testing.T) {
 	})
 
 	t.Run("Failed start of SLAM process that errors out due to invalid binary location", func(t *testing.T) {
-		grpcServer, port := testhelper.SetupTestGRPCServer(t, logger)
+		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &slamConfig.AttrConfig{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
@@ -335,4 +337,15 @@ func TestSLAMProcess(t *testing.T) {
 	})
 
 	testhelper.ClearDirectory(t, dataDir)
+}
+
+// SetupTestGRPCServer sets up and starts a grpc server.
+// It returns the grpc server and the port at which it is served.
+func setupTestGRPCServer(tb testing.TB) (*grpc.Server, int) {
+	listener, err := net.Listen("tcp", ":0")
+	test.That(tb, err, test.ShouldBeNil)
+	grpcServer := grpc.NewServer()
+	go grpcServer.Serve(listener)
+
+	return grpcServer, listener.Addr().(*net.TCPAddr).Port
 }
