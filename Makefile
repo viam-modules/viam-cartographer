@@ -13,8 +13,8 @@ bufsetup: set-pkg-config-openssl
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 
 buf: bufsetup
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml https://github.com/jeremyrhyde/api.git
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.grpc.gen.yaml https://github.com/jeremyrhyde/api.git
+	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml https://github.com/nicksanford/api.git
+	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.grpc.gen.yaml https://github.com/nicksanford/api.git
 	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
 
 clean:
