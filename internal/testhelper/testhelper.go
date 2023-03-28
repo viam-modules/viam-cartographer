@@ -26,7 +26,6 @@ import (
 	"go.viam.com/slam/sensors/lidar"
 	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
-	goutils "go.viam.com/utils"
 	"go.viam.com/utils/artifact"
 	"go.viam.com/utils/pexec"
 	"google.golang.org/grpc"
@@ -168,11 +167,10 @@ func SetupTestGRPCServer(tb testing.TB, logger golog.Logger) (*grpc.Server, int)
 	listener, err := net.Listen("tcp", ":0")
 	test.That(tb, err, test.ShouldBeNil)
 	grpcServer := grpc.NewServer()
-	goutils.PanicCapturingGo(func() {
-		if err := grpcServer.Serve(listener); err != nil {
-			logger.Errorw("error when starting up the grpc server", "error", err)
-		}
-	})
+	go func() {
+		err := grpcServer.Serve(listener)
+		test.That(tb, err, test.ShouldBeNil)
+	}()
 
 	return grpcServer, listener.Addr().(*net.TCPAddr).Port
 }
