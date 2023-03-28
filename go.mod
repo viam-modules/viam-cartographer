@@ -2,8 +2,6 @@ module github.com/viamrobotics/viam-cartographer
 
 go 1.19
 
-replace github.com/nicksanford/api v0.0.0-20230328153133-49052e67b961 => go.viam.com/api v0.1.96
-
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
 	github.com/edaniels/golog v0.0.0-20230215213219-28954395e8d0
