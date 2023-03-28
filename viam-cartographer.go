@@ -222,7 +222,7 @@ type cartographerService struct {
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
 // it is unpacked into a Pose and a component reference string.
-func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name string) (spatialmath.Pose, string, error) {
+func (cartoSvc *cartographerService) GetPositionOld(ctx context.Context, name string) (spatialmath.Pose, string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
 
@@ -255,6 +255,43 @@ func (cartoSvc *cartographerService) GetInternalStateStream(ctx context.Context,
 	defer span.End()
 
 	return grpchelper.GetInternalStateStreamCallback(ctx, name, cartoSvc.clientAlgo)
+}
+
+// GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
+// it is unpacked into a Pose and a component reference string.
+func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name string) (spatialmath.Pose, string, error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
+	defer span.End()
+
+	req := &pb.GetPositionRequest{Name: name}
+
+	resp, err := cartoSvc.clientAlgo.GetPosition(ctx, req)
+	if err != nil {
+		return nil, "", errors.Wrap(err, "error getting SLAM position")
+	}
+	pose := spatialmath.NewPoseFromProtobuf(resp.GetPose())
+	componentReference := resp.GetComponentReference()
+	returnedExt := resp.Extra.AsMap()
+
+	return slamUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
+}
+
+// GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+// function which will return the next chunk of the current pointcloud map.
+func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context, name string) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
+	defer span.End()
+
+	return grpchelper.GetPointCloudMapCallback(ctx, name, cartoSvc.clientAlgo)
+}
+
+// GetInternalState creates a request, calls the slam algorithms GetInternalState endpoint and returns a callback
+// function which will return the next chunk of the current internal state of the slam algo.
+func (cartoSvc *cartographerService) GetInternalState(ctx context.Context, name string) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
+	defer span.End()
+
+	return grpchelper.GetInternalStateCallback(ctx, name, cartoSvc.clientAlgo)
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.

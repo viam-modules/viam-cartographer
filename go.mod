@@ -2,6 +2,8 @@ module github.com/viamrobotics/viam-cartographer
 
 go 1.19
 
+replace github.com/nicksanford/api v0.0.0-20230328153133-49052e67b961 => go.viam.com/api v0.1.96
+
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
 	github.com/edaniels/golog v0.0.0-20230215213219-28954395e8d0
@@ -12,8 +14,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/actionlint v1.6.23
 	go.opencensus.io v0.24.0
-	go.viam.com/api v0.1.96
-	go.viam.com/rdk v0.2.31
+	go.viam.com/api v0.1.98
+	go.viam.com/rdk v0.2.32-0.20230328211241-880d2d0dac35
 	go.viam.com/slam v0.1.33
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.18-0.20230327140716-bfeb34d89117
