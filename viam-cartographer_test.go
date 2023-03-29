@@ -213,20 +213,7 @@ func TestEndpointFailures(t *testing.T) {
 	test.That(t, frame, test.ShouldBeEmpty)
 	test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "error getting SLAM position")
 
-	callbackPointCloudStream, err := svc.GetPointCloudMapStream(context.Background(), "hi")
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, callbackPointCloudStream, test.ShouldNotBeNil)
-	chunkPCDStream, err := callbackPointCloudStream()
-	test.That(t, err.Error(), test.ShouldContainSubstring, "error receiving pointcloud chunk")
-	test.That(t, chunkPCDStream, test.ShouldBeNil)
-
-	callbackInternalStateStream, err := svc.GetInternalStateStream(context.Background(), "hi")
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, callbackInternalStateStream, test.ShouldNotBeNil)
-	chunkInternalStateStream, err := callbackInternalStateStream()
-	test.That(t, err.Error(), test.ShouldContainSubstring, "error receiving internal state chunk")
-	test.That(t, chunkInternalStateStream, test.ShouldBeNil)
-
+	// This test needs to be updated after the slam service interface includes GetPointCloudMap
 	callbackPointCloud, err := svc.GetPointCloudMapStream(context.Background(), "hi")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, callbackPointCloud, test.ShouldNotBeNil)
@@ -234,6 +221,7 @@ func TestEndpointFailures(t *testing.T) {
 	test.That(t, err.Error(), test.ShouldContainSubstring, "error receiving pointcloud chunk")
 	test.That(t, chunkPCD, test.ShouldBeNil)
 
+	// This test needs to be updated after the slam service interface includes GetInternalState
 	callbackInternalState, err := svc.GetInternalStateStream(context.Background(), "hi")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, callbackInternalState, test.ShouldNotBeNil)
