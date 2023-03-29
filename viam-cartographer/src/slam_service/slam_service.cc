@@ -579,55 +579,83 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         }
     }
 
-    // Get data from painted surface in RGBA format
+    // Get data from painted surface in ARGB32 format
     auto painted_surface = painted_slices->surface.get();
+    auto image_format = cairo_image_surface_get_format(painted_surface);
+    if (image_format != expectedCairoFormat) {
+        std::string errorLog = "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
+        LOG(ERROR) << errorLog;
+        throw std::runtime_error(errorLog);
+    }
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
     auto image_data = cairo_image_surface_get_data(painted_surface);
-    // // Each pixel contains 4 bytes of information in RGBA format
-    // // data_vect[i + 0] is the R channel
-    // // data_vect[i + 1] is the B channel
-    // // data_vect[i + 2] is the G channel
-    // // data_vect[i + 3] is the A channel
+
+    // Get top left pixel of 'surface' in map frame
+    float origin_x = painted_slices->origin.x();
+    float origin_y = painted_slices->origin.y();
 
     // Iterate over image data and add to pointcloud buffer
     int num_points = 0;
-    std::string data_buffer;
+    std::string pcd_data;
     for (int pixel_y = 0; pixel_y < height; pixel_y++) {
         for (int pixel_x = 0; pixel_x < width; pixel_x++) {
-            // Get bytes associated with pixel
+            // Get bytes associated with pixel (4 bytes of color information are in BGRA order due to big endian encoding)
             int pixel_index = pixel_x + pixel_y * width;
             int byte_index = pixel_index * bytesPerPixel;
             std::vector<unsigned char> pixel_data = {
                 image_data + byte_index,
                 image_data + byte_index + bytesPerPixel};
 
+            pixelColorARGB color;
+            color.B = pixel_data[0];
+            color.G = pixel_data[1];
+            color.R = pixel_data[2];
+            color.A = pixel_data[3];
+
+            pixelColorARGB color2;
+            color2.B = image_data[byte_index + 0];
+            color2.G = image_data[byte_index + 1];
+            color2.R = image_data[byte_index + 2];
+            color2.A = image_data[byte_index + 3];
+
+            if ((color.R != color2.R) || (color.B != color2.B) || (color.G != color2.G) || (color.A != color2.A)) {
+                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.R << " " << color2.R << "\n";
+                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.G << " " << color2.G << "\n";
+                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.B << " " << color2.B << "\n";
+                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.A << " " << color2.A << "\n";
+            }
+
+            // CONSTSITENT ARGB ORDER AND SET DIRECTLY FROM DATA
+
             // Skip pixel if it contains empty data (default color)
-            if (checkIfEmptyPixel(pixel_data)) continue;
+            if (checkIfEmptyPixel(color)) {
+                continue;
+            }
 
             // Determine probability based on color pixel and skip if 0
-            int prob = calculateViamProbabilityFromColorChannel(pixel_data);
-            if (prob == 0) continue;
+            int prob = calculateViamProbabilityFromColorChannels(color);
+            if (prob == 0) {
+                continue;
+            }
 
             // Convert pixel location to pointcloud point in meters
-            float x_pos =
-                (pixel_x - painted_slices->origin.x()) * resolution_meters;
+            float x_pos = (pixel_x - origin_x) * resolution_meters;
             // Y is inverted to match output from getPosition()
-            float y_pos =
-                -(pixel_y - painted_slices->origin.y()) * resolution_meters;
+            float y_pos = -(pixel_y - origin_y) * resolution_meters;
             float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
             Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
             Eigen::Vector3d rotated_map_point = pcdRotation * map_point;
 
-            viam::utils::writeFloatToBufferInBytes(data_buffer,
+            viam::utils::writeFloatToBufferInBytes(pcd_data,
                                                    rotated_map_point.x());
-            viam::utils::writeFloatToBufferInBytes(data_buffer,
+            viam::utils::writeFloatToBufferInBytes(pcd_data,
                                                    rotated_map_point.y());
-            viam::utils::writeFloatToBufferInBytes(data_buffer,
+            viam::utils::writeFloatToBufferInBytes(pcd_data,
                                                    rotated_map_point.z());
-            viam::utils::writeIntToBufferInBytes(data_buffer, prob);
+            viam::utils::writeIntToBufferInBytes(pcd_data, prob);
 
             num_points++;
         }
@@ -637,26 +665,26 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     pointcloud = viam::utils::pcdHeader(num_points, true);
 
     // Writes data buffer to the pointcloud string
-    pointcloud += data_buffer;
+    pointcloud += pcd_data;
     return;
 }
 
-bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data) {
-    return (pixel_data[0] == defaultCairosEmptyPaintedSlice) &&
-           (pixel_data[1] == defaultCairosEmptyPaintedSlice) &&
-           (pixel_data[2] == defaultCairosEmptyPaintedSlice);
+bool checkIfEmptyPixel(pixelColorARGB color) {
+    return (color.R == defaultCairosEmptyPaintedSlice) &&
+           (color.G == defaultCairosEmptyPaintedSlice) &&
+           (color.B == defaultCairosEmptyPaintedSlice);
 }
 
-int calculateViamProbabilityFromColorChannel(
-    std::vector<unsigned char> pixel_data) {
+int calculateViamProbabilityFromColorChannels(pixelColorARGB color) {
     unsigned char maxVal = CHAR_MAX;
     unsigned char minVal = defaultCairosEmptyPaintedSlice;
     unsigned char maxProb = 100;
     unsigned char minProb = 0;
 
-    unsigned char color = (int)pixel_data[probabilityColorChannel];
+    // Probability is current determined solely by the R channel
+    unsigned char colorChannel = color.R;
     unsigned char prob =
-        (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
+        (maxVal - colorChannel) * (maxProb - minProb) / (maxVal - minVal);
     return prob = std::min(std::max(prob, minProb), maxProb);
 }
 

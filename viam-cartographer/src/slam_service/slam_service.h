@@ -20,6 +20,7 @@
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
+#include "cairo/cairo.h"
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
@@ -66,12 +67,14 @@ static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 const double resolution_meters = 0.05;
 // Number of bytes in a pixel
 const int bytesPerPixel = 4;
-// Color channel (RGBA) used to determine probability of point
-// - 0 is the R channel
-// - 1 is the B channel
-// - 2 is the G channel
-// - 3 is the A channel
-const int probabilityColorChannel = 2;
+// Expected format for cairo surface
+constexpr cairo_format_t expectedCairoFormat = CAIRO_FORMAT_ARGB32;
+struct pixelColorARGB {
+    unsigned char A;
+    unsigned char R;
+    unsigned char G;
+    unsigned char B;
+};
 
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
@@ -85,11 +88,11 @@ const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 // For a given color channel (probabilityColorChannel) convert the scale from
 // the given 102-255 range to 100-0. This is an initial solution for extracting
 // probability information from cartographer
-int calculateViamProbabilityFromColorChannel(
-    std::vector<unsigned char> pixel_data);
+int calculateViamProbabilityFromColorChannels(pixelColorARGB color);
+   // std::vector<unsigned char> pixel_data);
 
 // Check if pixel is the default color signalling no data is present
-bool checkIfEmptyPixel(std::vector<unsigned char> pixel_data);
+bool checkIfEmptyPixel(pixelColorARGB color);//(std::vector<unsigned char> pixel_data);
 // The default value Cairo when coloring the image if no data is present. A
 // pixel representing no data will have all 3 channels of its color channels
 // (RGB) as the default value([102,102,102])
