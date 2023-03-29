@@ -6,7 +6,6 @@ package testhelper
 import (
 	"bufio"
 	"context"
-	"net"
 	"os"
 	"strconv"
 	"sync/atomic"
@@ -28,7 +27,6 @@ import (
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 	"go.viam.com/utils/pexec"
-	"google.golang.org/grpc"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 )
@@ -158,21 +156,6 @@ func ClearDirectory(t *testing.T, path string) {
 
 	err := slamTesthelper.ResetFolder(path)
 	test.That(t, err, test.ShouldBeNil)
-}
-
-// SetupTestGRPCServer sets up and starts a grpc server.
-// It returns the grpc server and the port at which it is served.
-func SetupTestGRPCServer(tb testing.TB, logger golog.Logger) (*grpc.Server, int) {
-	//nolint:gosec
-	listener, err := net.Listen("tcp", ":0")
-	test.That(tb, err, test.ShouldBeNil)
-	grpcServer := grpc.NewServer()
-	go func() {
-		err := grpcServer.Serve(listener)
-		test.That(tb, err, test.ShouldBeNil)
-	}()
-
-	return grpcServer, listener.Addr().(*net.TCPAddr).Port
 }
 
 // CreateSLAMService creates a slam service for testing.
