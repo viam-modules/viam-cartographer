@@ -225,9 +225,9 @@ type cartographerService struct {
 func (cartoSvc *cartographerService) GetPositionOld(ctx context.Context, name string) (spatialmath.Pose, string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
-
+	//nolint:staticcheck
 	req := &pb.GetPositionNewRequest{Name: name}
-
+	//nolint:staticcheck
 	resp, err := cartoSvc.clientAlgo.GetPositionNew(ctx, req)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "error getting SLAM position")
