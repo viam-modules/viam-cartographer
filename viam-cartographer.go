@@ -220,24 +220,6 @@ type cartographerService struct {
 	slamProcessBufferedLogReader bufio.Reader
 }
 
-// GetPointCloudMapStream creates a request, calls the slam algorithms GetPointCloudMapStream endpoint and returns a callback
-// function which will return the next chunk of the current pointcloud map.
-func (cartoSvc *cartographerService) GetPointCloudMapStream(ctx context.Context, name string) (func() ([]byte, error), error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMapStream")
-	defer span.End()
-
-	return grpchelper.GetPointCloudMapStreamCallback(ctx, name, cartoSvc.clientAlgo)
-}
-
-// GetInternalStateStream creates a request, calls the slam algorithms GetInternalStateStream endpoint and returns a callback
-// function which will return the next chunk of the current internal state of the slam algo.
-func (cartoSvc *cartographerService) GetInternalStateStream(ctx context.Context, name string) (func() ([]byte, error), error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalStateStream")
-	defer span.End()
-
-	return grpchelper.GetInternalStateStreamCallback(ctx, name, cartoSvc.clientAlgo)
-}
-
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
 // it is unpacked into a Pose and a component reference string.
 func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name string) (spatialmath.Pose, string, error) {
@@ -255,6 +237,24 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name strin
 	returnedExt := resp.Extra.AsMap()
 
 	return slamUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
+}
+
+// GetPointCloudMapStream creates a request, calls the slam algorithms GetPointCloudMapStream endpoint and returns a callback
+// function which will return the next chunk of the current pointcloud map.
+func (cartoSvc *cartographerService) GetPointCloudMapStream(ctx context.Context, name string) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMapStream")
+	defer span.End()
+
+	return grpchelper.GetPointCloudMapCallback(ctx, name, cartoSvc.clientAlgo)
+}
+
+// GetInternalStateStream creates a request, calls the slam algorithms GetInternalStateStream endpoint and returns a callback
+// function which will return the next chunk of the current internal state of the slam algo.
+func (cartoSvc *cartographerService) GetInternalStateStream(ctx context.Context, name string) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalStateStream")
+	defer span.End()
+
+	return grpchelper.GetInternalStateCallback(ctx, name, cartoSvc.clientAlgo)
 }
 
 // GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
