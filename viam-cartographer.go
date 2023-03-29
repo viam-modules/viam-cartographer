@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"log"
 	"strconv"
 	"strings"
 	"sync"
@@ -229,6 +230,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name strin
 	if err != nil {
 		return nil, "", errors.Wrap(err, "error getting SLAM position")
 	}
+	log.Printf("ZACK -- vc:GetPositionX: %v\n", resp.Pose.X)
 	pose := spatialmath.NewPoseFromProtobuf(resp.GetPose())
 	componentReference := resp.GetComponentReference()
 	returnedExt := resp.Extra.AsMap()
@@ -250,6 +252,7 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context, name 
 func (cartoSvc *cartographerService) GetInternalState(ctx context.Context, name string) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
 	defer span.End()
+	log.Println("ZACK -- vc:GetInternalStateStream")
 
 	return grpchelper.GetInternalStateCallback(ctx, name, cartoSvc.clientAlgo)
 }
@@ -260,6 +263,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 	lidar lidar.Lidar,
 	c chan int,
 ) {
+	log.Println("ZACK -- vc:StartDataProcess")
 	cartoSvc.activeBackgroundWorkers.Add(1)
 	if err := cancelCtx.Err(); err != nil {
 		if !errors.Is(err, context.Canceled) {
@@ -295,6 +299,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 				}
 				goutils.PanicCapturingGo(func() {
 					defer cartoSvc.activeBackgroundWorkers.Done()
+					log.Println("ZACK -- vc:DataProcess::GetAndSaveData")
 					if _, err := dim2d.GetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
 						cartoSvc.logger.Warn(err)
 					}
@@ -309,6 +314,8 @@ func (cartoSvc *cartographerService) StartDataProcess(
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close() error {
+
+	log.Println("ZACK -- vc:Close")
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
@@ -327,10 +334,13 @@ func (cartoSvc *cartographerService) Close() error {
 			}
 		}
 	}
+
 	if err := cartoSvc.StopSLAMProcess(); err != nil {
 		return errors.Wrap(err, "error occurred during closeout of process")
 	}
 	cartoSvc.activeBackgroundWorkers.Wait()
+
+	log.Println("ZACK -- vc:Close:Closed")
 	return nil
 }
 
@@ -365,6 +375,7 @@ func (cartoSvc *cartographerService) GetSLAMProcessBufferedLogReader() bufio.Rea
 func (cartoSvc *cartographerService) StartSLAMProcess(ctx context.Context) error {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::StartSLAMProcess")
 	defer span.End()
+	log.Println("ZACK -- vc:StartSLAMProcess")
 
 	processConfig := cartoSvc.GetSLAMProcessConfig()
 
@@ -431,6 +442,8 @@ func (cartoSvc *cartographerService) StartSLAMProcess(ctx context.Context) error
 		cartoSvc.slamProcessLogWriter = logWriter
 		cartoSvc.slamProcessBufferedLogReader = bufferedLogReader
 	}
+
+	log.Println("ZACK -- vc:StartSLAMProcess:End")
 
 	return nil
 }
