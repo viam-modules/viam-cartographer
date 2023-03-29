@@ -220,25 +220,6 @@ type cartographerService struct {
 	slamProcessBufferedLogReader bufio.Reader
 }
 
-// GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
-// it is unpacked into a Pose and a component reference string.
-func (cartoSvc *cartographerService) GetPositionOld(ctx context.Context, name string) (spatialmath.Pose, string, error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
-	defer span.End()
-	//nolint:staticcheck
-	req := &pb.GetPositionNewRequest{Name: name}
-	//nolint:staticcheck
-	resp, err := cartoSvc.clientAlgo.GetPositionNew(ctx, req)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "error getting SLAM position")
-	}
-	pose := spatialmath.NewPoseFromProtobuf(resp.GetPose())
-	componentReference := resp.GetComponentReference()
-	returnedExt := resp.Extra.AsMap()
-
-	return slamUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
-}
-
 // GetPointCloudMapStream creates a request, calls the slam algorithms GetPointCloudMapStream endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
 func (cartoSvc *cartographerService) GetPointCloudMapStream(ctx context.Context, name string) (func() ([]byte, error), error) {
