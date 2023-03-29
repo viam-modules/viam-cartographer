@@ -600,33 +600,16 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     std::string pcd_data;
     for (int pixel_y = 0; pixel_y < height; pixel_y++) {
         for (int pixel_x = 0; pixel_x < width; pixel_x++) {
-            // Get bytes associated with pixel (4 bytes of color information are in BGRA order due to big endian encoding)
+            // Get byte index associated with pixel
             int pixel_index = pixel_x + pixel_y * width;
             int byte_index = pixel_index * bytesPerPixel;
-            std::vector<unsigned char> pixel_data = {
-                image_data + byte_index,
-                image_data + byte_index + bytesPerPixel};
 
+            // 4 bytes of ARGB color information are in reverse order due to big endian encoding
             pixelColorARGB color;
-            color.B = pixel_data[0];
-            color.G = pixel_data[1];
-            color.R = pixel_data[2];
-            color.A = pixel_data[3];
-
-            pixelColorARGB color2;
-            color2.B = image_data[byte_index + 0];
-            color2.G = image_data[byte_index + 1];
-            color2.R = image_data[byte_index + 2];
-            color2.A = image_data[byte_index + 3];
-
-            if ((color.R != color2.R) || (color.B != color2.B) || (color.G != color2.G) || (color.A != color2.A)) {
-                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.R << " " << color2.R << "\n";
-                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.G << " " << color2.G << "\n";
-                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.B << " " << color2.B << "\n";
-                LOG(INFO) << "HELLO THESE VALUES ARE WRONG: " << color.A << " " << color2.A << "\n";
-            }
-
-            // CONSTSITENT ARGB ORDER AND SET DIRECTLY FROM DATA
+            color.A = image_data[byte_index + 3];
+            color.R = image_data[byte_index + 2];
+            color.G = image_data[byte_index + 1];
+            color.B = image_data[byte_index + 0];
 
             // Skip pixel if it contains empty data (default color)
             if (checkIfEmptyPixel(color)) {
