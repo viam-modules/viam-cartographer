@@ -25,23 +25,13 @@
 using google::protobuf::Struct;
 using grpc::ServerContext;
 using grpc::ServerWriter;
-using viam::common::v1::PointCloudObject;
 using viam::common::v1::Pose;
-using viam::common::v1::PoseInFrame;
-using viam::service::slam::v1::GetInternalStateRequest;
-using viam::service::slam::v1::GetInternalStateResponse;
 using viam::service::slam::v1::GetInternalStateStreamRequest;
 using viam::service::slam::v1::GetInternalStateStreamResponse;
-using viam::service::slam::v1::GetMapRequest;
-using viam::service::slam::v1::GetMapResponse;
-using viam::service::slam::v1::GetPointCloudMapRequest;
-using viam::service::slam::v1::GetPointCloudMapResponse;
 using viam::service::slam::v1::GetPointCloudMapStreamRequest;
 using viam::service::slam::v1::GetPointCloudMapStreamResponse;
 using viam::service::slam::v1::GetPositionNewRequest;
 using viam::service::slam::v1::GetPositionNewResponse;
-using viam::service::slam::v1::GetPositionRequest;
-using viam::service::slam::v1::GetPositionResponse;
 using viam::service::slam::v1::SLAMService;
 
 namespace viam {
@@ -53,7 +43,6 @@ static const int jpegQuality = 50;
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis
 static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
-
 // Quaternion to rotate axes to the XZ plane
 static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // Static offset quaternion, so orientation matches physical intuition.
@@ -101,36 +90,12 @@ static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
-    // GetPosition returns the relative position of the robot w.r.t the "origin"
-    // of the map, which is the starting point from where the map was initially
-    // created.
-    ::grpc::Status GetPosition(ServerContext *context,
-                               const GetPositionRequest *request,
-                               GetPositionResponse *response) override;
-
     // GetPositionNew returns the relative pose of the robot w.r.t the "origin"
     // of the map, which is the starting point from where the map was initially
     // created along with a component reference.
     ::grpc::Status GetPositionNew(ServerContext *context,
                                   const GetPositionNewRequest *request,
                                   GetPositionNewResponse *response) override;
-
-    // GetMap returns either an image or a pointcloud, depending on the MIME
-    // type requested.
-    ::grpc::Status GetMap(ServerContext *context, const GetMapRequest *request,
-                          GetMapResponse *response) override;
-
-    // GetPointCloudMap returns the current sampled pointcloud derived from the
-    // painted map, using probability estimates
-    ::grpc::Status GetPointCloudMap(
-        ServerContext *context, const GetPointCloudMapRequest *request,
-        GetPointCloudMapResponse *response) override;
-
-    // GetInternalState returns the current internal state of the map which is
-    // a pbstream for cartographer.
-    ::grpc::Status GetInternalState(
-        ServerContext *context, const GetInternalStateRequest *request,
-        GetInternalStateResponse *response) override;
 
     // GetPointCloudMap returns a stream of the current sampled pointcloud
     // derived from the painted map, using probability estimates in chunks with
@@ -248,20 +213,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // TryFileClose attempts to close an opened ifstream, returning an error
     // string if it fails.
     std::string TryFileClose(std::ifstream &file, std::string filename);
-
-    // GetJpegMap paints the jpeg version of the map and writes the
-    // image to the response. Returns a grpc status that reflects
-    // whether or not painting the map and writing it to the response
-    // was successful.
-    ::grpc::Status GetJpegMap(const GetMapRequest *request,
-                              GetMapResponse *response);
-
-    // GetCurrentPointCloudMap writes the pointcloud version of the map to
-    // the response. Returns a grpc status that reflects
-    // whether or not writing the map to the response
-    // was successful.
-    ::grpc::Status GetCurrentPointCloudMap(const GetMapRequest *request,
-                                           GetMapResponse *response);
 
     // ProcessDataAndStartSavingMaps processes the data in the data directory
     // that is newer than the provided data_cutoff_time
