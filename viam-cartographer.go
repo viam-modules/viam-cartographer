@@ -133,7 +133,8 @@ func New(
 		return nil, err
 	}
 
-	cancelCtx, cancelFunc := context.WithCancel(ctx)
+	// Need to pass in a long-lived context because ctx is short-lived
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
