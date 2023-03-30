@@ -16,11 +16,11 @@
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
+#include "cairo/cairo.h"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
-#include "cairo/cairo.h"
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
@@ -89,10 +89,11 @@ const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 // the given 102-255 range to 100-0. This is an initial solution for extracting
 // probability information from cartographer
 int calculateViamProbabilityFromColorChannels(pixelColorARGB color);
-   // std::vector<unsigned char> pixel_data);
+// std::vector<unsigned char> pixel_data);
 
 // Check if pixel is the default color signalling no data is present
-bool checkIfEmptyPixel(pixelColorARGB color);//(std::vector<unsigned char> pixel_data);
+bool checkIfEmptyPixel(
+    pixelColorARGB color);  //(std::vector<unsigned char> pixel_data);
 // The default value Cairo when coloring the image if no data is present. A
 // pixel representing no data will have all 3 channels of its color channels
 // (RGB) as the default value([102,102,102])

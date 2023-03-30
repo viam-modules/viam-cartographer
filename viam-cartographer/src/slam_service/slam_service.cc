@@ -583,7 +583,8 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     auto painted_surface = painted_slices->surface.get();
     auto image_format = cairo_image_surface_get_format(painted_surface);
     if (image_format != expectedCairoFormat) {
-        std::string errorLog = "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
+        std::string errorLog =
+            "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
         LOG(ERROR) << errorLog;
         throw std::runtime_error(errorLog);
     }
@@ -591,9 +592,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     int height = cairo_image_surface_get_height(painted_surface);
     auto image_data = cairo_image_surface_get_data(painted_surface);
 
-    // Get top left pixel of 'surface' in map frame
-    float origin_x = painted_slices->origin.x();
-    float origin_y = painted_slices->origin.y();
+    // Get pixel containing map origin (0, 0)
+    float origin_pixel_x = painted_slices->origin.x();
+    float origin_pixel_y = painted_slices->origin.y();
 
     // Iterate over image data and add to pointcloud buffer
     int num_points = 0;
@@ -604,7 +605,8 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             int pixel_index = pixel_x + pixel_y * width;
             int byte_index = pixel_index * bytesPerPixel;
 
-            // 4 bytes of ARGB color information are in reverse order due to big endian encoding
+            // 4 bytes of ARGB color information are in reverse order due to big
+            // endian encoding
             pixelColorARGB color;
             color.A = image_data[byte_index + 3];
             color.R = image_data[byte_index + 2];
@@ -623,9 +625,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             }
 
             // Convert pixel location to pointcloud point in meters
-            float x_pos = (pixel_x - origin_x) * resolution_meters;
+            float x_pos = (pixel_x - origin_pixel_x) * resolution_meters;
             // Y is inverted to match output from getPosition()
-            float y_pos = -(pixel_y - origin_y) * resolution_meters;
+            float y_pos = -(pixel_y - origin_pixel_y) * resolution_meters;
             float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
