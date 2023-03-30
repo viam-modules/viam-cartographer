@@ -226,9 +226,9 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name strin
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
 
-	req := &pb.GetPositionNewRequest{Name: name}
+	req := &pb.GetPositionRequest{Name: name}
 
-	resp, err := cartoSvc.clientAlgo.GetPositionNew(ctx, req)
+	resp, err := cartoSvc.clientAlgo.GetPosition(ctx, req)
 	if err != nil {
 		return nil, "", errors.Wrap(err, "error getting SLAM position")
 	}
@@ -245,7 +245,7 @@ func (cartoSvc *cartographerService) GetPointCloudMapStream(ctx context.Context,
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMapStream")
 	defer span.End()
 
-	return grpchelper.GetPointCloudMapStreamCallback(ctx, name, cartoSvc.clientAlgo)
+	return grpchelper.GetPointCloudMapCallback(ctx, name, cartoSvc.clientAlgo)
 }
 
 // GetInternalStateStream creates a request, calls the slam algorithms GetInternalStateStream endpoint and returns a callback
@@ -254,7 +254,25 @@ func (cartoSvc *cartographerService) GetInternalStateStream(ctx context.Context,
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalStateStream")
 	defer span.End()
 
-	return grpchelper.GetInternalStateStreamCallback(ctx, name, cartoSvc.clientAlgo)
+	return grpchelper.GetInternalStateCallback(ctx, name, cartoSvc.clientAlgo)
+}
+
+// GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+// function which will return the next chunk of the current pointcloud map.
+func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context, name string) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
+	defer span.End()
+
+	return grpchelper.GetPointCloudMapCallback(ctx, name, cartoSvc.clientAlgo)
+}
+
+// GetInternalState creates a request, calls the slam algorithms GetInternalState endpoint and returns a callback
+// function which will return the next chunk of the current internal state of the slam algo.
+func (cartoSvc *cartographerService) GetInternalState(ctx context.Context, name string) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
+	defer span.End()
+
+	return grpchelper.GetInternalStateCallback(ctx, name, cartoSvc.clientAlgo)
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
