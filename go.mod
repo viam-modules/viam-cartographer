@@ -13,7 +13,7 @@ require (
 	github.com/rhysd/actionlint v1.6.23
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.98
-	go.viam.com/rdk v0.2.32-0.20230330170652-bedda89b1f61
+	go.viam.com/rdk v0.2.32
 	go.viam.com/slam v0.1.33
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.18-0.20230327140716-bfeb34d89117
