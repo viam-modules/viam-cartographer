@@ -494,8 +494,8 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             int pixel_index = pixel_x + pixel_y * width;
             int byte_index = pixel_index * bytesPerPixel;
 
-            // 4 bytes of ARGB color information are in reverse order due to big
-            // endian encoding
+            // 4 bytes of ARGB color information are in reverse order due to
+            // little endian encoding
             pixelColorARGB color;
             color.A = image_data[byte_index + 3];
             color.R = image_data[byte_index + 2];
