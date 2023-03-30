@@ -23,9 +23,9 @@ namespace viam {
 
 std::atomic<bool> b_continue_session{true};
 
-::grpc::Status SLAMServiceImpl::GetPosition(
-    ServerContext *context, const GetPositionRequest *request,
-    GetPositionResponse *response) {
+::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
+                                            const GetPositionRequest *request,
+                                            GetPositionResponse *response) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);

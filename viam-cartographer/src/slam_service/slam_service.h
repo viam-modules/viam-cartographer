@@ -71,13 +71,12 @@ unsigned char ViamColorToProbability(unsigned char color);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
-
     // GetPosition returns the relative pose of the robot w.r.t the "origin"
     // of the map, which is the starting point from where the map was initially
     // created along with a component reference.
-    ::grpc::Status GetPosition(
-        ServerContext *context, const GetPositionRequest *request,
-        GetPositionResponse *response) override;
+    ::grpc::Status GetPosition(ServerContext *context,
+                               const GetPositionRequest *request,
+                               GetPositionResponse *response) override;
 
     // GetPointCloudMap returns a stream of the current sampled pointcloud
     // derived from the painted map, using probability estimates in chunks with
