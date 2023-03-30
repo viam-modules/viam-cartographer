@@ -61,6 +61,26 @@ If you happened to use `git clone` only, you won't see the `cartographer` folder
 
 `git submodule update --init`
 
+### (Optional) Using Canon Images
+
+If desired, Viam's canon tool can be used to create a docker container to build `arm64` or `amd64` binaries of the SLAM server. The canon tool can be installed by running the following command: 
+
+```bash
+go install github.com/viamrobotics/canon@latest
+```
+
+And then by running one of the following commands in the viam-cartographer repository to create the container:
+
+```bash
+canon -arch arm64
+```
+
+```bash
+canon -arch amd64
+```
+
+These containers are set to persist between sessions via the `persistent` parameter in the `.canon.yaml` file located in the root of viam-cartographer. More details regarding the use of Viam's canon tool can be found [here](https://github.com/viamrobotics/canon).
+
 #### Setup, build, and run the binary
 
 ```bash
