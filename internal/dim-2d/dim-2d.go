@@ -3,11 +3,11 @@ package dim2d
 
 import (
 	"context"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+    "log"
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
@@ -29,7 +29,7 @@ func NewLidar(
 	sensors []string,
 	logger golog.Logger,
 ) (lidar.Lidar, error) {
-	log.Println("ZACK -- dim-2d:NewLidar")
+    log.Println("ZACK -- dim-2d:NewLidar")
 	_, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::NewLidar")
 	defer span.End()
 
@@ -46,7 +46,7 @@ func NewLidar(
 			strings.Join(sensors, ", "))
 	}
 
-	log.Println("ZACK -- dim-2d:NewLidar:CreatingLidar")
+    log.Println("ZACK -- dim-2d:NewLidar:CreatingLidar")
 	lidar, err := lidar.New(deps, sensors, lidar2DIndex)
 	if err != nil {
 		return lidar, errors.Wrap(err, "configuring lidar camera error")
@@ -73,7 +73,7 @@ func ValidateGetAndSaveData(
 	paths := make([]string, 0, 1)
 	startTime := time.Now()
 
-	log.Println("ZACK -- dim-2d:ValidateGetAndSaveData")
+    log.Println("ZACK -- dim-2d:ValidateGetAndSaveData")
 	for {
 		path, err = GetAndSaveData(ctx, dataDirectory, lidar, logger)
 		paths = append(paths, path)
@@ -81,7 +81,7 @@ func ValidateGetAndSaveData(
 		if err == nil {
 			break
 		}
-		log.Printf("ZACK -- dim-2d:ValidateGetAndSaveData:NumPaths: %v\n", len(paths))
+        log.Printf("ZACK -- dim-2d:ValidateGetAndSaveData:NumPaths: %v\n",len(paths))
 
 		// This takes about 5 seconds in real life, so a default timeout of
 		// defaultSensorValidationMaxTimeoutSec = 30 as it is used for the Constructor in
@@ -110,7 +110,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::GetAndSaveData")
 	defer span.End()
 
-	log.Println("ZACK -- dim-2d:GetAndSaveData")
+    log.Println("ZACK -- dim-2d:GetAndSaveData")
 	pointcloud, err := lidar.GetData(ctx)
 	if err != nil {
 		if err.Error() == opTimeoutErrorMessage {
@@ -119,7 +119,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 		}
 		return "", err
 	}
-	log.Printf("ZACK -- dim-2d:GetAndSaveData:Pointcloud size: %v\n", pointcloud.Size())
+    log.Printf("ZACK -- dim-2d:GetAndSaveData:Pointcloud size: %v\n",pointcloud.Size())
 
 	dataDir := filepath.Join(dataDirectory, "data")
 	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", time.Now())
