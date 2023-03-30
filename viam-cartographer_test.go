@@ -210,12 +210,12 @@ func TestEndpointFailures(t *testing.T) {
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
-	pNew, frame, err := svc.GetPosition(context.Background(), "hi")
+	pNew, frame, err := svc.GetPosition(context.Background(), "slam service name")
 	test.That(t, pNew, test.ShouldBeNil)
 	test.That(t, frame, test.ShouldBeEmpty)
 	test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "error getting SLAM position")
 
-	callbackPointCloud, err := svc.GetPointCloudMap(context.Background(), "hi")
+	callbackPointCloud, err := svc.GetPointCloudMap(context.Background(), "slam service name")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, callbackPointCloud, test.ShouldNotBeNil)
 	chunkPCD, err := callbackPointCloud()
