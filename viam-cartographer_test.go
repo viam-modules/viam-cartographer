@@ -210,21 +210,19 @@ func TestEndpointFailures(t *testing.T) {
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
-	pNew, frame, err := svc.GetPosition(context.Background(), "hi")
+	pNew, frame, err := svc.GetPosition(context.Background(), "slam service name")
 	test.That(t, pNew, test.ShouldBeNil)
 	test.That(t, frame, test.ShouldBeEmpty)
 	test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "error getting SLAM position")
 
-	// This test needs to be updated after the slam service interface includes GetPointCloudMap https://viam.atlassian.net/browse/RSDK-2246
-	callbackPointCloud, err := svc.GetPointCloudMapStream(context.Background(), "hi")
+	callbackPointCloud, err := svc.GetPointCloudMap(context.Background(), "slam service name")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, callbackPointCloud, test.ShouldNotBeNil)
 	chunkPCD, err := callbackPointCloud()
 	test.That(t, err.Error(), test.ShouldContainSubstring, "error receiving pointcloud chunk")
 	test.That(t, chunkPCD, test.ShouldBeNil)
 
-	// This test needs to be updated after the slam service interface includes GetInternalState https://viam.atlassian.net/browse/RSDK-2246
-	callbackInternalState, err := svc.GetInternalStateStream(context.Background(), "hi")
+	callbackInternalState, err := svc.GetInternalState(context.Background(), "hi")
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, callbackInternalState, test.ShouldNotBeNil)
 	chunkInternalState, err := callbackInternalState()
