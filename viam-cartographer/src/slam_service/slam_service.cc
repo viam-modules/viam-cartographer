@@ -471,7 +471,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     // Get data from painted surface in ARGB32 format
     auto painted_surface = painted_slices->surface.get();
     auto image_format = cairo_image_surface_get_format(painted_surface);
-    if (image_format != expectedCairoFormat) {
+    if (image_format != viam::utils::expectedCairoFormat) {
         std::string errorLog =
             "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
         LOG(ERROR) << errorLog;
@@ -492,23 +492,23 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         for (int pixel_x = 0; pixel_x < width; pixel_x++) {
             // Get byte index associated with pixel
             int pixel_index = pixel_x + pixel_y * width;
-            int byte_index = pixel_index * bytesPerPixel;
+            int byte_index = pixel_index * viam::utils::bytesPerPixel;
 
             // 4 bytes of ARGB color information are in reverse order due to
             // little endian encoding
-            pixelColorARGB color;
+            viam::utils::pixelColorARGB color;
             color.A = image_data[byte_index + 3];
             color.R = image_data[byte_index + 2];
             color.G = image_data[byte_index + 1];
             color.B = image_data[byte_index + 0];
 
             // Skip pixel if it contains empty data (default color)
-            if (checkIfEmptyPixel(color)) {
+            if (viam::utils::checkIfEmptyPixel(color)) {
                 continue;
             }
 
             // Determine probability based on color pixel and skip if 0
-            int prob = calculateViamProbabilityFromColorChannels(color);
+            int prob = viam::utils::calculateProbabilityFromColorChannels(color);
             if (prob == 0) {
                 continue;
             }
@@ -541,25 +541,6 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     // Writes data buffer to the pointcloud string
     pointcloud += pcd_data;
     return;
-}
-
-bool checkIfEmptyPixel(pixelColorARGB color) {
-    return (color.R == defaultCairosEmptyPaintedSlice) &&
-           (color.G == defaultCairosEmptyPaintedSlice) &&
-           (color.B == defaultCairosEmptyPaintedSlice);
-}
-
-int calculateViamProbabilityFromColorChannels(pixelColorARGB color) {
-    unsigned char maxVal = CHAR_MAX;
-    unsigned char minVal = defaultCairosEmptyPaintedSlice;
-    unsigned char maxProb = 100;
-    unsigned char minProb = 0;
-
-    // Probability is current determined solely by the R channel
-    unsigned char colorChannel = color.R;
-    unsigned char prob =
-        (maxVal - colorChannel) * (maxProb - minProb) / (maxVal - minVal);
-    return prob = std::min(std::max(prob, minProb), maxProb);
 }
 
 cartographer::io::PaintSubmapSlicesResult
