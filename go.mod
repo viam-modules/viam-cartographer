@@ -13,7 +13,7 @@ require (
 	github.com/rhysd/actionlint v1.6.23
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.98
-	go.viam.com/rdk v0.2.32-0.20230328211241-880d2d0dac35
+	go.viam.com/rdk v0.2.32
 	go.viam.com/slam v0.1.33
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.18-0.20230327140716-bfeb34d89117
@@ -202,7 +202,7 @@ require (
 	github.com/pion/interceptor v0.1.12 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.7 // indirect
-	github.com/pion/mediadevices v0.4.1-0.20230320003250-11bf55f80ca8 // indirect
+	github.com/pion/mediadevices v0.4.1-0.20230329214258-b9ce5bb861da // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.10 // indirect
 	github.com/pion/rtp v1.7.13 // indirect
