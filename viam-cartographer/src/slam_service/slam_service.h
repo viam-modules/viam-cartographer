@@ -49,21 +49,10 @@ static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // This will result in rotations occurring within the y axis to match 2D mapping
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
-
 // The resolution_meters variable defines the area in meters that each pixel
 // represents. This is used to draw the jpeg map and in so doing defines the
 // resolution of the outputted PCD
 const double resolution_meters = 0.05;
-// Number of bytes in a pixel
-const int bytesPerPixel = 4;
-// Expected format for cairo surface
-constexpr cairo_format_t expectedCairoFormat = CAIRO_FORMAT_ARGB32;
-struct pixelColorARGB {
-    unsigned char A;
-    unsigned char R;
-    unsigned char G;
-    unsigned char B;
-};
 
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
@@ -73,20 +62,6 @@ extern std::atomic<bool> b_continue_session;
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
-
-// For a given color channel (probabilityColorChannel) convert the scale from
-// the given 102-255 range to 100-0. This is an initial solution for extracting
-// probability information from cartographer
-int calculateViamProbabilityFromColorChannels(pixelColorARGB color);
-// std::vector<unsigned char> pixel_data);
-
-// Check if pixel is the default color signalling no data is present
-bool checkIfEmptyPixel(
-    pixelColorARGB color);  //(std::vector<unsigned char> pixel_data);
-// The default value Cairo when coloring the image if no data is present. A
-// pixel representing no data will have all 3 channels of its color channels
-// (RGB) as the default value([102,102,102])
-static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:

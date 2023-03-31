@@ -97,24 +97,5 @@ void writeIntToBufferInBytes(std::string &buffer, int d) {
     }
 }
 
-bool checkIfEmptyPixel(pixelColorARGB color) {
-    return (color.R == defaultCairosEmptyPaintedSlice) &&
-           (color.G == defaultCairosEmptyPaintedSlice) &&
-           (color.B == defaultCairosEmptyPaintedSlice);
-}
-
-int calculateProbabilityFromColorChannels(pixelColorARGB color) {
-    unsigned char maxVal = CHAR_MAX;
-    unsigned char minVal = defaultCairosEmptyPaintedSlice;
-    unsigned char maxProb = 100;
-    unsigned char minProb = 0;
-
-    // Probability is current determined solely by the R channel
-    unsigned char colorChannel = color.R;
-    unsigned char prob =
-        (maxVal - colorChannel) * (maxProb - minProb) / (maxVal - minVal);
-    return prob = std::min(std::max(prob, minProb), maxProb);
-}
-
 }  // namespace utils
 }  // namespace viam

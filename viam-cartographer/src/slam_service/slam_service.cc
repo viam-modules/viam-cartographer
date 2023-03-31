@@ -19,6 +19,44 @@
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
+namespace {
+// The default value Cairo when coloring the image if no data is present. A
+// pixel representing no data will have all 3 channels of its color channels
+// (RGB) as the default value([102,102,102])
+static const unsigned char defaultCairosEmptyPaintedSlice = 102;
+// Number of bytes in a pixel
+const int bytesPerPixel = 4;
+struct pixelColorARGB {
+    unsigned char A;
+    unsigned char R;
+    unsigned char G;
+    unsigned char B;
+};
+
+// Check if pixel is the default color signalling no data is present
+bool checkIfEmptyPixel(pixelColorARGB color) {
+    return (color.R == defaultCairosEmptyPaintedSlice) &&
+           (color.G == defaultCairosEmptyPaintedSlice) &&
+           (color.B == defaultCairosEmptyPaintedSlice);
+}
+
+// For a given color channel (probabilityColorChannel) convert the scale from
+// the given 102-255 range to 100-0. This is an initial solution for extracting
+// probability information from cartographer
+int calculateProbabilityFromColorChannels(pixelColorARGB color) {
+    unsigned char maxVal = CHAR_MAX;
+    unsigned char minVal = defaultCairosEmptyPaintedSlice;
+    unsigned char maxProb = 100;
+    unsigned char minProb = 0;
+
+    // Probability is current determined solely by the R channel
+    unsigned char colorChannel = color.R;
+    unsigned char prob =
+        (maxVal - colorChannel) * (maxProb - minProb) / (maxVal - minVal);
+    return prob = std::min(std::max(prob, minProb), maxProb);
+}
+}  // namespace
+
 namespace viam {
 
 std::atomic<bool> b_continue_session{true};
@@ -336,7 +374,7 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     // Get data from painted surface in ARGB32 format
     auto painted_surface = painted_slices->surface.get();
     auto image_format = cairo_image_surface_get_format(painted_surface);
-    if (image_format != viam::utils::expectedCairoFormat) {
+    if (image_format != cartographer::io::kCairoFormat) {
         std::string errorLog =
             "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
         LOG(ERROR) << errorLog;
@@ -357,23 +395,23 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         for (int pixel_x = 0; pixel_x < width; pixel_x++) {
             // Get byte index associated with pixel
             int pixel_index = pixel_x + pixel_y * width;
-            int byte_index = pixel_index * viam::utils::bytesPerPixel;
+            int byte_index = pixel_index * bytesPerPixel;
 
             // 4 bytes of ARGB color information are in reverse order due to
             // little endian encoding
-            viam::utils::pixelColorARGB color;
+            pixelColorARGB color;
             color.A = image_data[byte_index + 3];
             color.R = image_data[byte_index + 2];
             color.G = image_data[byte_index + 1];
             color.B = image_data[byte_index + 0];
 
             // Skip pixel if it contains empty data (default color)
-            if (viam::utils::checkIfEmptyPixel(color)) {
+            if (checkIfEmptyPixel(color)) {
                 continue;
             }
 
             // Determine probability based on color pixel and skip if 0
-            int prob = viam::utils::calculateProbabilityFromColorChannels(color);
+            int prob = calculateProbabilityFromColorChannels(color);
             if (prob == 0) {
                 continue;
             }

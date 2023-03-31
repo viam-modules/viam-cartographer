@@ -5,7 +5,6 @@
 #include <chrono>
 #include <iostream>
 #include <string>
-#include "cairo/cairo.h"
 
 namespace viam {
 
@@ -44,22 +43,6 @@ const auto HEADERTEMPLATECOLOR =
     "POINTS %d\n"
     "DATA binary\n";
 
-// The default value Cairo when coloring the image if no data is present. A
-// pixel representing no data will have all 3 channels of its color channels
-// (RGB) as the default value([102,102,102])
-static const unsigned char defaultCairosEmptyPaintedSlice = 102;
-
-// Number of bytes in a pixel
-const int bytesPerPixel = 4;
-// Expected format for cairo surface
-constexpr cairo_format_t expectedCairoFormat = CAIRO_FORMAT_ARGB32;
-struct pixelColorARGB {
-    unsigned char A;
-    unsigned char R;
-    unsigned char G;
-    unsigned char B;
-};
-
 // DetermineActionMode determines the action mode the slam service runs in,
 // which is either mapping, updating, or localizing.
 ActionMode DetermineActionMode(std::string path_to_map,
@@ -82,14 +65,6 @@ void writeIntToBufferInBytes(std::string& buffer, int d);
 // Applies the mapSize to the header template and
 // returns the pcd header as a string.
 std::string pcdHeader(int mapSize, bool hasColor);
-
-// For a given color channel (probabilityColorChannel) convert the scale from
-// the given 102-255 range to 100-0. This is an initial solution for extracting
-// probability information from cartographer
-int calculateProbabilityFromColorChannels(pixelColorARGB color);
-
-// Check if pixel is the default color signalling no data is present
-bool checkIfEmptyPixel(pixelColorARGB color); 
 
 }  // namespace utils
 }  // namespace viam
