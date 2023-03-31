@@ -20,40 +20,40 @@
 #include "glog/logging.h"
 
 namespace {
-// The default value Cairo when coloring the image if no data is present. A
+// The default value when coloring the image if no data is present. A
 // pixel representing no data will have all 3 channels of its color channels
 // (RGB) as the default value([102,102,102])
-static const unsigned char defaultCairosEmptyPaintedSlice = 102;
+static const unsigned char defaultNoDataRGBValue = 102;
 // Number of bytes in a pixel
-const int bytesPerPixel = 4;
-struct pixelColorARGB {
+static const int bytesPerPixel = 4;
+struct ColorARGB {
     unsigned char A;
     unsigned char R;
     unsigned char G;
     unsigned char B;
 };
 
-// Check if pixel is the default color signalling no data is present
-bool checkIfEmptyPixel(pixelColorARGB color) {
-    return (color.R == defaultCairosEmptyPaintedSlice) &&
-           (color.G == defaultCairosEmptyPaintedSlice) &&
-           (color.B == defaultCairosEmptyPaintedSlice);
+// Check if pixel is the default color signaling no data is present
+bool CheckIfEmptyPixel(ColorARGB pixel_color) {
+    return (pixel_color.R == defaultNoDataRGBValue) &&
+           (pixel_color.G == defaultNoDataRGBValue) &&
+           (pixel_color.B == defaultNoDataRGBValue);
 }
 
-// For a given color channel (probabilityColorChannel) convert the scale from
-// the given 102-255 range to 100-0. This is an initial solution for extracting
+// Conver the scale of a specified pixel color channel from the given
+// 102-255 range to 100-0. This is an initial solution for extracting
 // probability information from cartographer
-int calculateProbabilityFromColorChannels(pixelColorARGB color) {
-    unsigned char maxVal = CHAR_MAX;
-    unsigned char minVal = defaultCairosEmptyPaintedSlice;
-    unsigned char maxProb = 100;
-    unsigned char minProb = 0;
+int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
+    unsigned char max_val = CHAR_MAX;
+    unsigned char min_val = defaultNoDataRGBValue;
+    unsigned char max_prob = 100;
+    unsigned char min_prob = 0;
 
-    // Probability is current determined solely by the R channel
-    unsigned char colorChannel = color.R;
-    unsigned char prob =
-        (maxVal - colorChannel) * (maxProb - minProb) / (maxVal - minVal);
-    return prob = std::min(std::max(prob, minProb), maxProb);
+    // Probability is currently determined solely by the R channel
+    unsigned char color_channel_val = pixel_color.R;
+    unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
+                         (max_val - min_val);
+    return std::min(std::max(prob, min_prob), max_prob);
 }
 }  // namespace
 
@@ -375,14 +375,14 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
     auto painted_surface = painted_slices->surface.get();
     auto image_format = cairo_image_surface_get_format(painted_surface);
     if (image_format != cartographer::io::kCairoFormat) {
-        std::string errorLog =
+        std::string error_log =
             "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
-        LOG(ERROR) << errorLog;
-        throw std::runtime_error(errorLog);
+        LOG(ERROR) << error_log;
+        throw std::runtime_error(error_log);
     }
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-    auto image_data = cairo_image_surface_get_data(painted_surface);
+    auto image_data_ptr = cairo_image_surface_get_data(painted_surface);
 
     // Get pixel containing map origin (0, 0)
     float origin_pixel_x = painted_slices->origin.x();
@@ -399,27 +399,28 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
 
             // We assume we are running on a little-endian system, so the ARGB
             // order is reversed
-            pixelColorARGB color;
-            color.A = image_data[byte_index + 3];
-            color.R = image_data[byte_index + 2];
-            color.G = image_data[byte_index + 1];
-            color.B = image_data[byte_index + 0];
+            ColorARGB pixel_color;
+            pixel_color.A = image_data_ptr[byte_index + 3];
+            pixel_color.R = image_data_ptr[byte_index + 2];
+            pixel_color.G = image_data_ptr[byte_index + 1];
+            pixel_color.B = image_data_ptr[byte_index + 0];
 
             // Skip pixel if it contains empty data (default color)
-            if (checkIfEmptyPixel(color)) {
+            if (CheckIfEmptyPixel(pixel_color)) {
                 continue;
             }
 
-            // Determine probability based on color pixel and skip if 0
-            int prob = calculateProbabilityFromColorChannels(color);
+            // Determine probability based on the color of the pixel and skip if
+            // it is 0
+            int prob = CalculateProbabilityFromColorChannels(pixel_color);
             if (prob == 0) {
                 continue;
             }
 
             // Convert pixel location to pointcloud point in meters
-            float x_pos = (pixel_x - origin_pixel_x) * resolution_meters;
+            float x_pos = (pixel_x - origin_pixel_x) * resolutionMeters;
             // Y is inverted to match output from getPosition()
-            float y_pos = -(pixel_y - origin_pixel_y) * resolution_meters;
+            float y_pos = -(pixel_y - origin_pixel_y) * resolutionMeters;
             float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
@@ -516,7 +517,7 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             &submap_slice.cairo_data);
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
-        viam::io::PaintSubmapSlices(submap_slices, resolution_meters);
+        viam::io::PaintSubmapSlices(submap_slices, resolutionMeters);
 
     return painted_slices;
 }
@@ -528,7 +529,7 @@ void SLAMServiceImpl::PaintMarker(
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolution_meters);
+    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolutionMeters);
 }
 
 double SLAMServiceImpl::SetUpSLAM() {
