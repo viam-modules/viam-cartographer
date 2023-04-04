@@ -241,7 +241,6 @@ std::string SLAMServiceImpl::TryFileClose(std::ifstream &tempFile,
 void SLAMServiceImpl::BackupLatestMap() {
     std::string pointcloud_map_tmp;
     GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
-
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
 }
