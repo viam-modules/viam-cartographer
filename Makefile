@@ -76,6 +76,10 @@ else
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
 endif
 
+build-module:
+	mkdir -p bin && go build -o bin/cartographer-module module/main.go
+
+
 install-lua-files:
 	sudo mkdir -p /usr/local/share/cartographer/lua_files/
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
@@ -92,14 +96,9 @@ test: test-cpp test-go
 install:
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 
-build-module:
-	mkdir -p bin && go build -o bin/cartographer-module module/main.go
-
 appimage: build
 	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe carto_grpc_server-`uname -m`.yml
 	cd etc/packaging/appimages && ./package_release_carto.sh
 	mkdir -p etc/packaging/appimages/deploy/
 	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
 	chmod 755 etc/packaging/appimages/deploy/*.AppImage
-
-include *.make
