@@ -79,7 +79,6 @@ endif
 build-module:
 	mkdir -p bin && go build -o bin/cartographer-module module/main.go
 
-
 install-lua-files:
 	sudo mkdir -p /usr/local/share/cartographer/lua_files/
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
