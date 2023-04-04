@@ -1,0 +1,44 @@
+{
+    "components": [
+      {
+        "model": "viam:lidar:rplidar",
+        "name": "rplidar",
+        "namespace": "rdk",
+        "type": "camera",
+        "depends_on": []
+      }
+    ],
+    "services": [
+      {
+        "name": "slam-test",
+        "model": "viam:slam:cartographer",
+        "type": "slam",
+        "attributes": {
+          "port": "localhost:8083",
+          "data_dir": "/Users/kat/viam/datasets/test-delete-me",
+          "delete_processed_data": true,
+          "use_live_data": true,
+          "map_rate_sec": 30,
+          "sensors": [
+            "rplidar"
+          ],
+          "config_params": {
+            "optimize_on_start": "true",
+            "num_range_data": "100",
+            "mode": "2d",
+            "max_submaps_to_keep": "2"
+          }
+        }
+      }
+    ],
+    "modules": [
+      {
+        "executable_path": "/usr/local/bin/rplidar-module",
+        "name": "rplidar_module"
+      },
+      {
+        "executable_path": "/Users/kat/viam/viam-cartographer/bin/cartographer-module",
+        "name": "cartographer-module"
+      }
+    ]
+  }
