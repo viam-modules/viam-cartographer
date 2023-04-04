@@ -13,7 +13,7 @@ require (
 	github.com/rhysd/actionlint v1.6.23
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.101
-	go.viam.com/rdk v0.2.33-0.20230331161745-2890e80bfe95
+	go.viam.com/rdk v0.2.31
 	go.viam.com/slam v0.1.33
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.18-0.20230327140716-bfeb34d89117
@@ -82,6 +82,7 @@ require (
 	github.com/firefart/nonamedreturns v1.0.4 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
+	github.com/fullstorydev/grpcurl v1.8.6 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
 	github.com/gen2brain/malgo v0.11.10 // indirect
 	github.com/go-audio/audio v1.0.0 // indirect
@@ -312,3 +313,5 @@ require (
 	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )
+
+replace go.viam.com/rdk => ../rdk
