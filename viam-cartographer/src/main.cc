@@ -53,14 +53,7 @@ int main(int argc, char** argv) {
     // This log line is needed by rdk to get the port.
     LOG(INFO) << "Server listening on " << *selected_port << "\n";
 
-    try {
-        slamService.RunSLAM();
-    } catch (std::exception& e) {
-        LOG(ERROR)
-            << "Stopping Cartographer: an error occurred during the run: "
-            << e.what();
-        std::terminate();
-    }
+    slamService.RunSLAM();
 
     LOG(INFO) << "System shutdown";
 }
