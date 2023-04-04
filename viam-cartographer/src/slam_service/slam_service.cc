@@ -19,6 +19,47 @@
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
+namespace {
+// The default value when coloring the image if no data is present. A
+// pixel representing no data will have all 3 channels of its color channels
+// (RGB) as the default value([102,102,102])
+static const unsigned char defaultNoDataRGBValue = 102;
+// Number of bytes in a pixel
+static const int bytesPerPixel = 4;
+struct ColorARGB {
+    unsigned char A;
+    unsigned char R;
+    unsigned char G;
+    unsigned char B;
+};
+
+// Check if pixel is the default color signaling no data is present
+bool CheckIfEmptyPixel(ColorARGB pixel_color) {
+    return (pixel_color.R == defaultNoDataRGBValue) &&
+           (pixel_color.G == defaultNoDataRGBValue) &&
+           (pixel_color.B == defaultNoDataRGBValue);
+}
+
+// Convert the scale of a specified pixel color channel from the given
+// 102-255 range to 100-0. This is an initial solution for extracting
+// probability information from cartographer
+int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
+    unsigned char max_val = UCHAR_MAX;
+    unsigned char min_val = defaultNoDataRGBValue;
+    unsigned char max_prob = 100;
+    unsigned char min_prob = 0;
+
+    // Probability is currently determined solely by the R channel
+    // Values are restricted to be above or equal to defaultNoDataRGBValue
+    // to ensure negative probabilities cannot occur
+    // https://viam.atlassian.net/browse/RSDK-2567
+    unsigned char color_channel_val = pixel_color.R;
+    unsigned char prob = (max_val - std::max(color_channel_val, min_val)) *
+                         (max_prob - min_prob) / (max_val - min_val);
+    return std::min(std::max(prob, min_prob), max_prob);
+}
+}  // namespace
+
 namespace viam {
 
 std::atomic<bool> b_continue_session{true};
@@ -333,95 +374,80 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
         }
     }
 
+    // Get data from painted surface in ARGB32 format
     auto painted_surface = painted_slices->surface.get();
+    auto image_format = cairo_image_surface_get_format(painted_surface);
+    if (image_format != cartographer::io::kCairoFormat) {
+        std::string error_log =
+            "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
+        LOG(ERROR) << error_log;
+        throw std::runtime_error(error_log);
+    }
     int width = cairo_image_surface_get_width(painted_surface);
     int height = cairo_image_surface_get_height(painted_surface);
-    // Get all pixels from the painted surface in RGBA format
-    auto data = cairo_image_surface_get_data(painted_surface);
+    auto image_data_ptr = cairo_image_surface_get_data(painted_surface);
 
-    // Total number of bytes in image (4 bytes per pixel)
-    int size_data = width * height * 4;
+    // Get pixel containing map origin (0, 0)
+    float origin_pixel_x = painted_slices->origin.x();
+    float origin_pixel_y = painted_slices->origin.y();
 
-    // Each pixel contains 4 bytes of information in RGBA format
-    // data_vect[i + 0] is the R channel
-    // data_vect[i + 1] is the B channel
-    // data_vect[i + 2] is the G channel
-    // data_vect[i + 3] is the A channel
-    std::vector<unsigned char> data_vect(data, data + size_data);
-
+    // Iterate over image data and add to pointcloud buffer
     int num_points = 0;
+    std::string pcd_data;
+    for (int pixel_y = 0; pixel_y < height; pixel_y++) {
+        for (int pixel_x = 0; pixel_x < width; pixel_x++) {
+            // Get byte index associated with pixel
+            int pixel_index = pixel_x + pixel_y * width;
+            int byte_index = pixel_index * bytesPerPixel;
 
-    // Sample the image based on the number of pixels. Output is the number of
-    // pixels to skip. skip_count will reduce the size of the PCD to under 32
-    // MB, with additional tuning provided by the samplingFactor. If the PCD
-    //  would already be smaller than 32MB, do not sample the image.
-    // When moving to streaming this behavior may change.
-    int skip_count = (size_data * pixelBytetoPCDByte) / maximumGRPCByteLimit *
-                     samplingFactor;
-    if (skip_count == 0) {
-        skip_count = 1;
-    }
+            // We assume we are running on a little-endian system, so the ARGB
+            // order is reversed
+            ColorARGB pixel_color;
+            pixel_color.A = image_data_ptr[byte_index + 3];
+            pixel_color.R = image_data_ptr[byte_index + 2];
+            pixel_color.G = image_data_ptr[byte_index + 1];
+            pixel_color.B = image_data_ptr[byte_index + 0];
 
-    std::string data_buffer;
+            // Skip pixel if it contains empty data (default color)
+            if (CheckIfEmptyPixel(pixel_color)) {
+                continue;
+            }
 
-    // Loop to sample data and reduce resolution. Increments multiplied
-    // by 4 to represent 4 bytes per pixel
-    for (int i = 0; i < size_data; i += skip_count * 4) {
-        // skip pixels that are not in our map(black/past walls)
-        // this check represents [102,102,102]
-        if ((data_vect[i + 0] == defaultCairosEmptyPaintedSlice) &&
-            (data_vect[i + 1] == defaultCairosEmptyPaintedSlice) &&
-            (data_vect[i + 2] == defaultCairosEmptyPaintedSlice))
-            continue;
+            // Determine probability based on the color of the pixel and skip if
+            // it is 0
+            int prob = CalculateProbabilityFromColorChannels(pixel_color);
+            if (prob == 0) {
+                continue;
+            }
 
-        // Determine probability based on color pixel
-        int prob = viam::ViamColorToProbability((int)data_vect[i + 2]);
-        if (prob == 0) continue;
+            // Convert pixel location to pointcloud point in meters
+            float x_pos = (pixel_x - origin_pixel_x) * resolutionMeters;
+            // Y is inverted to match output from getPosition()
+            float y_pos = -(pixel_y - origin_pixel_y) * resolutionMeters;
+            float z_pos = 0;  // Z is 0 in 2D SLAM
 
-        num_points++;
+            // Add point to buffer
+            Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
+            Eigen::Vector3d rotated_map_point = pcdRotation * map_point;
 
-        int pixel_index = i / 4;
-        int pixel_x = pixel_index % width;
-        int pixel_y = pixel_index / width;
+            viam::utils::writeFloatToBufferInBytes(pcd_data,
+                                                   rotated_map_point.x());
+            viam::utils::writeFloatToBufferInBytes(pcd_data,
+                                                   rotated_map_point.y());
+            viam::utils::writeFloatToBufferInBytes(pcd_data,
+                                                   rotated_map_point.z());
+            viam::utils::writeIntToBufferInBytes(pcd_data, prob);
 
-        // Convert pixel location to pointcloud point in meters
-        float x_pos = (pixel_x - painted_slices->origin.x()) * kPixelSize;
-        // Y is inverted to match output from getPosition()
-        float y_pos = -(pixel_y - painted_slices->origin.y()) * kPixelSize;
-        // 2D SLAM so Z is set to 0
-        float z_pos = 0;
-
-        // Turn the map point into a vector to perform transformations with.
-        // Current transformation rotates coordinates to match slam service
-        // expectation (XZ plane)
-        Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
-        auto rotated_map_point = pcdRotation * map_point;
-
-        viam::utils::writeFloatToBufferInBytes(data_buffer,
-                                               rotated_map_point.x());
-        viam::utils::writeFloatToBufferInBytes(data_buffer,
-                                               rotated_map_point.y());
-        viam::utils::writeFloatToBufferInBytes(data_buffer,
-                                               rotated_map_point.z());
-        viam::utils::writeIntToBufferInBytes(data_buffer, prob);
+            num_points++;
+        }
     }
 
     // Write our PCD file, which is written as a binary.
     pointcloud = viam::utils::pcdHeader(num_points, true);
 
     // Writes data buffer to the pointcloud string
-    pointcloud += data_buffer;
+    pointcloud += pcd_data;
     return;
-}
-
-unsigned char ViamColorToProbability(unsigned char color) {
-    unsigned char maxVal = CHAR_MAX;
-    unsigned char minVal = defaultCairosEmptyPaintedSlice;
-    unsigned char maxProb = 100;
-    unsigned char minProb = 0;
-    unsigned char prob =
-        (maxVal - color) * (maxProb - minProb) / (maxVal - minVal);
-    return prob = std::min(std::max(prob, minProb), maxProb);
 }
 
 cartographer::io::PaintSubmapSlicesResult
@@ -494,7 +520,7 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             &submap_slice.cairo_data);
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
-        viam::io::PaintSubmapSlices(submap_slices, kPixelSize);
+        viam::io::PaintSubmapSlices(submap_slices, resolutionMeters);
 
     return painted_slices;
 }
@@ -506,7 +532,7 @@ void SLAMServiceImpl::PaintMarker(
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         global_pose = latest_global_pose;
     }
-    viam::io::DrawPoseOnSurface(painted_slices, global_pose, kPixelSize);
+    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolutionMeters);
 }
 
 double SLAMServiceImpl::SetUpSLAM() {
