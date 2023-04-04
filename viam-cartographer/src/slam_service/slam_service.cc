@@ -40,19 +40,22 @@ bool CheckIfEmptyPixel(ColorARGB pixel_color) {
            (pixel_color.B == defaultNoDataRGBValue);
 }
 
-// Conver the scale of a specified pixel color channel from the given
+// Convert the scale of a specified pixel color channel from the given
 // 102-255 range to 100-0. This is an initial solution for extracting
 // probability information from cartographer
 int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
-    unsigned char max_val = CHAR_MAX;
+    unsigned char max_val = UCHAR_MAX;
     unsigned char min_val = defaultNoDataRGBValue;
     unsigned char max_prob = 100;
     unsigned char min_prob = 0;
 
     // Probability is currently determined solely by the R channel
+    // Values are restricted to be above defaultNoDataRGBValue to ensure
+    // negative probabilities cannot occur
+    // https://viam.atlassian.net/browse/RSDK-2567
     unsigned char color_channel_val = pixel_color.R;
-    unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
-                         (max_val - min_val);
+    unsigned char prob = (max_val - std::max(color_channel_val, min_val)) *
+                         (max_prob - min_prob) / (max_val - min_val);
     return std::min(std::max(prob, min_prob), max_prob);
 }
 }  // namespace
