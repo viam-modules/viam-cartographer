@@ -5,10 +5,11 @@ import (
 	"context"
 
 	"github.com/edaniels/golog"
-	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	"go.viam.com/rdk/module"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/utils"
+
+	viamcartographer "github.com/viamrobotics/viam-cartographer"
 )
 
 func main() {
