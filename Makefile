@@ -69,7 +69,7 @@ else
 endif
 	
 
-build:
+build: build-module
 ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
 	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
 else 
