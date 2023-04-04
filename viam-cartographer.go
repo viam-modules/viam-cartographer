@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
-	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	pb "go.viam.com/api/service/slam/v1"
@@ -71,18 +70,14 @@ func init() {
 		},
 	})
 
-	config.RegisterServiceAttributeMapConverter(slam.Subtype, Model,
+	config.RegisterServiceAttributeMapConverter(
+		slam.Subtype,
+		Model,
 		func(attributes config.AttributeMap) (interface{}, error) {
 			var attrCfg slamConfig.AttrConfig
-			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "json", Result: &attrCfg})
-			if err != nil {
-				return nil, err
-			}
-			if err := decoder.Decode(attributes); err != nil {
-				return nil, err
-			}
-			return &attrCfg, nil
-		}, &slamConfig.AttrConfig{})
+			return config.TransformAttributeMapToStruct(&attrCfg, attributes)
+		},
+		&slamConfig.AttrConfig{})
 }
 
 // New returns a new slam service for the given robot.
