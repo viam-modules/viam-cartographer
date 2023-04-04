@@ -50,8 +50,8 @@ int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char min_prob = 0;
 
     // Probability is currently determined solely by the R channel
-    // Values are restricted to be above defaultNoDataRGBValue to ensure
-    // negative probabilities cannot occur
+    // Values are restricted to be above or equal to defaultNoDataRGBValue 
+    // to ensure negative probabilities cannot occur
     // https://viam.atlassian.net/browse/RSDK-2567
     unsigned char color_channel_val = pixel_color.R;
     unsigned char prob = (max_val - std::max(color_channel_val, min_val)) *
