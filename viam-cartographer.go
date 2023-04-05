@@ -151,7 +151,6 @@ func New(
 		cancelFunc:            cancelFunc,
 		logger:                logger,
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
-		dev:                   svcConfig.Dev,
 	}
 
 	success := false
@@ -207,8 +206,6 @@ type cartographerService struct {
 	port       string
 	dataRateMs int
 	mapRateSec int
-
-	dev bool
 
 	cancelFunc              func()
 	logger                  golog.Logger

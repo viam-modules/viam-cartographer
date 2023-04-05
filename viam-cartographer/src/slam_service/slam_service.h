@@ -16,6 +16,7 @@
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
+#include "cairo/cairo.h"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
@@ -37,24 +38,22 @@ namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
-// This RGB value represents "no input" from a Cario pained map
-static const unsigned char defaultCairosEmptyPaintedSlice = 102;
 static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis
 static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
-// Coeffient to adjust the skip count for the PCD to ensure the file is within
-// grpc limitations. Increase the value if you expect dense feature-rich maps
-static const int samplingFactor = 1;
-// Conversion to number of bytes used in colored PCD encoding
-static const int pixelBytetoPCDByte = 16 / 4;
 // Quaternion to rotate axes to the XZ plane
 static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // Static offset quaternion, so orientation matches physical intuition.
 // This will result in rotations occurring within the y axis to match 2D mapping
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
+// The resolutionMeters variable defines the area in meters that each pixel
+// represents. This is used to draw the jpeg map and in so doing defines the
+// resolution of the outputted PCD
+static const double resolutionMeters = 0.05;
+
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
 
@@ -63,11 +62,6 @@ extern std::atomic<bool> b_continue_session;
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
-
-// For a given color channel convert the scale from the given 102-255 range to
-// 100-0. This is an initial solution for extracting probability information
-// from cartographer
-unsigned char ViamColorToProbability(unsigned char color);
 
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
@@ -175,8 +169,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     double rotation_weight = 1.0;
 
    private:
-    // kPixelSize defines the pixel size for drawing the jpeg map
-    const double kPixelSize = 0.01;
     // StartSaveMap starts the map saving process in a separate thread.
     void StartSaveMap();
 
