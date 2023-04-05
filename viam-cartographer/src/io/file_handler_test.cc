@@ -6,6 +6,8 @@
 #include <ctime>
 #include <exception>
 #include <iostream>
+#include <thread>
+#include <chrono>
 
 #include "../utils/test_helpers.h"
 
@@ -19,7 +21,13 @@ BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
     std::string path_to_dir = "path_to_dir";
     std::time_t start_time =
         std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+   // std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     std::string filename = MakeFilenameWithTimestamp(path_to_dir);
+
+    //std::this_thread::sleep_for(std::chrono::milliseconds(5));
+
     std::time_t end_time =
         std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
     // Check if the filename beginning is as expected
@@ -32,8 +40,9 @@ BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
         filename.find(filename_prefix) + filename_prefix.length(),
         filename.find(".pcd")));
     // Check if timestamp is between start_time and end_time
+    std::cout << (double)start_time << "| " << filename_time << " | " << (double)end_time << "\n";
     BOOST_TEST((double)start_time <= filename_time);
-    BOOST_TEST(filename_time >= (double)end_time);
+    BOOST_TEST(filename_time <= (double)end_time);
 }
 
 BOOST_AUTO_TEST_CASE(ListSortedFilesInDirectory_success) {
