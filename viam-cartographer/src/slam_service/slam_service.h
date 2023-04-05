@@ -38,7 +38,6 @@ namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
-static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis

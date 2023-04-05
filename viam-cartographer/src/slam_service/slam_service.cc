@@ -8,7 +8,6 @@
 #include <string>
 
 #include "../io/file_handler.h"
-#include "../io/image.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
