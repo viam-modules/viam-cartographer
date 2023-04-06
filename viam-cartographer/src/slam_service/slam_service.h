@@ -39,7 +39,6 @@ namespace viam {
 
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
-static const int jpegQuality = 50;
 // Byte limit on GRPC, used to help determine sampling skip_count
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis
@@ -51,7 +50,7 @@ static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
 // in the XZ plane
 static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // The resolutionMeters variable defines the area in meters that each pixel
-// represents. This is used to draw the jpeg map and in so doing defines the
+// represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
 static const double resolutionMeters = 0.05;
 
@@ -212,10 +211,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // Cartographer
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
 
-    // GetLatestJpegMapString paints and returns the latest map as a jpeg string
-    // with or without the pose marker depending on the argument value.
-    std::string GetLatestJpegMapString(bool add_pose_marker);
-
     // PaintMarker paints the latest global pose on the painted slices.
     void PaintMarker(cartographer::io::PaintSubmapSlicesResult *painted_slices);
 
@@ -260,13 +255,11 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::mutex viam_response_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
-    // --- The following variables are used exclusively to
-    // enable GetMap to send the most recent map out while
-    // cartographer works on creating an optimized map.
-    // The variables are only updated right before the
-    // optimization is started.
-    std::string latest_jpeg_map_with_marker;
-    std::string latest_jpeg_map_without_marker;
+
+    // The latest_pointcloud_map variable is used enable GetPointCloudMap to
+    // send the most recent map out while cartographer works on creating an
+    // optimized map. It is only updated right before the optimization is
+    // started.
     std::string latest_pointcloud_map;
     // ---
 };
