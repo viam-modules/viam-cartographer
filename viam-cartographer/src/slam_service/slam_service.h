@@ -7,9 +7,9 @@
 #include <grpcpp/server_context.h>
 
 #include <atomic>
+#include <ctime>
 #include <shared_mutex>
 #include <string>
-#include <ctime>
 
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
