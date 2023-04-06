@@ -8,6 +8,7 @@
 #include <ostream>
 #include <ratio>
 #include <string>
+#include <ctime>
 
 #include "cartographer/sensor/timed_point_cloud_data.h"
 
@@ -19,7 +20,7 @@ static const std::string time_format = "%Y-%m-%dT%H:%M:%S.0000Z";
 // MakeFilenameWithTimestamp creates a filename for a provided sensor with a
 // timestamp. The filename includes the path to the file. Does not support
 // millisecond resolution.
-const std::string MakeFilenameWithTimestamp(std::string path_to_dir);
+const std::string MakeFilenameWithTimestamp(std::string path_to_dir, std::time_t t);
 
 // ListSortedFilesInDirectory returns a list of the files in the directory
 // sorted by name.

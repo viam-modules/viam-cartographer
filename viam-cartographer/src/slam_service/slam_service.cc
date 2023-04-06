@@ -689,8 +689,9 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             break;
         }
 
+        std::time_t t = std::time(nullptr);
         const std::string filename_with_timestamp =
-            viam::io::MakeFilenameWithTimestamp(path_to_map);
+            viam::io::MakeFilenameWithTimestamp(path_to_map, t);
 
         if (!use_live_data && finished_processing_offline) {
             {

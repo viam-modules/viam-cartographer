@@ -9,6 +9,7 @@
 #include <atomic>
 #include <shared_mutex>
 #include <string>
+#include <ctime>
 
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
