@@ -8,7 +8,6 @@
 #include <string>
 
 #include "../io/file_handler.h"
-#include "../io/image.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
@@ -239,14 +238,9 @@ std::string SLAMServiceImpl::TryFileClose(std::ifstream &tempFile,
 }
 
 void SLAMServiceImpl::BackupLatestMap() {
-    std::string jpeg_map_with_marker_tmp = GetLatestJpegMapString(true);
-    std::string jpeg_map_without_marker_tmp = GetLatestJpegMapString(false);
     std::string pointcloud_map_tmp;
     GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
-
     std::lock_guard<std::mutex> lk(viam_response_mutex);
-    latest_jpeg_map_with_marker = std::move(jpeg_map_with_marker_tmp);
-    latest_jpeg_map_without_marker = std::move(jpeg_map_without_marker_tmp);
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
 }
 
@@ -326,32 +320,6 @@ void SLAMServiceImpl::SetUpMapBuilder() {
     OverwriteMapBuilderParameters();
     std::lock_guard<std::mutex> lk(map_builder_mutex);
     map_builder.BuildMapBuilder();
-}
-
-std::string SLAMServiceImpl::GetLatestJpegMapString(bool add_pose_marker) {
-    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
-        nullptr;
-    try {
-        painted_slices =
-            std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
-                GetLatestPaintedMapSlices());
-    } catch (std::exception &e) {
-        if (e.what() == errorNoSubmaps) {
-            LOG(INFO) << "Error creating jpeg map: " << e.what();
-            return "";
-        } else {
-            std::string errorLog = "Error writing submap to proto: ";
-            errorLog += e.what();
-            LOG(ERROR) << errorLog;
-            throw std::runtime_error(errorLog);
-        }
-    }
-    if (add_pose_marker) {
-        PaintMarker(painted_slices.get());
-    }
-
-    auto image = io::Image(std::move(painted_slices->surface));
-    return image.WriteJpegToString(jpegQuality);
 }
 
 void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
