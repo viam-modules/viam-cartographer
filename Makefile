@@ -69,12 +69,15 @@ else
 endif
 	
 
-build:
+build: build-module
 ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
 	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
 else 
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
 endif
+
+build-module:
+	mkdir -p bin && go build -o bin/cartographer-module module/main.go
 
 install-lua-files:
 	sudo mkdir -p /usr/local/share/cartographer/lua_files/
