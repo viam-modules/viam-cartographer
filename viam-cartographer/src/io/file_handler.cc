@@ -21,7 +21,6 @@ namespace fs = boost::filesystem;
 
 const std::string MakeFilenameWithTimestamp(std::string path_to_dir,
                                             std::time_t t) {
-    // std::time_t t = std::time(nullptr);
     char timestamp[100];
     std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
                   std::gmtime(&t));
