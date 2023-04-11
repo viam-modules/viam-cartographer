@@ -3,7 +3,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/test/unit_test.hpp>
-#include <ctime>
 #include <exception>
 #include <iostream>
 
@@ -17,11 +16,10 @@ BOOST_AUTO_TEST_SUITE(file_handler)
 
 BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
     std::string path_to_dir = "path_to_dir";
-    std::time_t start_time =
-        std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-    std::string filename = MakeFilenameWithTimestamp(path_to_dir);
-    std::time_t end_time =
-        std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+    std::time_t t = std::time(nullptr);
+    std::string filename = MakeFilenameWithTimestamp(path_to_dir, t);
+
     // Check if the filename beginning is as expected
     std::string path_prefix = "/map_data_";
     std::string filename_start =
@@ -31,9 +29,8 @@ BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
     double filename_time = ReadTimeFromTimestamp(filename.substr(
         filename.find(filename_prefix) + filename_prefix.length(),
         filename.find(".pcd")));
-    // Check if timestamp is between start_time and end_time
-    BOOST_TEST((double)start_time <= filename_time);
-    BOOST_TEST(filename_time >= (double)end_time);
+
+    BOOST_TEST((double)t == filename_time);
 }
 
 BOOST_AUTO_TEST_CASE(ListSortedFilesInDirectory_success) {
