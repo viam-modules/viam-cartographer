@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
-	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	pb "go.viam.com/api/service/slam/v1"
@@ -71,18 +70,14 @@ func init() {
 		},
 	})
 
-	config.RegisterServiceAttributeMapConverter(slam.Subtype, Model,
+	config.RegisterServiceAttributeMapConverter(
+		slam.Subtype,
+		Model,
 		func(attributes config.AttributeMap) (interface{}, error) {
 			var attrCfg slamConfig.AttrConfig
-			decoder, err := mapstructure.NewDecoder(&mapstructure.DecoderConfig{TagName: "json", Result: &attrCfg})
-			if err != nil {
-				return nil, err
-			}
-			if err := decoder.Decode(attributes); err != nil {
-				return nil, err
-			}
-			return &attrCfg, nil
-		}, &slamConfig.AttrConfig{})
+			return config.TransformAttributeMapToStruct(&attrCfg, attributes)
+		},
+		&slamConfig.AttrConfig{})
 }
 
 // New returns a new slam service for the given robot.
@@ -133,10 +128,12 @@ func New(
 		return nil, err
 	}
 
-	cancelCtx, cancelFunc := context.WithCancel(ctx)
+	// Need to pass in a long-lived context because ctx is short-lived
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
+		name:                  config.Name,
 		primarySensorName:     lidar.Name,
 		executableName:        executableName,
 		subAlgo:               subAlgo,
@@ -191,6 +188,7 @@ func New(
 // cartographerService is the structure of the slam service.
 type cartographerService struct {
 	generic.Unimplemented
+	name              string
 	primarySensorName string
 	executableName    string
 	subAlgo           SubAlgo
@@ -219,11 +217,11 @@ type cartographerService struct {
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
 // it is unpacked into a Pose and a component reference string.
-func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name string) (spatialmath.Pose, string, error) {
+func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialmath.Pose, string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
 
-	req := &pb.GetPositionRequest{Name: name}
+	req := &pb.GetPositionRequest{Name: cartoSvc.name}
 
 	resp, err := cartoSvc.clientAlgo.GetPosition(ctx, req)
 	if err != nil {
@@ -238,20 +236,20 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context, name strin
 
 // GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
-func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context, name string) (func() ([]byte, error), error) {
+func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
 
-	return grpchelper.GetPointCloudMapCallback(ctx, name, cartoSvc.clientAlgo)
+	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.name, cartoSvc.clientAlgo)
 }
 
 // GetInternalState creates a request, calls the slam algorithms GetInternalState endpoint and returns a callback
 // function which will return the next chunk of the current internal state of the slam algo.
-func (cartoSvc *cartographerService) GetInternalState(ctx context.Context, name string) (func() ([]byte, error), error) {
+func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
 	defer span.End()
 
-	return grpchelper.GetInternalStateCallback(ctx, name, cartoSvc.clientAlgo)
+	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.name, cartoSvc.clientAlgo)
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
