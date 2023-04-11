@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 #include <boost/filesystem.hpp>
-#include <ctime>
 #include <fstream>  // std::ifstream
 #include <iomanip>
 #include <iostream>

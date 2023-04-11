@@ -3,7 +3,6 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/test/unit_test.hpp>
-#include <ctime>
 #include <exception>
 #include <iostream>
 
