@@ -75,35 +75,6 @@ func (m *internalStateClientMock) Recv() (*v1.GetInternalStateResponse, error) {
 	return resp, nil
 }
 
-// func makeGetPositionResponse(pose *spatialmath.Pose, componentReference *string) (*v1.GetPositionResponse, error) {
-// 	extra, err := structpb.NewStruct(map[string]interface{}{
-// 		"quat": map[string]interface{}{
-// 			"real": (*pose).Orientation().Quaternion().Real,
-// 			"imag": (*pose).Orientation().Quaternion().Imag,
-// 			"jmag": (*pose).Orientation().Quaternion().Jmag,
-// 			"kmag": (*pose).Orientation().Quaternion().Kmag,
-// 		},
-// 	})
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	resp := &v1.GetPositionResponse{
-// 		Pose: &commonv1.Pose{
-// 			X:     (*pose).Point().X,
-// 			Y:     (*pose).Point().Y,
-// 			Z:     (*pose).Point().Z,
-// 			OX:    (*pose).Orientation().OrientationVectorDegrees().OX,
-// 			OY:    (*pose).Orientation().OrientationVectorDegrees().OY,
-// 			OZ:    (*pose).Orientation().OrientationVectorDegrees().OZ,
-// 			Theta: (*pose).Orientation().OrientationVectorDegrees().Theta,
-// 		},
-// 		ComponentReference: *componentReference,
-// 		Extra:              extra,
-// 	}
-// 	return resp, nil
-// }
-
 func makeGetPositionResponse(
 	pose *commonv1.Pose,
 	quat *map[string]interface{},
