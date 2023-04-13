@@ -143,8 +143,8 @@ func TestGetPositionEndpoint(t *testing.T) {
 		in *v1.GetPositionRequest,
 		opts ...grpc.CallOption,
 	) (*v1.GetPositionResponse, error) {
-		resp, _ := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "quat")
-		return resp, nil
+		resp, err := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "quat")
+		return resp, err
 	}
 
 	t.Run("origin pose success", func(t *testing.T) {
@@ -194,6 +194,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		inputQuat = map[string]interface{}{"r": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 		inputComponentRef = "componentReference"
 		pose, componentRef, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "quaternion given, but invalid format detected")
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldEqual, "")
@@ -204,6 +205,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		inputQuat = map[string]interface{}{"real": "", "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 		inputComponentRef = "componentReference"
 		pose, componentRef, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "quaternion given, but invalid format detected")
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldEqual, "")
@@ -215,8 +217,8 @@ func TestGetPositionEndpoint(t *testing.T) {
 		in *v1.GetPositionRequest,
 		opts ...grpc.CallOption,
 	) (*v1.GetPositionResponse, error) {
-		resp, _ := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "not_quat")
-		return resp, nil
+		resp, err := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "not_quat")
+		return resp, err
 	}
 
 	t.Run("no quat key found in extra", func(t *testing.T) {
@@ -224,6 +226,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		inputQuat = map[string]interface{}{"real": 0.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 		inputComponentRef = "componentReference"
 		pose, componentRef, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "quaternion not given")
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldEqual, "")
@@ -240,6 +243,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 
 	t.Run("error return failure", func(t *testing.T) {
 		pose, componentRef, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get position")
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldEqual, "")
@@ -303,6 +307,7 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 
 	t.Run("error return failure", func(t *testing.T) {
 		callback, err := svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get pointcloud map")
 		test.That(t, callback, test.ShouldBeNil)
 	})
@@ -365,6 +370,7 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 
 	t.Run("error return failure", func(t *testing.T) {
 		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get internal state")
 		test.That(t, callback, test.ShouldBeNil)
 	})
