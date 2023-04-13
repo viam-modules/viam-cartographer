@@ -1,4 +1,4 @@
-// Package builtin implements simultaneous localization and mapping.
+// Package viamcartographer implements simultaneous localization and mapping.
 // This is an Experimental package.
 package viamcartographer
 
