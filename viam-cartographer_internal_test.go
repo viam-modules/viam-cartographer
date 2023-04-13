@@ -78,7 +78,7 @@ func (m *internalStateClientMock) Recv() (*v1.GetInternalStateResponse, error) {
 // func makeGetPositionResponse(pose *spatialmath.Pose, componentReference *string) (*v1.GetPositionResponse, error) {
 // 	extra, err := structpb.NewStruct(map[string]interface{}{
 // 		"quat": map[string]interface{}{
-// 			"real": (*pose).Orientation().Quaternion().Real, // check proto message for more accurate representation maybe send protos through??????
+// 			"real": (*pose).Orientation().Quaternion().Real,
 // 			"imag": (*pose).Orientation().Quaternion().Imag,
 // 			"jmag": (*pose).Orientation().Quaternion().Jmag,
 // 			"kmag": (*pose).Orientation().Quaternion().Kmag,
@@ -104,7 +104,12 @@ func (m *internalStateClientMock) Recv() (*v1.GetInternalStateResponse, error) {
 // 	return resp, nil
 // }
 
-func makeGetPositionResponse(pose *commonv1.Pose, quat *map[string]interface{}, componentReference *string, quatKey string) (*v1.GetPositionResponse, error) {
+func makeGetPositionResponse(
+	pose *commonv1.Pose,
+	quat *map[string]interface{},
+	componentReference *string,
+	quatKey string,
+) (*v1.GetPositionResponse, error) {
 	extra, err := structpb.NewStruct(map[string]interface{}{quatKey: *quat})
 	if err != nil {
 		return nil, err
@@ -120,10 +125,10 @@ func makeGetPositionResponse(pose *commonv1.Pose, quat *map[string]interface{}, 
 
 func makeQuaternionFromProto(quat map[string]interface{}) spatialmath.Orientation {
 	return &spatialmath.Quaternion{
-		Real: inputQuat["real"].(float64),
-		Imag: inputQuat["imag"].(float64),
-		Jmag: inputQuat["jmag"].(float64),
-		Kmag: inputQuat["kmag"].(float64),
+		Real: quat["real"].(float64),
+		Imag: quat["imag"].(float64),
+		Jmag: quat["jmag"].(float64),
+		Kmag: quat["kmag"].(float64),
 	}
 }
 
@@ -133,7 +138,11 @@ func TestGetPositionEndpoint(t *testing.T) {
 	svc.clientAlgo = mockSLAMClient
 
 	// Add successful GetPosition client
-	mockSLAMClient.GetPositionFunc = func(ctx context.Context, in *v1.GetPositionRequest, opts ...grpc.CallOption) (*v1.GetPositionResponse, error) {
+	mockSLAMClient.GetPositionFunc = func(
+		ctx context.Context,
+		in *v1.GetPositionRequest,
+		opts ...grpc.CallOption,
+	) (*v1.GetPositionResponse, error) {
 		resp, _ := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "quat")
 		return resp, nil
 	}
@@ -201,7 +210,11 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 
 	// Add invalid GetPosition client
-	mockSLAMClient.GetPositionFunc = func(ctx context.Context, in *v1.GetPositionRequest, opts ...grpc.CallOption) (*v1.GetPositionResponse, error) {
+	mockSLAMClient.GetPositionFunc = func(
+		ctx context.Context,
+		in *v1.GetPositionRequest,
+		opts ...grpc.CallOption,
+	) (*v1.GetPositionResponse, error) {
 		resp, _ := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "not_quat")
 		return resp, nil
 	}
@@ -217,7 +230,11 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 
 	// Add failing GetPosition client
-	mockSLAMClient.GetPositionFunc = func(ctx context.Context, in *v1.GetPositionRequest, opts ...grpc.CallOption) (*v1.GetPositionResponse, error) {
+	mockSLAMClient.GetPositionFunc = func(
+		ctx context.Context,
+		in *v1.GetPositionRequest,
+		opts ...grpc.CallOption,
+	) (*v1.GetPositionResponse, error) {
 		return nil, errors.New("error in get position")
 	}
 
@@ -227,33 +244,39 @@ func TestGetPositionEndpoint(t *testing.T) {
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldEqual, "")
 	})
-
 }
 
+//nolint:dupl
 func TestGetPointCloudMapEndpoint(t *testing.T) {
 	svc := &cartographerService{}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
 	// Add successful GetPointCloudMap client
-	mockSLAMClient.GetPointCloudMapFunc = func(ctx context.Context, in *v1.GetPointCloudMapRequest, opts ...grpc.CallOption) (v1.SLAMService_GetPointCloudMapClient, error) {
+	mockSLAMClient.GetPointCloudMapFunc = func(
+		ctx context.Context,
+		in *v1.GetPointCloudMapRequest,
+		opts ...grpc.CallOption,
+	) (v1.SLAMService_GetPointCloudMapClient, error) {
 		clientMock := makePointCloudClientMock(&expectedPointCloudMapBytes, &chunkSizePointCloudMap)
 		return clientMock, nil
 	}
 
 	t.Run("small chunk size success", func(t *testing.T) {
 		chunkSizePointCloudMap = 1
-		expectedPointCloudMapBytes = []byte{1, 2, 3, 4, 5, 6}
+		expectedPointCloudMapBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pointCloudMapBytes, test.ShouldResemble, expectedPointCloudMapBytes)
 	})
 
 	t.Run("large chunk size success", func(t *testing.T) {
-		chunkSizePointCloudMap = 10
-		expectedPointCloudMapBytes = []byte{1, 2, 3, 4, 6}
+		chunkSizePointCloudMap = 100
+		expectedPointCloudMapBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pointCloudMapBytes, test.ShouldResemble, expectedPointCloudMapBytes)
@@ -263,13 +286,18 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 		chunkSizePointCloudMap = 1
 		expectedPointCloudMapBytes = []byte{}
 		callback, err := svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pointCloudMapBytes, test.ShouldBeNil)
 	})
 
 	// Add failing GetPointCloudMap client
-	mockSLAMClient.GetPointCloudMapFunc = func(ctx context.Context, in *v1.GetPointCloudMapRequest, opts ...grpc.CallOption) (v1.SLAMService_GetPointCloudMapClient, error) {
+	mockSLAMClient.GetPointCloudMapFunc = func(
+		ctx context.Context,
+		in *v1.GetPointCloudMapRequest,
+		opts ...grpc.CallOption,
+	) (v1.SLAMService_GetPointCloudMapClient, error) {
 		return nil, errors.New("error in get pointcloud map")
 	}
 
@@ -278,49 +306,60 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get pointcloud map")
 		test.That(t, callback, test.ShouldBeNil)
 	})
-
 }
 
+//nolint:dupl
 func TestGetInternalStateEndpoint(t *testing.T) {
 	svc := &cartographerService{}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
 	// Add successful GetInternalState client
-	mockSLAMClient.GetInternalStateFunc = func(ctx context.Context, in *v1.GetInternalStateRequest, opts ...grpc.CallOption) (v1.SLAMService_GetInternalStateClient, error) {
+	mockSLAMClient.GetInternalStateFunc = func(
+		ctx context.Context,
+		in *v1.GetInternalStateRequest,
+		opts ...grpc.CallOption,
+	) (v1.SLAMService_GetInternalStateClient, error) {
 		clientMock := makeInternalStateClientMock(&expectedInternalStateBytes, &chunkSizeInternalState)
 		return clientMock, nil
 	}
 
-	t.Run("small chunk size success", func(t *testing.T) {
+	t.Run("small internal state chunk size success", func(t *testing.T) {
 		chunkSizeInternalState = 1
-		expectedInternalStateBytes = []byte{1, 2, 3, 4, 5, 6}
+		expectedInternalStateBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalStateBytes, test.ShouldResemble, expectedInternalStateBytes)
 	})
 
-	t.Run("large chunk size success", func(t *testing.T) {
-		chunkSizeInternalState = 10
-		expectedInternalStateBytes = []byte{1, 2, 3, 4, 6}
+	t.Run("large internal state chunk size success", func(t *testing.T) {
+		chunkSizeInternalState = 100
+		expectedInternalStateBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalStateBytes, test.ShouldResemble, expectedInternalStateBytes)
 	})
 
-	t.Run("no bytes success", func(t *testing.T) {
+	t.Run("no internal state bytes success", func(t *testing.T) {
 		chunkSizeInternalState = 1
 		expectedInternalStateBytes = []byte{}
 		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalStateBytes, test.ShouldBeNil)
 	})
 
 	// Add failing GetInternalState client
-	mockSLAMClient.GetInternalStateFunc = func(ctx context.Context, in *v1.GetInternalStateRequest, opts ...grpc.CallOption) (v1.SLAMService_GetInternalStateClient, error) {
+	mockSLAMClient.GetInternalStateFunc = func(
+		ctx context.Context,
+		in *v1.GetInternalStateRequest,
+		opts ...grpc.CallOption,
+	) (v1.SLAMService_GetInternalStateClient, error) {
 		return nil, errors.New("error in get internal state")
 	}
 
