@@ -11,12 +11,13 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/actionlint v1.6.23
 	go.opencensus.io v0.24.0
-	go.viam.com/api v0.1.106
-	go.viam.com/rdk v0.2.34-0.20230407220031-b6a992c7135b
+	go.viam.com/api v0.1.109
+	go.viam.com/rdk v0.2.35-0.20230414200726-59633a8a138b
 	go.viam.com/slam v0.1.34-0.20230404174630-f82fcc184401
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.18-0.20230327140716-bfeb34d89117
 	google.golang.org/grpc v1.54.0
+	google.golang.org/protobuf v1.30.0
 )
 
 require (
@@ -300,7 +301,6 @@ require (
 	google.golang.org/api v0.114.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20230322174352-cde4c949918d // indirect
-	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
