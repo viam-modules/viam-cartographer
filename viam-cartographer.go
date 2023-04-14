@@ -358,10 +358,14 @@ func (cartoSvc *cartographerService) GetSLAMProcessConfig() pexec.ProcessConfig 
 	}
 
 	return pexec.ProcessConfig{
-		ID:      "slam_cartographer",
-		Name:    target,
-		Args:    args,
-		Log:     true,
+		ID:   "slam_cartographer",
+		Name: target,
+		Args: args,
+		Log:  true,
+		// In appimage this is set to the appimage
+		// squashfs mount location (/tmp/.mountXXXXX)
+		// Otherwise, it is an empty string
+		CWD:     os.Getenv("APPRUN_RUNTIME"),
 		OneShot: false,
 	}
 }
