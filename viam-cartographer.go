@@ -6,6 +6,7 @@ import (
 	"bufio"
 	"context"
 	"io"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -346,9 +347,19 @@ func (cartoSvc *cartographerService) GetSLAMProcessConfig() pexec.ProcessConfig 
 	args = append(args, "-port="+cartoSvc.port)
 	args = append(args, "--aix-auto-update")
 
+	target := cartoSvc.executableName
+
+	appDir := os.Getenv("APPDIR")
+
+	if appDir != "" {
+		// The carto grpc server is expected to be in
+		// /usr/bin/ if we are running in an appimage
+		target = appDir + "/usr/bin/" + strings.TrimPrefix(target, "/")
+	}
+
 	return pexec.ProcessConfig{
 		ID:      "slam_cartographer",
-		Name:    cartoSvc.executableName,
+		Name:    target,
 		Args:    args,
 		Log:     true,
 		OneShot: false,
