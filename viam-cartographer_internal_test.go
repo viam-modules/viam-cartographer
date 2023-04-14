@@ -11,10 +11,11 @@ import (
 	v1 "go.viam.com/api/service/slam/v1"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
-	"go.viam.com/rdk/testutils/inject"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	inject "github.com/viamrobotics/viam-cartographer/internal/inject"
 )
 
 type pointCloudClientMock struct {
