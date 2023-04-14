@@ -1,4 +1,5 @@
-// Package inject is used to create a mock slam service client connection to a slam binary
+// Package inject is used to mock a slam grpc client. This will be removed once the slam service is fully modularized and said
+// grpc client disappears. JIRA Ticket: https://viam.atlassian.net/browse/RSDK-2730
 package inject
 
 import (
