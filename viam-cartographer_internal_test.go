@@ -154,7 +154,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 
 	t.Run("invalid quat map keys failure", func(t *testing.T) {
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
-		inputQuat = map[string]interface{}{"r": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
+		inputQuat = map[string]interface{}{"invalid": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 		inputComponentRef = "componentReference"
 		pose, componentRef, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeError)
@@ -165,7 +165,18 @@ func TestGetPositionEndpoint(t *testing.T) {
 
 	t.Run("invalid quat map values failure", func(t *testing.T) {
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
-		inputQuat = map[string]interface{}{"real": "", "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
+		inputQuat = map[string]interface{}{"real": "invalid", "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
+		inputComponentRef = "componentReference"
+		pose, componentRef, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "quaternion given, but invalid format detected")
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldEqual, "")
+	})
+
+	t.Run("empty quat map failure", func(t *testing.T) {
+		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
+		inputQuat = map[string]interface{}{}
 		inputComponentRef = "componentReference"
 		pose, componentRef, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeError)
