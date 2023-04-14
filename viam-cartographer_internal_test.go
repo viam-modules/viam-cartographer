@@ -187,53 +187,56 @@ func TestGetPositionEndpoint(t *testing.T) {
 		})
 	})
 
-	// Add invalid client
-	mockSLAMClient.GetPositionFunc = func(
-		ctx context.Context,
-		in *v1.GetPositionRequest,
-		opts ...grpc.CallOption,
-	) (*v1.GetPositionResponse, error) {
-		resp, err := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "not_quat")
-		return resp, err
-	}
+	t.Run("invalid client", func(t *testing.T) {
+		mockSLAMClient.GetPositionFunc = func(
+			ctx context.Context,
+			in *v1.GetPositionRequest,
+			opts ...grpc.CallOption,
+		) (*v1.GetPositionResponse, error) {
+			resp, err := makeGetPositionResponse(&inputPose, &inputQuat, &inputComponentRef, "not_quat")
+			return resp, err
+		}
 
-	t.Run("invalid client no quat key found in extra failure", func(t *testing.T) {
-		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
-		inputQuat = map[string]interface{}{"real": 0.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
-		inputComponentRef = "componentReference"
-		pose, componentRef, err := svc.GetPosition(context.Background())
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "quaternion not given")
-		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentRef, test.ShouldEqual, "")
+		t.Run("invalid client no quat key found in extra failure", func(t *testing.T) {
+			inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
+			inputQuat = map[string]interface{}{"real": 0.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
+			inputComponentRef = "componentReference"
+			pose, componentRef, err := svc.GetPosition(context.Background())
+			test.That(t, err, test.ShouldBeError)
+			test.That(t, err.Error(), test.ShouldContainSubstring, "quaternion not given")
+			test.That(t, pose, test.ShouldBeNil)
+			test.That(t, componentRef, test.ShouldEqual, "")
+		})
 	})
 
-	// Add invalid client
-	mockSLAMClient.GetPositionFunc = func(
-		ctx context.Context,
-		in *v1.GetPositionRequest,
-		opts ...grpc.CallOption,
-	) (*v1.GetPositionResponse, error) {
-		return nil, errors.New("error in get position")
-	}
+	t.Run("error client", func(t *testing.T) {
+		mockSLAMClient.GetPositionFunc = func(
+			ctx context.Context,
+			in *v1.GetPositionRequest,
+			opts ...grpc.CallOption,
+		) (*v1.GetPositionResponse, error) {
+			return nil, errors.New("error in get position")
+		}
 
-	t.Run("invalid client error return failure", func(t *testing.T) {
-		pose, componentRef, err := svc.GetPosition(context.Background())
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get position")
-		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentRef, test.ShouldEqual, "")
+		t.Run("error return failure", func(t *testing.T) {
+			pose, componentRef, err := svc.GetPosition(context.Background())
+			test.That(t, err, test.ShouldBeError)
+			test.That(t, err.Error(), test.ShouldContainSubstring, "error in get position")
+			test.That(t, pose, test.ShouldBeNil)
+			test.That(t, componentRef, test.ShouldEqual, "")
+		})
 	})
 
-	// Add nil client
-	mockSLAMClient.GetPositionFunc = nil
+	t.Run("nil client", func(t *testing.T) {
+		mockSLAMClient.GetPositionFunc = nil
 
-	t.Run("nil client failure", func(t *testing.T) {
-		pose, componentRef, err := svc.GetPosition(context.Background())
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "no GetPositionFunc defined for injected SLAM service client")
-		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentRef, test.ShouldEqual, "")
+		t.Run("nil failure", func(t *testing.T) {
+			pose, componentRef, err := svc.GetPosition(context.Background())
+			test.That(t, err, test.ShouldBeError)
+			test.That(t, err.Error(), test.ShouldContainSubstring, "no GetPositionFunc defined for injected SLAM service client")
+			test.That(t, pose, test.ShouldBeNil)
+			test.That(t, componentRef, test.ShouldEqual, "")
+		})
 	})
 }
 
@@ -287,30 +290,31 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 		})
 	})
 
-	// Add invalid client
-	mockSLAMClient.GetPointCloudMapFunc = func(
-		ctx context.Context,
-		in *v1.GetPointCloudMapRequest,
-		opts ...grpc.CallOption,
-	) (v1.SLAMService_GetPointCloudMapClient, error) {
-		return nil, errors.New("error in get pointcloud map")
-	}
+	t.Run("invalid client", func(t *testing.T) {
+		mockSLAMClient.GetPointCloudMapFunc = func(
+			ctx context.Context,
+			in *v1.GetPointCloudMapRequest,
+			opts ...grpc.CallOption,
+		) (v1.SLAMService_GetPointCloudMapClient, error) {
+			return nil, errors.New("error in get pointcloud map")
+		}
 
-	t.Run("invalid client error return failure", func(t *testing.T) {
-		callback, err := svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get pointcloud map")
-		test.That(t, callback, test.ShouldBeNil)
+		t.Run("invalid client error return failure", func(t *testing.T) {
+			callback, err := svc.GetPointCloudMap(context.Background())
+			test.That(t, err, test.ShouldBeError)
+			test.That(t, err.Error(), test.ShouldContainSubstring, "error in get pointcloud map")
+			test.That(t, callback, test.ShouldBeNil)
+		})
 	})
+	t.Run("nil client", func(t *testing.T) {
+		mockSLAMClient.GetPointCloudMapFunc = nil
 
-	// Add nil client
-	mockSLAMClient.GetPointCloudMapFunc = nil
-
-	t.Run("nil client failure", func(t *testing.T) {
-		callback, err := svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "no GetPointCloudMapFunc defined for injected SLAM service client")
-		test.That(t, callback, test.ShouldBeNil)
+		t.Run("nil failure", func(t *testing.T) {
+			callback, err := svc.GetPointCloudMap(context.Background())
+			test.That(t, err, test.ShouldBeError)
+			test.That(t, err.Error(), test.ShouldContainSubstring, "no GetPointCloudMapFunc defined for injected SLAM service client")
+			test.That(t, callback, test.ShouldBeNil)
+		})
 	})
 }
 
@@ -364,29 +368,31 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 		})
 	})
 
-	// Add invalid client
-	mockSLAMClient.GetInternalStateFunc = func(
-		ctx context.Context,
-		in *v1.GetInternalStateRequest,
-		opts ...grpc.CallOption,
-	) (v1.SLAMService_GetInternalStateClient, error) {
-		return nil, errors.New("error in get internal state")
-	}
+	t.Run("invalid client", func(t *testing.T) {
+		mockSLAMClient.GetInternalStateFunc = func(
+			ctx context.Context,
+			in *v1.GetInternalStateRequest,
+			opts ...grpc.CallOption,
+		) (v1.SLAMService_GetInternalStateClient, error) {
+			return nil, errors.New("error in get internal state")
+		}
 
-	t.Run("invalid client error return failure", func(t *testing.T) {
-		callback, err := svc.GetInternalState(context.Background())
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get internal state")
-		test.That(t, callback, test.ShouldBeNil)
+		t.Run("invalid client error return failure", func(t *testing.T) {
+			callback, err := svc.GetInternalState(context.Background())
+			test.That(t, err, test.ShouldBeError)
+			test.That(t, err.Error(), test.ShouldContainSubstring, "error in get internal state")
+			test.That(t, callback, test.ShouldBeNil)
+		})
 	})
 
-	// Add nil client
-	mockSLAMClient.GetInternalStateFunc = nil
+	t.Run("nil client", func(t *testing.T) {
+		mockSLAMClient.GetInternalStateFunc = nil
 
-	t.Run("nil client failure", func(t *testing.T) {
-		callback, err := svc.GetInternalState(context.Background())
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "no GetInternalState defined for injected SLAM service client")
-		test.That(t, callback, test.ShouldBeNil)
+		t.Run("nil failure", func(t *testing.T) {
+			callback, err := svc.GetInternalState(context.Background())
+			test.That(t, err, test.ShouldBeError)
+			test.That(t, err.Error(), test.ShouldContainSubstring, "no GetInternalState defined for injected SLAM service client")
+			test.That(t, callback, test.ShouldBeNil)
+		})
 	})
 }
