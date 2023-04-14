@@ -1,3 +1,4 @@
+// Package inject is used to create a mock slam service client connection to a slam module or binary
 package inject
 
 import (
