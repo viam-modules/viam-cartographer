@@ -353,7 +353,7 @@ func (cartoSvc *cartographerService) GetSLAMProcessConfig() pexec.ProcessConfig 
 
 	if appDir != "" {
 		// The carto grpc server is expected to be in
-		// /usr/bin/ if we are running in an appimage
+		// /usr/bin/ if we are running in an AppImage
 		target = appDir + "/usr/bin/" + strings.TrimPrefix(target, "/")
 	}
 
