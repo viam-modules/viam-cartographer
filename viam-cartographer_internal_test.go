@@ -1,5 +1,3 @@
-// Package viamcartographer implements simultaneous localization and mapping.
-// This is an Experimental package.
 package viamcartographer
 
 import (
@@ -17,16 +15,6 @@ import (
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
-)
-
-var (
-	chunkSizePointCloudMap     int
-	chunkSizeInternalState     int
-	inputComponentRef          string
-	expectedPointCloudMapBytes []byte
-	expectedInternalStateBytes []byte
-	inputQuat                  map[string]interface{}
-	inputPose                  commonv1.Pose
 )
 
 type pointCloudClientMock struct {
@@ -94,7 +82,7 @@ func makeGetPositionResponse(
 	return resp, nil
 }
 
-func makeQuaternionFromProto(quat map[string]interface{}) spatialmath.Orientation {
+func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orientation {
 	return &spatialmath.Quaternion{
 		Real: quat["real"].(float64),
 		Imag: quat["imag"].(float64),
@@ -107,6 +95,10 @@ func TestGetPositionEndpoint(t *testing.T) {
 	svc := &cartographerService{}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
+
+	var inputPose commonv1.Pose
+	var inputQuat map[string]interface{}
+	var inputComponentRef string
 
 	// Add successful GetPosition client
 	mockSLAMClient.GetPositionFunc = func(
@@ -126,21 +118,21 @@ func TestGetPositionEndpoint(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		expectedPose := spatialmath.NewPose(
 			r3.Vector{inputPose.X, inputPose.Y, inputPose.Z},
-			makeQuaternionFromProto(inputQuat),
+			makeQuaternionFromGenericMap(inputQuat),
 		)
 		test.That(t, pose, test.ShouldResemble, expectedPose)
 		test.That(t, componentRef, test.ShouldEqual, inputComponentRef)
 	})
 
 	t.Run("non origin pose success", func(t *testing.T) {
-		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 1, OY: 0, OZ: 1, Theta: 0}
-		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
+		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
+		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
 		inputComponentRef = "componentReference"
 		pose, componentRef, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		expectedPose := spatialmath.NewPose(
 			r3.Vector{inputPose.X, inputPose.Y, inputPose.Z},
-			makeQuaternionFromProto(inputQuat),
+			makeQuaternionFromGenericMap(inputQuat),
 		)
 		test.That(t, pose, test.ShouldResemble, expectedPose)
 		test.That(t, componentRef, test.ShouldEqual, inputComponentRef)
@@ -154,7 +146,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		expectedPose := spatialmath.NewPose(
 			r3.Vector{inputPose.X, inputPose.Y, inputPose.Z},
-			makeQuaternionFromProto(inputQuat),
+			makeQuaternionFromGenericMap(inputQuat),
 		)
 		test.That(t, pose, test.ShouldResemble, expectedPose)
 		test.That(t, componentRef, test.ShouldEqual, inputComponentRef)
@@ -192,7 +184,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		return resp, err
 	}
 
-	t.Run("no quat key found in extra", func(t *testing.T) {
+	t.Run("no quat key found in extra failure", func(t *testing.T) {
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 0.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 		inputComponentRef = "componentReference"
@@ -219,6 +211,17 @@ func TestGetPositionEndpoint(t *testing.T) {
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldEqual, "")
 	})
+
+	// Add nil GetPosition client
+	mockSLAMClient.GetPositionFunc = nil
+
+	t.Run("undefined GetPosition function in injected client", func(t *testing.T) {
+		pose, componentRef, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "no GetPositionFunc defined for injected SLAM service client")
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldEqual, "")
+	})
 }
 
 //nolint:dupl
@@ -227,39 +230,42 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
+	var chunkSizePointCloudMap int
+	var inputPointCloudMapBytes []byte
+
 	// Add successful GetPointCloudMap client
 	mockSLAMClient.GetPointCloudMapFunc = func(
 		ctx context.Context,
 		in *v1.GetPointCloudMapRequest,
 		opts ...grpc.CallOption,
 	) (v1.SLAMService_GetPointCloudMapClient, error) {
-		clientMock := makePointCloudClientMock(&expectedPointCloudMapBytes, &chunkSizePointCloudMap)
+		clientMock := makePointCloudClientMock(&inputPointCloudMapBytes, &chunkSizePointCloudMap)
 		return clientMock, nil
 	}
 
 	t.Run("small chunk size success", func(t *testing.T) {
 		chunkSizePointCloudMap = 1
-		expectedPointCloudMapBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		inputPointCloudMapBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pointCloudMapBytes, test.ShouldResemble, expectedPointCloudMapBytes)
+		test.That(t, pointCloudMapBytes, test.ShouldResemble, inputPointCloudMapBytes)
 	})
 
 	t.Run("large chunk size success", func(t *testing.T) {
 		chunkSizePointCloudMap = 100
-		expectedPointCloudMapBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		inputPointCloudMapBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pointCloudMapBytes, test.ShouldResemble, expectedPointCloudMapBytes)
+		test.That(t, pointCloudMapBytes, test.ShouldResemble, inputPointCloudMapBytes)
 	})
 
 	t.Run("no bytes success", func(t *testing.T) {
 		chunkSizePointCloudMap = 1
-		expectedPointCloudMapBytes = []byte{}
+		inputPointCloudMapBytes = []byte{}
 		callback, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
@@ -282,6 +288,16 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get pointcloud map")
 		test.That(t, callback, test.ShouldBeNil)
 	})
+
+	// Add undefined GetPointCloudMap client
+	mockSLAMClient.GetPointCloudMapFunc = nil
+
+	t.Run("undefined GetPointCloudMap function in injected client", func(t *testing.T) {
+		callback, err := svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "no GetPointCloudMapFunc defined for injected SLAM service client")
+		test.That(t, callback, test.ShouldBeNil)
+	})
 }
 
 //nolint:dupl
@@ -290,39 +306,42 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
+	var chunkSizeInternalState int
+	var inputInternalStateBytes []byte
+
 	// Add successful GetInternalState client
 	mockSLAMClient.GetInternalStateFunc = func(
 		ctx context.Context,
 		in *v1.GetInternalStateRequest,
 		opts ...grpc.CallOption,
 	) (v1.SLAMService_GetInternalStateClient, error) {
-		clientMock := makeInternalStateClientMock(&expectedInternalStateBytes, &chunkSizeInternalState)
+		clientMock := makeInternalStateClientMock(&inputInternalStateBytes, &chunkSizeInternalState)
 		return clientMock, nil
 	}
 
 	t.Run("small internal state chunk size success", func(t *testing.T) {
 		chunkSizeInternalState = 1
-		expectedInternalStateBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		inputInternalStateBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetInternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, internalStateBytes, test.ShouldResemble, expectedInternalStateBytes)
+		test.That(t, internalStateBytes, test.ShouldResemble, inputInternalStateBytes)
 	})
 
 	t.Run("large internal state chunk size success", func(t *testing.T) {
 		chunkSizeInternalState = 100
-		expectedInternalStateBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
+		inputInternalStateBytes = []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 		callback, err := svc.GetInternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, internalStateBytes, test.ShouldResemble, expectedInternalStateBytes)
+		test.That(t, internalStateBytes, test.ShouldResemble, inputInternalStateBytes)
 	})
 
 	t.Run("no internal state bytes success", func(t *testing.T) {
 		chunkSizeInternalState = 1
-		expectedInternalStateBytes = []byte{}
+		inputInternalStateBytes = []byte{}
 		callback, err := svc.GetInternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
@@ -343,6 +362,16 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 		callback, err := svc.GetInternalState(context.Background())
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error in get internal state")
+		test.That(t, callback, test.ShouldBeNil)
+	})
+
+	// Add nil GetInternalState client
+	mockSLAMClient.GetInternalStateFunc = nil
+
+	t.Run("undefined GetInternalState function in injected client", func(t *testing.T) {
+		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "no GetInternalState defined for injected SLAM service client")
 		test.That(t, callback, test.ShouldBeNil)
 	})
 }
