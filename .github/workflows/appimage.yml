@@ -116,6 +116,15 @@ jobs:
       run: |
         echo "APPIMAGE=true" >> pr.env
 
+    - name: Upload code coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: pr-code-coverage
+        path: |
+         pr.env
+         code-coverage-results.md
+        retention-days: 1
+
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
       run: sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="latest" appimage'
