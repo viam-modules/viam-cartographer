@@ -45,11 +45,6 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'cd viam-cartographer && make clean'
         
-    - name: Authorize GCP Upload
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-
     - name: make bufinstall buf setup
       uses: nick-fields/retry@v2
       with:
@@ -90,15 +85,15 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration'
 
-    # - name: Authorize GCP Upload
-    #   uses: google-github-actions/auth@v1
-    #   with:
-    #     credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    - name: Authorize GCP Upload
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
     - name: Build AppImage (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
       run: |
-         sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage
+         sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
     - name: Upload Files (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
