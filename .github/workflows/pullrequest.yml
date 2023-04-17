@@ -9,6 +9,9 @@ on:
   pull_request:
     branches: [ 'main' ]
     types: [ 'opened', 'reopened', 'synchronize' ]
+  pull_request_target:
+    branches: [ 'main' ]
+    types: [ 'labeled' ]
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
 # and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
@@ -21,7 +24,7 @@ jobs:
   # This lets people add an "appimage" tag to have appimages built for the PR
   appimage:
     if: |
-       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'appimage')
+       always() && !cancelled() && github.event_name == 'pull_request_target' && contains(github.event.pull_request.labels.*.name, 'appimage')
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
