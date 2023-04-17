@@ -290,7 +290,7 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 		})
 	})
 
-	t.Run("invalid client", func(t *testing.T) {
+	t.Run("invaid client", func(t *testing.T) {
 		mockSLAMClient.GetPointCloudMapFunc = func(
 			ctx context.Context,
 			in *v1.GetPointCloudMapRequest,
