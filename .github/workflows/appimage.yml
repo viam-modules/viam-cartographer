@@ -106,6 +106,16 @@ jobs:
         parent: false
         gzip: false
 
+    - name: Prepare code comment
+      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+      run: |
+        echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> pr.env
+
+    - name: Mark appimage label
+      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+      run: |
+        echo "APPIMAGE=true" >> pr.env
+
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
       run: sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="latest" appimage'
