@@ -50,7 +50,7 @@ jobs:
         shell: bash
         command: |
           chown -R testbot .
-          sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
+          sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall setup'
 
     - name: make clean
       run: |
