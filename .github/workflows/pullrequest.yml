@@ -1,4 +1,4 @@
-name: Pull Request Update
+~name: Pull Request Update
 
 concurrency: 
   group: pullrequest-${{ github.ref }}
@@ -17,3 +17,22 @@ on:
 jobs:
   test:
     uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
+  
+  # This lets people add an "appimage" tag to have appimages built for the PR
+  appimage:
+    needs: [test]
+    if: |
+      always() && !cancelled() &&
+      !contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') &&
+      contains(github.event.pull_request.labels.*.name, 'appimage') && needs.test.result == 'success'
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    secrets:
+      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+  appimage-ignore-tests:
+    if: |
+       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
+    secrets:
+      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+~
