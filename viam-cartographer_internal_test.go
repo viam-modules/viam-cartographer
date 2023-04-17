@@ -139,7 +139,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 			test.That(t, componentRef, test.ShouldEqual, inputComponentRef)
 		})
 
-		t.Run("empty component reference success", func(t *testing.T) {
+		t.Run("empty compoent reference success", func(t *testing.T) {
 			inputPose = commonv1.Pose{X: 6, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
 			inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 			inputComponentRef = ""
