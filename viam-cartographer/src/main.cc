@@ -16,6 +16,8 @@ void exit_loop_handler(int s) {
 }
 
 int main(int argc, char** argv) {
+
+    LOG(INFO) << "Server222 \n";
     // glog only supports logging to files and stderr, not stdout.
     FLAGS_logtostderr = 1;
     google::InitGoogleLogging(argv[0]);
