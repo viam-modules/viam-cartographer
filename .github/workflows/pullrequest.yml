@@ -9,9 +9,6 @@ on:
   pull_request:
     branches: [ 'main' ]
     types: [ 'opened', 'reopened', 'synchronize' ]
-  pull_request_target:
-    branches: [ 'main' ]
-    types: [ 'labeled' ]
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
 # and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
