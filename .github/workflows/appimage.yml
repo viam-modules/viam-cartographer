@@ -34,7 +34,7 @@ jobs:
         path: viam-cartographer
       
     - name: Check out PR branch code
-      if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+      if: github.event_name == 'pull_request'
       uses: actions/checkout@v3
       with:
         ref: ${{ github.event.pull_request.head.sha }}
