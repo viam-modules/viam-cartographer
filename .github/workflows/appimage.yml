@@ -43,7 +43,7 @@ jobs:
 
     - name: Clean
       run: |
-        make clean-all
+        make clean
 
     - name: make bufinstall buf setup
       uses: nick-fields/retry@v2
