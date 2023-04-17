@@ -306,7 +306,7 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 			test.That(t, callback, test.ShouldBeNil)
 		})
 	})
-	t.Run("nil client", func(t *testing.T) {
+	t.Run("nilclient", func(t *testing.T) {
 		mockSLAMClient.GetPointCloudMapFunc = nil
 
 		t.Run("nil failure", func(t *testing.T) {
