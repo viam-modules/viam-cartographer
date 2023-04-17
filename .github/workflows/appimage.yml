@@ -111,7 +111,9 @@ jobs:
       uses: marocchino/sticky-pull-request-comment@v2.2.0
       with:
         message: |
-          Temporary AppImage ready! <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x86_64.AppImage>
+          ${{ fromJSON(toJSON(matrix.arch)) }}
+          ${{ fromJSON(toJSON(matrix.platform)) }}
+        #  Temporary AppImage ready! <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x.AppImage>
 
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
