@@ -43,7 +43,7 @@ jobs:
 
     - name: Clean
       run: |
-        make clean
+        sudo -u testbot bash -lc 'cd viam-cartographer && make clean'
 
     - name: make bufinstall buf setup
       uses: nick-fields/retry@v2
