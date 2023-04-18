@@ -18,8 +18,6 @@ jobs:
   test:
     if: (github.event.label.name == 'safe to test' || github.event.label.name == 'appimage')
     uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@qaworkflow
-    secrets:
-      MONGODB_TEST_OUTPUT_URI: ${{ secrets.MONGODB_TEST_OUTPUT_URI }}
 
   # This lets people add an "appimage" tag to have appimages built for the PR
   appimage:
