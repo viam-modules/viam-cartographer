@@ -327,7 +327,7 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 	var chunkSizeInternalState int
 	var inputInternalStateBytes []byte
 
-	t.Run("successful client", func(t *testing.T) {
+	t.Run("succssful client", func(t *testing.T) {
 		mockSLAMClient.GetInternalStateFunc = func(
 			ctx context.Context,
 			in *v1.GetInternalStateRequest,
