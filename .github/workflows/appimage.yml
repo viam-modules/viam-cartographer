@@ -106,12 +106,13 @@ jobs:
         parent: false
         gzip: false
 
-    - name: Link AppImage (PR)
+    - name: Add AppImage Links (PR)
       if: matrix.platform == 'linux/amd64' && (contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests'))
       uses: marocchino/sticky-pull-request-comment@v2.2.0
       with:
-        hide_and_recreate: true
-        hide_classify: "OUTDATED"
+        header: AppImage
+        number: ${{ env.PR_NUMBER }}
+        recreate: true
         message: |
            X86_64 AppImage ready! <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x86_64.AppImage>
            AARCH64 AppImage ready! <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-aarch64.AppImage>
