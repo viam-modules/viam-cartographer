@@ -107,14 +107,14 @@ jobs:
         gzip: false
 
     - name: Send Message1
-      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') && matrix.platform == 'linux/amd64'
+      if: matrix.platform == 'linux/amd64' && (contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests'))
       uses: marocchino/sticky-pull-request-comment@v2.2.0
       with:
         message: |
           Temporary AppImage ready! <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x86_64.AppImage>
    
     - name: Send Message2
-      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') && matrix.platform == 'linux/arm64'
+      if: matrix.platform == 'linux/arm64' && (contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests'))
       uses: marocchino/sticky-pull-request-comment@v2.2.0
       with:
         message: |
