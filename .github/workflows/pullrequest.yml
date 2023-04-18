@@ -26,14 +26,15 @@ jobs:
     needs: [test]
     if: |
        always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'appimage') && 
-       needs.test.result == 'success'
+       needs.test.result == 'success' && github.event_name == 'pull_request_target'
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   appimage-ignore-test:
     if: |
-       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') && 
+       github.event_name == 'pull_request_target'
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
