@@ -309,7 +309,7 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 	t.Run("nil client", func(t *testing.T) {
 		mockSLAMClient.GetPointCloudMapFunc = nil
 
-		t.Run("nil failure", func(t *testing.T) {
+		t.Run("ni failure", func(t *testing.T) {
 			callback, err := svc.GetPointCloudMap(context.Background())
 			test.That(t, err, test.ShouldBeError)
 			test.That(t, err.Error(), test.ShouldContainSubstring, "no GetPointCloudMapFunc defined for injected SLAM service client")
