@@ -1,0 +1,41 @@
+
+name: Pull Request Update
+
+concurrency: 
+  group: pullrequest-trusted-${{ github.head_ref }}
+  cancel-in-progress: true
+
+on:
+  pull_request_target:
+    branches: [ 'qaworkflow' ]
+    types: [ 'labeled' ]
+
+# To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
+# and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
+# Don't forget to tag back to @main before merge.
+
+jobs:
+  test:
+    if: (github.event.label.name == 'safe to test' || github.event.label.name == 'appimage')
+    uses: viamrobotics/rdk/.github/workflows/test.yml@qaworkflow
+    secrets:
+      MONGODB_TEST_OUTPUT_URI: ${{ secrets.MONGODB_TEST_OUTPUT_URI }}
+
+  # This lets people add an "appimage" tag to have appimages built for the PR
+  appimage:
+    needs: [test]
+    if: |
+      always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
+      !contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') &&
+      contains(github.event.pull_request.labels.*.name, 'appimage') && needs.test.result == 'success'
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
+    secrets:
+      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+  appimage-ignore-tests:
+    if: |
+       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
+       contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
+    secrets:
+      GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
