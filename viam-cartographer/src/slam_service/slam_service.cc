@@ -107,14 +107,16 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if (optimization_lock.try_lock()) {
+        if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
             GetLatestSampledPointCloudMapString(pointcloud_map);
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
-        } else {
+	    LOG(INFO)
+		    << "Updated latest point cloud map";
+	} else {
             // Either we are in localization mode or we couldn't lock the mutex
             // which means the optimization process locked it and we need to use
             // the backed up latest map
