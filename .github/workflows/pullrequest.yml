@@ -23,6 +23,7 @@ jobs:
   
   # This lets people add an "appimage" tag to have appimages built for the PR
   appimage:
+    needs: [test]
     if: |
        always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'appimage') && 
        needs.test.result == 'success'
@@ -31,7 +32,6 @@ jobs:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   # appimage-ignore-test:
-  #  needs: [test]
   #   if: |
   #      always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
   #   uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
