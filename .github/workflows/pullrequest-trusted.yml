@@ -2,7 +2,7 @@
 name: Pull Request Update
 
 concurrency: 
-  group: pullrequest-trusted-${{ github.head_ref }}
+  group: pullrequest-${{ github.head_ref }}
   cancel-in-progress: true
 
 on:
