@@ -23,6 +23,9 @@ clean:
 	rm -rf viam-cartographer/build
 	rm -rf viam-cartographer/cartographer/build
 
+clean-all:
+	git clean -fxd
+
 ensure-submodule-initialized:
 	@if [ ! -d "viam-cartographer/cartographer/cartographer" ]; then \
 		echo "Submodule was not found. Initializing..."; \
