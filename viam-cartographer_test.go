@@ -153,7 +153,7 @@ func TestDataProcess(t *testing.T) {
 
 	slamSvc := svc.(testhelper.Service)
 
-	t.Run("Successful startup of data process ith good lidar", func(t *testing.T) {
+	t.Run("Successful startup of datsdsdsa process ith good lidar", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
 		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
