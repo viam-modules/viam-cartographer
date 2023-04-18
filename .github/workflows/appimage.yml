@@ -114,7 +114,7 @@ jobs:
         number: ${{ env.PR_NUMBER }}
         recreate: true
         message: |
-           AppImage ready (x86_64)! <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x86_64.AppImage>
+           AppImage ready (x86_64): <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x86_64.AppImage>
 
     - name: Add AppImage Links2 (PR)
       if: matrix.platform == 'linux/arm64' && (contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests'))
@@ -124,7 +124,7 @@ jobs:
         number: ${{ env.PR_NUMBER }}
         recreate: true
         message: |
-          AppImage ready (arm64)! <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-aarch64.AppImage>
+          AppImage ready (arm64): <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-aarch64.AppImage>
 
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
