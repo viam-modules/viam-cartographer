@@ -19,8 +19,12 @@ buf: bufsetup
 
 clean:
 	rm -rf grpc
+	rm -rf bin
 	rm -rf viam-cartographer/build
 	rm -rf viam-cartographer/cartographer/build
+
+clean-all:
+	git clean -fxd
 
 ensure-submodule-initialized:
 	@if [ ! -d "viam-cartographer/cartographer/cartographer" ]; then \
@@ -98,6 +102,8 @@ install:
 appimage: build
 	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe carto_grpc_server-`uname -m`.yml
 	cd etc/packaging/appimages && ./package_release_carto.sh
+	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe cartographer-module-`uname -m`.yml
+	cd etc/packaging/appimages && ./package_release_module.sh
 	mkdir -p etc/packaging/appimages/deploy/
 	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
 	chmod 755 etc/packaging/appimages/deploy/*.AppImage
