@@ -6,7 +6,6 @@
 #include <stdio.h>
 
 #include <boost/filesystem.hpp>
-#include <ctime>
 #include <fstream>  // std::ifstream
 #include <iomanip>
 #include <iostream>
@@ -19,8 +18,8 @@ namespace io {
 
 namespace fs = boost::filesystem;
 
-const std::string MakeFilenameWithTimestamp(std::string path_to_dir) {
-    std::time_t t = std::time(nullptr);
+const std::string MakeFilenameWithTimestamp(std::string path_to_dir,
+                                            std::time_t t) {
     char timestamp[100];
     std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
                   std::gmtime(&t));
