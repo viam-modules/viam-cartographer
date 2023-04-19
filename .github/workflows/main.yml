@@ -6,7 +6,7 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: [ 'main' ]
+    branches: [ 'qaworkflow' ]
     paths-ignore:
       - 'README.md'
     tags:
@@ -18,7 +18,7 @@ on:
 
 jobs:
   appimage:
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
