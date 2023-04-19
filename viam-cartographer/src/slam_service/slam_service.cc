@@ -114,8 +114,6 @@ std::atomic<bool> b_continue_session{true};
             GetLatestSampledPointCloudMapString(pointcloud_map);
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_pointcloud_map = pointcloud_map;
-	    LOG(INFO)
-		    << "Updated latest point cloud map";
 	} else {
             // Either we are in localization mode or we couldn't lock the mutex
             // which means the optimization process locked it and we need to use
