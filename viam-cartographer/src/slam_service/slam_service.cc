@@ -107,7 +107,8 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if (optimization_lock.try_lock()) {
+        if (action_mode != ActionMode::LOCALIZING &&
+            optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
