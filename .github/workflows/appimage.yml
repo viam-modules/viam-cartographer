@@ -83,19 +83,19 @@ jobs:
     - name: Run rdk slam integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration'
-
-    - name: Authorize GCP Upload
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && go test -v -run TestCartographerIntegration'
 
     - name: Build AppImage (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
       run: |
          sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
-    - name: Upload Files (PR)
+    - name: Authorize GCP Upload
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+        
+    - name: Deploy Files (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
       uses: google-github-actions/upload-cloud-storage@v0.10.4
       with:
@@ -105,26 +105,6 @@ jobs:
         glob: '*'
         parent: false
         gzip: false
-
-    - name: Add AppImage Links (PR)
-      if: matrix.platform == 'linux/amd64' && (contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests'))
-      uses: marocchino/sticky-pull-request-comment@v2.2.0
-      with:
-        header: AppImage (x86_64)
-        number: ${{ env.PR_NUMBER }}
-        recreate: true
-        message: |
-           AppImage ready (x86_64): <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x86_64.AppImage>
-
-    - name: Add AppImage Links2 (PR)
-      if: matrix.platform == 'linux/arm64' && (contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests'))
-      uses: marocchino/sticky-pull-request-comment@v2.2.0
-      with:
-        header: AppImage (arm64)
-        number: ${{ env.PR_NUMBER }}
-        recreate: true
-        message: |
-          AppImage ready (arm64): <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-aarch64.AppImage>
 
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'

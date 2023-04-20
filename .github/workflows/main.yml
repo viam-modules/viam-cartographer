@@ -17,6 +17,10 @@ on:
 # Don't forget to tag back to @main before merge.
 
 jobs:
+  test:
+    if: (github.event.label.name == 'safe to test' || github.event.label.name == 'appimage')
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@qaworkflow
+    
   appimage:
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@qaworkflow
     secrets:

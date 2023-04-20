@@ -1,0 +1,27 @@
+1
+name: 'Comment on PR'
+
+on:
+  workflow_run:
+    workflows: ["Build AppImage SLAM Server"]
+    types:
+      - completed
+
+jobs:
+  comment:
+    name: 'Post Comment on PR'
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.event == 'pull_request_target' && github.event.workflow_run.conclusion == 'success' }}
+    steps:
+      - name: Add AppImage Links
+        if: ${{ env.APPIMAGE }}
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          header: AppImage
+          number: ${{ env.PR_NUMBER }}
+          recreate: true
+          message: |
+            AppImages ready!
+            <http://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-aarch64.AppImage>
+            <http://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ github.event.pull_request.number }}-x86_64.AppImage>
+
