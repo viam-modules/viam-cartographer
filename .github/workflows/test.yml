@@ -52,22 +52,22 @@ jobs:
     # Now that viam-cartographer is public, can't directly comment without token having full read/write access
     # appimage-comment.yml will trigger separately and post the actual comments
 
-    - name: Set PR Number variable
-      run: |
-        echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> pr.env
+    # - name: Set PR Number variable
+    #   run: |
+    #     echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> pr.env
 
-    - name: Set appimage variable
-      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
-      run: |
-        echo "APPIMAGE=true" >> pr.env
+    # - name: Set appimage variable
+    #   if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+    #   run: |
+    #     echo "APPIMAGE=true" >> pr.env
 
-    - name: Upload PR variables
-      uses: actions/upload-artifact@v3
-      with:
-        name: pr-variables
-        path: |
-         pr.env
-        retention-days: 1
+    # - name: Upload PR variables
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: pr-variables
+    #     path: |
+    #      pr.env
+    #     retention-days: 1
 
     steps:
     - name: Check out code in viam-cartographer directory
