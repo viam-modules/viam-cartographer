@@ -84,6 +84,7 @@ jobs:
     - name: Run rdk slam integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
+        chown -R testbot:testbot .
         sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && go test -v -run TestCartographerIntegration'
 
     - name: Build AppImage (PR)
