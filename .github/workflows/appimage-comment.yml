@@ -12,6 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.event == 'pull_request_target' && github.event.workflow_run.conclusion == 'success' }}
     steps:
+      - name: Download PR Variables
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          run_id: ${{ github.event.workflow_run.id }}
+          name: pr-variables
+
       - name: Restore Environment
         run: cat pr.env >> "${GITHUB_ENV}"
 

@@ -100,3 +100,23 @@ jobs:
       if: matrix.platform == 'linux/amd64'
       run: |
         sudo -u testbot bash -lc 'cd viam-cartographer && sudo go test -v -race -run TestCartographerIntegration'
+
+    # Now that RDK is public, can't directly comment without token having full read/write access
+    # code-coverage-comment.yml will trigger seperately and post the actual comments
+
+    - name: Prepare code comment
+      run: |
+        echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> pr.env
+
+    - name: Mark appimage label
+      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+      run: |
+        echo "APPIMAGE=true" >> pr.env
+
+    - name: Upload code coverage
+      uses: actions/upload-artifact@v3
+      with:
+        name: pr-variables
+        path: |
+         pr.env
+        retention-days: 1
