@@ -160,24 +160,30 @@ protoc --version
 
 If your version is 3.20.3 then you may be having this error. To fix take the following steps
 
-#1 unlink protobuf@3
+1. unlink protobuf@3
+
 ```
 brew unlink protobuf@3
 ```
-#2 link normal protobuf
+
+2. link normal protobuf
+
 ```
 brew unlink protobuf && brew link protobuf
 ```
 
-#3 echo your path & confirm you are not manually pathing to protobuf@3
+3. echo your path & confirm you are not manually pathing to protobuf@3
+
 ```
 echo $PATH
 ```
 
-#3.1 if you see protobuf@3 in your path track down where that is being added to your path & remove it (try .zshrc / .bashrc) 
-#3.2 Create a new terminal window to get a clean shell state
+3.1 if you see protobuf@3 in your path track down where that is being added to your path & remove it (try .zshrc / .bashrc)
 
-#4 Confirm you have a new version installed
+3.2 Create a new terminal window to get a clean shell state
+
+4. Confirm you have a new version installed
+
 ```
 protoc --version
 ```
