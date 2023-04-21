@@ -75,6 +75,11 @@ jobs:
         submodules: recursive
         path: viam-cartographer
 
+    - name: make clean
+      run: |
+        chown -R testbot:testbot .
+        sudo -u testbot bash -lc 'cd viam-cartographer && make clean'        
+
     - name: make bufinstall buf setup
       uses: nick-fields/retry@v2
       with:
@@ -83,6 +88,7 @@ jobs:
         retry_on: timeout
         shell: bash
         command: |
+          chown -R testbot:testbot .
           sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
 
     - name: make build
