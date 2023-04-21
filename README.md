@@ -172,13 +172,11 @@ brew unlink protobuf@3
 brew unlink protobuf && brew link protobuf
 ```
 
-3. echo your path & confirm you are not manually pathing to protobuf@3
+3. echo your path & confirm you are not manually pathing to protobuf@3. If you see protobuf@3 in your path, track down where that is being added to your path & remove it (try .zshrc / .bashrc)
 
 ```
 echo $PATH
 ```
-
-if you see protobuf@3 in your path track down where that is being added to your path & remove it (try .zshrc / .bashrc)
 
 4. Create a new terminal window to get a clean shell state
 
