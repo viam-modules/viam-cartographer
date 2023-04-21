@@ -153,7 +153,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 			test.That(t, componentRef, test.ShouldEqual, inputComponentRef)
 		})
 
-		t.Run("invalid quat map keys failure", func(t *testing.T) {
+		t.Run("invaid quat map keys failure", func(t *testing.T) {
 			inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 			inputQuat = map[string]interface{}{"invalid": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 			inputComponentRef = "componentReference"
