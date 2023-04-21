@@ -43,6 +43,7 @@ jobs:
 
     - name: make clean
       run: |
+        chown -R testbot .
         sudo -u testbot bash -lc 'cd viam-cartographer && make clean'
         
     - name: make bufinstall buf setup
@@ -53,7 +54,7 @@ jobs:
         retry_on: timeout
         shell: bash
         command: |
-          chown -R testbot .
+          chown -R testbot:testbot .
           sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
 
     - name: make build
@@ -83,12 +84,13 @@ jobs:
     - name: Run rdk slam integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -run TestCartographerIntegration'
+        chown -R testbot .
+        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && go test -v -run TestCartographerIntegration'
 
     - name: Build AppImage (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
       run: |
-         sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
+        sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
