@@ -158,7 +158,7 @@ Then it possible your `brew` installation is using the incorrect version of `pro
 protoc --version
 ```
 
-If your version is 3.20.3 then you may be having this error. To fix take the following steps
+If your version is `3.20.3` then you may be having this error. To fix take the following steps
 
 1. unlink protobuf@3
 
