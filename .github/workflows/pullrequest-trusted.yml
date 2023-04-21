@@ -16,7 +16,8 @@ on:
 
 jobs:
   test:
-    if: (github.event.label.name == 'safe to test' || github.event.label.name == 'appimage')
+    if: (github.event.label.name == 'safe to test' || github.event.label.name == 'appimage') || 
+      github.event.label.name == 'appimage-ignore-tests')
     uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@qaworkflow
 
   # This lets people add an "appimage" tag to have appimages built for the PR
