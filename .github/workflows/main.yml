@@ -17,16 +17,21 @@ on:
 # Don't forget to tag back to @main before merge.
 
 jobs:
+  test:
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
+
   appimage:
+    needs: test
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   slack-workflow-status:
-      if: ${{ failure() }}
+      if: ${{ failure() }} 
       name: Post Workflow Status To Slack
       needs:
         - appimage
+        - test
       runs-on: ubuntu-latest
       permissions:
         actions: 'read'
