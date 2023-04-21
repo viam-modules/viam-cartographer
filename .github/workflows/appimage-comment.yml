@@ -30,6 +30,6 @@ jobs:
           recreate: true
           message: |
             AppImages ready!
-            <http://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ env.PR_NUMBER }}-aarch64.AppImage>
-            <http://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ env.PR_NUMBER }}-x86_64.AppImage>
+            <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ env.PR_NUMBER }}-aarch64.AppImage>
+            <https://packages.viam.com/apps/slam-servers/carto_grpc_server-pr-${{ env.PR_NUMBER }}-x86_64.AppImage>
 
