@@ -22,7 +22,7 @@ jobs:
       run: |
         git init
         git add .
-        chown -R testbot .
+        chown -R testbot:testbot .
         sudo -u testbot bash -lc 'make lint-setup lint'
         GEN_DIFF=$(git status -s)
 
@@ -64,7 +64,6 @@ jobs:
         retry_on: timeout
         shell: bash
         command: |
-          chown -R testbot .
           sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
 
     - name: make build
