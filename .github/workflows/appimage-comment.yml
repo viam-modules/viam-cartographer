@@ -8,10 +8,15 @@ on:
 
 jobs:
   comment:
+
+  
     name: 'Post Comment on PR'
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.event == 'pull_request_target' && github.event.workflow_run.conclusion == 'success' }}
     steps:
+      - name: Restore Environment
+        run: cat pr.env >> "${GITHUB_ENV}"
+
       - name: Add AppImage Links
         if: ${{ env.APPIMAGE }}
         uses: marocchino/sticky-pull-request-comment@v2
