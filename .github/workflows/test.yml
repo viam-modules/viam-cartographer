@@ -22,7 +22,7 @@ jobs:
       run: |
         git init
         git add .
-        chown -R testbot .
+        chown -R testbot:testbot .
         sudo -u testbot bash -lc 'make lint-setup lint'
         GEN_DIFF=$(git status -s)
 
@@ -48,13 +48,37 @@ jobs:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
     timeout-minutes: 30
-
     steps:
+    # Now that viam-cartographer is public, can't directly comment without token having full read/write access
+    # appimage-comment.yml will trigger separately and post the actual comments
+
+    - name: Set PR Number variable
+      run: |
+        echo "PR_NUMBER=${{ github.event.pull_request.number }}" >> pr.env
+
+    - name: Set appimage variable
+      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+      run: |
+        echo "APPIMAGE=true" >> pr.env
+
+    - name: Upload PR variables
+      uses: actions/upload-artifact@v3
+      with:
+        name: pr-variables
+        path: |
+         pr.env
+        retention-days: 1
+        
     - name: Check out code in viam-cartographer directory
       uses: actions/checkout@v3
       with:
         submodules: recursive
         path: viam-cartographer
+
+    - name: make clean
+      run: |
+        chown -R testbot:testbot .
+        sudo -u testbot bash -lc 'cd viam-cartographer && make clean'        
 
     - name: make bufinstall buf setup
       uses: nick-fields/retry@v2
@@ -64,7 +88,7 @@ jobs:
         retry_on: timeout
         shell: bash
         command: |
-          chown -R testbot .
+          chown -R testbot:testbot .
           sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
 
     - name: make build
@@ -83,19 +107,6 @@ jobs:
       if: matrix.platform == 'linux/amd64'
       run: |
         sudo cp viam-cartographer/viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
-
-    - name: Check out code in rdk directory
-      if: matrix.platform == 'linux/amd64'
-      uses: actions/checkout@v3
-      # Pulls main/HEAD from rdk to ensure no accidental regressions
-      with:
-        repository: viamrobotics/rdk 
-        path: rdk
-
-    - name: Run rdk cartographer integration tests
-      if: matrix.platform == 'linux/amd64'
-      run: |
-        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && sudo go test -v -race -run TestCartographerIntegration'
 
     - name: Run viam-cartographer cartographer integration tests
       if: matrix.platform == 'linux/amd64'
