@@ -183,7 +183,7 @@ echo $PATH
 
 4. Create a new terminal window to get a clean shell state
 
-5. Confirm you have a new version installed
+5. Confirm you have a new version installed. The minimum version you should see on your Mac is `3.21.12`
 
 ```
 protoc --version
