@@ -74,18 +74,10 @@ jobs:
       run: |
         sudo cp viam-cartographer/viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 
-    - name: Check out code in rdk directory
-      if: matrix.platform == 'linux/amd64'
-      uses: actions/checkout@v3
-      with:
-        repository: viamrobotics/rdk
-        path: rdk
-
-    - name: Run rdk slam integration tests
+    - name: Run viam-cartographer cartographer integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        chown -R testbot:testbot .
-        sudo -u testbot bash -lc 'cd rdk/services/slam/builtin && go test -v -run TestCartographerIntegration'
+        sudo -u testbot bash -lc 'cd viam-cartographer && sudo go test -v -race -run TestCartographerIntegration'
 
     - name: Build AppImage (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
