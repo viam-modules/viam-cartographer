@@ -74,9 +74,10 @@ std::atomic<bool> b_continue_session{true};
 
     // Rotate pose to XZ plane. Additional angle offset is used so rotations
     // occur along the Y axis, to match the XZ plane
-    auto rotated_vector = pcdRotation * global_pose.translation();
-    auto rotated_quat =
-        pcdOffsetRotation * global_pose.rotation() * pcdRotation;
+    // auto rotated_vector = pcdRotation * global_pose.translation();
+    // auto rotated_quat = pcdOffsetRotation * global_pose.rotation() * pcdRotation;
+    auto rotated_vector = global_pose.translation();
+    auto rotated_quat = global_pose.rotation();
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
@@ -397,7 +398,8 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
 
             // Add point to buffer
             Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
-            Eigen::Vector3d rotated_map_point = pcdRotation * map_point;
+            // Eigen::Vector3d rotated_map_point = pcdRotation * map_point;
+            Eigen::Vector3d rotated_map_point = map_point;
 
             viam::utils::writeFloatToBufferInBytes(pcd_data,
                                                    rotated_map_point.x());
