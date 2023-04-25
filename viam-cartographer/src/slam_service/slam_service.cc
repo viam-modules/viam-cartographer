@@ -398,9 +398,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
-            viam::utils::writeFloatToBufferInBytes(x_pos);
-            viam::utils::writeFloatToBufferInBytes(x_pos);
-            viam::utils::writeFloatToBufferInBytes(z_pos);
+            viam::utils::writeFloatToBufferInBytes(pcd_data, x_pos);
+            viam::utils::writeFloatToBufferInBytes(pcd_data, x_pos);
+            viam::utils::writeFloatToBufferInBytes(pcd_data, z_pos);
             viam::utils::writeIntToBufferInBytes(pcd_data, prob);
 
             num_points++;
