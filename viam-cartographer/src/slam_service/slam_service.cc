@@ -72,11 +72,6 @@ std::atomic<bool> b_continue_session{true};
         global_pose = latest_global_pose;
     }
 
-    // Rotate pose to XZ plane. Additional angle offset is used so rotations
-    // occur along the Y axis, to match the XZ plane
-    // auto rotated_vector = pcdRotation * global_pose.translation();
-    // auto rotated_quat = pcdOffsetRotation * global_pose.rotation() *
-    // pcdRotation;
     auto pos_vector = global_pose.translation();
     auto pos_quat = global_pose.rotation();
 
