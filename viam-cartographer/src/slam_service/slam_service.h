@@ -42,12 +42,6 @@ static const int checkForShutdownIntervalMicroseconds = 1e5;
 static const int maximumGRPCByteLimit = 32 * 1024 * 1024;
 // Byte limit for chunks on GRPC, used for streaming apis
 static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
-// Quaternion to rotate axes to the XZ plane
-static const Eigen::Quaterniond pcdRotation(0.7071068, -0.7071068, 0, 0);
-// Static offset quaternion, so orientation matches physical intuition.
-// This will result in rotations occurring within the y axis to match 2D mapping
-// in the XZ plane
-static const Eigen::Quaterniond pcdOffsetRotation(0.7071068, 0.7071068, 0, 0);
 // The resolutionMeters variable defines the area in meters that each pixel
 // represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
