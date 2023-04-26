@@ -196,5 +196,6 @@ func CreateSLAMService(
 	}
 
 	test.That(t, svc, test.ShouldNotBeNil)
+
 	return svc, nil
 }

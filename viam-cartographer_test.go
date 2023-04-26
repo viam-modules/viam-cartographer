@@ -69,13 +69,12 @@ func TestNew(t *testing.T) {
 			UseLiveData:   &_false,
 		}
 
-		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		_, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring lidar camera error: 'sensors' must contain only one "+
 				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
 
 		grpcServer.Stop()
-		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
 	t.Run("Failed creation of cartographer slam service with non-existing sensor", func(t *testing.T) {
@@ -90,7 +89,7 @@ func TestNew(t *testing.T) {
 		_, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring lidar camera error: error getting lidar camera "+
-				"gibberish for slam service: \"gibberish\" missing from dependencies"))
+				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
 	})
 
 	t.Run("Successful creation of cartographer slam service with good lidar", func(t *testing.T) {
