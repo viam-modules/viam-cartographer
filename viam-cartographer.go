@@ -69,7 +69,6 @@ func init() {
 				defaultSensorValidationIntervalSec,
 				defaultDialMaxTimeoutSec,
 			)
-
 		},
 	})
 }
@@ -89,7 +88,7 @@ func New(
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
 
-  svcConfig, err := resource.NativeConfig[*slamConfig.Config](c)
+	svcConfig, err := resource.NativeConfig[*slamConfig.Config](c)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +96,7 @@ func New(
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
 	if subAlgo != Dim2d {
 		return nil, errors.Errorf("%v does not have a 'mode: %v'",
-			string(c.Model.Name), svcConfig.ConfigParams["mode"])
+			c.ResourceName().ShortName(), svcConfig.ConfigParams["mode"])
 	}
 
 	// Set up the data directories
@@ -183,7 +182,6 @@ func New(
 type cartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
-	name              string
 	primarySensorName string
 	executableName    string
 	subAlgo           SubAlgo

@@ -56,7 +56,7 @@ type Service interface {
 	StartDataProcess(cancelCtx context.Context, lidar lidar.Lidar, c chan int)
 	StartSLAMProcess(ctx context.Context) error
 	StopSLAMProcess() error
-	Close() error
+	Close(ctx context.Context) error
 	GetSLAMProcessConfig() pexec.ProcessConfig
 	GetSLAMProcessBufferedLogReader() bufio.Reader
 }
@@ -160,7 +160,7 @@ func ClearDirectory(t *testing.T, path string) {
 // CreateSLAMService creates a slam service for testing.
 func CreateSLAMService(
 	t *testing.T,
-	attrCfg *slamConfig.AttrConfig,
+	cfg *slamConfig.Config,
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 	executableName string,
@@ -169,15 +169,15 @@ func CreateSLAMService(
 
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
-	cfgService.ConvertedAttributes = attrCfg
+	cfgService.ConvertedAttributes = cfg
 
-	deps := SetupDeps(attrCfg.Sensors)
+	deps := SetupDeps(cfg.Sensors)
 
-	sensorDeps, err := attrCfg.Validate("path")
+	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, attrCfg.Sensors)
+	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
 
 	svc, err := viamcartographer.New(
 		ctx,
