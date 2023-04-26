@@ -96,7 +96,7 @@ func New(
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
 	if subAlgo != Dim2d {
 		return nil, errors.Errorf("%v does not have a 'mode: %v'",
-			c.ResourceName().ShortName(), svcConfig.ConfigParams["mode"])
+			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
 	// Set up the data directories
