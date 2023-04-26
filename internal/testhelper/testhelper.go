@@ -15,9 +15,8 @@ import (
 	"github.com/edaniels/gostream"
 	"github.com/pkg/errors"
 	"go.viam.com/rdk/components/camera"
-	"go.viam.com/rdk/config"
 	"go.viam.com/rdk/pointcloud"
-	"go.viam.com/rdk/registry"
+	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/testutils/inject"
@@ -63,8 +62,8 @@ type Service interface {
 }
 
 // SetupDeps returns the dependencies based on the sensors passed as arguments.
-func SetupDeps(sensors []string) registry.Dependencies {
-	deps := make(registry.Dependencies)
+func SetupDeps(sensors []string) resource.Dependencies {
+	deps := make(resource.Dependencies)
 
 	for _, sensor := range sensors {
 		switch sensor {
@@ -169,7 +168,7 @@ func CreateSLAMService(
 	t.Helper()
 
 	ctx := context.Background()
-	cfgService := config.Service{Name: "test", Type: "slam", Model: viamcartographer.Model}
+	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = attrCfg
 
 	deps := SetupDeps(attrCfg.Sensors)
