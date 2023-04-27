@@ -702,6 +702,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             file = GetNextDataFile();
             continue;
         } 
+        std::cout << "yo current file num" << current_file_offline << std::endl;
         if (!set_start_time) {
             // Go past files that are not supposed to be included in this run
             double file_time = viam::io::ReadTimeFromTimestamp(
