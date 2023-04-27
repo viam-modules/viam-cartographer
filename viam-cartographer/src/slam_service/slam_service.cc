@@ -560,12 +560,13 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     // Expecting a minimum of 3 files solves both problems without having to
     // loop over and count the number of actual data files in the data
     // directory.
-    if (file_list_offline.size() <= 2) {
-        throw std::runtime_error("not enough data in data directory");
-    }
+    // if (file_list_offline.size() <= 2) {
+    //     throw std::runtime_error("not enough data in data directory");
+    // }
     if (current_file_offline == file_list_offline.size()) {
         // This log line is needed by rdk integration tests.
-        LOG(INFO) << "Finished processing offline data";
+        // LOG(INFO) << "Finished processing offline data";
+        LOG(INFO) << "waiting for data";
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
@@ -687,9 +688,16 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     // Define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
-    while (file != "") {
+    while (b_continue_session){ //(file != "") {
         // Ignore files that are not *.pcd files
         if (file.find(".pcd") == std::string::npos) {
+            file = GetNextDataFile();
+            continue;
+        }else if(file == ""){
+            std::this_thread::sleep_for(data_rate_ms);
+            std::cout << data_rate_ms << std::endl;
+            file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
+            std::cout << "file list yo: " << file_list_offline.size() << std::endl;
             file = GetNextDataFile();
             continue;
         }
