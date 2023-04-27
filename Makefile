@@ -3,7 +3,7 @@ TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
 PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):${PATH}"
 
 set-pkg-config-openssl:
-	pkg-config openssl || export PKG_CONFIG_PATH=$$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
+	export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:`brew --prefix`/opt/openssl@3/lib/pkgconfig
 
 bufinstall:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
