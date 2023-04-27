@@ -199,3 +199,27 @@ func CreateSLAMService(
 
 	return svc, nil
 }
+
+// CheckDeleteProcessedData compares the number of files found in a specified data
+// directory with the previous number found and uses the useLiveData and
+// deleteProcessedData values to evaluate this comparison. It returns the number of files
+// currently in the data directory for the specified config. Future invocations should pass in this
+// value. This function should be passed 0 as a default prev argument in order to get the
+// number of files currently in the directory.
+func CheckDeleteProcessedData(
+	t *testing.T,
+	subAlgo viamcartographer.SubAlgo,
+	dir string,
+	prev int,
+	deleteProcessedData,
+	useLiveData bool,
+) int {
+	switch subAlgo {
+	case viamcartographer.Dim2d:
+		numFiles, err := slamTesthelper.CheckDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
+		test.That(t, err, test.ShouldBeNil)
+		return numFiles
+	default:
+		return 0
+	}
+}

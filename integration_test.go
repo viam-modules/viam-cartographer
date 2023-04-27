@@ -82,7 +82,7 @@ func testCartographerInternalState(t *testing.T, svc slam.Service, dataDir strin
 	test.That(t, err, test.ShouldBeNil)
 }
 
-func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
+func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.SubAlgo) {
 	logger := golog.NewTestLogger(t)
 	_, err := exec.LookPath("carto_grpc_server")
 	if err != nil {
@@ -104,7 +104,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 	attrCfg := &slamConfig.Config{
 		Sensors: []string{"cartographer_int_lidar"},
 		ConfigParams: map[string]string{
-			"mode":  reflect.ValueOf(mode).String(),
+			"mode":  reflect.ValueOf(subAlgo).String(),
 			"v":     "1",
 			"debug": "true",
 		},
@@ -144,7 +144,13 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
 			if strings.Contains(line, "Passed sensor data to SLAM") {
-				prevNumFiles = slamTesthelper.CheckDeleteProcessedData(t, mode, dataDir, prevNumFiles, deleteProcessedData, useLiveData)
+				prevNumFiles = testhelper.CheckDeleteProcessedData(
+					t,
+					subAlgo,
+					dataDir,
+					prevNumFiles,
+					deleteProcessedData,
+					useLiveData)
 				break
 			}
 		}
@@ -181,7 +187,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 	attrCfg = &slamConfig.Config{
 		Sensors: []string{},
 		ConfigParams: map[string]string{
-			"mode": reflect.ValueOf(mode).String(),
+			"mode": reflect.ValueOf(subAlgo).String(),
 			"v":    "1",
 		},
 		MapRateSec:          &mapRateSec,
@@ -211,7 +217,13 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 		line, err := logReader.ReadString('\n')
 		test.That(t, err, test.ShouldBeNil)
 		if strings.Contains(line, "Passed sensor data to SLAM") {
-			prevNumFiles = slamTesthelper.CheckDeleteProcessedData(t, mode, dataDir, prevNumFiles, deleteProcessedData, useLiveData)
+			prevNumFiles = testhelper.CheckDeleteProcessedData(
+				t,
+				subAlgo,
+				dataDir,
+				prevNumFiles,
+				deleteProcessedData,
+				useLiveData)
 		}
 		if strings.Contains(line, "Finished optimizing final map") {
 			break
@@ -247,7 +259,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 	attrCfg = &slamConfig.Config{
 		Sensors: []string{"cartographer_int_lidar"},
 		ConfigParams: map[string]string{
-			"mode": reflect.ValueOf(mode).String(),
+			"mode": reflect.ValueOf(subAlgo).String(),
 			"v":    "1",
 		},
 		MapRateSec:          &mapRateSec,
@@ -283,7 +295,13 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
 			if strings.Contains(line, "Passed sensor data to SLAM") {
-				prevNumFiles = slamTesthelper.CheckDeleteProcessedData(t, mode, dataDir, prevNumFiles, deleteProcessedData, useLiveData)
+				prevNumFiles = testhelper.CheckDeleteProcessedData(
+					t,
+					subAlgo,
+					dataDir,
+					prevNumFiles,
+					deleteProcessedData,
+					useLiveData)
 				break
 			}
 		}
@@ -318,7 +336,7 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 	attrCfg = &slamConfig.Config{
 		Sensors: []string{"cartographer_int_lidar"},
 		ConfigParams: map[string]string{
-			"mode": reflect.ValueOf(mode).String(),
+			"mode": reflect.ValueOf(subAlgo).String(),
 			"v":    "1",
 		},
 		MapRateSec:    &mapRateSec,
@@ -353,7 +371,13 @@ func integrationtestHelperCartographer(t *testing.T, mode slamTesthelper.Mode) {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
 			if strings.Contains(line, "Passed sensor data to SLAM") {
-				prevNumFiles = slamTesthelper.CheckDeleteProcessedData(t, mode, dataDir, prevNumFiles, deleteProcessedData, useLiveData)
+				prevNumFiles = testhelper.CheckDeleteProcessedData(
+					t,
+					subAlgo,
+					dataDir,
+					prevNumFiles,
+					deleteProcessedData,
+					useLiveData)
 				break
 			}
 			test.That(t, strings.Contains(line, "Failed to open proto stream"), test.ShouldBeFalse)
@@ -382,5 +406,5 @@ func testCartographerDir(t *testing.T, path string, expectedMaps int) {
 }
 
 func TestCartographerIntegration2D(t *testing.T) {
-	integrationtestHelperCartographer(t, slamTesthelper.Mode(viamcartographer.Dim2d))
+	integrationtestHelperCartographer(t, viamcartographer.Dim2d)
 }
