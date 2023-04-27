@@ -312,4 +312,4 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
-replace go.viam.com/slam => github.com/nicksanford/slam v0.0.0-20230426174950-2d413054a241
+replace go.viam.com/slam => github.com/nicksanford/slam v0.0.0-20230427161510-bf03d8186ce8
