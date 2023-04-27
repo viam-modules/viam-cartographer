@@ -98,6 +98,7 @@ test: test-cpp test-go
 
 install:
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
+	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
 
 appimage: build
 	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe cartographer-module-`uname -m`.yml
