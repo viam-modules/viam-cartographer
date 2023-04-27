@@ -690,17 +690,18 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         cartographer::transform::Rigid3d();
     while (b_continue_session){ //(file != "") {
         // Ignore files that are not *.pcd files
-        if (file.find(".pcd") == std::string::npos) {
-            file = GetNextDataFile();
-            continue;
-        }else if(file == ""){
-            std::this_thread::sleep_for(1000*data_rate_ms);
+        if(file == ""){
+            std::this_thread::sleep_for(data_rate_ms);
             // std::cout << data_rate_ms << std::endl;
             file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
             std::cout << "file list yo: " << file_list_offline.size() << std::endl;
             file = GetNextDataFile();
             continue;
         }
+        else if (file.find(".pcd") == std::string::npos) {
+            file = GetNextDataFile();
+            continue;
+        } 
         if (!set_start_time) {
             // Go past files that are not supposed to be included in this run
             double file_time = viam::io::ReadTimeFromTimestamp(
