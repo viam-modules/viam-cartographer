@@ -13,7 +13,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.118
 	go.viam.com/rdk v0.2.36
-	go.viam.com/slam v0.1.34-0.20230418202907-6b4eabaa8640
+	go.viam.com/slam v0.1.34
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.20-0.20230424163529-ce35a14fc60f
 	google.golang.org/grpc v1.54.0
@@ -311,5 +311,3 @@ require (
 	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )
-
-replace go.viam.com/slam => github.com/nicksanford/slam v0.0.0-20230427161510-bf03d8186ce8

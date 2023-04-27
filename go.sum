@@ -903,8 +903,6 @@ github.com/nbutton23/zxcvbn-go v0.0.0-20201221231540-e56b841a3c88/go.mod h1:KSVJ
 github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354 h1:4kuARK6Y6FxaNu/BnU2OAaLF86eTVhP2hjTB6iMvItA=
 github.com/nbutton23/zxcvbn-go v0.0.0-20210217022336-fa2cb2858354/go.mod h1:KSVJerMDfblTH7p5MZaTt+8zaT2iEk3AkVb9PQdZuE8=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
-github.com/nicksanford/slam v0.0.0-20230427161510-bf03d8186ce8 h1:TXkmtK2k6/8Vea6RWg041fer6qGL34+RNVqhasxkVUk=
-github.com/nicksanford/slam v0.0.0-20230427161510-bf03d8186ce8/go.mod h1:oQIXW7BPD0ED/JIlL3c4OR+6dXF5KBLAC3usSSmlAak=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nishanths/exhaustive v0.1.0/go.mod h1:S1j9110vxV1ECdCudXRkeMnFQ/DQk9ajLT0Uf2MYZQQ=
 github.com/nishanths/exhaustive v0.9.5 h1:TzssWan6orBiLYVqewCG8faud9qlFntJE30ACpzmGME=
@@ -1372,6 +1370,8 @@ go.viam.com/api v0.1.118 h1:FjVktL++7yy7gx385pXq/40MrUQP0NL2r8PLaAcHc3Q=
 go.viam.com/api v0.1.118/go.mod h1:NQC9FZnerAfIPJLJ42vgzQMoe1WAQRuVoQEf1JauxtQ=
 go.viam.com/rdk v0.2.36 h1:++gse1nEM5dmomGyKCLVRV1dvJX58ic3QjnSj/3Y534=
 go.viam.com/rdk v0.2.36/go.mod h1:eauX6OZh6dLkPFiE2eGjx/12cyoQc23P/fNcq7f5dEo=
+go.viam.com/slam v0.1.34 h1:IRdHbgeeqJTjTYP8xVUwgxlXbm1M2xGJIHlfgOXB1m8=
+go.viam.com/slam v0.1.34/go.mod h1:oQIXW7BPD0ED/JIlL3c4OR+6dXF5KBLAC3usSSmlAak=
 go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2 h1:oBiK580EnEIzgFLU4lHOXmGAE3MxnVbeR7s1wp/F3Ps=
 go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2/go.mod h1:XM0tej6riszsiNLT16uoyq1YjuYPWlRBweTPRDanIts=
 go.viam.com/utils v0.1.20-0.20230424163529-ce35a14fc60f h1:wvJ/Au+UfSgXRj9RgoapLGYK/ZLj2pSKbq6DbPw3tqM=
