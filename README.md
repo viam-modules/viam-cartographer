@@ -17,12 +17,12 @@ Install viam-cartographer:
 
 * Linux aarch64:
     ```bash
-    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-stable-aarch64.AppImage
+    sudo curl -o /usr/local/bin/cartographer-module http://packages.viam.com/apps/slam-servers/cartographer-module-stable-aarch64.AppImage
     sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
  * Linux x86_64:
     ```bash
-    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-stable-x86_64.AppImage
+    sudo curl -o /usr/local/bin/cartographer-module http://packages.viam.com/apps/slam-servers/cartographer-module-stable-x86_64.AppImage
     sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
 * MacOS/Linux
@@ -41,12 +41,12 @@ You can either install the latest AppImages for testing, or build the code from 
 You can install the latest AppImages using:
 * Linux aarch64:
     ```bash
-    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-latest-aarch64.AppImage
+    sudo curl -o /usr/local/bin/cartographer-module http://packages.viam.com/apps/slam-servers/cartographer-module-latest-aarch64.AppImage
     sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
  * Linux x86_64:
     ```bash
-    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-latest-x86_64.AppImage
+    sudo curl -o /usr/local/bin/cartographer-module http://packages.viam.com/apps/slam-servers/cartographer-module-latest-x86_64.AppImage
     sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
 
