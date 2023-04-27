@@ -694,8 +694,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             file = GetNextDataFile();
             continue;
         }else if(file == ""){
-            std::this_thread::sleep_for(data_rate_ms);
-            std::cout << data_rate_ms << std::endl;
+            std::this_thread::sleep_for(1000*data_rate_ms);
+            // std::cout << data_rate_ms << std::endl;
             file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
             std::cout << "file list yo: " << file_list_offline.size() << std::endl;
             file = GetNextDataFile();
