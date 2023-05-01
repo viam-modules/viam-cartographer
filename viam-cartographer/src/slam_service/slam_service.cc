@@ -18,7 +18,6 @@
 #include "glog/logging.h"
 
 namespace {
-
 // Number of bytes in a pixel
 static const int bytesPerPixel = 4;
 struct ColorARGB {
@@ -28,11 +27,11 @@ struct ColorARGB {
     unsigned char B;
 };
 
-// Check the green color channel of the pixel to filter unobserved pixels
+// Check the green color channel to filter unobserved pixels
 bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
 
-// Convert the scale of a specified pixel color channel from the given unsigned 
-// char range of 0 - 255 to an inverse probability range of 100 - 0
+// Convert the scale of a specified color channel from the given UCHAR 
+// range of 0 - 255 to an inverse probability range of 100 - 0
 int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char max_val = UCHAR_MAX;
     unsigned char min_val = 0;
