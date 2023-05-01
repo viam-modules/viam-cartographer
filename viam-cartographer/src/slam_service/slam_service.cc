@@ -42,7 +42,7 @@ int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char color_channel_val = pixel_color.R;
     unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
                          (max_val - min_val);
-    return std::min(std::max(prob, min_prob), max_prob);
+    return prob;
 }
 }  // namespace
 
