@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	commonv1 "go.viam.com/api/common/v1"
 	v1 "go.viam.com/api/service/slam/v1"
+	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
@@ -93,7 +94,7 @@ func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orien
 }
 
 func TestGetPositionEndpoint(t *testing.T) {
-	svc := &cartographerService{}
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
@@ -118,7 +119,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 			pose, componentRef, err := svc.GetPosition(context.Background())
 			test.That(t, err, test.ShouldBeNil)
 			expectedPose := spatialmath.NewPose(
-				r3.Vector{inputPose.X, inputPose.Y, inputPose.Z},
+				r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
 				makeQuaternionFromGenericMap(inputQuat),
 			)
 			test.That(t, pose, test.ShouldResemble, expectedPose)
@@ -132,7 +133,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 			pose, componentRef, err := svc.GetPosition(context.Background())
 			test.That(t, err, test.ShouldBeNil)
 			expectedPose := spatialmath.NewPose(
-				r3.Vector{inputPose.X, inputPose.Y, inputPose.Z},
+				r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
 				makeQuaternionFromGenericMap(inputQuat),
 			)
 			test.That(t, pose, test.ShouldResemble, expectedPose)
@@ -146,7 +147,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 			pose, componentRef, err := svc.GetPosition(context.Background())
 			test.That(t, err, test.ShouldBeNil)
 			expectedPose := spatialmath.NewPose(
-				r3.Vector{inputPose.X, inputPose.Y, inputPose.Z},
+				r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
 				makeQuaternionFromGenericMap(inputQuat),
 			)
 			test.That(t, pose, test.ShouldResemble, expectedPose)
@@ -242,7 +243,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 
 //nolint:dupl
 func TestGetPointCloudMapEndpoint(t *testing.T) {
-	svc := &cartographerService{}
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
@@ -320,7 +321,7 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 
 //nolint:dupl
 func TestGetInternalStateEndpoint(t *testing.T) {
-	svc := &cartographerService{}
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 

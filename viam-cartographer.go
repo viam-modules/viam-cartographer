@@ -16,14 +16,10 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	pb "go.viam.com/api/service/slam/v1"
-	"go.viam.com/rdk/components/generic"
-	"go.viam.com/rdk/config"
-	"go.viam.com/rdk/registry"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/services/slam/grpchelper"
 	"go.viam.com/rdk/spatialmath"
-	rdkutils "go.viam.com/rdk/utils"
 	slamConfig "go.viam.com/slam/config"
 	"go.viam.com/slam/sensors/lidar"
 	slamUtils "go.viam.com/slam/utils"
@@ -55,12 +51,17 @@ type SubAlgo string
 const Dim2d SubAlgo = "2d"
 
 func init() {
-	registry.RegisterService(slam.Subtype, Model, registry.Service{
-		Constructor: func(ctx context.Context, deps registry.Dependencies, config config.Service, logger golog.Logger) (interface{}, error) {
+	resource.RegisterService(slam.API, Model, resource.Registration[slam.Service, *slamConfig.Config]{
+		Constructor: func(
+			ctx context.Context,
+			deps resource.Dependencies,
+			c resource.Config,
+			logger golog.Logger,
+		) (slam.Service, error) {
 			return New(
 				ctx,
 				deps,
-				config,
+				c,
 				logger,
 				false,
 				DefaultExecutableName,
@@ -70,22 +71,13 @@ func init() {
 			)
 		},
 	})
-
-	config.RegisterServiceAttributeMapConverter(
-		slam.Subtype,
-		Model,
-		func(attributes config.AttributeMap) (interface{}, error) {
-			var attrCfg slamConfig.AttrConfig
-			return config.TransformAttributeMapToStruct(&attrCfg, attributes)
-		},
-		&slamConfig.AttrConfig{})
 }
 
 // New returns a new slam service for the given robot.
 func New(
 	ctx context.Context,
-	deps registry.Dependencies,
-	config config.Service,
+	deps resource.Dependencies,
+	c resource.Config,
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 	executableName string,
@@ -96,15 +88,15 @@ func New(
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
 
-	svcConfig, ok := config.ConvertedAttributes.(*slamConfig.AttrConfig)
-	if !ok {
-		return nil, rdkutils.NewUnexpectedTypeError(svcConfig, config.ConvertedAttributes)
+	svcConfig, err := resource.NativeConfig[*slamConfig.Config](c)
+	if err != nil {
+		return nil, err
 	}
 
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
 	if subAlgo != Dim2d {
 		return nil, errors.Errorf("%v does not have a 'mode: %v'",
-			string(config.Model.Name), svcConfig.ConfigParams["mode"])
+			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
 	// Set up the data directories
@@ -134,7 +126,7 @@ func New(
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
-		name:                  config.Name,
+		Named:                 c.ResourceName().AsNamed(),
 		primarySensorName:     lidar.Name,
 		executableName:        executableName,
 		subAlgo:               subAlgo,
@@ -154,7 +146,7 @@ func New(
 	success := false
 	defer func() {
 		if !success {
-			if err := cartoSvc.Close(); err != nil {
+			if err := cartoSvc.Close(ctx); err != nil {
 				logger.Errorw("error closing out after error", "error", err)
 			}
 		}
@@ -188,8 +180,8 @@ func New(
 
 // cartographerService is the structure of the slam service.
 type cartographerService struct {
-	generic.Unimplemented
-	name              string
+	resource.Named
+	resource.AlwaysRebuild
 	primarySensorName string
 	executableName    string
 	subAlgo           SubAlgo
@@ -222,7 +214,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
 
-	req := &pb.GetPositionRequest{Name: cartoSvc.name}
+	req := &pb.GetPositionRequest{Name: cartoSvc.Name().ShortName()}
 
 	resp, err := cartoSvc.clientAlgo.GetPosition(ctx, req)
 	if err != nil {
@@ -241,7 +233,7 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
 
-	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.name, cartoSvc.clientAlgo)
+	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
 // GetInternalState creates a request, calls the slam algorithms GetInternalState endpoint and returns a callback
@@ -250,7 +242,7 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
 	defer span.End()
 
-	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.name, cartoSvc.clientAlgo)
+	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
@@ -307,7 +299,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 }
 
 // Close out of all slam related processes.
-func (cartoSvc *cartographerService) Close() error {
+func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
