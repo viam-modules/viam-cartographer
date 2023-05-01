@@ -35,9 +35,8 @@ struct ColorARGB {
 // Check the green color channel of the pixel to filter unobserved pixels
 bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
 
-// Convert the scale of a specified pixel color channel from the given
-// 102-255 range to 100-0. This is an initial solution for extracting
-// probability information from cartographer
+// Convert the scale of a specified pixel color channel from the given unsigned 
+// char range of 0 - 255 to an inverse probability range of 100 - 0
 int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char max_val = UCHAR_MAX;
     unsigned char min_val = 0;
