@@ -32,7 +32,7 @@ struct ColorARGB {
     unsigned char B;
 };
 
-// Check if pixel is the default color signaling no data is present
+// Check the green color channel of the pixel to filter unobserved pixels
 bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
 
 // Convert the scale of a specified pixel color channel from the given
@@ -44,7 +44,7 @@ int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char max_prob = 100;
     unsigned char min_prob = 0;
 
-    // Probability is currently determined solely by the R channel
+    // Probability is currently determined solely by the red color channel
     unsigned char color_channel_val = pixel_color.R;
     unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
                          (max_val - min_val);
