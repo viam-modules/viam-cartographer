@@ -13,7 +13,6 @@
 #include "Eigen/Core"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
-//#include "cartographer/io/submap_painter.h"
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
@@ -22,7 +21,8 @@ namespace {
 // The default value when coloring the image if no data is present. A
 // pixel representing no data will have all 3 channels of its color channels
 // (RGB) as the default value([102,102,102])
-static const unsigned char defaultNoDataRGBValue = std::ceil(viam::defaultNoDataRGBPercentage*UCHAR_MAX);
+static const unsigned char defaultNoDataRGBValue =
+    std::ceil(viam::defaultNoDataRGBPercentage * UCHAR_MAX);
 // Number of bytes in a pixel
 static const int bytesPerPixel = 4;
 struct ColorARGB {
@@ -33,9 +33,7 @@ struct ColorARGB {
 };
 
 // Check if pixel is the default color signaling no data is present
-bool CheckIfEmptyPixel(ColorARGB pixel_color) {
-    return (pixel_color.G == 0);
-}
+bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
 
 // Convert the scale of a specified pixel color channel from the given
 // 102-255 range to 100-0. This is an initial solution for extracting
@@ -48,8 +46,8 @@ int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
 
     // Probability is currently determined solely by the R channel
     unsigned char color_channel_val = pixel_color.R;
-    unsigned char prob = (max_val - color_channel_val) *
-                         (max_prob - min_prob) / (max_val - min_val);
+    unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
+                         (max_val - min_val);
     return std::min(std::max(prob, min_prob), max_prob);
 }
 }  // namespace

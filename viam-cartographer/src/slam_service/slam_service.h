@@ -12,12 +12,11 @@
 
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
-//#include "../io/submap_painter.h"
-#include "cartographer/io/submap_painter.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
 #include "cairo/cairo.h"
+#include "cartographer/io/submap_painter.h"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
@@ -47,8 +46,10 @@ static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
 // represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
 static const double resolutionMeters = 0.05;
-// The defaultNoDataRGBPercentage is correlated to the default value instantiated 
-// by cartographer when creating a new cairo image for painting
+// The defaultNoDataRGBPercentage is correlated to the default value
+// instantiated by cartographer when creating a new cairo image for painting. It
+// defines the background color of the cairo image as well as the delimiter of
+// what cartographer considers a 'hit' and a 'miss'
 static const double defaultNoDataRGBPercentage = 0.5;
 
 // Error log for when no submaps exist
