@@ -97,6 +97,8 @@ test-go:
 test: test-cpp test-go
 
 install:
+	sudo rm -f /usr/local/bin/carto_grpc_server
+	sudo rm -f /usr/local/bin/cartographer-module
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
 
