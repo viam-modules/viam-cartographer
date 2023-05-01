@@ -18,11 +18,7 @@
 #include "glog/logging.h"
 
 namespace {
-// The default value when coloring the image if no data is present. A
-// pixel representing no data will have all 3 channels of its color channels
-// (RGB) as the default value([102,102,102])
-static const unsigned char defaultNoDataRGBValue =
-    std::ceil(viam::defaultNoDataRGBPercentage * UCHAR_MAX);
+
 // Number of bytes in a pixel
 static const int bytesPerPixel = 4;
 struct ColorARGB {

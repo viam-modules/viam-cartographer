@@ -46,11 +46,6 @@ static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
 // represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
 static const double resolutionMeters = 0.05;
-// The defaultNoDataRGBPercentage is correlated to the default value
-// instantiated by cartographer when creating a new cairo image for painting. It
-// defines the background color of the cairo image and can be used as a delimiter 
-// in the cairo ouput as to what cartographer considers a 'hit' and a 'miss'
-static const double defaultNoDataRGBPercentage = 0.5;
 
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
