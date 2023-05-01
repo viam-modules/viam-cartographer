@@ -13,7 +13,7 @@
 #include "Eigen/Core"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
-#include "cartographer/io/submap_painter.h"
+//#include "cartographer/io/submap_painter.h"
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
@@ -22,7 +22,7 @@ namespace {
 // The default value when coloring the image if no data is present. A
 // pixel representing no data will have all 3 channels of its color channels
 // (RGB) as the default value([102,102,102])
-static const unsigned char defaultNoDataRGBValue = 102;
+static const unsigned char defaultNoDataRGBValue = std::ceil(viam::defaultNoDataRGBPercentage*UCHAR_MAX);
 // Number of bytes in a pixel
 static const int bytesPerPixel = 4;
 struct ColorARGB {
@@ -34,9 +34,7 @@ struct ColorARGB {
 
 // Check if pixel is the default color signaling no data is present
 bool CheckIfEmptyPixel(ColorARGB pixel_color) {
-    return (pixel_color.R == defaultNoDataRGBValue) &&
-           (pixel_color.G == defaultNoDataRGBValue) &&
-           (pixel_color.B == defaultNoDataRGBValue);
+    return (pixel_color.G == 0);
 }
 
 // Convert the scale of a specified pixel color channel from the given
@@ -44,16 +42,13 @@ bool CheckIfEmptyPixel(ColorARGB pixel_color) {
 // probability information from cartographer
 int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char max_val = UCHAR_MAX;
-    unsigned char min_val = defaultNoDataRGBValue;
+    unsigned char min_val = 0;
     unsigned char max_prob = 100;
     unsigned char min_prob = 0;
 
     // Probability is currently determined solely by the R channel
-    // Values are restricted to be above or equal to defaultNoDataRGBValue
-    // to ensure negative probabilities cannot occur
-    // https://viam.atlassian.net/browse/RSDK-2567
     unsigned char color_channel_val = pixel_color.R;
-    unsigned char prob = (max_val - std::max(color_channel_val, min_val)) *
+    unsigned char prob = (max_val - color_channel_val) *
                          (max_prob - min_prob) / (max_val - min_val);
     return std::min(std::max(prob, min_prob), max_prob);
 }
@@ -480,19 +475,9 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             &submap_slice.cairo_data);
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
-        viam::io::PaintSubmapSlices(submap_slices, resolutionMeters);
+        cartographer::io::PaintSubmapSlices(submap_slices, resolutionMeters);
 
     return painted_slices;
-}
-
-void SLAMServiceImpl::PaintMarker(
-    cartographer::io::PaintSubmapSlicesResult *painted_slices) {
-    cartographer::transform::Rigid3d global_pose;
-    {
-        std::lock_guard<std::mutex> lk(viam_response_mutex);
-        global_pose = latest_global_pose;
-    }
-    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolutionMeters);
 }
 
 double SLAMServiceImpl::SetUpSLAM() {

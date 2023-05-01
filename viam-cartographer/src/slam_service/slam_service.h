@@ -12,7 +12,8 @@
 
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
-#include "../io/submap_painter.h"
+//#include "../io/submap_painter.h"
+#include "cartographer/io/submap_painter.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
@@ -46,6 +47,9 @@ static const int maximumGRPCByteChunkSize = 1 * 1024 * 1024;
 // represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
 static const double resolutionMeters = 0.05;
+// The defaultNoDataRGBPercentage is correlated to the default value instantiated 
+// by cartographer when creating a new cairo image for painting
+static const double defaultNoDataRGBPercentage = 0.5;
 
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
@@ -203,9 +207,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // GetLatestPaintedMapSlices paints and returns the current map of
     // Cartographer
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
-
-    // PaintMarker paints the latest global pose on the painted slices.
-    void PaintMarker(cartographer::io::PaintSubmapSlicesResult *painted_slices);
 
     // GetLatestSampledPointCloudMapString paints and returns the latest map as
     // a pcd string with probability estimates written to the color field. The
