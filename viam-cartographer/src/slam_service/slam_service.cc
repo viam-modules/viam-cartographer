@@ -28,7 +28,7 @@ struct ColorARGB {
 };
 
 // Check if the green color channel is 0 to filter unobserved pixels which is
-// set in DrawTexture at
+// set in DrawTexture. See:
 // https://github.com/cartographer-project/cartographer/blob/ef00de231
 // 7dcf7895b09f18cc4d87f8b533a019b/cartographer/io/submap_painter.cc#L206-L207
 bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
