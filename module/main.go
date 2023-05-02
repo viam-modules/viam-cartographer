@@ -12,12 +12,21 @@ import (
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 )
 
+// Versioning variables which are replaced by LD flags.
+var (
+	Version     = "development"
+	GitRevision = ""
+)
+
 func main() {
 	utils.ContextualMain(mainWithArgs, golog.NewLogger("cartographerModule"))
 }
 
 func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error {
 	// Instantiate the module
+	println(Version)
+	println(GitRevision)
+	return nil
 	cartoModule, err := module.NewModuleFromArgs(ctx, logger)
 	if err != nil {
 		return err
