@@ -16,6 +16,7 @@
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
+#include <chrono>
 
 namespace {
 // Number of bytes in a pixel
@@ -667,6 +668,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     // Define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
+    std::chrono::steady_clock::time_point begin_add_data = std::chrono::steady_clock::now();
+    int count_files = 0;
     while (file != "") {
         // Ignore files that are not *.pcd files
         if (file.find(".pcd") == std::string::npos) {
@@ -728,7 +731,13 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         VLOG(1) << "Passed sensor data to SLAM " << file;
 
         file = GetNextDataFile();
+        count_files++;
     }
+    std::chrono::steady_clock::time_point end_add_data = std::chrono::steady_clock::now();
+
+    std::cout << "Number of files = " << count_files << std::endl;
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::microseconds>(end_add_data - begin_add_data).count() << "[µs]" << std::endl;
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::nanoseconds> (end_add_data - begin_add_data).count() << "[ns]" << std::endl;
 
     if (!set_start_time) {
         throw std::runtime_error("did not find valid data for the given setup");

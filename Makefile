@@ -83,6 +83,9 @@ else
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
 endif
 
+build-debug-test:
+	mkdir -p bin && go build -o bin/debug-test debug_test/main.go
+
 build-module:
 	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
