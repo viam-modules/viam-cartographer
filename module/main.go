@@ -18,15 +18,25 @@ var (
 	GitRevision = ""
 )
 
+// Arguments for the command.
+type Arguments struct {
+	Version bool `flag:"version,usage=print version"`
+}
+
 func main() {
 	utils.ContextualMain(mainWithArgs, golog.NewLogger("cartographerModule"))
 }
 
 func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error {
+	argsParsed, err := printVersion(args, logger)
+	if err != nil {
+		return err
+	}
+	if argsParsed.Version {
+		return nil
+	}
+
 	// Instantiate the module
-	println(Version)
-	println(GitRevision)
-	return nil
 	cartoModule, err := module.NewModuleFromArgs(ctx, logger)
 	if err != nil {
 		return err
@@ -45,4 +55,28 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	}
 	<-ctx.Done()
 	return nil
+}
+
+func printVersion(args []string, logger golog.Logger) (Arguments, error) {
+	var argsParsed Arguments
+	if err := utils.ParseFlags(args, &argsParsed); err != nil {
+		return argsParsed, err
+	}
+
+	// Always log the version, return early if the '-version' flag was provided
+	// fmt.Println would be better but fails linting. Good enough.
+	var versionFields []interface{}
+	if Version != "" {
+		versionFields = append(versionFields, "version", Version)
+	}
+	if GitRevision != "" {
+		versionFields = append(versionFields, "git_rev", GitRevision)
+	}
+	if len(versionFields) != 0 {
+    logger.Infow("viam:slam:cartographer", versionFields...)
+	} else {
+		logger.Info("viam:slam:cartographer built from source; version unknown")
+	}
+
+	return argsParsed, nil
 }
