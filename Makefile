@@ -1,14 +1,12 @@
 BUILD_CHANNEL?=local
 TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
 PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):${PATH}"
-
-set-pkg-config-openssl:
-	export PKG_CONFIG_PATH=${PKG_CONFIG_PATH}:`brew --prefix`/opt/openssl@3/lib/pkgconfig
+PKG_PATH=${PKG_CONFIG_PATH}:`brew --prefix`/opt/openssl@3/lib/pkgconfig
 
 bufinstall:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
 
-bufsetup: set-pkg-config-openssl
+bufsetup:
 	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 
@@ -61,19 +59,18 @@ lint-go:
 
 lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: ensure-submodule-initialized set-pkg-config-openssl
+setup: ensure-submodule-initialized
 ifeq ("Darwin", "$(shell uname -s)")
 	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
 else
 	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
 endif
 	
-
 build: build-module
 ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
-	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
+	cd viam-cartographer && PKG_CONFIG_PATH=$(PKG_PATH) ./scripts/build_viam_cartographer.sh 
 else 
-	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
+	cd viam-cartographer && PKG_CONFIG_PATH=$(PKG_PATH) ./scripts/build_cartographer.sh && PKG_CONFIG_PATH=$(PKG_PATH) ./scripts/build_viam_cartographer.sh
 endif
 
 build-module:
