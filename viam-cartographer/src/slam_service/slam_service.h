@@ -12,11 +12,11 @@
 
 #include "../io/draw_trajectories.h"
 #include "../io/file_handler.h"
+#include "../io/submap_painter.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
 #include "cairo/cairo.h"
-#include "cartographer/io/submap_painter.h"
 #include "common/v1/common.grpc.pb.h"
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
@@ -203,6 +203,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // GetLatestPaintedMapSlices paints and returns the current map of
     // Cartographer
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
+
+    // PaintMarker paints the latest global pose on the painted slices.
+    void PaintMarker(cartographer::io::PaintSubmapSlicesResult *painted_slices);
 
     // GetLatestSampledPointCloudMapString paints and returns the latest map as
     // a pcd string with probability estimates written to the color field. The
