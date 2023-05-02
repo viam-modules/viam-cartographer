@@ -73,9 +73,9 @@ func printVersion(args []string, logger golog.Logger) (Arguments, error) {
 		versionFields = append(versionFields, "git_rev", GitRevision)
 	}
 	if len(versionFields) != 0 {
-    logger.Infow("viam:slam:cartographer", versionFields...)
+		logger.Infow(viamcartographer.Model.String(), versionFields...)
 	} else {
-		logger.Info("viam:slam:cartographer built from source; version unknown")
+		logger.Info(viamcartographer.Model.String() + " built from source; version unknown")
 	}
 
 	return argsParsed, nil
