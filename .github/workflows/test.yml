@@ -55,11 +55,6 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         submodules: recursive
 
-    - name: make clean
-      run: |
-        chown -R testbot:testbot .
-        sudo -u testbot bash -lc 'cd viam-cartographer && make clean'        
-
     - name: Verify no uncommitted changes from make lint
       run: |
         git init
