@@ -5,12 +5,14 @@ package viamcartographer
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"io"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
@@ -28,6 +30,12 @@ import (
 
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 )
+
+/*
+	#include "viam-cartographer/src/slam_service/slam_service_wrapper.c"
+	#include <stdlib.h>
+*/
+import "C"
 
 // Model is the model name of cartographer.
 var Model = resource.NewModel("viam", "slam", "cartographer")
@@ -264,7 +272,35 @@ func (cartoSvc *cartographerService) StartDataProcess(
 		defer ticker.Stop()
 		defer cartoSvc.activeBackgroundWorkers.Done()
 
+		a, b := 3, 4
 		for {
+			// Test cgo
+			if _, err := C.Hello(); err != nil {
+				cartoSvc.logger.Errorw("error calling Hello function: " + err.Error())
+			}
+
+			aC := C.int(a)
+			bC := C.int(b)
+			mySum, err := C.sum(aC, bC)
+			if err != nil {
+				cartoSvc.logger.Errorw("error calling sum function: " + err.Error())
+			}
+			res := int(mySum)
+			fmt.Printf("Sum of %d + %d is %d\n", a, b, res)
+			a++
+			b++
+
+			myString := "hello there, this is Kat"
+			myStringC := C.CString(myString)
+			defer C.free(unsafe.Pointer(myStringC))
+			endIndex := len(myString)
+			endIndexC := C.int(endIndex)
+			if _, err := C.reverse(myStringC, 0, endIndexC); err != nil {
+				cartoSvc.logger.Errorw("error calling reverse function: " + err.Error())
+			}
+			myStringReversed := C.GoString(myStringC)
+			fmt.Println("strings reversed using C: ", myString, " --> ", myStringReversed)
+
 			if err := cancelCtx.Err(); err != nil {
 				if !errors.Is(err, context.Canceled) {
 					cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
