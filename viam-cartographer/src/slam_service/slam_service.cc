@@ -27,14 +27,14 @@ struct ColorARGB {
     unsigned char B;
 };
 
-// Check if the green color channel is 0 to filter unobserved pixels which
-// is set in DrawTexture at
-// https://github.com/cartographer-project/cartographer/blob/ef00de2317dc
-// f7895b09f18cc4d87f8b533a019b/cartographer/io/submap_painter.cc#L206-L207
+// Check if the green color channel is 0 to filter unobserved pixels which is
+// set in DrawTexture at
+// https://github.com/cartographer-project/cartographer/blob/ef00de231
+// 7dcf7895b09f18cc4d87f8b533a019b/cartographer/io/submap_painter.cc#L206-L207
 bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
 
 // Convert the scale of a specified color channel from the given UCHAR
-// range of 0-255 to an inverse probability range of 100-0.
+// range of 0 - 255 to an inverse probability range of 100 - 0.
 int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char max_val = UCHAR_MAX;
     unsigned char min_val = 0;
