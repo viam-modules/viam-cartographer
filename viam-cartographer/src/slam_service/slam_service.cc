@@ -34,14 +34,14 @@ struct ColorARGB {
 bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
 
 // Convert the scale of a specified color channel from the given UCHAR
-// range of 0 - 255 to an inverse probability range of 100 - 0
+// range of 0 - 255 to an inverse probability range of 100 - 0.
 int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char max_val = UCHAR_MAX;
     unsigned char min_val = 0;
     unsigned char max_prob = 100;
     unsigned char min_prob = 0;
 
-    // Probability is currently determined solely by the red color channel
+    // Probability is currently determined solely by the red color channel.
     unsigned char color_channel_val = pixel_color.R;
     unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
                          (max_val - min_val);

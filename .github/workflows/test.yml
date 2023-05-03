@@ -78,26 +78,26 @@ jobs:
         shell: bash
         command: |
           chown -R testbot:testbot .
-          sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
+          sudo -u testbot bash -lc 'make bufinstall buf setup'
 
     - name: make build
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && make build'
+        sudo -u testbot bash -lc 'make build'
 
     - name: make install-lua-files
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && make install-lua-files'
+        sudo -u testbot bash -lc 'make install-lua-files'
 
     - name: make test
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && make test'
+        sudo -u testbot bash -lc 'make test'
 
     - name: Copy carto_grpc_server binary
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo cp viam-cartographer/viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
+        sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 
     - name: Run viam-cartographer cartographer integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && sudo go test -v -race -run TestCartographerIntegration'
+        sudo -u testbot bash -lc 'sudo go test -v -race -run TestCartographerIntegration'
