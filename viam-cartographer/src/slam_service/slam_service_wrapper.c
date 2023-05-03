@@ -10,8 +10,6 @@ int sum(int a, int b) {
 }
 
 void reverse (char *x, int begin, int end) {
-    printf("FROM WITHIN C PROGRAM:\n");
-    puts(x);
     char c;
     if (begin >= end)
         return;

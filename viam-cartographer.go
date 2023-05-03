@@ -268,6 +268,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 		return
 	}
 	goutils.PanicCapturingGo(func() {
+
 		ticker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
 		defer ticker.Stop()
 		defer cartoSvc.activeBackgroundWorkers.Done()
