@@ -264,8 +264,8 @@ github.com/edaniels/gostream v0.0.0-20230424213557-e12afcfabcd8 h1:5/OQZgJwJMdUv
 github.com/edaniels/gostream v0.0.0-20230424213557-e12afcfabcd8/go.mod h1:ThHHmy2sF0nZhMuIAycCt3ftZ7mM55tWNdRLzo5ZLCw=
 github.com/edaniels/lidario v0.0.0-20220607182921-5879aa7b96dd h1:W6Zlh2ja8A5vljn17Ix/gZhaUbYMFKAuBjc4t9nma7U=
 github.com/edaniels/lidario v0.0.0-20220607182921-5879aa7b96dd/go.mod h1:CibiLtefSZOd0smxazen6pzvjNK3HrvgGojYOqC3/4Q=
-github.com/edaniels/zeroconf v1.0.9 h1:QFEH3ISQ+MSXWVSAIY7zwPiZb69PhjPbULAdhrGJHg8=
-github.com/edaniels/zeroconf v1.0.9/go.mod h1:22UUi3EGu1VSKYpObTSRkMvN9ENVT20KgHJbDISznEk=
+github.com/edaniels/zeroconf v1.0.5 h1:lGhzH3z8cR5Hvv2wmf1QJyQeyBgeJdUkjNo98Y+ysOo=
+github.com/edaniels/zeroconf v1.0.5/go.mod h1:22UUi3EGu1VSKYpObTSRkMvN9ENVT20KgHJbDISznEk=
 github.com/edsrzf/mmap-go v1.0.0/go.mod h1:YO35OhQPt3KJa3ryjFM5Bs14WD66h8eGKpfaBNrHW5M=
 github.com/envoyproxy/go-control-plane v0.6.9/go.mod h1:SBwIajubJHhxtWwsL9s8ss4safvEdbitLhGGK48rN6g=
 github.com/envoyproxy/go-control-plane v0.9.0/go.mod h1:YTl/9mNaCwkRvm6d1a2C3ymFceY/DCBVvsKhRF0iEA4=
@@ -983,9 +983,8 @@ github.com/pion/interceptor v0.1.12 h1:CslaNriCFUItiXS5o+hh5lpL0t0ytQkFnUcbbCs2Z
 github.com/pion/interceptor v0.1.12/go.mod h1:bDtgAD9dRkBZpWHGKaoKb42FhDHTG2rX8Ii9LRALLVA=
 github.com/pion/logging v0.2.2 h1:M9+AIj/+pxNsDfAT64+MAVgJO0rsyLnoJKCqf//DoeY=
 github.com/pion/logging v0.2.2/go.mod h1:k0/tDVsRCX2Mb2ZEmTqNa7CWsQPc+YYCB7Q+5pahoms=
+github.com/pion/mdns v0.0.7 h1:P0UB4Sr6xDWEox0kTVxF0LmQihtCbSAdW0H2nEgkA3U=
 github.com/pion/mdns v0.0.7/go.mod h1:4iP2UbeFhLI/vWju/bw6ZfwjJzk0z8DNValjGxR/dD8=
-github.com/pion/mdns v0.0.8-0.20230502060824-17c664ea7d5c h1:yuxunGfPeXnWCP9ke+iS2nq7K/q+17ynSgOeLkd5f20=
-github.com/pion/mdns v0.0.8-0.20230502060824-17c664ea7d5c/go.mod h1:658EdZmbrzmxLVC2qYP6pRgHtZTAzMoLadjBUVetgH4=
 github.com/pion/mediadevices v0.4.1-0.20230424151458-cadb1557556f h1:5Lhe7IohTrzNzg95dc0QgjU14J9t6SI0vbMqpHbx4AQ=
 github.com/pion/mediadevices v0.4.1-0.20230424151458-cadb1557556f/go.mod h1:iGUccKClQlqAgraxj4KJVLTtQ4XvXbqOkVq+mf5NkHQ=
 github.com/pion/randutil v0.1.0 h1:CFG1UdESneORglEsnimhUjf33Rwjubwj6xfiOXBa3mA=
@@ -1007,7 +1006,6 @@ github.com/pion/transport v0.14.1 h1:XSM6olwW+o8J4SCmOBb/BpwZypkHeyM0PGFCxNQBr40
 github.com/pion/transport v0.14.1/go.mod h1:4tGmbk00NeYA3rUa9+n+dzCCoKkcy3YlYb99Jn2fNnI=
 github.com/pion/transport/v2 v2.0.0/go.mod h1:HS2MEBJTwD+1ZI2eSXSvHJx/HnzQqRy2/LXxt6eVMHc=
 github.com/pion/transport/v2 v2.0.2/go.mod h1:vrz6bUbFr/cjdwbnxq8OdDDzHf7JJfGsIRkxfpZoTA0=
-github.com/pion/transport/v2 v2.1.0/go.mod h1:AdSw4YBZVDkZm8fpoz+fclXyQwANWmZAlDuQdctTThQ=
 github.com/pion/transport/v2 v2.2.0 h1:u5lFqFHkXLMXMzai8tixZDfVjb8eOjH35yCunhPeb1c=
 github.com/pion/transport/v2 v2.2.0/go.mod h1:AdSw4YBZVDkZm8fpoz+fclXyQwANWmZAlDuQdctTThQ=
 github.com/pion/turn/v2 v2.1.0 h1:5wGHSgGhJhP/RpabkUb/T9PdsAjkGLS6toYz5HNzoSI=
@@ -1652,7 +1650,6 @@ golang.org/x/term v0.3.0/go.mod h1:q750SLmJuPmVoN1blW3UFBPREJfb1KmY3vwxfr+nFDA=
 golang.org/x/term v0.4.0/go.mod h1:9P2UbLfCdcvo3p/nzKvsmas4TnlujnuoV9hGgYzW1lQ=
 golang.org/x/term v0.5.0/go.mod h1:jMB1sMXY+tzblOD4FWmEbocvup2/aLOaQEp7JmGp78k=
 golang.org/x/term v0.6.0/go.mod h1:m6U89DPEgQRMq3DNkDClhWw02AUbt2daBVO4cn4Hv9U=
-golang.org/x/term v0.7.0/go.mod h1:P32HKFT3hSsZrRxla30E9HqToFYAQPCMs/zFMBUFqPY=
 golang.org/x/text v0.0.0-20170915032832-14c0d48ead0c/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.0/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
 golang.org/x/text v0.3.1-0.20180807135948-17ff2d5776d2/go.mod h1:NqM8EUOU14njkJ3fqMW+pc6Ldnwhi/IjpwHt7yyuwOQ=
