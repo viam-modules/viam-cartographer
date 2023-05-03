@@ -2,7 +2,7 @@
 #include <stdio.h>
 
 void Hello() {
-    printf("Hello world\n");
+    printf("FROM WITHIN C PROGRAM: Hello world\n");
 }
 
 int sum(int a, int b) {
@@ -10,6 +10,8 @@ int sum(int a, int b) {
 }
 
 void reverse (char *x, int begin, int end) {
+    printf("FROM WITHIN C PROGRAM:\n");
+    puts(x);
     char c;
     if (begin >= end)
         return;
@@ -18,5 +20,6 @@ void reverse (char *x, int begin, int end) {
     *(x + end) = c;
 
     reverse(x, ++begin, --end);
+    printf("FROM WITHIN C PROGRAM:\n");
     puts(x);
 }

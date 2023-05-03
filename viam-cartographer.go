@@ -280,6 +280,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 			}
 
 			aC := C.int(a)
+
 			bC := C.int(b)
 			mySum, err := C.sum(aC, bC)
 			if err != nil {
@@ -293,13 +294,16 @@ func (cartoSvc *cartographerService) StartDataProcess(
 			myString := "hello there, this is Kat"
 			myStringC := C.CString(myString)
 			defer C.free(unsafe.Pointer(myStringC))
-			endIndex := len(myString)
+			startIndex, endIndex := 0, len(myString)-1
+			startIndexC := C.int(startIndex)
 			endIndexC := C.int(endIndex)
-			if _, err := C.reverse(myStringC, 0, endIndexC); err != nil {
-				cartoSvc.logger.Errorw("error calling reverse function: " + err.Error())
+
+			if _, err := C.reverse(myStringC, startIndexC, endIndexC); err != nil {
+				fmt.Println("error calling reverse function: " + err.Error())
 			}
 			myStringReversed := C.GoString(myStringC)
 			fmt.Println("strings reversed using C: ", myString, " --> ", myStringReversed)
+			// End Test cgo
 
 			if err := cancelCtx.Err(); err != nil {
 				if !errors.Is(err, context.Canceled) {
