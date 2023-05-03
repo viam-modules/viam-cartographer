@@ -13,16 +13,11 @@
 #include "Eigen/Core"
 #include "cartographer/io/file_writer.h"
 #include "cartographer/io/image.h"
-#include "cartographer/io/submap_painter.h"
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
 namespace {
-// The default value when coloring the image if no data is present. A
-// pixel representing no data will have all 3 channels of its color channels
-// (RGB) as the default value([102,102,102])
-static const unsigned char defaultNoDataRGBValue = 102;
 // Number of bytes in a pixel
 static const int bytesPerPixel = 4;
 struct ColorARGB {
@@ -32,30 +27,25 @@ struct ColorARGB {
     unsigned char B;
 };
 
-// Check if pixel is the default color signaling no data is present
-bool CheckIfEmptyPixel(ColorARGB pixel_color) {
-    return (pixel_color.R == defaultNoDataRGBValue) &&
-           (pixel_color.G == defaultNoDataRGBValue) &&
-           (pixel_color.B == defaultNoDataRGBValue);
-}
+// Check if the green color channel is 0 to filter unobserved pixels which is
+// set in DrawTexture at
+// https://github.com/cartographer-project/cartographer/blob/ef00de231
+// 7dcf7895b09f18cc4d87f8b533a019b/cartographer/io/submap_painter.cc#L206-L207
+bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
 
-// Convert the scale of a specified pixel color channel from the given
-// 102-255 range to 100-0. This is an initial solution for extracting
-// probability information from cartographer
+// Convert the scale of a specified color channel from the given UCHAR
+// range of 0 - 255 to an inverse probability range of 100 - 0.
 int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
     unsigned char max_val = UCHAR_MAX;
-    unsigned char min_val = defaultNoDataRGBValue;
+    unsigned char min_val = 0;
     unsigned char max_prob = 100;
     unsigned char min_prob = 0;
 
-    // Probability is currently determined solely by the R channel
-    // Values are restricted to be above or equal to defaultNoDataRGBValue
-    // to ensure negative probabilities cannot occur
-    // https://viam.atlassian.net/browse/RSDK-2567
+    // Probability is currently determined solely by the red color channel.
     unsigned char color_channel_val = pixel_color.R;
-    unsigned char prob = (max_val - std::max(color_channel_val, min_val)) *
-                         (max_prob - min_prob) / (max_val - min_val);
-    return std::min(std::max(prob, min_prob), max_prob);
+    unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
+                         (max_val - min_val);
+    return prob;
 }
 }  // namespace
 
@@ -72,26 +62,23 @@ std::atomic<bool> b_continue_session{true};
         global_pose = latest_global_pose;
     }
 
-    // Rotate pose to XZ plane. Additional angle offset is used so rotations
-    // occur along the Y axis, to match the XZ plane
-    auto rotated_vector = pcdRotation * global_pose.translation();
-    auto rotated_quat =
-        pcdOffsetRotation * global_pose.rotation() * pcdRotation;
+    auto pos_vector = global_pose.translation();
+    auto pos_quat = global_pose.rotation();
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
-    myPose->set_x(rotated_vector.x());
-    myPose->set_y(rotated_vector.y());
-    myPose->set_z(rotated_vector.z());
+    myPose->set_x(pos_vector.x());
+    myPose->set_y(pos_vector.y());
+    myPose->set_z(pos_vector.z());
 
     // Set extra for our response (currently stores quaternion)
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("real").set_number_value(rotated_quat.w());
-    q->mutable_fields()->operator[]("imag").set_number_value(rotated_quat.x());
-    q->mutable_fields()->operator[]("jmag").set_number_value(rotated_quat.y());
-    q->mutable_fields()->operator[]("kmag").set_number_value(rotated_quat.z());
+    q->mutable_fields()->operator[]("real").set_number_value(pos_quat.w());
+    q->mutable_fields()->operator[]("imag").set_number_value(pos_quat.x());
+    q->mutable_fields()->operator[]("jmag").set_number_value(pos_quat.y());
+    q->mutable_fields()->operator[]("kmag").set_number_value(pos_quat.z());
 
     // Set component_reference for our response
     response->set_component_reference(camera_name);
@@ -107,7 +94,8 @@ std::atomic<bool> b_continue_session{true};
     try {
         std::shared_lock optimization_lock{optimization_shared_mutex,
                                            std::defer_lock};
-        if (optimization_lock.try_lock()) {
+        if (action_mode != ActionMode::LOCALIZING &&
+            optimization_lock.try_lock()) {
             // We are able to lock the optimization_shared_mutex, which means
             // that the optimization is not ongoing and we can grab the newest
             // map
@@ -395,15 +383,9 @@ void SLAMServiceImpl::GetLatestSampledPointCloudMapString(
             float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
-            Eigen::Vector3d map_point(x_pos, y_pos, z_pos);
-            Eigen::Vector3d rotated_map_point = pcdRotation * map_point;
-
-            viam::utils::writeFloatToBufferInBytes(pcd_data,
-                                                   rotated_map_point.x());
-            viam::utils::writeFloatToBufferInBytes(pcd_data,
-                                                   rotated_map_point.y());
-            viam::utils::writeFloatToBufferInBytes(pcd_data,
-                                                   rotated_map_point.z());
+            viam::utils::writeFloatToBufferInBytes(pcd_data, x_pos);
+            viam::utils::writeFloatToBufferInBytes(pcd_data, y_pos);
+            viam::utils::writeFloatToBufferInBytes(pcd_data, z_pos);
             viam::utils::writeIntToBufferInBytes(pcd_data, prob);
 
             num_points++;
@@ -488,19 +470,9 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
             &submap_slice.cairo_data);
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
-        viam::io::PaintSubmapSlices(submap_slices, resolutionMeters);
+        cartographer::io::PaintSubmapSlices(submap_slices, resolutionMeters);
 
     return painted_slices;
-}
-
-void SLAMServiceImpl::PaintMarker(
-    cartographer::io::PaintSubmapSlicesResult *painted_slices) {
-    cartographer::transform::Rigid3d global_pose;
-    {
-        std::lock_guard<std::mutex> lk(viam_response_mutex);
-        global_pose = latest_global_pose;
-    }
-    viam::io::DrawPoseOnSurface(painted_slices, global_pose, resolutionMeters);
 }
 
 double SLAMServiceImpl::SetUpSLAM() {

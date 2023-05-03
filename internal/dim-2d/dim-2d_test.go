@@ -46,7 +46,7 @@ func TestNewLidar(t *testing.T) {
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring lidar camera error: error getting lidar camera "+
-				"gibberish for slam service: \"gibberish\" missing from dependencies"))
+				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
 	})
 
 	t.Run("Successful lidar creation", func(t *testing.T) {

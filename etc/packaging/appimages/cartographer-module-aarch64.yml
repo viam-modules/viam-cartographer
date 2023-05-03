@@ -5,6 +5,7 @@ script:
  - mkdir -p $TARGET_APPDIR/usr/bin
  - mkdir -p $TARGET_APPDIR/usr/lib
  - mkdir -p $TARGET_APPDIR/usr/share/cartographer/lua_files
+ - cp ../../../bin/cartographer-module $TARGET_APPDIR/usr/bin/
  - cp ../../../viam-cartographer/build/carto_grpc_server $TARGET_APPDIR/usr/bin/
  - cp ../../../viam-cartographer/cartographer/build/libcartographer.a $TARGET_APPDIR/usr/lib/
  - cp ../../../viam-cartographer/build/libviam-cartographer.a $TARGET_APPDIR/usr/lib/
@@ -19,8 +20,8 @@ script:
 AppDir:
   path: ./AppDir
   app_info:
-    id: com.viam.carto_grpc_server
-    name: carto_grpc_server
+    id: com.viam.cartographer-module
+    name: cartographer-module
     icon: viam-server
     version: ${BUILD_CHANNEL}
     exec: usr/bin/aix
@@ -66,7 +67,7 @@ AppDir:
 
   runtime:
     env:
-        AIX_TARGET: usr/bin/carto_grpc_server
+        AIX_TARGET: usr/bin/cartographer-module
 AppImage:
   arch: aarch64
-  update-information: zsync|http://packages.viam.com/apps/slam-servers/carto_grpc_server-${BUILD_CHANNEL}-aarch64.AppImage.zsync
+  update-information: zsync|http://packages.viam.com/apps/slam-servers/cartographer-module-${BUILD_CHANNEL}-aarch64.AppImage.zsync
