@@ -84,9 +84,19 @@ func api(logger golog.Logger) error {
 	fmt.Printf("response after %#v\n", response)
 	fmt.Printf("component_reference: %s\n", C.GoString(response.component_reference))
 
-
+	// == viam_carto_NewSensorReading ==
 	reading := []byte{1, 2, 3, 4, 5}
 	cSensorReading := C.viam_carto_NewSensorReading(C.CString("mysensor"), (*C.char)(C.CBytes(reading)), (C.int)(len(reading)))
+
+	// == viam_carto_WriteSensor ==
+	fmt.Println("calling viam_carto_WriteSensor ", time.Now())
+	cErr = C.viam_carto_WriteSensor(&viamCarto, &cSensorReading, &cErrMsg)
+	if cErr != 0 {
+		return errors.New(C.GoString(cErrMsg))
+	}
+	fmt.Println("called viam_carto_WriteSensor", time.Now())
+
+	// == getFred ==
 	fmt.Println("calling viam_carto_WriteSensor ", time.Now())
 	cErr = C.viam_carto_WriteSensor(&viamCarto, &cSensorReading, &cErrMsg)
 	if cErr != 0 {
