@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	utils.ContextualMain(mainWithArgs, golog.NewLogger("cartographerModule"))
+	utils.ContextualMain(mainWithArgs, golog.NewDebugLogger("cartographerModule"))
 }
 
 func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error {
