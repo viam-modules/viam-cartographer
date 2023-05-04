@@ -3,9 +3,6 @@ TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
 PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):${PATH}"
 PKG_PATH=${PKG_CONFIG_PATH}:`brew --prefix`/opt/openssl@3/lib/pkgconfig
 
-bufinstall:
-	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
-
 bufsetup:
 	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
