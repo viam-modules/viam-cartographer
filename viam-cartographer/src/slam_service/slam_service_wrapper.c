@@ -1,50 +1,14 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
-void Hello() { printf("FROM WITHIN C PROGRAM: Hello world\n"); }
-
-int sum(int a, int b) { return a + b; }
-
-void reverse(char *x, int begin, int end) {
-  char c;
-  if (begin >= end)
-    return;
-  c = *(x + begin);
-  *(x + begin) = *(x + end);
-  *(x + end) = c;
-
-  reverse(x, ++begin, --end);
-  printf("FROM WITHIN C PROGRAM:\n");
-  puts(x);
-}
-
-// https://valgrind.org/docs/manual/quick-start.html
-void trip_valgrind(void) {
-  int *x = malloc(10 * sizeof(int)); // problem 1: heap block overrun
-  x[10] = 0;                         // problem 2: memory leak -- x not freed
-}
-
-// https://github.com/google/sanitizers/wiki/AddressSanitizerExampleUseAfterReturn
-int *ptr;
-__attribute__((noinline)) void FunctionThatEscapesLocalObject() {
-  int local[100];
-  ptr = &local[0];
-}
-
-int trip_address_sanitizer() {
-  int x = 1;
-  FunctionThatEscapesLocalObject();
-  return ptr[x];
-}
-
+#include <stdio.h>
 /*
  * Modeled after sqlite api:
  * https://www.sqlite.org/cintro.html
  *
  * NOTE:
- * I see that SQLITE uses pointers to pointers for paramenters. 
+ * I see that SQLITE uses pointers to pointers for paramenters.
  * I'm not sure why. I've copied the pattern here, lets have a convo
  * regarding whether that makes sense to do or not.
  */
@@ -73,6 +37,7 @@ typedef struct viam_carto viam_carto;
 
 struct viam_carto {
   const char *sensors;
+  int initialized_flag;
 };
 
 typedef struct viam_carto_get_position_response
@@ -96,9 +61,9 @@ struct viam_carto_get_position_response {
 
 typedef struct viam_carto_sensor_reading viam_carto_sensor_reading;
 struct viam_carto_sensor_reading {
-  const int sensor_reading_len;
-  const char *sensor;
-  const char *sensor_reading;
+  int sensor_reading_len;
+  char *sensor;
+  char *sensor_reading;
 };
 
 // Takes a viam_carto, and an empty errmsg
@@ -119,7 +84,17 @@ viam_carto viam_carto_New(const char *sensors) {
 //
 // On success: Returns 0 & mutates viam_carto to contain handle to
 // initialized carto object
-int viam_carto_Init(viam_carto **viam_carto, char **errmsg) { return 0; }
+/* #define VIAM_CARTO_INIT_ERR */
+int viam_carto_Init(viam_carto *viam_carto, char **errmsg) {
+#ifdef VIAM_CARTO_INIT_ERR
+  char *err;
+  err = "there was an error in init\n";
+  *errmsg = err;
+  return 1;
+#endif
+  viam_carto->initialized_flag = 5;
+  return 0;
+}
 
 // Takes a viam_carto, and an empty errmsg
 //
@@ -127,7 +102,16 @@ int viam_carto_Init(viam_carto **viam_carto, char **errmsg) { return 0; }
 // errmsg with a string that contains an informative error message
 //
 // On success: Returns 0, frees all resources associated with viam_carto
-int viam_carto_Close(viam_carto **viam_carto, char **errmsg) { return 0; }
+int viam_carto_Close(viam_carto *viam_carto, char **errmsg) {
+  free(viam_carto);
+  return 0;
+}
+
+int viam_carto_DestroyGetPositionResponse(
+    viam_carto_get_position_response *response) {
+  free(response);
+  return 0;
+}
 
 // Takes a viam_carto, an empty viam_carto_get_position_response and an empty
 // errmsg
@@ -137,15 +121,15 @@ int viam_carto_Close(viam_carto **viam_carto, char **errmsg) { return 0; }
 //
 // On success: Returns 0, mutates response to contain response
 int viam_carto_GetPosition(const viam_carto *viam_carto,
-                           viam_carto_get_position_response **response,
+                           viam_carto_get_position_response *response,
                            char **errmsg) {
 #ifdef VIAM_CARTO_GETPOSITION_ERR
   char *err;
   err = "there was an error";
-  *errmsg = err;
-  return 1
+  errmsg = err;
+  return 1;
 #endif
-      viam_carto_get_position_response res;
+  viam_carto_get_position_response res;
 
   res = (viam_carto_get_position_response){.component_reference =
                                                "some_component_reference",
@@ -156,8 +140,16 @@ int viam_carto_GetPosition(const viam_carto *viam_carto,
                                            .o_y = 4,
                                            .o_z = 5,
                                            .theta = 6};
-  **response = res;
+  *response = res;
   return 0;
+}
+
+viam_carto_sensor_reading viam_carto_NewSensorReading(char *sensor,
+                                                      char *sensor_reading,
+                                                      int sensor_reading_len) {
+  return (viam_carto_sensor_reading){.sensor_reading_len = sensor_reading_len,
+                                     .sensor = sensor,
+                                     .sensor_reading = sensor_reading};
 }
 
 // Takes a viam_carto, a viam_carto_sensor_reading, and an empty errmsg
@@ -173,9 +165,16 @@ int viam_carto_GetPosition(const viam_carto *viam_carto,
 // errmsg with a string that contains an informative error message
 //
 // On success: Returns 0, mutates response to contain response
-int viam_carto_WriteSensor(const viam_carto **viam_carto,
+int viam_carto_WriteSensor(const viam_carto *viam_carto,
                            const viam_carto_sensor_reading *sensor_reading,
                            char **errmsg) {
+
+  printf("printing sensor_reading->sensor_reading\n");
+
+  for (int i = 0; i < sensor_reading->sensor_reading_len; i++) {
+    printf("%d", sensor_reading->sensor_reading[i]);
+  }
+  printf("\n");
 
   sleep(3);
   return 0;

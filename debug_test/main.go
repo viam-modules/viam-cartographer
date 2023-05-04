@@ -2,6 +2,7 @@ package main
 
 /*
 	#include "../viam-cartographer/src/slam_service/slam_service_wrapper.c"
+	#include "../viam-cartographer/src/debug.c"
 	#include <stdlib.h>
 */
 import "C"
@@ -9,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 	"unsafe"
 
 	"github.com/edaniels/golog"
@@ -51,20 +53,50 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 }
 
 func api(logger golog.Logger) error {
-	viamCartoPtr := &C.struct_viam_carto{sensors: C.CString("mysensor")}
+	// == viam_carto_New ==
+	// NOTE: This is probably wrong IDK if this is safe or not
+	// as I think viamCarto is now managed by the go garbage collector?
+	viamCarto := C.viam_carto_New(C.CString("mysensor"))
+	fmt.Println("pre init viamCarto.initialized_flag", viamCarto.initialized_flag)
+
+
+	// == viam_carto_Init ==
 	cErrMsg := C.CString("")
 	// NOTE: This is probably wrong
 	defer C.free(unsafe.Pointer(cErrMsg))
-	cErr := C.viam_carto_Init(&viamCartoPtr, &cErrMsg)
-	goErr := C.GoString(cErrMsg)
+	cErr := C.viam_carto_Init(&viamCarto, &cErrMsg)
 	if cErr != 0 {
-		return errors.New(goErr)
+		return errors.New(C.GoString(cErrMsg))
 	}
-	// response := C.struct_viam_carto_get_position_response{}
-	// cErr = C.viam_carto_GetPosition(&viamCartoPtr, response, &cErrMsg)
+	fmt.Println("post init viamCarto.initialized_flag", viamCarto.initialized_flag)
+
+
+	// == viam_carto_GetPosition ==
+	response := C.struct_viam_carto_get_position_response{}
+	responsePtr := &response
+	fmt.Printf("response before %#v\n", response)
+	// TODO: How can I be sure position is properly freed? Should the viam_carto
+	// library provide a distructor for GetPosition as well?
+	cErr = C.viam_carto_GetPosition(&viamCarto, responsePtr, &cErrMsg)
+	if cErr != 0 {
+		return errors.New(C.GoString(cErrMsg))
+	}
+	fmt.Printf("response after %#v\n", response)
+	fmt.Printf("component_reference: %s\n", C.GoString(response.component_reference))
+
+
+	reading := []byte{1, 2, 3, 4, 5}
+	cSensorReading := C.viam_carto_NewSensorReading(C.CString("mysensor"), (*C.char)(C.CBytes(reading)), (C.int)(len(reading)))
+	fmt.Println("calling viam_carto_WriteSensor ", time.Now())
+	cErr = C.viam_carto_WriteSensor(&viamCarto, &cSensorReading, &cErrMsg)
+	if cErr != 0 {
+		return errors.New(C.GoString(cErrMsg))
+	}
+	fmt.Println("called viam_carto_WriteSensor", time.Now())
 
 	return nil
 }
+
 
 func tripValgrind(logger golog.Logger) error {
 	C.trip_valgrind()
