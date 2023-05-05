@@ -88,10 +88,11 @@ These containers are set to persist between sessions via the `persistent` parame
 make bufinstall && make buf 
 # Install dependencies
 make setup
+# Build the binary
+make build
 # Install lua files
 make install-lua-files
-# Build & install the binary
-make build
+# Install the cartographer-module binary
 make install
 # Run the binary
 cartographer-module
