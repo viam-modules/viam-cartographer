@@ -2,8 +2,12 @@ package main
 
 /*
 	#include "../viam-cartographer/src/slam_service/slam_service_wrapper.c"
+	#include "../viam-cartographer/src/slam_service/mycounter.c"
 	#include "../viam-cartographer/src/debug.c"
 	#include <stdlib.h>
+
+
+
 */
 import "C"
 import (
@@ -59,7 +63,6 @@ func api(logger golog.Logger) error {
 	viamCarto := C.viam_carto_New(C.CString("mysensor"))
 	fmt.Println("pre init viamCarto.initialized_flag", viamCarto.initialized_flag)
 
-
 	// == viam_carto_Init ==
 	cErrMsg := C.CString("")
 	// NOTE: This is probably wrong
@@ -69,7 +72,6 @@ func api(logger golog.Logger) error {
 		return errors.New(C.GoString(cErrMsg))
 	}
 	fmt.Println("post init viamCarto.initialized_flag", viamCarto.initialized_flag)
-
 
 	// == viam_carto_GetPosition ==
 	response := C.struct_viam_carto_get_position_response{}
@@ -98,6 +100,7 @@ func api(logger golog.Logger) error {
 
 	// == getFred ==
 	fmt.Println("calling viam_carto_WriteSensor ", time.Now())
+
 	cErr = C.viam_carto_WriteSensor(&viamCarto, &cSensorReading, &cErrMsg)
 	if cErr != 0 {
 		return errors.New(C.GoString(cErrMsg))
@@ -106,7 +109,6 @@ func api(logger golog.Logger) error {
 
 	return nil
 }
-
 
 func tripValgrind(logger golog.Logger) error {
 	C.trip_valgrind()

@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 
+#include <unistd.h>
 #include <stdio.h>
 /*
  * Modeled after sqlite api:
@@ -31,18 +31,18 @@
  * "-sensors="+cartoSvc.primarySensorName
  * NOTE: This should be split out into its individual parameters
  * "-config_param="+slamUtils.DictToString(cartoSvc.configParams))
+ * "-map_rate_sec="+strconv.Itoa(cartoSvc.mapRateSec))
+ * "-data_dir="+cartoSvc.dataDirectory)
  */
 
-typedef struct viam_carto viam_carto;
-
-struct viam_carto {
+typedef struct viam_carto {
   const char *sensors;
-  int initialized_flag;
-};
+  int initialized_flag; // Currently used to simulate initialization of carto_obj 
+  void *carto_obj;
+} viam_carto;
 
-typedef struct viam_carto_get_position_response
-    viam_carto_get_position_response;
-struct viam_carto_get_position_response {
+// GetPositionResponse https://github.com/viamrobotics/api/blob/main/proto/viam/service/slam/v1/slam.proto#L51
+typedef struct viam_carto_get_position_response {
   double x;
   // millimeters from the origin
   double y;
@@ -57,16 +57,16 @@ struct viam_carto_get_position_response {
   // degrees
   double theta;
   const char *component_reference;
-};
+  // TODO: Need to also return quat information as the spaital math exists only on the go side
+} viam_carto_get_position_response;
 
-typedef struct viam_carto_sensor_reading viam_carto_sensor_reading;
-struct viam_carto_sensor_reading {
+typedef struct viam_carto_sensor_reading {
   int sensor_reading_len;
   char *sensor;
   char *sensor_reading;
-};
+} viam_carto_sensor_reading;
 
-// Takes a viam_carto, and an empty errmsg
+// viam_carto_New takes a viam_carto, and an empty errmsg
 //
 // On error: Returns a non 0 error code and mutates
 // errmsg with a string that contains an informative error message
@@ -77,7 +77,7 @@ viam_carto viam_carto_New(const char *sensors) {
   return (viam_carto){.sensors = sensors};
 }
 
-// Takes a viam_carto, and an empty errmsg
+// viam_carto_Init takes a viam_carto, and an empty errmsg
 //
 // On error: Returns a non 0 error code and mutates
 // errmsg with a string that contains an informative error message
@@ -96,7 +96,7 @@ int viam_carto_Init(viam_carto *viam_carto, char **errmsg) {
   return 0;
 }
 
-// Takes a viam_carto, and an empty errmsg
+// viam_carto_Close takes a viam_carto, and an empty errmsg
 //
 // On error: Returns a non 0 error code and mutates
 // errmsg with a string that contains an informative error message
@@ -113,7 +113,7 @@ int viam_carto_DestroyGetPositionResponse(
   return 0;
 }
 
-// Takes a viam_carto, an empty viam_carto_get_position_response and an empty
+// viam_carto_GetPosition takes a viam_carto, an empty viam_carto_get_position_response and an empty
 // errmsg
 //
 // On error: Returns a non 0 error code and mutates
@@ -123,12 +123,6 @@ int viam_carto_DestroyGetPositionResponse(
 int viam_carto_GetPosition(const viam_carto *viam_carto,
                            viam_carto_get_position_response *response,
                            char **errmsg) {
-#ifdef VIAM_CARTO_GETPOSITION_ERR
-  char *err;
-  err = "there was an error";
-  errmsg = err;
-  return 1;
-#endif
   viam_carto_get_position_response res;
 
   res = (viam_carto_get_position_response){.component_reference =
@@ -152,7 +146,7 @@ viam_carto_sensor_reading viam_carto_NewSensorReading(char *sensor,
                                      .sensor_reading = sensor_reading};
 }
 
-// Takes a viam_carto, a viam_carto_sensor_reading, and an empty errmsg
+// viam_carto_WriteSensor takes a viam_carto, a viam_carto_sensor_reading, and an empty errmsg
 //
 // Freeing viam_carto_sensor_reading after calling viam_carto_WriteSensor
 // is the caller's responsibility.
