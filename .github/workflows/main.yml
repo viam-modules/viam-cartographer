@@ -19,11 +19,11 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@RSDK-3001
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
 
   appimage:
     needs: test
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@RSDK-3001
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
