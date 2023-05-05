@@ -102,8 +102,10 @@ install:
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
 
-appimage: build
+appimage-custom-build-channel: build
 	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe cartographer-module-`uname -m`.yml
+
+appimage: build
 	cd etc/packaging/appimages && ./package_release_module.sh
 	mkdir -p etc/packaging/appimages/deploy/
 	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
