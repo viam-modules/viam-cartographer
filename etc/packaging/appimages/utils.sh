@@ -13,14 +13,14 @@ get_stable_version_tag() {
 		then
 			echo $CUR_TAG
 			return 0
-		else
-			echo "latest"
-			return 128
 		fi
 	fi
 	return 1
 }
 
+# This is a helper function to determine if the current git commit constitutes an rc release.
+# Specifically, is it tagged in the format "v1.2.3-rc0" and a higher version than any other
+# tags. This is used for internal tagging and release building.
 get_rc_version_tag() {
 	set -e
 	CUR_TAG=`git tag --points-at | sort -Vr | head -n1`
