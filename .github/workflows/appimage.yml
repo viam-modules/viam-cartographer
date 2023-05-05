@@ -82,7 +82,7 @@ jobs:
     - name: Build AppImage (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage-custom-build-channel'
+        sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
@@ -102,7 +102,7 @@ jobs:
 
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-      run: sudo -u testbot bash -lc 'cd viam-cartographer && make appimage'
+      run: sudo -u testbot bash -lc 'cd viam-cartographer && make appimage-ci'
 
     - name: Deploy Files (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
