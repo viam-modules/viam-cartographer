@@ -11,6 +11,7 @@ on:
       - 'README.md'
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+'
+      - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
 # and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
@@ -18,11 +19,11 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@RSDK-3001
 
   appimage:
     needs: test
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@RSDK-3001
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
