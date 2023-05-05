@@ -7,7 +7,7 @@ concurrency:
 
 on:
   pull_request_target:
-    branches: [ 'main' ]
+    branches: [ 'RSDK-3001' ]
     types: [ 'labeled' ]
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
