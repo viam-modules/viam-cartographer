@@ -28,10 +28,7 @@ func main() {
 }
 
 func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error {
-	argsParsed, err := printVersion(args, logger)
-	if err != nil {
-		return err
-	}
+	argsParsed := printVersion(args, logger)
 	if argsParsed.Version {
 		return nil
 	}
@@ -57,11 +54,11 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	return nil
 }
 
-func printVersion(args []string, logger golog.Logger) (Arguments, error) {
+func printVersion(args []string, logger golog.Logger) Arguments {
 	var argsParsed Arguments
-	if err := utils.ParseFlags(args, &argsParsed); err != nil {
-		return argsParsed, err
-	}
+	// Don't propagate error if there are additional flags
+	// that are not recognized
+	utils.ParseFlags(args, &argsParsed)
 
 	// Always log the version, return early if the '-version' flag was provided
 	// fmt.Println would be better but fails linting. Good enough.
@@ -78,5 +75,5 @@ func printVersion(args []string, logger golog.Logger) (Arguments, error) {
 		logger.Info(viamcartographer.Model.String() + " built from source; version unknown")
 	}
 
-	return argsParsed, nil
+	return argsParsed
 }
