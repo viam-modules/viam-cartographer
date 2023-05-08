@@ -57,8 +57,10 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 func printVersion(args []string, logger golog.Logger) Arguments {
 	var argsParsed Arguments
 	// Don't propagate error if there are additional flags
-	// that are not recognized
-	utils.ParseFlags(args, &argsParsed)
+	// that are not recognized. Otherwise the module fails
+	// under normal operation.
+	//nolint:errcheck
+	_ = utils.ParseFlags(args, &argsParsed)
 
 	// Always log the version, return early if the '-version' flag was provided
 	// fmt.Println would be better but fails linting. Good enough.
