@@ -550,7 +550,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
-    current_file_offline++;
+    // current_file_offline++;
     return to_return;
 }
 
