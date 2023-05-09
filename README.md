@@ -88,8 +88,11 @@ These containers are set to persist between sessions via the `persistent` parame
 make setup
 # Setup the gRPC files
 make buf 
-# Build & install the binary
+# Build the binary
 make build
+# Install lua files
+make install-lua-files
+# Install the cartographer-module binary
 make install
 # Run the binary
 cartographer-module
