@@ -17,17 +17,17 @@ Install viam-cartographer:
 
 * Linux aarch64:
     ```bash
-    sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-stable-aarch64.AppImage
-    sudo chmod a+rx /usr/local/bin/carto_grpc_server
+    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-stable-aarch64.AppImage
+    sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
  * Linux x86_64:
     ```bash
-    sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-stable-x86_64.AppImage
-    sudo chmod a+rx /usr/local/bin/carto_grpc_server
+    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-stable-x86_64.AppImage
+    sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
 * MacOS/Linux
     ```bash
-    brew tap viamrobotics/brews && brew install carto-grpc-server
+    brew tap viamrobotics/brews && brew install cartographer-module
     ```
 
 For next steps, see the [Run Cartographer SLAM on your Robot with a LIDAR Tutorial](https://docs.viam.com/services/slam/run-slam-cartographer/).
@@ -41,13 +41,13 @@ You can either install the latest AppImages for testing, or build the code from 
 You can install the latest AppImages using:
 * Linux aarch64:
     ```bash
-    sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-latest-aarch64.AppImage
-    sudo chmod a+rx /usr/local/bin/carto_grpc_server
+    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-latest-aarch64.AppImage
+    sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
  * Linux x86_64:
     ```bash
-    sudo curl -o /usr/local/bin/carto_grpc_server http://packages.viam.com/apps/slam-servers/carto_grpc_server-latest-x86_64.AppImage
-    sudo chmod a+rx /usr/local/bin/carto_grpc_server
+    sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-latest-x86_64.AppImage
+    sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
 
 ### Build from source
@@ -88,11 +88,14 @@ These containers are set to persist between sessions via the `persistent` parame
 make bufinstall && make buf 
 # Install dependencies
 make setup
-# Build & install the binary
+# Build the binary
 make build
-sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin
+# Install lua files
+make install-lua-files
+# Install the cartographer-module binary
+make install
 # Run the binary
-carto_grpc_server
+cartographer-module
 ```
 
 ### Linting

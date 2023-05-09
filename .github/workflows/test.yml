@@ -5,33 +5,6 @@ on:
   workflow_call:
 
 jobs:
-  lint:
-    name: Lint
-    runs-on: [x64, qemu-host]
-    container:
-      image: ghcr.io/viamrobotics/canon:amd64-cache
-      options: --platform linux/amd64
-    timeout-minutes: 30
-    steps:
-    - name: Check out code in viam-cartographer directory
-      uses: actions/checkout@v3
-      with:
-        submodules: recursive
-
-    - name: Verify no uncommitted changes from make lint
-      run: |
-        git init
-        git add .
-        chown -R testbot:testbot .
-        sudo -u testbot bash -lc 'make lint-setup lint'
-        GEN_DIFF=$(git status -s)
-
-        if [ -n "$GEN_DIFF" ]; then
-            echo '"make lint" resulted in changes not in git' 1>&2
-            git status
-            exit 1
-        fi
-
   build_and_test:
     name: Build and Test Cartographer
     strategy:
@@ -68,17 +41,33 @@ jobs:
         path: |
          pr.env
         retention-days: 1
-        
-    - name: Check out code in viam-cartographer directory
+
+    - name: Check out main branch code
+      if: github.event_name != 'pull_request_target'
       uses: actions/checkout@v3
       with:
         submodules: recursive
-        path: viam-cartographer
 
-    - name: make clean
+    - name: Check out PR branch code
+      if: github.event_name == 'pull_request_target'
+      uses: actions/checkout@v3
+      with:
+        ref: ${{ github.event.pull_request.head.sha }}
+        submodules: recursive
+
+    - name: Verify no uncommitted changes from make lint
       run: |
+        git init
+        git add .
         chown -R testbot:testbot .
-        sudo -u testbot bash -lc 'cd viam-cartographer && make clean'        
+        sudo -u testbot bash -lc 'make lint-setup lint'
+        GEN_DIFF=$(git status -s)
+
+        if [ -n "$GEN_DIFF" ]; then
+            echo '"make lint" resulted in changes not in git' 1>&2
+            git status
+            exit 1
+        fi
 
     - name: make bufinstall buf setup
       uses: nick-fields/retry@v2
@@ -89,26 +78,26 @@ jobs:
         shell: bash
         command: |
           chown -R testbot:testbot .
-          sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
+          sudo -u testbot bash -lc 'make bufinstall buf setup'
 
     - name: make build
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && make build'
+        sudo -u testbot bash -lc 'make build'
 
     - name: make install-lua-files
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && make install-lua-files'
+        sudo -u testbot bash -lc 'make install-lua-files'
 
     - name: make test
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && make test'
+        sudo -u testbot bash -lc 'make test'
 
     - name: Copy carto_grpc_server binary
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo cp viam-cartographer/viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
+        sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 
     - name: Run viam-cartographer cartographer integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'cd viam-cartographer && sudo go test -v -race -run TestCartographerIntegration'
+        sudo -u testbot bash -lc 'sudo go test -v -race -run TestCartographerIntegration'

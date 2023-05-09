@@ -15,9 +15,8 @@ import (
 	"github.com/edaniels/gostream"
 	"github.com/pkg/errors"
 	"go.viam.com/rdk/components/camera"
-	"go.viam.com/rdk/config"
 	"go.viam.com/rdk/pointcloud"
-	"go.viam.com/rdk/registry"
+	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/testutils/inject"
@@ -57,14 +56,14 @@ type Service interface {
 	StartDataProcess(cancelCtx context.Context, lidar lidar.Lidar, c chan int)
 	StartSLAMProcess(ctx context.Context) error
 	StopSLAMProcess() error
-	Close() error
+	Close(ctx context.Context) error
 	GetSLAMProcessConfig() pexec.ProcessConfig
 	GetSLAMProcessBufferedLogReader() bufio.Reader
 }
 
 // SetupDeps returns the dependencies based on the sensors passed as arguments.
-func SetupDeps(sensors []string) registry.Dependencies {
-	deps := make(registry.Dependencies)
+func SetupDeps(sensors []string) resource.Dependencies {
+	deps := make(resource.Dependencies)
 
 	for _, sensor := range sensors {
 		switch sensor {
@@ -161,7 +160,7 @@ func ClearDirectory(t *testing.T, path string) {
 // CreateSLAMService creates a slam service for testing.
 func CreateSLAMService(
 	t *testing.T,
-	attrCfg *slamConfig.AttrConfig,
+	cfg *slamConfig.Config,
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 	executableName string,
@@ -169,16 +168,16 @@ func CreateSLAMService(
 	t.Helper()
 
 	ctx := context.Background()
-	cfgService := config.Service{Name: "test", Type: "slam", Model: viamcartographer.Model}
-	cfgService.ConvertedAttributes = attrCfg
+	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
+	cfgService.ConvertedAttributes = cfg
 
-	deps := SetupDeps(attrCfg.Sensors)
+	deps := SetupDeps(cfg.Sensors)
 
-	sensorDeps, err := attrCfg.Validate("path")
+	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, attrCfg.Sensors)
+	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -197,5 +196,30 @@ func CreateSLAMService(
 	}
 
 	test.That(t, svc, test.ShouldNotBeNil)
+
 	return svc, nil
+}
+
+// CheckDeleteProcessedData compares the number of files found in a specified data
+// directory with the previous number found and uses the useLiveData and
+// deleteProcessedData values to evaluate this comparison. It returns the number of files
+// currently in the data directory for the specified config. Future invocations should pass in this
+// value. This function should be passed 0 as a default prev argument in order to get the
+// number of files currently in the directory.
+func CheckDeleteProcessedData(
+	t *testing.T,
+	subAlgo viamcartographer.SubAlgo,
+	dir string,
+	prev int,
+	deleteProcessedData,
+	useLiveData bool,
+) int {
+	switch subAlgo {
+	case viamcartographer.Dim2d:
+		numFiles, err := slamTesthelper.CheckDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
+		test.That(t, err, test.ShouldBeNil)
+		return numFiles
+	default:
+		return 0
+	}
 }

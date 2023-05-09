@@ -102,7 +102,7 @@ jobs:
 
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-      run: sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="latest" appimage'
+      run: sudo -u testbot bash -lc 'cd viam-cartographer && make appimage-ci'
 
     - name: Deploy Files (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'

@@ -24,7 +24,7 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	}
 
 	// Add the cartographer model to the module
-	if err = cartoModule.AddModelFromRegistry(ctx, slam.Subtype, viamcartographer.Model); err != nil {
+	if err = cartoModule.AddModelFromRegistry(ctx, slam.API, viamcartographer.Model); err != nil {
 		return err
 	}
 
