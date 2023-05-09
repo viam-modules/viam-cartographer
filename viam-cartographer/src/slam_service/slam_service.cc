@@ -729,7 +729,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             // if(prev_file == ""){
             //     prev_file = file;
             // }else{
-                viam::io::RemoveFile(prev_file);
+                viam::io::RemoveFile(file);
             //     prev_file = file;
             // }
             
