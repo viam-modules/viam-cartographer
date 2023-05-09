@@ -570,7 +570,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
-    current_file_offline++;
+    // current_file_offline++;
     return to_return;
 }
 
@@ -702,7 +702,6 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             file = GetNextDataFile();
             continue;
         } 
-        std::cout << "yo current file num" << current_file_offline << std::endl;
         if (!set_start_time) {
             // Go past files that are not supposed to be included in this run
             double file_time = viam::io::ReadTimeFromTimestamp(
@@ -732,7 +731,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 set_start_time = true;
             }
             LOG(INFO) << "Starting to save maps...";
-            StartSaveMap();
+            // StartSaveMap();
         }
         // Add data to the map_builder to add to the map
         {
@@ -747,6 +746,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                         trajectory_id, local_poses.back());
                 }
             }
+            viam::io::RemoveFile(file);
         }
         // Save a copy of the global pose
         {
