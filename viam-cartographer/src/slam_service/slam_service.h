@@ -230,6 +230,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<std::string> file_list_offline;
     size_t current_file_offline = 0;
     std::string current_file_online;
+    std::string prev_file = "";
 
     // If mutexes map_builder_mutex and optimization_shared_mutex are held
     // concurrently, then optimization_shared_mutex must be taken

@@ -726,7 +726,13 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                         trajectory_id, local_poses.back());
                 }
             }
-            viam::io::RemoveFile(file);
+            if(prev_file == ""){
+                prev_file = file;
+            }else{
+                viam::io::RemoveFile(prev_file);
+                prev_file = file;
+            }
+            
         }
         // Save a copy of the global pose
         {
