@@ -81,7 +81,7 @@ std::vector<std::string> ListSortedFilesInDirectory(
 
 void RemoveFile(std::string file_path) {
     if (remove(file_path.c_str()) != 0) {
-        LOG(ERROR) << "Error removing file";
+        LOG(ERROR) << "Error removing file: " << file_path;
     }
     return;
 }
