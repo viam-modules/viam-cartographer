@@ -529,9 +529,9 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     if (!b_continue_session) {
         return "";
     }
-    if (file_list_offline.size() == 0) {
+    // if (file_list_offline.size() == 0) {
         file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
-    }
+    // }
     // We're setting the minimum required files to be two for the following
     // reasons:
     // 1. Cartographer needs at least two PCD files to work properly.
@@ -550,7 +550,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         return "";
     }
     const auto to_return = file_list_offline[current_file_offline];
-    // current_file_offline++;
+    current_file_offline++;
     return to_return;
 }
 
@@ -726,12 +726,12 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                         trajectory_id, local_poses.back());
                 }
             }
-            if(prev_file == ""){
-                prev_file = file;
-            }else{
+            // if(prev_file == ""){
+            //     prev_file = file;
+            // }else{
                 viam::io::RemoveFile(prev_file);
-                prev_file = file;
-            }
+            //     prev_file = file;
+            // }
             
         }
         // Save a copy of the global pose
