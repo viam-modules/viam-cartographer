@@ -8,7 +8,6 @@ import (
 	"go.viam.com/rdk/module"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/utils"
-	goutils "go.viam.com/utils"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 )
@@ -60,7 +59,8 @@ func printVersion(args []string, logger golog.Logger) Arguments {
 	// Don't propagate error if there are additional flags
 	// that are not recognized. Otherwise the module fails
 	// under normal operation.
-	goutils.UncheckedError(utils.ParseFlags(args, &argsParsed))
+	//nolint:errcheck
+	_ = utils.ParseFlags(args, &argsParsed)
 
 	// Always log the version, return early if the '-version' flag was provided
 	// fmt.Println would be better but fails linting. Good enough.
