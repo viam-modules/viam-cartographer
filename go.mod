@@ -2,7 +2,7 @@ module github.com/viamrobotics/viam-cartographer
 
 go 1.19
 
-//replace go.viam.com/rdk => /Users/devinhilly/viam/rdk
+replace go.viam.com/rdk => /Users/devinhilly/viam/rdk
 
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
@@ -11,11 +11,11 @@ require (
 	github.com/golang/geo v0.0.0-20210211234256-740aa86cb551
 	github.com/golangci/golangci-lint v1.51.2
 	github.com/pkg/errors v0.9.1
-	github.com/rhysd/actionlint v1.6.23
+	github.com/rhysd/actionlint v1.6.24
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.118
-	go.viam.com/rdk v0.2.35
-	go.viam.com/slam v0.1.34-0.20230418202907-6b4eabaa8640
+	go.viam.com/rdk v0.2.36
+	go.viam.com/slam v0.1.34
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.29
 	google.golang.org/grpc v1.54.0
@@ -79,7 +79,7 @@ require (
 	github.com/esimonov/ifshort v1.0.4 // indirect
 	github.com/ettle/strcase v0.1.1 // indirect
 	github.com/fatih/camelcase v1.0.0 // indirect
-	github.com/fatih/color v1.14.1 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/fatih/structtag v1.2.0 // indirect
 	github.com/firefart/nonamedreturns v1.0.4 // indirect
 	github.com/fogleman/gg v1.3.0 // indirect
@@ -140,10 +140,8 @@ require (
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
-	github.com/iancoleman/orderedmap v0.0.0-20190318233801-ac98e3ecb4b0 // indirect
 	github.com/improbable-eng/grpc-web v0.15.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
-	github.com/invopop/jsonschema v0.6.0 // indirect
 	github.com/jedib0t/go-pretty/v6 v6.4.6 // indirect
 	github.com/jgautheron/goconst v1.5.1 // indirect
 	github.com/jhump/protoreflect v1.15.1 // indirect
@@ -178,7 +176,7 @@ require (
 	github.com/maratori/testpackage v1.1.0 // indirect
 	github.com/matoous/godox v0.0.0-20210227103229-6504466cf951 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.17 // indirect
+	github.com/mattn/go-isatty v0.0.18 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.4 // indirect
 	github.com/mbilski/exhaustivestruct v1.2.0 // indirect

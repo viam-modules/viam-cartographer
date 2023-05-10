@@ -12,7 +12,7 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
-	"go.viam.com/rdk/registry"
+	"go.viam.com/rdk/resource"
 	"go.viam.com/slam/dataprocess"
 	"go.viam.com/slam/sensors/lidar"
 	goutils "go.viam.com/utils"
@@ -30,7 +30,7 @@ const (
 // NewLidar returns a new lidar.Lidar for the 2D cartographer mode.
 func NewLidar(
 	ctx context.Context,
-	deps registry.Dependencies,
+	deps resource.Dependencies,
 	sensors []string,
 	logger golog.Logger,
 ) (lidar.Lidar, error) {
