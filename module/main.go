@@ -32,7 +32,7 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	// errors if there are args not described by the struct,
 	// which is the case during normal module use.
 	if len(args) != 2 {
-		return fmt.Errorf("Usage: %s [socket path] start module\nor: %s --version        print version & exit", args[0], args[0])
+		return fmt.Errorf("usage: %s [socket path] start module\nor: %s --version        print version & exit", args[0], args[0])
 	}
 	if Version != "" {
 		versionFields = append(versionFields, "version", Version)
