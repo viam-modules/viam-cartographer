@@ -111,6 +111,8 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::GetAndSaveData")
 	defer span.End()
 
+	logger.Info("in GetAndSaveData")
+
 	pointcloud, err := lidar.GetData(ctx)
 	if err != nil {
 		if err.Error() == opTimeoutErrorMessage {
@@ -122,8 +124,9 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 
 	md, ok := metadata.FromOutgoingContext(ctx)
 	if !ok {
-		logger.Warn("Not ok")
+		logger.Info("Not ok")
 	}
+	logger.Info(md)
 
 	// Get timestamps from the gRPC header if they're provided.
 	timeRequested := md.Get(TimeRequestedMetadataKey)
