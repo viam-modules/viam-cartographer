@@ -3,6 +3,7 @@ package dim2d
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,10 +16,15 @@ import (
 	"go.viam.com/slam/dataprocess"
 	"go.viam.com/slam/sensors/lidar"
 	goutils "go.viam.com/utils"
+	"google.golang.org/grpc/metadata"
 )
 
 const (
 	opTimeoutErrorMessage = "bad scan: OpTimeout"
+
+	// TODO: remove these and reference rdk camera package instead
+	TimeRequestedMetadataKey = "viam-time-requested"
+	TimeReceivedMetadataKey  = "viam-time-received"
 )
 
 // NewLidar returns a new lidar.Lidar for the 2D cartographer mode.
@@ -112,6 +118,29 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 			return "", nil
 		}
 		return "", err
+	}
+
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		logger.Warn("Not ok")
+	}
+
+	// Get timestamps from the gRPC header if they're provided.
+	timeRequested := md.Get(TimeRequestedMetadataKey)
+	if len(timeRequested) > 0 {
+		asTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", timeRequested[0])
+		if err != nil {
+			return "", fmt.Errorf("unexpected error while parsing time: %v", err)
+		}
+		logger.Info("found time received", "rec", asTime)
+	}
+	timeReceived := md.Get(TimeReceivedMetadataKey)
+	if len(timeReceived) > 0 {
+		asTime, err := time.Parse("2006-01-02 15:04:05.999999999 -0700 MST", timeReceived[0])
+		if err != nil {
+			return "", fmt.Errorf("unexpected error while parsing time: %v", err)
+		}
+		logger.Info("found time requested", "req", asTime)
 	}
 
 	dataDir := filepath.Join(dataDirectory, "data")
