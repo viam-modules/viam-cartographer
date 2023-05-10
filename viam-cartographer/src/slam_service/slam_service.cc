@@ -531,7 +531,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     }
     // if (file_list_offline.size() == 0) {
         file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
-        LOG(INFO) << "yo SLAM POC: number of data: " << file_list_offline.size();
+        // LOG(INFO) << "yo SLAM POC: number of data: " << file_list_offline.size();
     // }
     // We're setting the minimum required files to be two for the following
     // reasons:
@@ -547,7 +547,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     if (file_list_offline.size() == 0) {
         // This log line is needed by rdk integration tests.
         // LOG(INFO) << "Finished processing offline data";
-        LOG(INFO) << "waiting for data yo SLAM POC num processed: " << current_file_offline;
+        // LOG(INFO) << "waiting for data yo SLAM POC num processed: " << current_file_offline;
         return "";
     }
     const auto to_return = file_list_offline[0];
