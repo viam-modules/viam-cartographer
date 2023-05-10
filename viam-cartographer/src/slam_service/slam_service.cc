@@ -613,8 +613,8 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
         while (b_continue_session) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
-            if ((time_elapsed_msec >= map_rate_sec) ||
-                (!use_live_data && finished_processing_offline)) {
+            if ((time_elapsed_msec >= map_rate_sec)){ // ||
+                // (!use_live_data && finished_processing_offline)) {
                 break;
             }
             if (map_rate_sec - time_elapsed_msec >=
@@ -643,9 +643,13 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
             LOG(INFO) << "Finished saving final optimized map";
             return;
         }
+        std::string pointcloud_map;
+        GetLatestSampledPointCloudMapString(pointcloud_map);
+        std::ofstream out(filename_with_timestamp);
+        out << pointcloud_map;
 
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.SaveMapToFile(true, filename_with_timestamp);
+        // std::lock_guard<std::mutex> lk(map_builder_mutex);
+        // map_builder.SaveMapToFile(true, filename_with_timestamp);
     }
 }
 
@@ -711,7 +715,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 set_start_time = true;
             }
             LOG(INFO) << "Starting to save maps...";
-            // StartSaveMap();
+            StartSaveMap();
         }
         // Add data to the map_builder to add to the map
         {
