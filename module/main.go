@@ -26,11 +26,6 @@ func main() {
 
 func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error {
 	var versionFields []interface{}
-	// print version on statup
-	// exit 0 if --version or -version argv is provided
-	// NOTE: utils.ParseFlags can't be used w/o a nolint as it
-	// errors if there are args not described by the struct,
-	// which is the case during normal module use.
 	if len(args) != 2 {
 		return fmt.Errorf("usage: %s [socket path] start module\nor: %s --version        print version & exit", args[0], args[0])
 	}
