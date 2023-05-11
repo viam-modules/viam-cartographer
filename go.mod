@@ -4,6 +4,8 @@ go 1.19
 
 replace go.viam.com/rdk => /Users/devinhilly/viam/rdk
 
+replace go.viam.com/slam => /Users/devinhilly/viam/slam
+
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
 	github.com/edaniels/golog v0.0.0-20230215213219-28954395e8d0
@@ -13,8 +15,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/actionlint v1.6.24
 	go.opencensus.io v0.24.0
-	go.viam.com/api v0.1.118
-	go.viam.com/rdk v0.2.36
+	go.viam.com/api v0.1.123
+	go.viam.com/rdk v0.2.44
 	go.viam.com/slam v0.1.34
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.29
