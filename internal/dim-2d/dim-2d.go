@@ -54,6 +54,7 @@ func NewLidar(
 	if err != nil {
 		return lidar, errors.Wrap(err, "configuring lidar camera error")
 	}
+	logger.Info("lidar name: ", lidar.Name)
 
 	return lidar, nil
 }
@@ -114,6 +115,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	logger.Info("in GetAndSaveData")
 
 	pointcloud, err := lidar.GetData(ctx)
+	logger.Info("this was the error", "error", err)
 	if err != nil {
 		if err.Error() == opTimeoutErrorMessage {
 			logger.Warnw("Skipping this scan due to error", "error", err)
