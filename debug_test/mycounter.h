@@ -11,7 +11,7 @@ private:
   int count;
 };
 #else
-typedef struct MyCounter MyCounter;
+typedef struct MyCounter {} MyCounter;
 #endif
 #ifdef __cplusplus
 extern "C" {

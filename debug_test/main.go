@@ -1,7 +1,7 @@
 package main
 
 // #cgo CXXFLAGS: -I${SRCDIR}
-// #cgo LDFLAGS: -lrplidar_sdk -lstdc++ 
+// #cgo LDFLAGS: -lmycounter -lstdc++ 
 
 /*
 	//#include "../viam-cartographer/src/slam_service/slam_service_wrapper.c"
