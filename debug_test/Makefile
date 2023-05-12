@@ -1,25 +1,25 @@
+GCC_WARNINGS=-g -Wall -Wextra -std=c99 -pedantic -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
+GPP_WARNINGS=-g -Wall -Wextra -std=c++17 -pedantic -Wshadow -Wpointer-arith -Wcast-qual -Wstrict-prototypes -Wmissing-prototypes
 
+counter-lib:
+	mkdir -p c_cpp/build
+	gcc $(GCC_WARNINGS) -c c_cpp/counter/mycounter.c -o c_cpp/build/mycounter.o
+	gcc $(GPP_WARNINGS)  -c c_cpp/counter/my_cpp_counter.cpp -o c_cpp/build/my_cpp_counter.o
+	ar rcs c_cpp/build/libcounter.a c_cpp/build/my_cpp_counter.o c_cpp/build/mycounter.o
 
-static:
-	mkdir -p bin/static
-	gcc -c mycounter.c -o bin/static/mycounter.o
-	gcc -c my_cpp_counter.cpp -o bin/static/my_cpp_counter.o
-	ar rcs bin/static/libcounter.a bin/static/my_cpp_counter.o bin/static/mycounter.o
-
-c: static
+c: counter-lib
 	mkdir -p bin
-	gcc -c main.c -o bin/main.o
-	g++ bin/main.o -Lbin/static -lcounter -o bin/main-c
+	gcc $(GCC_WARNINGS)  -c c_cpp/counter/main.c -o c_cpp/build/main.o
+	g++ $(GPP_WARNINGS)  c_cpp/build/main.o -Lc_cpp/build -lcounter -o bin/counter-c
 
-go: static
+go: counter-lib
 	mkdir -p bin
-	go build -o bin/main-go main.go
-
+	go build -o bin/counter-go go/counter/main.go
 
 clean:
 	rm -rf bin
+	rm -rf c_cpp/build
 
-
-
-
-
+# NOTE: linux only
+valgrind: c
+	valgrind --leak-check=full -s bin/counter-c
