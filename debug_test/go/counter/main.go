@@ -13,7 +13,7 @@ import (
 
 func main() {
 	c := C.c_counter()
-  fmt.Println("From Go:")
+	fmt.Println("From Go:")
 	for i := 0; i < 5; i++ {
 		fmt.Printf("%d counter incremented %d\n", i, C.c_inc(c, 1))
 	}
