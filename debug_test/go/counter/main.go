@@ -1,7 +1,6 @@
 package main
 
 /*
-	//#include "../viam-cartographer/src/slam_service/slam_service_wrapper.c"
   #cgo LDFLAGS: -v -L../../c_cpp/build -lcounter -lstdc++ -lpthread
 	#include "../../c_cpp/counter/mycounter.c"
 	#include <stdlib.h>

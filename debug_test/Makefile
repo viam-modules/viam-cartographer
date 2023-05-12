@@ -16,6 +16,10 @@ counter-go: counter-lib
 	mkdir -p bin
 	go build -o bin/counter-go go/counter/main.go
 
+carto-go:
+	mkdir -p bin
+	go build -o bin/slam-go go/carto/main.go
+
 clean:
 	rm -rf bin
 	rm -rf c_cpp/build
