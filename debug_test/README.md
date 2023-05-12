@@ -1,3 +1,10 @@
+# Demo
+This is a demo of wrapping a pointer to simple C++ class (MyCounter) in a C API & calling that C API from Go.
+
+It provides equivolent C & Go main functions to produce C & Go executables which call into the C++ MyCounter object. The C one is useful for running static & dynamic tooling on (such as valgrind).
+
+It includes a Makefile to compile the C, C++ & Go code with the appropriate configuration to link them together.
+
 ## Consulted references:
 
 - https://renenyffenegger.ch/notes/development/languages/C-C-plus-plus/GCC/create-libraries/index
@@ -10,12 +17,33 @@
 ## Usage
 
 ```bash
+make clean
+make counter-go
+make counter-c
+
+bin/counter-go
+From Go:
+0 counter incremented 1
+1 counter incremented 2
+2 counter incremented 3
+3 counter incremented 4
+4 counter incremented 5
+
+
+bin/counter-c
+From C:
+0 counter incremented 1
+1 counter incremented 2
+2 counter incremented 3
+3 counter incremented 4
+4 counter incremented 5
+
 
 ```
 
 ## TODO:
 - [ ] Support compiling on different platforms without polluting build / bin directories
-- [ ] Add valgrind support
+- [ ] Get counter-c to pass valgrind
 - [ ] Add asan support
 - [ ] Add C unit test
 - [ ] Add C integration test
