@@ -2,6 +2,7 @@ package main
 
 /*
 	//#include "../viam-cartographer/src/slam_service/slam_service_wrapper.c"
+  #cgo LDFLAGS: -v -Lbin/static -lcounter -lstdc++ -lpthread
 	#include "mycounter.c"
 	#include "debug.c"
 	#include <stdlib.h>
@@ -23,6 +24,7 @@ type Arguments struct {
 	TripValgrind         bool `flag:"trip_valgrind,usage=trip valgrind"`
 	TripAddressSanitizer bool `flag:"trip_address_sanitizer,usage=trip address sanitizer"`
 	API                  bool `flag:"api,usage=exercise api"`
+	Counter              bool `flag:"counter,usage=exercise counter"`
 }
 
 func main() {
@@ -45,12 +47,25 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 		return tripAddressSanitizer(logger)
 	}
 
+	if argsParsed.Counter {
+		fmt.Println("Exercising Counter")
+		return counter(logger)
+	}
+
 	// if argsParsed.API {
-		// fmt.Println("Exercising API")
-		// return api(logger)
+	// fmt.Println("Exercising API")
+	// return api(logger)
 	// }
 
 	return cleanRun(logger)
+}
+
+func counter(logger golog.Logger) error {
+	c := C.c_counter()
+	for i := 0; i < 5; i++ {
+		fmt.Printf("%d counter incremented %d\n", i, C.c_inc(c, 1))
+	}
+	return nil
 }
 
 // func api(logger golog.Logger) error {

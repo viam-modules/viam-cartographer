@@ -1,5 +1,3 @@
-CGO_LDFLAGS="-v -Lbin/static -lcounter -lstdc++ -lpthread"
-CGO_CFLAGS="-x c++"
 
 
 static:
@@ -15,7 +13,7 @@ c: static
 
 go: static
 	mkdir -p bin
-	CGO_CFLAGS=${CGO_CFLAGS} CGO_LDFLAGS=${CGO_LDFLAGS} go build -o bin/main-go main.go
+	go build -o bin/main-go main.go
 
 
 clean:
