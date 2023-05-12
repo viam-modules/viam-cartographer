@@ -16,6 +16,7 @@ It includes a Makefile to compile the C, C++ & Go code with the appropriate conf
 
 ## Usage
 
+### Counter:
 ```bash
 make clean
 make counter-go
@@ -39,6 +40,32 @@ From C:
 4 counter incremented 5
 
 
+make valgrind
+... bunch of errors
+
+make valgrind
+... bunch of errors
+
+
+```
+
+### Carto (mock only):
+```bash
+make carto-go
+pre init viamCarto.initialized_flag 0
+post init viamCarto.initialized_flag 5
+response before main._Ctype_struct_viam_carto_get_position_response{x:0, y:0, z:0, o_x:0, o_y:0, o_z:0, theta:0, component_reference:(*main._Ctype_char)(nil)}
+response after main._Ctype_struct_viam_carto_get_position_response{x:0, y:1, z:2, o_x:3, o_y:4, o_z:5, theta:6, component_reference:(*main._Ctype_char)(0x102a53e4f)}
+component_reference: some_component_reference
+calling viam_carto_WriteSensor  2023-05-12 17:42:26.189824 -0400 EDT m=+0.001652292
+printing sensor_reading->sensor_reading
+12345
+called viam_carto_WriteSensor 2023-05-12 17:42:29.193109 -0400 EDT m=+3.004926042
+calling viam_carto_WriteSensor  2023-05-12 17:42:29.193318 -0400 EDT m=+3.005135501
+printing sensor_reading->sensor_reading
+12345
+called viam_carto_WriteSensor 2023-05-12 17:42:32.197735 -0400 EDT m=+6.009540792
+
 ```
 
 ## TODO:
@@ -47,3 +74,5 @@ From C:
 - [ ] Add asan support
 - [ ] Add C unit test
 - [ ] Add C integration test
+- [X] Add carto C api stubs
+- [X] Add valgrind support

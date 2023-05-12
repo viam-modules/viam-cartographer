@@ -18,7 +18,7 @@ counter-go: counter-lib
 
 carto-go:
 	mkdir -p bin
-	go build -o bin/slam-go go/carto/main.go
+	go build -o bin/carto-go go/carto/main.go
 
 clean:
 	rm -rf bin
