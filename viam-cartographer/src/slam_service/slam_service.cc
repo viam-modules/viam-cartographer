@@ -67,9 +67,9 @@ std::atomic<bool> b_continue_session{true};
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
-    myPose->set_x(pos_vector.x());
-    myPose->set_y(pos_vector.y());
-    myPose->set_z(pos_vector.z());
+    myPose->set_x(pos_vector.x()) * 1000;
+    myPose->set_y(pos_vector.y()) * 1000;
+    myPose->set_z(pos_vector.z()) * 1000;
 
     // Set extra for our response (currently stores quaternion)
     google::protobuf::Struct *q;
