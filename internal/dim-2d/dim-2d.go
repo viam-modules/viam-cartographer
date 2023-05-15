@@ -11,7 +11,9 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/resource"
+	"go.viam.com/rdk/utils"
 	"go.viam.com/slam/dataprocess"
 	"go.viam.com/slam/sensors/lidar"
 	goutils "go.viam.com/utils"
@@ -19,10 +21,6 @@ import (
 
 const (
 	opTimeoutErrorMessage = "bad scan: OpTimeout"
-
-	// TODO: remove these and reference rdk camera package instead
-	TimeRequestedMetadataKey = "viam-time-requested"
-	TimeReceivedMetadataKey  = "viam-time-received"
 )
 
 // NewLidar returns a new lidar.Lidar for the 2D cartographer mode.
@@ -52,7 +50,6 @@ func NewLidar(
 	if err != nil {
 		return lidar, errors.Wrap(err, "configuring lidar camera error")
 	}
-	logger.Info("lidar name: ", lidar.Name)
 
 	return lidar, nil
 }
@@ -110,11 +107,8 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::GetAndSaveData")
 	defer span.End()
 
-	logger.Info("in GetAndSaveData")
-
-	pointcloud, timeRec, err := lidar.GetData(ctx)
-	logger.Info("this was the error", "error", err)
-	logger.Info("this was the time", timeRec)
+	ctx = utils.NewContextWithMetadata(ctx)
+	pointcloud, err := lidar.GetData(ctx)
 	if err != nil {
 		if err.Error() == opTimeoutErrorMessage {
 			logger.Warnw("Skipping this scan due to error", "error", err)
@@ -123,7 +117,18 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 		return "", err
 	}
 
+	// If the server provided timestamps correlated with the point cloud, extract the time
+	// received from the metadata and use that instead of the current time.
+	timeRec := time.Now()
+	md := ctx.Value(camera.TimeReceivedMetadataKey)
+	if s, ok := md.(string); ok {
+		timeRec, err = time.Parse(time.RFC3339, s)
+		if err != nil {
+			logger.Warnw("couldn't parse time received", "error", err)
+		}
+	}
+
 	dataDir := filepath.Join(dataDirectory, "data")
-	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", time.Now())
+	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", timeRec)
 	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
 }

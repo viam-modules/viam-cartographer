@@ -4,8 +4,6 @@ go 1.19
 
 replace go.viam.com/rdk => /Users/devinhilly/viam/rdk
 
-replace go.viam.com/slam => /Users/devinhilly/viam/slam
-
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
 	github.com/edaniels/golog v0.0.0-20230215213219-28954395e8d0
