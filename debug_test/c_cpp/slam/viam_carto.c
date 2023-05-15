@@ -3,68 +3,7 @@
 
 #include <unistd.h>
 #include <stdio.h>
-/*
- * Modeled after sqlite api:
- * https://www.sqlite.org/cintro.html
- *
- * NOTE:
- * I see that SQLITE uses pointers to pointers for paramenters.
- * I'm not sure why. I've copied the pattern here, lets have a convo
- * regarding whether that makes sense to do or not.
- */
-
-/*
- * Arguments sent to carto_grpc_server on initialization now
- * "-sensors="+cartoSvc.primarySensorName
- * "-config_param="+slamUtils.DictToString(cartoSvc.configParams))
- * "-data_rate_ms="+strconv.Itoa(cartoSvc.dataRateMs))
- * "-map_rate_sec="+strconv.Itoa(cartoSvc.mapRateSec))
- * "-data_dir="+cartoSvc.dataDirectory)
- * "-delete_processed_data="+strconv.FormatBool(cartoSvc.deleteProcessedData))
- * "-use_live_data="+strconv.FormatBool(cartoSvc.useLiveData))
- * "-port="+cartoSvc.port)
- * "--aix-auto-update")
- */
-
-/* Arguments Nick thinks should be sent on initialization after modularization
- * v1
- * "-sensors="+cartoSvc.primarySensorName
- * NOTE: This should be split out into its individual parameters
- * "-config_param="+slamUtils.DictToString(cartoSvc.configParams))
- * "-map_rate_sec="+strconv.Itoa(cartoSvc.mapRateSec))
- * "-data_dir="+cartoSvc.dataDirectory)
- */
-
-typedef struct viam_carto {
-  const char *sensors;
-  int initialized_flag; // Currently used to simulate initialization of carto_obj 
-  void *carto_obj;
-} viam_carto;
-
-// GetPositionResponse https://github.com/viamrobotics/api/blob/main/proto/viam/service/slam/v1/slam.proto#L51
-typedef struct viam_carto_get_position_response {
-  double x;
-  // millimeters from the origin
-  double y;
-  // millimeters from the origin
-  double z;
-  // z component of a vector defining axis of rotation
-  double o_x;
-  // x component of a vector defining axis of rotation
-  double o_y;
-  // y component of a vector defining axis of rotation
-  double o_z;
-  // degrees
-  double theta;
-  const char *component_reference;
-  // TODO: Need to also return quat information as the spaital math exists only on the go side
-} viam_carto_get_position_response;
-
-typedef struct viam_carto_sensor_reading {
-  int sensor_reading_len;
-  char *sensor;
-  char *sensor_reading;
-} viam_carto_sensor_reading;
+#include "viam_carto.h"
 
 // viam_carto_New takes a viam_carto, and an empty errmsg
 //

@@ -1,7 +1,7 @@
 package main
 
 /*
-	#include "../../c_cpp/slam/slam_service_wrapper.c"
+	#include "../../c_cpp/slam/viam_carto.c"
 */
 import "C"
 import (
