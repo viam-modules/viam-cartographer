@@ -13,7 +13,6 @@ import (
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 func TestNewLidar(t *testing.T) {
@@ -66,7 +65,7 @@ func TestNewLidar(t *testing.T) {
 func TestGetAndSaveData(t *testing.T) {
 	ctx := context.Background()
 	logger := golog.NewTestLogger(t)
-	dataDir, err := vcTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful call to GetAndSaveData", func(t *testing.T) {
@@ -90,7 +89,7 @@ func TestGetAndSaveData(t *testing.T) {
 func TestValidateGetAndSaveData(t *testing.T) {
 	ctx := context.Background()
 	logger := golog.NewTestLogger(t)
-	dataDir, err := vcTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful call to ValidateGetAndSaveData", func(t *testing.T) {

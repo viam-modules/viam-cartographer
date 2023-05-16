@@ -25,9 +25,9 @@ import (
 	"go.viam.com/utils/pexec"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	"github.com/viamrobotics/viam-cartographer/config"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (
@@ -153,7 +153,7 @@ func getIntegrationLidar() *inject.Camera {
 func ClearDirectory(t *testing.T, path string) {
 	t.Helper()
 
-	err := vcTesthelper.ResetFolder(path)
+	err := ResetFolder(path)
 	test.That(t, err, test.ShouldBeNil)
 }
 
@@ -216,10 +216,68 @@ func CheckDeleteProcessedData(
 ) int {
 	switch subAlgo {
 	case viamcartographer.Dim2d:
-		numFiles, err := vcTesthelper.CheckDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
+		numFiles, err := CheckDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
 		return numFiles
 	default:
 		return 0
 	}
+}
+
+const (
+	dataBufferSize = 4
+)
+
+// CreateTempFolderArchitecture creates a new random temporary
+// directory with the config, data, and map subdirectories needed
+// to run the SLAM libraries.
+func CreateTempFolderArchitecture(logger golog.Logger) (string, error) {
+	tmpDir, err := os.MkdirTemp("", "*")
+	if err != nil {
+		return "nil", err
+	}
+	if err := config.SetupDirectories(tmpDir, logger); err != nil {
+		return "", err
+	}
+	return tmpDir, nil
+}
+
+// ResetFolder removes all content in path and creates a new directory
+// in its place.
+func ResetFolder(path string) error {
+	dirInfo, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !dirInfo.IsDir() {
+		return errors.Errorf("the path passed ResetFolder does not point to a folder: %v", path)
+	}
+	if err = os.RemoveAll(path); err != nil {
+		return err
+	}
+	return os.Mkdir(path, dirInfo.Mode())
+}
+
+// CheckDataDirForExpectedFiles ensures that the provided data directory contains the correct amount of files
+// based on the config parameters deleteProcessedData and useLiveData.
+func CheckDataDirForExpectedFiles(t *testing.T, dir string, prev int, deleteProcessedData, useLiveData bool) (int, error) {
+	files, err := os.ReadDir(dir)
+	test.That(t, err, test.ShouldBeNil)
+
+	if prev == 0 {
+		return len(files), nil
+	}
+	if deleteProcessedData && useLiveData {
+		test.That(t, prev, test.ShouldBeLessThanOrEqualTo, dataBufferSize+1)
+	}
+	if !deleteProcessedData && useLiveData {
+		test.That(t, prev, test.ShouldBeLessThan, len(files))
+	}
+	if deleteProcessedData && !useLiveData {
+		return 0, errors.New("the delete_processed_data value cannot be true when running SLAM in offline mode")
+	}
+	if !deleteProcessedData && !useLiveData {
+		test.That(t, prev, test.ShouldEqual, len(files))
+	}
+	return len(files), nil
 }

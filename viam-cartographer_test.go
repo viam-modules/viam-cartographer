@@ -21,7 +21,6 @@ import (
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (
@@ -37,7 +36,7 @@ var (
 
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	dataDir, err := vcTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful creation of cartographer slam service with no sensor", func(t *testing.T) {
@@ -130,7 +129,7 @@ func TestNew(t *testing.T) {
 
 func TestDataProcess(t *testing.T) {
 	logger, obs := golog.NewObservedTestLogger(t)
-	dataDir, err := vcTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer, port := setupTestGRPCServer(t)
@@ -191,7 +190,7 @@ func TestDataProcess(t *testing.T) {
 
 func TestEndpointFailures(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	dataDir, err := vcTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer, port := setupTestGRPCServer(t)
@@ -235,7 +234,7 @@ func TestEndpointFailures(t *testing.T) {
 
 func TestSLAMProcess(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	dataDir, err := vcTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful start of live SLAM process with default parameters", func(t *testing.T) {
