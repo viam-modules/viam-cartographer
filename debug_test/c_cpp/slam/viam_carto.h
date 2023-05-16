@@ -1,8 +1,10 @@
 #ifndef VIAM_CARTO_H
 #define VIAM_CARTO_H
+#include <stdint.h>
 
 typedef struct viam_carto {
-  const char *sensors;
+  const char **sensors;
+  int sensors_len;
   void *carto_obj;
 } viam_carto;
 
@@ -49,8 +51,7 @@ typedef struct viam_carto_sensor_reading {
   int sensor_reading_len;
   char *sensor;
   char *sensor_reading;
-  // TODO Research how to represent time
-  /* char *time; */
+  uint64_t sensor_reading_time_unix_micro;
 } viam_carto_sensor_reading;
 
 typedef enum viam_carto_MODE {
@@ -66,7 +67,8 @@ typedef enum viam_carto_LIDAR_CONFIG {
 
 typedef enum viam_carto_ERROR {
   VIAM_CARTO_SUCCESS = 0,
-  VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK = 1
+  VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK = 1,
+  VIAM_CARTO_VC_INVALID = 2
 } viam_carto_ERROR;
 
 typedef struct viam_carto_algo_config {
