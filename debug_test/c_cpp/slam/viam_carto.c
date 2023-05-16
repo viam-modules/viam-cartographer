@@ -1,17 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <unistd.h>
-#include <stdio.h>
 #include "viam_carto.h"
+#include <stdio.h>
+#include <unistd.h>
 
-// viam_carto_New takes a viam_carto, and an empty errmsg
-//
-// On error: Returns a non 0 error code and mutates
-// errmsg with a string that contains an informative error message
-//
-// On success: Returns 0 & mutates viam_carto to contain handle to
-// initialized carto object
 viam_carto viam_carto_New(const char *sensors) {
   return (viam_carto){.sensors = sensors};
 }
@@ -31,7 +24,6 @@ int viam_carto_Init(viam_carto *viam_carto, char **errmsg) {
   *errmsg = err;
   return 1;
 #endif
-  viam_carto->initialized_flag = 5;
   return 0;
 }
 
@@ -52,8 +44,8 @@ int viam_carto_DestroyGetPositionResponse(
   return 0;
 }
 
-// viam_carto_GetPosition takes a viam_carto, an empty viam_carto_get_position_response and an empty
-// errmsg
+// viam_carto_GetPosition takes a viam_carto, an empty
+// viam_carto_get_position_response and an empty errmsg
 //
 // On error: Returns a non 0 error code and mutates
 // errmsg with a string that contains an informative error message
@@ -85,7 +77,8 @@ viam_carto_sensor_reading viam_carto_NewSensorReading(char *sensor,
                                      .sensor_reading = sensor_reading};
 }
 
-// viam_carto_WriteSensor takes a viam_carto, a viam_carto_sensor_reading, and an empty errmsg
+// viam_carto_WriteSensor takes a viam_carto, a viam_carto_sensor_reading, and
+// an empty errmsg
 //
 // Freeing viam_carto_sensor_reading after calling viam_carto_WriteSensor
 // is the caller's responsibility.
@@ -112,3 +105,68 @@ int viam_carto_WriteSensor(const viam_carto *viam_carto,
   sleep(3);
   return 0;
 }
+
+viam_carto_ERROR viam_carto_init(viam_carto *vc, const viam_carto_config c,
+                                 const viam_carto_algo_config ac,
+                                 char **errmsg) {
+
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR viam_carto_start(viam_carto *vc, char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR viam_carto_stop(viam_carto *vc, char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR viam_carto_terminate(viam_carto *vc, char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR viam_carto_add_sensor_reading(
+    const viam_carto *vc, const viam_carto_sensor_reading *sr, char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR
+viam_carto_add_sensor_reading_destroy(viam_carto_sensor_reading *sr,
+                                      char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR viam_carto_get_position(const viam_carto *vc,
+                                         viam_carto_get_position_response *r,
+                                         char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+viam_carto_ERROR
+viam_carto_get_position_response_destroy(viam_carto_get_position_response *r,
+                                         char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR
+viam_carto_get_point_cloud_map(const viam_carto *vc,
+                               viam_carto_get_point_cloud_map_response *r,
+                               char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR viam_carto_get_point_cloud_map_response_destroy(
+    viam_carto_get_point_cloud_map_response *r, char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR
+viam_carto_get_internal_state(const viam_carto *vc,
+                              viam_carto_get_internal_state_response *r,
+                              char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
+
+viam_carto_ERROR viam_carto_get_internal_state_response_destroy(
+    viam_carto_get_internal_state_response *r, char **errmsg) {
+  return VIAM_CARTO_SUCCESS;
+};
