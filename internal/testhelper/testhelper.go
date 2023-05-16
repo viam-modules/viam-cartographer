@@ -14,15 +14,15 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/edaniels/gostream"
 	"github.com/pkg/errors"
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/testutils/inject"
-	slamConfig "go.viam.com/slam/config"
-	"go.viam.com/slam/sensors/lidar"
-	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 	"go.viam.com/utils/pexec"
@@ -153,14 +153,14 @@ func getIntegrationLidar() *inject.Camera {
 func ClearDirectory(t *testing.T, path string) {
 	t.Helper()
 
-	err := slamTesthelper.ResetFolder(path)
+	err := vcTesthelper.ResetFolder(path)
 	test.That(t, err, test.ShouldBeNil)
 }
 
 // CreateSLAMService creates a slam service for testing.
 func CreateSLAMService(
 	t *testing.T,
-	cfg *slamConfig.Config,
+	cfg *vcConfig.Config,
 	logger golog.Logger,
 	bufferSLAMProcessLogs bool,
 	executableName string,
@@ -216,7 +216,7 @@ func CheckDeleteProcessedData(
 ) int {
 	switch subAlgo {
 	case viamcartographer.Dim2d:
-		numFiles, err := slamTesthelper.CheckDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
+		numFiles, err := vcTesthelper.CheckDataDirForExpectedFiles(t, dir+"/data", prev, deleteProcessedData, useLiveData)
 		test.That(t, err, test.ShouldBeNil)
 		return numFiles
 	default:
