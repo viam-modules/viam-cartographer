@@ -25,7 +25,6 @@ import (
 	"go.viam.com/utils/pexec"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	"github.com/viamrobotics/viam-cartographer/config"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
@@ -236,7 +235,7 @@ func CreateTempFolderArchitecture(logger golog.Logger) (string, error) {
 	if err != nil {
 		return "nil", err
 	}
-	if err := config.SetupDirectories(tmpDir, logger); err != nil {
+	if err := vcConfig.SetupDirectories(tmpDir, logger); err != nil {
 		return "", err
 	}
 	return tmpDir, nil
