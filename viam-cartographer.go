@@ -14,9 +14,6 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 	"go.opencensus.io/trace"
 	pb "go.viam.com/api/service/slam/v1"
 	"go.viam.com/rdk/resource"
@@ -26,7 +23,10 @@ import (
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
 
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
 
 // Model is the model name of cartographer.

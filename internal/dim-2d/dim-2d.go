@@ -10,11 +10,12 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	"github.com/viamrobotics/viam-cartographer/dataprocess"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/resource"
 	goutils "go.viam.com/utils"
+
+	"github.com/viamrobotics/viam-cartographer/dataprocess"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
 const (

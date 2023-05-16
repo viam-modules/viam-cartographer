@@ -15,13 +15,13 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (

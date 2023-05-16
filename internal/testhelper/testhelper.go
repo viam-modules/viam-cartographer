@@ -14,9 +14,6 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/edaniels/gostream"
 	"github.com/pkg/errors"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
@@ -28,6 +25,9 @@ import (
 	"go.viam.com/utils/pexec"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (

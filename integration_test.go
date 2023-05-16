@@ -18,16 +18,16 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/dataprocess"
-	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
+	"github.com/viamrobotics/viam-cartographer/dataprocess"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
+	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (

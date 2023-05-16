@@ -8,12 +8,12 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 	"go.viam.com/test"
 
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	vcTesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 func TestNewLidar(t *testing.T) {
