@@ -1,5 +1,3 @@
-// Package config implements functions to assist with attribute evaluation in the SLAM service.
-// Warning: The code in this package might be transient. Stability is not guaranteed.
 package config
 
 import (
