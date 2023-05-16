@@ -17,7 +17,7 @@ require (
 	go.viam.com/rdk v0.2.44
 	go.viam.com/slam v0.1.34
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.29
+	go.viam.com/utils v0.1.31
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
 )
