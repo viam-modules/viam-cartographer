@@ -1,5 +1,4 @@
 // Package dataprocess manages code related to the data-saving process.
-// Warning: The code in this package might be transient. Stability is not guaranteed.
 package dataprocess
 
 import (

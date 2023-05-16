@@ -1,5 +1,4 @@
 // Package testhelper provides helper functions for testing implementations of slam libraries.
-// Warning: The code in this package might be transient. Stability is not guaranteed.
 package testhelper
 
 import (
