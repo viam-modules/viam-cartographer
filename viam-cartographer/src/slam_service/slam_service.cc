@@ -530,7 +530,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         return "";
     }
     // if (file_list_offline.size() == 0) {
-        file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
+        std::vector<std::string> file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
         // LOG(INFO) << "yo SLAM POC: number of data: " << file_list_offline.size();
     // }
     // We're setting the minimum required files to be two for the following
@@ -678,7 +678,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         if(file == ""){
             std::this_thread::sleep_for(data_rate_ms);
             // std::cout << data_rate_ms << std::endl;
-            file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
+            std::vector<std::string> file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
             file = GetNextDataFile();
             continue;
         }
