@@ -20,7 +20,6 @@ func main() {
 
 func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error {
 	viamCarto := C.viam_carto_New(C.CString("mysensor"))
-	fmt.Println("pre init viamCarto.initialized_flag", viamCarto.initialized_flag)
 
 	// == viam_carto_Init ==
 	cErrMsg := C.CString("")
@@ -30,7 +29,6 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	if cErr != 0 {
 		return errors.New(C.GoString(cErrMsg))
 	}
-	fmt.Println("post init viamCarto.initialized_flag", viamCarto.initialized_flag)
 
 	// == viam_carto_GetPosition ==
 	response := C.struct_viam_carto_get_position_response{}
