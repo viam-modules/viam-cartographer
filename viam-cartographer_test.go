@@ -362,7 +362,7 @@ func TestDoCommand(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, resp["response_in_millimeters"], test.ShouldBeTrue)
 
-	cmd = map[string]interface{}{}
+	cmd = map[string]interface{}{"fake_flag": true}
 	resp, err = svc.DoCommand(context.Background(), cmd)
 	test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
 	test.That(t, resp, test.ShouldBeNil)
