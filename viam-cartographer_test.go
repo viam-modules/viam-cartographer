@@ -367,6 +367,11 @@ func TestDoCommand(t *testing.T) {
 	test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
 	test.That(t, resp, test.ShouldBeNil)
 
+	cmd = map[string]interface{}{}
+	resp, err = svc.DoCommand(context.Background(), cmd)
+	test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
+	test.That(t, resp, test.ShouldBeNil)
+
 	grpcServer.Stop()
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 
