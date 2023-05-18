@@ -2,7 +2,7 @@ package main
 
 /*
   #cgo LDFLAGS: -v -L../../c_cpp/build -lcounter -lstdc++ -lpthread
-	#include "../../c_cpp/counter/mycounter.c"
+	#include "../../c_cpp/counter/mycounter.h"
 	#include <stdlib.h>
 */
 import "C"

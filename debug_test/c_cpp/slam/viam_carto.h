@@ -1,6 +1,8 @@
 #ifndef VIAM_CARTO_H
 #define VIAM_CARTO_H
 #include <stdint.h>
+// TODO remove unused
+#define UNUSED(x) (void)(x)
 
 typedef struct viam_carto {
   const char **sensors;
@@ -65,11 +67,11 @@ typedef enum viam_carto_LIDAR_CONFIG {
   THREE_D = 1
 } viam_carto_LIDAR_CONFIG;
 
-typedef enum viam_carto_ERROR {
-  VIAM_CARTO_SUCCESS = 0,
-  VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK = 1,
-  VIAM_CARTO_VC_INVALID = 2
-} viam_carto_ERROR;
+// return codes
+#define VIAM_CARTO_SUCCESS 0;
+#define VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK 1;
+#define VIAM_CARTO_VC_INVALID 2;
+#define VIAM_CARTO_OUT_OF_MEMORY 3;
 
 typedef struct viam_carto_algo_config {
   int optimize_every_n_nodes;
@@ -104,10 +106,10 @@ typedef struct viam_carto_config {
 //
 // On success: Returns 0 & mutates viam_carto to contain handle to
 // initialized carto object
-viam_carto_ERROR viam_carto_init(viam_carto *vc,                  // OUT
-                                 const viam_carto_config c,       //
-                                 const viam_carto_algo_config ac, //
-                                 char **errmsg                    // OUT
+int viam_carto_init(viam_carto **vc,                 // OUT
+                    const viam_carto_config c,       //
+                    const viam_carto_algo_config ac, //
+                    char **errmsg                    // OUT
 );
 
 // viam_carto_start/2 takes a viam_carto pointer and an empty errmsg
@@ -116,8 +118,8 @@ viam_carto_ERROR viam_carto_init(viam_carto *vc,                  // OUT
 // errmsg with a string that contains an informative error message
 //
 // On success: Returns 0, starts cartographer
-viam_carto_ERROR viam_carto_start(viam_carto *vc, // OUT
-                                  char **errmsg   // OUT
+int viam_carto_start(viam_carto **vc, // OUT
+                     char **errmsg    // OUT
 );
 
 // viam_carto_stop/2 takes a viam_carto pointer and an empty errmsg
@@ -126,8 +128,8 @@ viam_carto_ERROR viam_carto_start(viam_carto *vc, // OUT
 // errmsg with a string that contains an informative error message
 //
 // On success: Returns 0, stops work begun by viam_carto_start()
-viam_carto_ERROR viam_carto_stop(viam_carto *vc, // OUT
-                                 char **errmsg   // OUT
+int viam_carto_stop(viam_carto **vc, // OUT
+                    char **errmsg    // OUT
 );
 
 // viam_carto_stop/2 takes a viam_carto pointer and an empty errmsg
@@ -137,8 +139,8 @@ viam_carto_ERROR viam_carto_stop(viam_carto *vc, // OUT
 //
 // On success: Returns 0, frees all resources aquired by
 // viam_carto_init/4
-viam_carto_ERROR viam_carto_terminate(viam_carto *vc, //
-                                      char **errmsg   // OUT
+int viam_carto_terminate(viam_carto **vc, //
+                         char **errmsg    // OUT
 );
 
 // viam_carto_add_sensor_reading/3 takes a viam_carto pointer, a
@@ -150,10 +152,9 @@ viam_carto_ERROR viam_carto_terminate(viam_carto *vc, //
 // An expected error is VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK(1)
 //
 // On success: Returns 0, adds lidar reading to cartographer's data model
-viam_carto_ERROR
-viam_carto_add_sensor_reading(const viam_carto *vc,                //
-                              const viam_carto_sensor_reading *sr, //
-                              char **errmsg                        // OUT
+int viam_carto_add_sensor_reading(const viam_carto **vc,               //
+                                  const viam_carto_sensor_reading *sr, //
+                                  char **errmsg                        // OUT
 );
 
 // viam_carto_add_sensor_reading_destroy/2 takes a viam_carto pointer and an
@@ -163,9 +164,8 @@ viam_carto_add_sensor_reading(const viam_carto *vc,                //
 // errmsg with a string that contains an informative error message.
 //
 // On success: Returns 0, frees the viam_carto_sensor_reading.
-viam_carto_ERROR
-viam_carto_add_sensor_reading_destroy(viam_carto_sensor_reading *sr, //
-                                      char **errmsg                  // OUT
+int viam_carto_add_sensor_reading_destroy(viam_carto_sensor_reading *sr, //
+                                          char **errmsg                  // OUT
 );
 
 // viam_carto_get_position/3 takes a viam_carto pointer, a
@@ -176,10 +176,9 @@ viam_carto_add_sensor_reading_destroy(viam_carto_sensor_reading *sr, //
 //
 // On success: Returns 0, mutates viam_carto_get_position_response
 // to contain the response
-viam_carto_ERROR
-viam_carto_get_position(const viam_carto *vc,                //
-                        viam_carto_get_position_response *r, // OUT
-                        char **errmsg                        // OUT
+int viam_carto_get_position(const viam_carto **vc,               //
+                            viam_carto_get_position_response *r, // OUT
+                            char **errmsg                        // OUT
 );
 
 // viam_carto_get_position_response_destroy/2 takes a viam_carto pointer and an
@@ -189,9 +188,9 @@ viam_carto_get_position(const viam_carto *vc,                //
 // errmsg with a string that contains an informative error message.
 //
 // On success: Returns 0, frees the viam_carto_get_position_response.
-viam_carto_ERROR
-viam_carto_get_position_response_destroy(viam_carto_get_position_response *r, //
-                                         char **errmsg // OUT
+int viam_carto_get_position_response_destroy(
+    viam_carto_get_position_response *r, //
+    char **errmsg                        // OUT
 );
 
 // viam_carto_get_point_cloud_map/3 takes a viam_carto pointer, a
@@ -202,8 +201,8 @@ viam_carto_get_position_response_destroy(viam_carto_get_position_response *r, //
 //
 // On success: Returns 0, mutates viam_carto_get_point_cloud_map_response
 // to contain the response
-viam_carto_ERROR viam_carto_get_point_cloud_map(
-    const viam_carto *vc,                       //
+int viam_carto_get_point_cloud_map(
+    const viam_carto **vc,                      //
     viam_carto_get_point_cloud_map_response *r, // OUT
     char **errmsg                               // OUT
 );
@@ -215,7 +214,7 @@ viam_carto_ERROR viam_carto_get_point_cloud_map(
 // errmsg with a string that contains an informative error message.
 //
 // On success: Returns 0, frees the viam_carto_get_point_cloud_map_response.
-viam_carto_ERROR viam_carto_get_point_cloud_map_response_destroy(
+int viam_carto_get_point_cloud_map_response_destroy(
     viam_carto_get_point_cloud_map_response *r, //
     char **errmsg                               // OUT
 );
@@ -228,10 +227,10 @@ viam_carto_ERROR viam_carto_get_point_cloud_map_response_destroy(
 //
 // On success: Returns 0, mutates viam_carto_get_internal_state_response
 // to contain the response
-viam_carto_ERROR
-viam_carto_get_internal_state(const viam_carto *vc,                      //
-                              viam_carto_get_internal_state_response *r, // OUT
-                              char **errmsg                              // OUT
+int viam_carto_get_internal_state(
+    const viam_carto **vc,                     //
+    viam_carto_get_internal_state_response *r, // OUT
+    char **errmsg                              // OUT
 );
 
 // viam_carto_get_internal_state_response_destroy/2 takes a viam_carto pointer
@@ -241,7 +240,7 @@ viam_carto_get_internal_state(const viam_carto *vc,                      //
 // errmsg with a string that contains an informative error message.
 //
 // On success: Returns 0, frees the viam_carto_get_internal_state_response.
-viam_carto_ERROR viam_carto_get_internal_state_response_destroy(
+int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r, //
     char **errmsg                              // OUT
 );
