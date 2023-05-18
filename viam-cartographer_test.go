@@ -15,6 +15,7 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	viamgrpc "go.viam.com/rdk/grpc"
 	slamConfig "go.viam.com/slam/config"
 	"go.viam.com/slam/sensors/lidar"
 	slamTesthelper "go.viam.com/slam/testhelper"
@@ -333,6 +334,41 @@ func TestSLAMProcess(t *testing.T) {
 		test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "executable file not found in $PATH")
 		grpcServer.Stop()
 	})
+
+	testhelper.ClearDirectory(t, dataDir)
+}
+
+func TestDoCommand(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	test.That(t, err, test.ShouldBeNil)
+
+	grpcServer, port := setupTestGRPCServer(t)
+	attrCfg := &slamConfig.Config{
+		Sensors:       []string{"good_lidar"},
+		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
+		DataDirectory: dataDir,
+		MapRateSec:    &testMapRateSec,
+		DataRateMsec:  testDataRateMsec,
+		Port:          "localhost:" + strconv.Itoa(port),
+		UseLiveData:   &_true,
+	}
+
+	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+	test.That(t, err, test.ShouldBeNil)
+
+	cmd := map[string]interface{}{"feature_flag": true}
+	resp, err := svc.DoCommand(context.Background(), cmd)
+	test.That(t, err, test.ShouldBeNil)
+	test.That(t, resp["response_in_millimeters"], test.ShouldBeTrue)
+
+	cmd = map[string]interface{}{}
+	resp, err = svc.DoCommand(context.Background(), cmd)
+	test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
+	test.That(t, resp, test.ShouldBeNil)
+
+	grpcServer.Stop()
+	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 
 	testhelper.ClearDirectory(t, dataDir)
 }
