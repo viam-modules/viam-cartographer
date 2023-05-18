@@ -6,6 +6,7 @@ if [ "$(uname)" == "Linux" ]; then
 elif [ "$(uname)" == "Darwin" ]; then
     readlinkorreal() { readlink "$1" || echo "$1"; }
     cd $(dirname string readlinkorreal "${BASH_SOURCE}")/..
+    which brew && export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:`brew --prefix openssl@3`/lib/pkgconfig"
 else
     echo ERROR: your OS is not handled yet
     exit 1

@@ -1,5 +1,4 @@
 #!/bin/bash
-which brew && export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:`brew --prefix openssl@3`/lib/pkgconfig"
 echo "Installing cartographer external dependencies"
 brew update
 brew upgrade
