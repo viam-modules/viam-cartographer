@@ -11,9 +11,8 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
-	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/resource"
-	"go.viam.com/rdk/utils"
+	"go.viam.com/rdk/utils/contextutils"
 	"go.viam.com/slam/dataprocess"
 	"go.viam.com/slam/sensors/lidar"
 	goutils "go.viam.com/utils"
@@ -107,7 +106,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::GetAndSaveData")
 	defer span.End()
 
-	ctx, md := utils.ContextWithMetadata(ctx)
+	ctx, md := contextutils.ContextWithMetadata(ctx)
 	pointcloud, err := lidar.GetData(ctx)
 	if err != nil {
 		if err.Error() == opTimeoutErrorMessage {
@@ -120,7 +119,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	// If the server provided timestamps correlated with the point cloud, extract the time
 	// received from the metadata and use that instead of the current time.
 	timeRec := time.Now()
-	timeReceivedMetadata, ok := md[camera.TimeReceivedMetadataKey]
+	timeReceivedMetadata, ok := md[contextutils.TimeReceivedMetadataKey]
 	if ok {
 		timeRec, err = time.Parse(time.RFC3339Nano, timeReceivedMetadata[0])
 		if err != nil {
