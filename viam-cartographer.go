@@ -14,8 +14,10 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"go.opencensus.io/trace"
 	pb "go.viam.com/api/service/slam/v1"
+	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/services/slam/grpchelper"
@@ -25,8 +27,6 @@ import (
 	slamUtils "go.viam.com/slam/utils"
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
-
-	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 )
 
 // Model is the model name of cartographer.
@@ -296,6 +296,15 @@ func (cartoSvc *cartographerService) StartDataProcess(
 			}
 		}
 	})
+}
+
+func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	if _, ok := req["feature_flag"]; ok {
+		featureFlags := map[string]interface{}{"response_in_millimeters": true}
+		return featureFlags, nil
+	} else {
+		return nil, viamgrpc.UnimplementedError
+	}
 }
 
 // Close out of all slam related processes.

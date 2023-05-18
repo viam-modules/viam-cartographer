@@ -80,9 +80,6 @@ std::atomic<bool> b_continue_session{true};
     q->mutable_fields()->operator[]("jmag").set_number_value(pos_quat.y());
     q->mutable_fields()->operator[]("kmag").set_number_value(pos_quat.z());
 
-    ff = extra->mutable_fields()->operator[]("feature_flag").mutable_struct_value();
-    ff->mutable_fields()->operator[]("response_in_millimeters").set_boolean_value(true)
-
     // Set component_reference for our response
     response->set_component_reference(camera_name);
 
