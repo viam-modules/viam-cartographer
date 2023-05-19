@@ -10,7 +10,6 @@
 
 int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
                     const viam_carto_algo_config ac, char **errmsg) {
-  UNUSED(ac);
   if (ppVC == NULL) {
     *errmsg = "viam_carto pointer should not be NULL";
     return VIAM_CARTO_VC_INVALID;

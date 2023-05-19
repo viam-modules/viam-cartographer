@@ -1,12 +1,17 @@
 # -Wstrict-prototypes  -pedantic
 # -Werror
 GCC_BSTRING_WARNINGS=-g -Wall -O2 -std=c99 
-GCC_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c99 -O2
+GCC_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c99 -O2 
 GPP_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c++17 -O2
 
 # NOTE: linux only
 carto-test-c-valgrind: carto-test-c-build
 	valgrind --leak-check=full -s bin/viam-carto-test-c
+
+# NOTE: linux only
+carto-test-c-gdb: carto-test-c-build
+	gdb --batch --ex run --ex bt --ex q --args bin/viam-carto-test-c
+
 
 clean:
 	rm -rf bin
@@ -29,10 +34,6 @@ carto-test-c-build: build-setup
 carto-test-c: carto-test-c-build
 	bin/viam-carto-test-c
 
-
-# NOTE: linux only
-carto-test-c-gdb: carto-test-c-build
-	gdb --batch --ex run --ex bt --ex q --args bin/viam-carto-test-c
 
 
 # BEGIN COUNTER TARGETS
