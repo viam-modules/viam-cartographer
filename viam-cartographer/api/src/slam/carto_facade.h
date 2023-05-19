@@ -19,21 +19,25 @@ extern "C" {
 #endif
 #if defined(__STDC__) || defined(__cplusplus)
 /* ANSI C prototypes */
-extern int carto_facade_get_position(CartoFacade *);
-extern int carto_facade_cpp_get_position(CartoFacade *);
-
 extern CartoFacade *carto_facade_new();
 extern CartoFacade *carto_facade_cpp_new();
 
 extern void carto_facade_delete(CartoFacade *cf);
 extern void carto_facade_cpp_delete(CartoFacade *cf);
+
+extern int carto_facade_get_position(CartoFacade *);
+extern int carto_facade_cpp_get_position(CartoFacade *);
+
 #else
 // UNIMPLEMENTED
-/* extern int c_inc(); /1* K&R style *1/ */
-/* extern int cpp_inc(); */
-
-/* extern CartoFacade *carto_facade_new(); /1* ANSI C prototypes *1/ */
+/* extern CartoFacade *carto_facade_new(); */
 /* extern CartoFacade *carto_facade_cpp_new(); */
+
+/* extern void carto_facade_delete(CartoFacade *cf); */
+/* extern void carto_facade_cpp_delete(CartoFacade *cf); */
+
+/* extern int carto_facade_get_position(CartoFacade *); */
+/* extern int carto_facade_cpp_get_position(CartoFacade *); */
 #endif
 #ifdef __cplusplus
 }

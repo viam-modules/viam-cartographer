@@ -1,4 +1,5 @@
 #include "carto_facade.h"
+
 extern CartoFacade *carto_facade_new() { return carto_facade_cpp_new(); }
 
 extern void carto_facade_delete(CartoFacade *cf) {

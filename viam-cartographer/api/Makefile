@@ -1,8 +1,8 @@
 # -Wstrict-prototypes  -pedantic
 # -Werror
 GCC_BSTRING_WARNINGS=-g -Wall -O2 -std=c99 
-GCC_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c99 -O2 
-GPP_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c++17 -O2
+GCC_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c99 -O2
+GPP_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -std=c++17 -O2
 
 carto-test-c: carto-test-c-build
 	bin/viam-carto-test-c
