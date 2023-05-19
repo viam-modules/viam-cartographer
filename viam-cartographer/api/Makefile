@@ -4,6 +4,9 @@ GCC_BSTRING_WARNINGS=-g -Wall -O2 -std=c99
 GCC_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c99 -O2 
 GPP_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c++17 -O2
 
+carto-test-c: carto-test-c-build
+	bin/viam-carto-test-c
+
 # NOTE: linux only
 carto-test-c-valgrind: carto-test-c-build
 	valgrind --leak-check=full -s bin/viam-carto-test-c
@@ -27,13 +30,22 @@ build-setup:
 	@mkdir -p build
 
 carto-test-c-build: build-setup
+	# compile bstrlib
 	gcc $(GCC_BSTRING_WARNINGS)  -c src/slam/bstrlib.c  -o build/bstrlib.o
+	# archive bstrlib static library
 	ar rcs build/libbstrlib.a build/bstrlib.o
-	gcc $(GCC_WARNINGS)  src/slam/viam_carto.c src/slam/viam_carto_test.c -Lbuild -lbstrlib -o bin/viam-carto-test-c
-
-carto-test-c: carto-test-c-build
-	bin/viam-carto-test-c
-
+	# compile carto_facade c interface
+	gcc $(GCC_WARNINGS) -c src/slam/carto_facade.c -o build/carto_facade.o
+	# compile carto_facade c++ interface
+	gcc $(GPP_WARNINGS) -c src/slam/carto_facade_cpp.cpp -o build/carto_facade_cpp.o
+	# make archive containing both C & CPP code
+	ar rcs build/libcarto_facade.a build/carto_facade_cpp.o build/carto_facade.o
+	# compile viam_carto
+	gcc $(GCC_WARNINGS) -c src/slam/viam_carto.c -o build/viam_carto.o
+	# compile viam_carto_test
+	gcc $(GCC_WARNINGS) -c src/slam/viam_carto_test.c -o build/viam_carto_test.o
+	# link viam_carto with viam_carto_test and both the bstrlib & carto_facade static libs
+	g++ $(GPP_WARNINGS) build/viam_carto_test.o build/viam_carto.o -Lbuild -lbstrlib -lcarto_facade -o bin/viam-carto-test-c
 
 
 # BEGIN COUNTER TARGETS

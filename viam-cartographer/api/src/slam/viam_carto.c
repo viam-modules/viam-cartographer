@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "bstrlib.h"
+#include "carto_facade.h"
 #include "viam_carto.h"
 #include <stdio.h>
 #include <string.h>
@@ -16,10 +17,10 @@ int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
   }
 
   // allocate viam_carto struct
-  viam_carto *vc = malloc(sizeof(viam_carto));
+  viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));
 
   // allocate sensors list
-  bstring *sensors = malloc(sizeof(bstring *) * c.sensors_len);
+  bstring *sensors = (bstring *)malloc(sizeof(bstring *) * c.sensors_len);
   if (sensors == NULL) {
     return VIAM_CARTO_OUT_OF_MEMORY;
   }
@@ -32,6 +33,7 @@ int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
   // set sensors list
   vc->sensors = sensors;
   vc->sensors_len = c.sensors_len;
+  vc->carto_obj = carto_facade_new();
 
   // point to newly created viam_carto struct
   *ppVC = vc;
@@ -53,6 +55,8 @@ int viam_carto_terminate(viam_carto **ppVC, char **errmsg) {
     }
   }
   free((*ppVC)->sensors);
+  // TODO: Error handling
+  carto_facade_delete((*ppVC)->carto_obj);
   free(*ppVC);
   return return_code;
 };

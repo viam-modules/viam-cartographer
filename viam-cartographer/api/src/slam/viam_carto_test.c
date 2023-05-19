@@ -21,7 +21,7 @@ static char *test_viam_carto_init() {
   };
   int i = 0;
   // allocate space to hold the 5 pointers to the 5 sensor strings
-  bstring *sensors = malloc(sizeof(bstring *) * sensors_len);
+  bstring *sensors = (bstring *)malloc(sizeof(bstring *) * sensors_len);
   mu_assert("error, sensors != NULL", sensors != NULL);
   mu_assert("error, &sensors[0] != sensors", &sensors[0] == sensors);
   for (i = 0; i < sensors_len; i++) {
