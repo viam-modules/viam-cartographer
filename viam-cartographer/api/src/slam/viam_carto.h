@@ -1,8 +1,6 @@
 #ifndef VIAM_CARTO_H
 #define VIAM_CARTO_H
-// includes stdlib.h
 #include "bstrlib.h"
-/* #include "viam_carto_string.h" */
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
