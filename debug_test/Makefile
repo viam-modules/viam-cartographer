@@ -3,6 +3,32 @@
 GCC_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c99 
 GPP_WARNINGS=-g -Wall -Wextra -Wshadow -Wpointer-arith -Wcast-qual -Wmissing-prototypes -std=c++17 
 
+clean:
+	rm -rf bin
+	rm -rf c_cpp/build
+
+# BEGIN CARTO TARGETS
+carto-go:
+	mkdir -p bin
+	go build -o bin/carto-go go/carto/main.go
+
+carto-test-c-build:
+	mkdir -p bin
+	gcc $(GCC_WARNINGS)  c_cpp/slam/viam_carto.c c_cpp/slam/viam_carto_test.c  -o bin/viam-carto-test-c
+
+carto-test-c: carto-test-c-build
+	bin/viam-carto-test-c
+
+# NOTE: linux only
+carto-test-c-valgrind: carto-test-c-build
+	valgrind --leak-check=full -s bin/viam-carto-test-c
+
+# NOTE: linux only
+carto-test-c-gdb: carto-test-c-build
+	gdb --batch --ex run --ex bt --ex q --args bin/viam-carto-test-c
+
+
+# BEGIN COUNTER TARGETS
 counter-lib:
 	mkdir -p c_cpp/build
 	gcc $(GCC_WARNINGS) -c c_cpp/counter/mycounter.c -o c_cpp/build/mycounter.o
@@ -18,27 +44,6 @@ counter-go: counter-lib
 	mkdir -p bin
 	go build -o bin/counter-go go/counter/main.go
 
-carto-go:
-	mkdir -p bin
-	go build -o bin/carto-go go/carto/main.go
-
-carto-test-c-build:
-	mkdir -p bin
-	gcc $(GCC_WARNINGS)  c_cpp/slam/viam_carto.c c_cpp/slam/viam_carto_test.c  -o bin/viam-carto-test-c
-
-carto-test-c: carto-test-c-build
-	bin/viam-carto-test-c
-
-carto-test-c-valgrind: carto-test-c-build
-	valgrind --leak-check=full -s bin/viam-carto-test-c
-
-carto-test-c-gdb: carto-test-c-build
-	 bin/viam-carto-test-c
-
-clean:
-	rm -rf bin
-	rm -rf c_cpp/build
-
 # NOTE: linux only
-valgrind: counter-c
+counter-c-valgrind: counter-c
 	valgrind --leak-check=full -s bin/counter-c

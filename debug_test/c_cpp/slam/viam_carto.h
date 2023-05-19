@@ -5,6 +5,10 @@
 #define UNUSED(x) (void)(x)
 
 typedef struct viam_carto {
+  // TODO: This is not a safe way to pass a list of strings as it depends on null
+  // termination. Fix this by using a safe way to provide user input without the
+  // risk of memory errors.
+  // One possibility: https://bstring.sourceforge.net/
   const char **sensors;
   int sensors_len;
   void *carto_obj;

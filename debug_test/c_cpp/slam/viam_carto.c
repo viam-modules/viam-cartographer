@@ -3,10 +3,12 @@
 
 #include "viam_carto.h"
 #include <stdio.h>
+#include <string.h>
 #include <unistd.h>
 
 int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
                     const viam_carto_algo_config ac, char **errmsg) {
+  UNUSED(ac);
   if (ppVC == NULL) {
     *errmsg = "viam_carto pointer should not be NULL";
     return VIAM_CARTO_VC_INVALID;
@@ -16,10 +18,15 @@ int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
   vc->sensors_len = c.sensors_len;
   int i = 0;
   for (i = 0; i < c.sensors_len; i++) {
-    vc->sensors[i] = c.sensors[i];
+    char *sensor;
+    // TODO: FIX THIS: From the man pages
+    // SECURITY CONSIDERATIONS
+    // The strcpy() function is easily misused in a manner which enables
+    // malicious users to arbitrarily change a running program's functionality
+    // through a buffer overflow attack.
+    strcpy(sensor, c.sensors[i]);
+    c.sensors[i] = sensor;
   }
-  // copy each sensor into vc.sensors
-  // copy each sensor into vc.sensors
 
   *ppVC = vc;
 
@@ -28,6 +35,19 @@ int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
 
 int viam_carto_terminate(viam_carto **ppVC, char **errmsg) {
   UNUSED(errmsg);
+  // fix this
+  vc->sensors_len = ppVC.c.sensors_len;
+  int i = 0;
+  for (i = 0; i < c.sensors_len; i++) {
+    char *sensor;
+    // TODO: FIX THIS: From the man pages
+    // SECURITY CONSIDERATIONS
+    // The strcpy() function is easily misused in a manner which enables
+    // malicious users to arbitrarily change a running program's functionality
+    // through a buffer overflow attack.
+    strcpy(sensor, c.sensors[i]);
+    c.sensors[i] = sensor;
+  }
   free(*ppVC);
   return VIAM_CARTO_SUCCESS;
 };
