@@ -15,13 +15,12 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	slamConfig "go.viam.com/slam/config"
-	"go.viam.com/slam/sensors/lidar"
-	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
 const (
@@ -37,13 +36,13 @@ var (
 
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful creation of cartographer slam service with no sensor", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
@@ -61,7 +60,7 @@ func TestNew(t *testing.T) {
 	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"lidar", "one-too-many"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
@@ -78,7 +77,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Failed creation of cartographer slam service with non-existing sensor", func(t *testing.T) {
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
@@ -94,7 +93,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Successful creation of cartographer slam service with good lidar", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
@@ -112,7 +111,7 @@ func TestNew(t *testing.T) {
 
 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"invalid_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
@@ -130,11 +129,11 @@ func TestNew(t *testing.T) {
 
 func TestDataProcess(t *testing.T) {
 	logger, obs := golog.NewObservedTestLogger(t)
-	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer, port := setupTestGRPCServer(t)
-	attrCfg := &slamConfig.Config{
+	attrCfg := &vcConfig.Config{
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d"},
 		DataDirectory: dataDir,
@@ -191,11 +190,11 @@ func TestDataProcess(t *testing.T) {
 
 func TestEndpointFailures(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	grpcServer, port := setupTestGRPCServer(t)
-	attrCfg := &slamConfig.Config{
+	attrCfg := &vcConfig.Config{
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDir,
@@ -235,12 +234,12 @@ func TestEndpointFailures(t *testing.T) {
 
 func TestSLAMProcess(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("Successful start of live SLAM process with default parameters", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
@@ -280,7 +279,7 @@ func TestSLAMProcess(t *testing.T) {
 
 	t.Run("Successful start of offline SLAM process with default parameters", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
@@ -320,7 +319,7 @@ func TestSLAMProcess(t *testing.T) {
 
 	t.Run("Failed start of SLAM process that errors out due to invalid binary location", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
-		attrCfg := &slamConfig.Config{
+		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
