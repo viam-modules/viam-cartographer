@@ -84,11 +84,11 @@ These containers are set to persist between sessions via the `persistent` parame
 #### Setup, build, and run the binary
 
 ```bash
+# Setup the gRPC files
+make bufinstall && make buf 
 # Install dependencies
 make setup
-# Setup the gRPC files
-make buf 
-# Build the binary
+# Build & install the binary
 make build
 # Install lua files
 make install-lua-files

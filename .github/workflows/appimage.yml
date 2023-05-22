@@ -46,7 +46,7 @@ jobs:
         chown -R testbot:testbot .
         sudo -u testbot bash -lc 'cd viam-cartographer && make clean'
         
-    - name: make setup buf
+    - name: make bufinstall buf setup
       uses: nick-fields/retry@v2
       with:
         timeout_minutes: 5
@@ -55,7 +55,7 @@ jobs:
         shell: bash
         command: |
           chown -R testbot:testbot .
-          sudo -u testbot bash -lc 'cd viam-cartographer && make setup buf'
+          sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
 
     - name: make build
       run: |
