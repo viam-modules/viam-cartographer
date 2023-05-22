@@ -31,9 +31,14 @@ func DetermineDeleteProcessedData(logger golog.Logger, deleteData *bool, useLive
 // DetermineUseLiveData will determine the value of the useLiveData attribute
 // based on the liveData input parameter and sensor list.
 func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string) (bool, error) {
+	// If liveData is not set, default it to true and require a sensor to have been provided.
 	if liveData == nil {
-		return false, newError("use_live_data is a required input parameter")
+		if len(sensors) == 0 {
+			return false, newError("sensors field cannot be empty")
+		}
+		return true, nil
 	}
+
 	useLiveData := *liveData
 	if useLiveData && len(sensors) == 0 {
 		return false, newError("sensors field cannot be empty when use_live_data is set to true")
@@ -43,28 +48,38 @@ func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string)
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Sensors             []string          `json:"sensors"`
-	ConfigParams        map[string]string `json:"config_params"`
-	DataDirectory       string            `json:"data_dir"`
-	UseLiveData         *bool             `json:"use_live_data"`
-	DataRateMsec        int               `json:"data_rate_msec"`
-	MapRateSec          *int              `json:"map_rate_sec"`
-	Port                string            `json:"port"`
-	DeleteProcessedData *bool             `json:"delete_processed_data"`
+	Sensors                 []string          `json:"sensors"`
+	ConfigParams            map[string]string `json:"config_params"`
+	DataDirectory           string            `json:"data_dir"`
+	UseLiveData             *bool             `json:"use_live_data"`
+	DataRateMsec            int               `json:"data_rate_msec"`
+	MapRateSec              *int              `json:"map_rate_sec"`
+	Port                    string            `json:"port"`
+	DeleteProcessedData     *bool             `json:"delete_processed_data"`
+	ModularizationV2Enabled *bool             `json:"modularization_v2_enabled"`
 }
 
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
+	// get feature flag provided in config
+	modularizationV2Enabled := false
+	if config.ModularizationV2Enabled != nil {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
+	}
+
+	// require at least one sensor for full mod v2
+	if modularizationV2Enabled {
+		if config.Sensors == nil || len(config.Sensors) < 1 {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "at least one sensor must be configured")
+		}
+	}
+
 	if config.ConfigParams["mode"] == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
 
 	if config.DataDirectory == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
-	}
-
-	if config.UseLiveData == nil {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
 
 	if config.DataRateMsec < 0 {
@@ -84,9 +99,18 @@ func (config *Config) Validate(path string) ([]string, error) {
 // and returns them.
 func GetOptionalParameters(config *Config, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (string, int, int, bool, bool, error) {
+) (string, int, int, bool, bool, bool, error) {
+	modularizationV2Enabled := false
+	if config.ModularizationV2Enabled != nil {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
+		logger.Debugf("modularization_v2_enabled has been provided, modularization_v2_enabled = %v", modularizationV2Enabled)
+	}
+
+	// Do not set port if mod v2 is enabled. This will be updated during modularization v2.
 	port := config.Port
-	if config.Port == "" {
+	if modularizationV2Enabled {
+		port = defaultPort
+	} else if config.Port == "" {
 		port = defaultPort
 	}
 
@@ -107,12 +131,20 @@ func GetOptionalParameters(config *Config, defaultPort string,
 		logger.Info("setting slam system to localization mode")
 	}
 
-	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
-	if err != nil {
-		return "", 0, 0, false, false, err
+	var err error
+	useLiveData := true
+	if !modularizationV2Enabled {
+		useLiveData, err = DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
+		if err != nil {
+			return "", 0, 0, false, false, false, err
+		}
 	}
 
-	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
+	// only validate deleteProcessedData if mod v2 is not enabled
+	deleteProcessedData := false
+	if !modularizationV2Enabled {
+		deleteProcessedData = DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
+	}
 
-	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, nil
+	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, nil
 }

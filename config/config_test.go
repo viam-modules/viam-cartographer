@@ -34,7 +34,7 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Config without required fields", func(t *testing.T) {
 		// Test for missing main attribute fields
-		requiredFields := []string{"data_dir", "use_live_data"}
+		requiredFields := []string{"data_dir"}
 		for _, requiredField := range requiredFields {
 			logger.Debugf("Testing SLAM config without %s\n", requiredField)
 			cfgService := makeCfgService()
@@ -131,12 +131,12 @@ func TestDetermineUseLiveData(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	t.Run("No use_live_data specified", func(t *testing.T) {
 		useLiveData, err := DetermineUseLiveData(logger, nil, []string{})
-		test.That(t, err, test.ShouldBeError, newError("use_live_data is a required input parameter"))
+		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty"))
 		test.That(t, useLiveData, test.ShouldBeFalse)
 
 		useLiveData, err = DetermineUseLiveData(logger, nil, []string{"camera"})
-		test.That(t, err, test.ShouldBeError, newError("use_live_data is a required input parameter"))
-		test.That(t, useLiveData, test.ShouldBeFalse)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, useLiveData, test.ShouldBeTrue)
 	})
 	t.Run("False use_live_data", func(t *testing.T) {
 		useLiveData, err := DetermineUseLiveData(logger, &_false, []string{})
@@ -180,13 +180,19 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
+		port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := GetOptionalParameters(
+			cfg,
+			"localhost",
+			1001,
+			1002,
+			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, port, test.ShouldResemble, "localhost")
 		test.That(t, dataRateMsec, test.ShouldEqual, 1001)
 		test.That(t, mapRateSec, test.ShouldEqual, 1002)
 		test.That(t, useLiveData, test.ShouldEqual, true)
 		test.That(t, deleteProcessedData, test.ShouldEqual, true)
+		test.That(t, modularizationV2Enabled, test.ShouldEqual, false)
 	})
 
 	t.Run("Live data without sensors", func(t *testing.T) {
@@ -194,7 +200,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		_, _, _, _, _, err = GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
+		_, _, _, _, _, _, err = GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
 		test.That(t, err, test.ShouldBeError, newError("sensors field cannot be empty when use_live_data is set to true"))
 	})
 }
