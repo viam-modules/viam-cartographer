@@ -86,7 +86,7 @@ These containers are set to persist between sessions via the `persistent` parame
 ```bash
 # Install dependencies
 make setup
-# Setup the gRPC files.
+# Setup the gRPC files
 make buf 
 # Build the binary
 make build
