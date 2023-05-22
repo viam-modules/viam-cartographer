@@ -15,10 +15,9 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	slamConfig "github.com/viamrobotics/viam-cartographer/config"
+	slamTesthelper "github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	viamgrpc "go.viam.com/rdk/grpc"
-	slamConfig "go.viam.com/slam/config"
-	"go.viam.com/slam/sensors/lidar"
-	slamTesthelper "go.viam.com/slam/testhelper"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 
