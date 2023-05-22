@@ -109,7 +109,9 @@ func GetOptionalParameters(config *Config, defaultPort string,
 
 	// do not validate port if mod v2 is enabled
 	port := config.Port
-	if config.Port == "" && !modularizationV2Enabled {
+	if modularizationV2Enabled {
+		port = defaultPort
+	} else if config.Port == "" {
 		port = defaultPort
 	}
 
@@ -130,9 +132,13 @@ func GetOptionalParameters(config *Config, defaultPort string,
 		logger.Info("setting slam system to localization mode")
 	}
 
-	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
-	if err != nil {
-		return "", 0, 0, false, false, false, err
+	useLiveData := false
+	err := errors.New("")
+	if !modularizationV2Enabled {
+		useLiveData, err = DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
+		if err != nil {
+			return "", 0, 0, false, false, false, err
+		}
 	}
 
 	// only validate deleteProcessedData if mod v2 is not enabled
