@@ -43,14 +43,15 @@ func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string)
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Sensors             []string          `json:"sensors"`
-	ConfigParams        map[string]string `json:"config_params"`
-	DataDirectory       string            `json:"data_dir"`
-	UseLiveData         *bool             `json:"use_live_data"`
-	DataRateMsec        int               `json:"data_rate_msec"`
-	MapRateSec          *int              `json:"map_rate_sec"`
-	Port                string            `json:"port"`
-	DeleteProcessedData *bool             `json:"delete_processed_data"`
+	Sensors                 []string          `json:"sensors"`
+	ConfigParams            map[string]string `json:"config_params"`
+	DataDirectory           string            `json:"data_dir"`
+	UseLiveData             *bool             `json:"use_live_data"`
+	DataRateMsec            int               `json:"data_rate_msec"`
+	MapRateSec              *int              `json:"map_rate_sec"`
+	Port                    string            `json:"port"`
+	DeleteProcessedData     *bool             `json:"delete_processed_data"`
+	ModularizationV2Enabled *bool             `json:"modularization_v2_enabled"`
 }
 
 // Validate creates the list of implicit dependencies.
