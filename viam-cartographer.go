@@ -21,13 +21,13 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/services/slam/grpchelper"
 	"go.viam.com/rdk/spatialmath"
-	slamConfig "go.viam.com/slam/config"
-	"go.viam.com/slam/sensors/lidar"
-	slamUtils "go.viam.com/slam/utils"
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
 
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
 
 // Model is the model name of cartographer.
@@ -52,7 +52,7 @@ type SubAlgo string
 const Dim2d SubAlgo = "2d"
 
 func init() {
-	resource.RegisterService(slam.API, Model, resource.Registration[slam.Service, *slamConfig.Config]{
+	resource.RegisterService(slam.API, Model, resource.Registration[slam.Service, *vcConfig.Config]{
 		Constructor: func(
 			ctx context.Context,
 			deps resource.Dependencies,
@@ -89,7 +89,7 @@ func New(
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
 
-	svcConfig, err := resource.NativeConfig[*slamConfig.Config](c)
+	svcConfig, err := resource.NativeConfig[*vcConfig.Config](c)
 	if err != nil {
 		return nil, err
 	}
@@ -101,11 +101,11 @@ func New(
 	}
 
 	// Set up the data directories
-	if err := slamConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
+	if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
 		return nil, err
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := slamConfig.GetOptionalParameters(
+	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
 		defaultDataRateMsec,
@@ -168,7 +168,7 @@ func New(
 		return nil, errors.Wrap(err, "error with slam service slam process")
 	}
 
-	client, clientClose, err := slamConfig.SetupGRPCConnection(ctx, cartoSvc.port, dialMaxTimeoutSec, logger)
+	client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, dialMaxTimeoutSec, logger)
 	if err != nil {
 		return nil, errors.Wrap(err, "error with initial grpc client to slam algorithm")
 	}
@@ -225,7 +225,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	componentReference := resp.GetComponentReference()
 	returnedExt := resp.Extra.AsMap()
 
-	return slamUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
+	return vcUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
 }
 
 // GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
@@ -339,7 +339,7 @@ func (cartoSvc *cartographerService) GetSLAMProcessConfig() pexec.ProcessConfig 
 	var args []string
 
 	args = append(args, "-sensors="+cartoSvc.primarySensorName)
-	args = append(args, "-config_param="+slamUtils.DictToString(cartoSvc.configParams))
+	args = append(args, "-config_param="+vcUtils.DictToString(cartoSvc.configParams))
 	args = append(args, "-data_rate_ms="+strconv.Itoa(cartoSvc.dataRateMs))
 	args = append(args, "-map_rate_sec="+strconv.Itoa(cartoSvc.mapRateSec))
 	args = append(args, "-data_dir="+cartoSvc.dataDirectory)

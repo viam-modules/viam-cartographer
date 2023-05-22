@@ -13,7 +13,6 @@ require (
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.123
 	go.viam.com/rdk v0.2.44
-	go.viam.com/slam v0.1.35
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.29
 	google.golang.org/grpc v1.54.0
