@@ -56,6 +56,19 @@ type Config struct {
 
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
+	// get feature flag provided in config
+	modularizationV2Enabled := false
+	if config.ModularizationV2Enabled != nil {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
+	}
+
+	// require at least one sensor for full mod v2
+	if modularizationV2Enabled {
+		if config.Sensors == nil || len(config.Sensors) < 1 {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "at least one sensor must be configured")
+		}
+	}
+
 	if config.ConfigParams["mode"] == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
@@ -64,7 +77,8 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
 	}
 
-	if config.UseLiveData == nil {
+	// Do not set use_live_data if mod v2 is enabled.
+	if config.UseLiveData == nil && !modularizationV2Enabled {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
 
@@ -86,8 +100,17 @@ func (config *Config) Validate(path string) ([]string, error) {
 func GetOptionalParameters(config *Config, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (string, int, int, bool, bool, bool, error) {
+	modularizationV2Enabled := false
+	if config.ModularizationV2Enabled != nil {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
+		logger.Debugf("modularization_v2_enabled has been provided, modularization_v2_enabled = %v", modularizationV2Enabled)
+	}
+
+	// Do not set port if mod v2 is enabled. This will be updated during modularization v2.
 	port := config.Port
-	if config.Port == "" {
+	if modularizationV2Enabled {
+		port = defaultPort
+	} else if config.Port == "" {
 		port = defaultPort
 	}
 
@@ -108,17 +131,19 @@ func GetOptionalParameters(config *Config, defaultPort string,
 		logger.Info("setting slam system to localization mode")
 	}
 
-	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
-	if err != nil {
-		return "", 0, 0, false, false, false, err
+	var err error
+	useLiveData := true
+	if !modularizationV2Enabled {
+		useLiveData, err = DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
+		if err != nil {
+			return "", 0, 0, false, false, false, err
+		}
 	}
 
-	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
-
-	modularizationV2Enabled := false
-	if config.ModularizationV2Enabled != nil {
-		modularizationV2Enabled = *config.ModularizationV2Enabled
-		logger.Debugf("modularization_v2_enabled has been provided, modularization_v2_enabled = %v", modularizationV2Enabled)
+	// only validate deleteProcessedData if mod v2 is not enabled
+	deleteProcessedData := false
+	if !modularizationV2Enabled {
+		deleteProcessedData = DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 	}
 
 	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, nil
