@@ -117,7 +117,7 @@ func GetOptionalParameters(config *Config, defaultPort string,
 
 	modularizationV2Enabled := false
 	if config.ModularizationV2Enabled == nil {
-		logger.Debugf("no modularization_v2_enabled given, continuing with modularization v1")
+		logger.Debug("no modularization_v2_enabled given, continuing with modularization v1")
 	} else {
 		modularizationV2Enabled = *config.ModularizationV2Enabled
 	}
