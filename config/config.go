@@ -43,14 +43,15 @@ func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string)
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Sensors             []string          `json:"sensors"`
-	ConfigParams        map[string]string `json:"config_params"`
-	DataDirectory       string            `json:"data_dir"`
-	UseLiveData         *bool             `json:"use_live_data"`
-	DataRateMsec        int               `json:"data_rate_msec"`
-	MapRateSec          *int              `json:"map_rate_sec"`
-	Port                string            `json:"port"`
-	DeleteProcessedData *bool             `json:"delete_processed_data"`
+	Sensors                 []string          `json:"sensors"`
+	ConfigParams            map[string]string `json:"config_params"`
+	DataDirectory           string            `json:"data_dir"`
+	UseLiveData             *bool             `json:"use_live_data"`
+	DataRateMsec            int               `json:"data_rate_msec"`
+	MapRateSec              *int              `json:"map_rate_sec"`
+	Port                    string            `json:"port"`
+	DeleteProcessedData     *bool             `json:"delete_processed_data"`
+	ModularizationV2Enabled *bool             `json:"modularization_v2_enabled"`
 }
 
 // Validate creates the list of implicit dependencies.
@@ -84,7 +85,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 // and returns them.
 func GetOptionalParameters(config *Config, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (string, int, int, bool, bool, error) {
+) (string, int, int, bool, bool, bool, error) {
 	port := config.Port
 	if config.Port == "" {
 		port = defaultPort
@@ -109,10 +110,16 @@ func GetOptionalParameters(config *Config, defaultPort string,
 
 	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
 	if err != nil {
-		return "", 0, 0, false, false, err
+		return "", 0, 0, false, false, false, err
 	}
 
 	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 
-	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, nil
+	modularizationV2Enabled := false
+	if config.ModularizationV2Enabled != nil {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
+		logger.Debugf("modularization_v2_enabled has been provided, modularization_v2_enabled = %v", modularizationV2Enabled)
+	}
+
+	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, nil
 }
