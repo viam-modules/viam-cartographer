@@ -85,7 +85,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 // and returns them.
 func GetOptionalParameters(config *Config, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (string, int, int, bool, bool, error) {
+) (string, int, int, bool, bool, bool, error) {
 	port := config.Port
 	if config.Port == "" {
 		port = defaultPort
@@ -110,10 +110,15 @@ func GetOptionalParameters(config *Config, defaultPort string,
 
 	useLiveData, err := DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
 	if err != nil {
-		return "", 0, 0, false, false, err
+		return "", 0, 0, false, false, false, err
 	}
 
 	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 
-	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, nil
+	modularizationV2Enabled := *config.ModularizationV2Enabled
+	if config.ModularizationV2Enabled == nil {
+		logger.Debugf("no modularization_v2_enabled given, continuing with modularization v1")
+	}
+
+	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, nil
 }
