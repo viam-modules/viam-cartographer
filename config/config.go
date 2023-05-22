@@ -77,7 +77,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
 	}
 
-	// do not validate use_live_data if mod v2 is enabled
+	// Do not set use_live_data if mod v2 is enabled.
 	if config.UseLiveData == nil && !modularizationV2Enabled {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
@@ -101,13 +101,12 @@ func GetOptionalParameters(config *Config, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (string, int, int, bool, bool, bool, error) {
 	modularizationV2Enabled := false
-	if config.ModularizationV2Enabled == nil {
-		logger.Debug("no modularization_v2_enabled given, continuing with modularization v1")
-	} else {
+	if config.ModularizationV2Enabled != nil {
 		modularizationV2Enabled = *config.ModularizationV2Enabled
+		logger.Debugf("modularization_v2_enabled has been provided, modularization_v2_enabled = %v", modularizationV2Enabled)
 	}
 
-	// do not validate port if mod v2 is enabled
+	// Do not set port if mod v2 is enabled. This will be updated during modularization v2.
 	port := config.Port
 	if modularizationV2Enabled {
 		port = defaultPort
