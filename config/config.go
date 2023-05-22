@@ -63,7 +63,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 	}
 
 	// require at least one sensor for full mod v2
-	if modularizationV2Enabled == true {
+	if modularizationV2Enabled {
 		if config.Sensors == nil || len(config.Sensors) < 1 {
 			return nil, utils.NewConfigValidationFieldRequiredError(path, "at least one sensor must be configured")
 		}
@@ -78,7 +78,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 	}
 
 	// do not validate use_live_data if mod v2 is enabled
-	if config.UseLiveData == nil && modularizationV2Enabled == false {
+	if config.UseLiveData == nil && !modularizationV2Enabled {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
 
@@ -109,7 +109,7 @@ func GetOptionalParameters(config *Config, defaultPort string,
 
 	// do not validate port if mod v2 is enabled
 	port := config.Port
-	if config.Port == "" && modularizationV2Enabled == false {
+	if config.Port == "" && !modularizationV2Enabled {
 		port = defaultPort
 	}
 
@@ -137,7 +137,7 @@ func GetOptionalParameters(config *Config, defaultPort string,
 
 	// only validate deleteProcessedData if mod v2 is not enabled
 	deleteProcessedData := false
-	if modularizationV2Enabled == false {
+	if !modularizationV2Enabled {
 		deleteProcessedData = DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 	}
 
