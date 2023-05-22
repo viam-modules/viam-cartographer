@@ -180,7 +180,12 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["use_live_data"] = true
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := GetOptionalParameters(cfg, "localhost", 1001, 1002, logger)
+		port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := GetOptionalParameters(
+			cfg,
+			"localhost",
+			1001,
+			1002,
+			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, port, test.ShouldResemble, "localhost")
 		test.That(t, dataRateMsec, test.ShouldEqual, 1001)
