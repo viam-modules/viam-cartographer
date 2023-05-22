@@ -132,8 +132,8 @@ func GetOptionalParameters(config *Config, defaultPort string,
 		logger.Info("setting slam system to localization mode")
 	}
 
-	useLiveData := false
-	err := errors.New("")
+	var err error
+	useLiveData := true
 	if !modularizationV2Enabled {
 		useLiveData, err = DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
 		if err != nil {
