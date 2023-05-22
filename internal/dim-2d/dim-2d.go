@@ -124,8 +124,8 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	if ok {
 		timeRec, err = time.Parse(time.RFC3339Nano, timeReceivedMetadata[0])
 		if err != nil {
-			timeRec = time.Now()
 			logger.Warnw("couldn't parse time received", "error", err)
+			return "", err
 		}
 	}
 
