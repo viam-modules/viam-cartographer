@@ -115,9 +115,11 @@ func GetOptionalParameters(config *Config, defaultPort string,
 
 	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 
-	modularizationV2Enabled := *config.ModularizationV2Enabled
+	modularizationV2Enabled := false
 	if config.ModularizationV2Enabled == nil {
 		logger.Debugf("no modularization_v2_enabled given, continuing with modularization v1")
+	} else {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
 	}
 
 	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, nil
