@@ -342,7 +342,6 @@ func TestDoCommand(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
-
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &slamConfig.Config{
 		Sensors:       []string{"good_lidar"},
@@ -353,28 +352,29 @@ func TestDoCommand(t *testing.T) {
 		Port:          "localhost:" + strconv.Itoa(port),
 		UseLiveData:   &_true,
 	}
-
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
-
-	cmd := map[string]interface{}{"feature_flag": true}
-	resp, err := svc.DoCommand(context.Background(), cmd)
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, resp["response_in_millimeters"], test.ShouldBeTrue)
-
-	cmd = map[string]interface{}{"fake_flag": true}
-	resp, err = svc.DoCommand(context.Background(), cmd)
-	test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
-	test.That(t, resp, test.ShouldBeNil)
-
-	cmd = map[string]interface{}{}
-	resp, err = svc.DoCommand(context.Background(), cmd)
-	test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
-	test.That(t, resp, test.ShouldBeNil)
-
+	t.Run("returns all feature flags when feature_flag: true", func(t *testing.T) {
+		cmd := map[string]interface{}{"feature_flag": true}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, resp["response_in_millimeters"], test.ShouldBeTrue)
+		test.That(t, len(resp), test.ShouldEqual, 1)
+	})
+	t.Run("returns UnimplementedError when given other parmeters", func(t *testing.T) {
+		cmd := map[string]interface{}{"fake_flag": true}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
+		test.That(t, resp, test.ShouldBeNil)
+	})
+	t.Run("returns UnimplementedError when given no parmeters", func(t *testing.T) {
+		cmd := map[string]interface{}{}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
+		test.That(t, resp, test.ShouldBeNil)
+	})
 	grpcServer.Stop()
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-
 	testhelper.ClearDirectory(t, dataDir)
 }
 
