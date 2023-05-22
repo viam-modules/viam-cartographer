@@ -56,6 +56,19 @@ type Config struct {
 
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
+	// get feature flag provided in config
+	modularizationV2Enabled := false
+	if config.ModularizationV2Enabled != nil {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
+	}
+
+	// require at least one sensor for full mod v2
+	if modularizationV2Enabled == true {
+		if config.Sensors == nil || len(config.Sensors) < 1 {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "at least one sensor must be configured")
+		}
+	}
+
 	if config.ConfigParams["mode"] == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
@@ -64,7 +77,8 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
 	}
 
-	if config.UseLiveData == nil {
+	// do not validate use_live_data if mod v2 is enabled
+	if config.UseLiveData == nil && modularizationV2Enabled == false {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "use_live_data")
 	}
 
@@ -86,8 +100,16 @@ func (config *Config) Validate(path string) ([]string, error) {
 func GetOptionalParameters(config *Config, defaultPort string,
 	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (string, int, int, bool, bool, bool, error) {
+	modularizationV2Enabled := false
+	if config.ModularizationV2Enabled == nil {
+		logger.Debug("no modularization_v2_enabled given, continuing with modularization v1")
+	} else {
+		modularizationV2Enabled = *config.ModularizationV2Enabled
+	}
+
+	// do not validate port if mod v2 is enabled
 	port := config.Port
-	if config.Port == "" {
+	if config.Port == "" && modularizationV2Enabled == false {
 		port = defaultPort
 	}
 
@@ -113,13 +135,10 @@ func GetOptionalParameters(config *Config, defaultPort string,
 		return "", 0, 0, false, false, false, err
 	}
 
-	deleteProcessedData := DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
-
-	modularizationV2Enabled := false
-	if config.ModularizationV2Enabled == nil {
-		logger.Debug("no modularization_v2_enabled given, continuing with modularization v1")
-	} else {
-		modularizationV2Enabled = *config.ModularizationV2Enabled
+	// only validate deleteProcessedData if mod v2 is not enabled
+	deleteProcessedData := false
+	if modularizationV2Enabled == false {
+		deleteProcessedData = DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 	}
 
 	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, nil
