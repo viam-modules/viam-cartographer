@@ -647,6 +647,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
         GetLatestSampledPointCloudMapString(pointcloud_map);
         std::ofstream out(filename_with_timestamp);
         out << pointcloud_map;
+        LOG(INFO) << "yo SLAM POC Saved map to file: " << filename_with_timestamp;
 
         // std::lock_guard<std::mutex> lk(map_builder_mutex);
         // map_builder.SaveMapToFile(true, filename_with_timestamp);
