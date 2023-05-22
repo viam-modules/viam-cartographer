@@ -15,8 +15,6 @@ import (
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
-	slamConfig "github.com/viamrobotics/viam-cartographer/config"
-	slamTesthelper "github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
@@ -341,10 +339,10 @@ func TestSLAMProcess(t *testing.T) {
 
 func TestDoCommand(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	dataDir, err := slamTesthelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 	grpcServer, port := setupTestGRPCServer(t)
-	attrCfg := &slamConfig.Config{
+	attrCfg := &vcConfig.Config{
 		Sensors:       []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDir,
