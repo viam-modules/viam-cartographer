@@ -88,7 +88,7 @@ These containers are set to persist between sessions via the `persistent` parame
 make bufinstall && make buf 
 # Install dependencies
 make setup
-# Build the binary
+# Build & install the binary
 make build
 # Install lua files
 make install-lua-files
