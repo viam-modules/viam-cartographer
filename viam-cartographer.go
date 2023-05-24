@@ -152,7 +152,7 @@ func New(
 		}
 	}()
 
-	if cartoSvc.useLiveData {
+	if cartoSvc.primarySensorName != "" {
 		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
 			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "getting and saving data failed")
@@ -259,6 +259,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 		cartoSvc.activeBackgroundWorkers.Done()
 		return
 	}
+
 	goutils.PanicCapturingGo(func() {
 		ticker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
 		defer ticker.Stop()
@@ -272,28 +273,39 @@ func (cartoSvc *cartographerService) StartDataProcess(
 				return
 			}
 
+			// If we're not using live data, we read from the sensor as fast as
+			// possible, since the sensor is just playing back pre-captured data.
+			if !cartoSvc.useLiveData {
+				cartoSvc.getNextDataPoint(cancelCtx, lidar, c)
+				continue
+			}
+
 			select {
 			case <-cancelCtx.Done():
 				return
 			case <-ticker.C:
-				cartoSvc.activeBackgroundWorkers.Add(1)
-				if err := cancelCtx.Err(); err != nil {
-					if !errors.Is(err, context.Canceled) {
-						cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
-					}
-					cartoSvc.activeBackgroundWorkers.Done()
-					return
-				}
-				goutils.PanicCapturingGo(func() {
-					defer cartoSvc.activeBackgroundWorkers.Done()
-					if _, err := dim2d.GetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-						cartoSvc.logger.Warn(err)
-					}
-					if c != nil {
-						c <- 1
-					}
-				})
+				cartoSvc.getNextDataPoint(cancelCtx, lidar, c)
 			}
+		}
+	})
+}
+
+func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
+	cartoSvc.activeBackgroundWorkers.Add(1)
+	if err := ctx.Err(); err != nil {
+		if !errors.Is(err, context.Canceled) {
+			cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
+		}
+		cartoSvc.activeBackgroundWorkers.Done()
+		return
+	}
+	goutils.PanicCapturingGo(func() {
+		defer cartoSvc.activeBackgroundWorkers.Done()
+		if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
+			cartoSvc.logger.Warn(err)
+		}
+		if c != nil {
+			c <- 1
 		}
 	})
 }
