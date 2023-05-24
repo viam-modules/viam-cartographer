@@ -2,7 +2,7 @@
 #ifndef VIAM_CARTOGRAPHER_IO_DRAW_TRAJECTORIES_H_
 #define VIAM_CARTOGRAPHER_IO_DRAW_TRAJECTORIES_H_
 
-#include "../src/io/color.h"
+#include "color.h"
 #include "cairo/cairo.h"
 #include "cartographer/io/color.h"
 #include "cartographer/io/image.h"
