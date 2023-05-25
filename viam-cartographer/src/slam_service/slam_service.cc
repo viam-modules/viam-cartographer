@@ -527,7 +527,7 @@ void SLAMServiceImpl::RunSLAM() {
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
     while (b_continue_session) {
-    	if (file_list_offline.size() <= 2) {
+    	if (file_list_offline.size() - current_file_offline <= 2) {
         	file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
 	}
     	// We're setting the minimum required files to be two for the following
@@ -540,9 +540,13 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     	// directory.
     	if (file_list_offline.size() > 2) {
     		const auto to_return = file_list_offline[current_file_offline];
-    		current_file_offline++;
-		LOG(INFO) << "Returning file: " << to_return;
-    		return to_return;
+    		if (to_return != "") {
+			LOG(INFO) << "Returning file: " << to_return;
+    			current_file_offline++;
+			return to_return;
+		} else {
+        		std::this_thread::sleep_for(data_rate_ms);
+		}
     	}
 	
 	LOG(INFO) << "Waiting on more files";
