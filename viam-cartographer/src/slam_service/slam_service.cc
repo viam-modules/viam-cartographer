@@ -577,7 +577,9 @@ std::string SLAMServiceImpl::GetNextDataFile() {
     if (use_live_data) {
         return GetNextDataFileOnline();
     }
-    return GetNextDataFileOffline();
+    const auto file = GetNextDataFileOffline();
+    LOG(INFO) << "next file name " << file;
+    return file;
 }
 
 void SLAMServiceImpl::StartSaveMap() {
