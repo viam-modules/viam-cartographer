@@ -284,30 +284,30 @@ func (cartoSvc *cartographerService) StartDataProcess(
 			case <-cancelCtx.Done():
 				return
 			case <-ticker.C:
-				cartoSvc.getNextDataPoint(cancelCtx, lidar, c)
+				if err := cancelCtx.Err(); err != nil {
+					if !errors.Is(err, context.Canceled) {
+						cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
+					}
+					return
+				}
+
+				cartoSvc.activeBackgroundWorkers.Add(1)
+				defer cartoSvc.activeBackgroundWorkers.Done()
+				goutils.PanicCapturingGo(func() {
+					cartoSvc.getNextDataPoint(cancelCtx, lidar, c)
+				})
 			}
 		}
 	})
 }
 
 func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	cartoSvc.activeBackgroundWorkers.Add(1)
-	if err := ctx.Err(); err != nil {
-		if !errors.Is(err, context.Canceled) {
-			cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
-		}
-		cartoSvc.activeBackgroundWorkers.Done()
-		return
+	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
+		cartoSvc.logger.Warn(err)
 	}
-	goutils.PanicCapturingGo(func() {
-		defer cartoSvc.activeBackgroundWorkers.Done()
-		if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-			cartoSvc.logger.Warn(err)
-		}
-		if c != nil {
-			c <- 1
-		}
-	})
+	if c != nil {
+		c <- 1
+	}
 }
 
 // Close out of all slam related processes.

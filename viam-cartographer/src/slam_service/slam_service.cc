@@ -529,7 +529,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     while (b_continue_session) {
     	if (file_list_offline.size() <= 2) {
         	file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
-    	}
+	}
     	// We're setting the minimum required files to be two for the following
     	// reasons:
     	// 1. Cartographer needs at least two PCD files to work properly.
@@ -541,8 +541,11 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     	if (file_list_offline.size() > 2) {
     		const auto to_return = file_list_offline[current_file_offline];
     		current_file_offline++;
+		LOG(INFO) << "Returning file: " << to_return;
     		return to_return;
     	}
+	
+	LOG(INFO) << "Waiting on more files";
     }
     return "";
 }
@@ -577,9 +580,7 @@ std::string SLAMServiceImpl::GetNextDataFile() {
     if (use_live_data) {
         return GetNextDataFileOnline();
     }
-    const auto file = GetNextDataFileOffline();
-    LOG(INFO) << "next file name " << file;
-    return file;
+    return GetNextDataFileOffline();
 }
 
 void SLAMServiceImpl::StartSaveMap() {
