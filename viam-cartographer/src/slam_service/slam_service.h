@@ -184,9 +184,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // AddSensorReading adds sensor readings to the map builder.
     void AddSensorReading(
-        cartographer::sensor::TimedPointCloudData measurement,
-        cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder,
-        int trajectory_id, cartographer::transform::Rigid3d tmp_global_pose);
+        cartographer::sensor::TimedPointCloudData measurement);
 
     // ProcessDataAndStartSavingMaps processes the data in the data directory
     // that is newer than the provided data_cutoff_time
@@ -258,6 +256,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // started.
     std::string latest_pointcloud_map;
     // ---
+
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
+    int trajectory_id;
 };
 
 }  // namespace viam

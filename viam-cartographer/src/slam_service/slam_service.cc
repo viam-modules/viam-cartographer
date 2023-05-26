@@ -648,20 +648,23 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
 }
 
 void SLAMServiceImpl::AddSensorReading(
-    cartographer::sensor::TimedPointCloudData measurement,
-    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder,
-    int trajectory_id, cartographer::transform::Rigid3d tmp_global_pose) {
-    std::lock_guard<std::mutex> lk(map_builder_mutex);
+    cartographer::sensor::TimedPointCloudData measurement) {
+    cartographer::transform::Rigid3d tmp_global_pose;
+    bool update_latest_global_pose = false;
 
-    if (measurement.ranges.size() > 0) {
-        trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
-        auto local_poses = map_builder.GetLocalSlamResultPoses();
-        if (local_poses.size() > 0) {
-            tmp_global_pose =
-                map_builder.GetGlobalPose(trajectory_id, local_poses.back());
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        if (measurement.ranges.size() > 0) {
+            trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
+            auto local_poses = map_builder.GetLocalSlamResultPoses();
+            if (local_poses.size() > 0) {
+                update_latest_global_pose = true;
+                tmp_global_pose = map_builder.GetGlobalPose(trajectory_id,
+                                                            local_poses.back());
+            }
         }
     }
-    {
+    if (update_latest_global_pose) {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         latest_global_pose = tmp_global_pose;
     }
@@ -669,8 +672,6 @@ void SLAMServiceImpl::AddSensorReading(
 
 void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     // Prepare the trajectory builder and grab the active trajectory_id
-    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    int trajectory_id;
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Set TrajectoryBuilder
@@ -684,9 +685,6 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     bool set_start_time = false;
     auto file = GetNextDataFile();
 
-    // Define tmp_global_pose here so it always has the previous pose
-    cartographer::transform::Rigid3d tmp_global_pose =
-        cartographer::transform::Rigid3d();
     while (file != "") {
         // Ignore files that are not *.pcd files
         if (file.find(".pcd") == std::string::npos) {
@@ -727,8 +725,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         // Add data to the map_builder to add to the map and save a copy of the
         // global pose
         auto measurement = map_builder.GetDataFromFile(file);
-        AddSensorReading(measurement, trajectory_builder, trajectory_id,
-                         tmp_global_pose);
+        AddSensorReading(measurement);
 
         // This log line is needed by rdk integration tests.
         VLOG(1) << "Passed sensor data to SLAM " << file;
@@ -747,6 +744,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     if (!use_live_data) {
         // We still want to optimize the map in localization mode, but we do not
         // need to update the backup of the map
+        cartographer::transform::Rigid3d tmp_global_pose;
+        bool update_latest_global_pose = false;
         if (action_mode != ActionMode::LOCALIZING) BackupLatestMap();
         {
             std::unique_lock<std::shared_mutex> optimization_lock(
@@ -760,12 +759,13 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
 
             auto local_poses = map_builder.GetLocalSlamResultPoses();
             if (local_poses.size() > 0) {
+                update_latest_global_pose = true;
                 tmp_global_pose = map_builder.GetGlobalPose(trajectory_id,
                                                             local_poses.back());
             }
         }
 
-        {
+        if (update_latest_global_pose) {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
         }
