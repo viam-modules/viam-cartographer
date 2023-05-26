@@ -538,7 +538,12 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     	// Expecting a minimum of 3 files solves both problems without having to
     	// loop over and count the number of actual data files in the data
     	// directory.
-    	if (file_list_offline.size() - current_file_offline > 2) {
+    	if (file_list_offline.size() > 2) {
+		// If the current file is the last in the file list, skip it, since it's possible
+		// it's still being written to.
+		if (current_file_offline == file_list_offline.size()-1) {
+			continue;
+		}
     		const auto to_return = file_list_offline[current_file_offline];
     		if (to_return != "") {
 			LOG(INFO) << "Returning file: " << to_return;
