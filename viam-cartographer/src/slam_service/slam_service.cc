@@ -647,6 +647,26 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
     }
 }
 
+cartographer::transform::Rigid3d SLAMServiceImpl::AddSensorReading(
+    cartographer::sensor::TimedPointCloudData measurement, 
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder, 
+    int trajectory_id,
+    cartographer::transform::Rigid3d tmp_global_pose
+) {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
+    
+    if (measurement.ranges.size() > 0) {
+        trajectory_builder->AddSensorData(kRangeSensorId.id,
+                                            measurement);
+        auto local_poses = map_builder.GetLocalSlamResultPoses();
+        if (local_poses.size() > 0) {
+            tmp_global_pose = map_builder.GetGlobalPose(
+                trajectory_id, local_poses.back());
+        }
+    }
+    return tmp_global_pose;
+}
+
 void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     // Prepare the trajectory builder and grab the active trajectory_id
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
@@ -705,19 +725,9 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             StartSaveMap();
         }
         // Add data to the map_builder to add to the map
-        {
-            std::lock_guard<std::mutex> lk(map_builder_mutex);
-            auto measurement = map_builder.GetDataFromFile(file);
-            if (measurement.ranges.size() > 0) {
-                trajectory_builder->AddSensorData(kRangeSensorId.id,
-                                                  measurement);
-                auto local_poses = map_builder.GetLocalSlamResultPoses();
-                if (local_poses.size() > 0) {
-                    tmp_global_pose = map_builder.GetGlobalPose(
-                        trajectory_id, local_poses.back());
-                }
-            }
-        }
+        auto measurement = map_builder.GetDataFromFile(file);
+        tmp_global_pose = AddSensorReading(measurement, trajectory_builder, trajectory_id, tmp_global_pose);
+
         // Save a copy of the global pose
         {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
