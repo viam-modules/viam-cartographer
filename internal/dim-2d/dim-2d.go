@@ -131,9 +131,5 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 
 	dataDir := filepath.Join(dataDirectory, "data")
 	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", timeRec)
-	err = dataprocess.WritePCDToFile(pointcloud, filename)
-	if err != nil {
-		logger.Info("wrote file: ", filename)
-	}
-	return filename, err
+	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
 }
