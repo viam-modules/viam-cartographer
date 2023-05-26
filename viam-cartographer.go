@@ -292,8 +292,8 @@ func (cartoSvc *cartographerService) StartDataProcess(
 				}
 
 				cartoSvc.activeBackgroundWorkers.Add(1)
-				defer cartoSvc.activeBackgroundWorkers.Done()
 				goutils.PanicCapturingGo(func() {
+					defer cartoSvc.activeBackgroundWorkers.Done()
 					cartoSvc.getNextDataPoint(cancelCtx, lidar, c)
 				})
 			}

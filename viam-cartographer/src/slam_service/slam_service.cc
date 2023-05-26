@@ -538,18 +538,16 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     	// Expecting a minimum of 3 files solves both problems without having to
     	// loop over and count the number of actual data files in the data
     	// directory.
-    	if (file_list_offline.size() > 2) {
+    	if (file_list_offline.size() - current_file_offline > 2) {
     		const auto to_return = file_list_offline[current_file_offline];
     		if (to_return != "") {
 			LOG(INFO) << "Returning file: " << to_return;
     			current_file_offline++;
 			return to_return;
 		} else {
-        		std::this_thread::sleep_for(data_rate_ms);
+        		std::this_thread::sleep_for(5*data_rate_ms);
 		}
     	}
-	
-	LOG(INFO) << "Waiting on more files";
     }
     return "";
 }

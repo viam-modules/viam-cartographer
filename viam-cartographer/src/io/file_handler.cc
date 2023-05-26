@@ -72,7 +72,6 @@ std::vector<std::string> ListSortedFilesInDirectory(
     std::vector<std::string> file_paths;
 
     for (const auto& entry : fs::directory_iterator(data_directory)) {
-	    LOG(INFO) << "File name: " << (entry.path()).string();
 	    file_paths.push_back((entry.path()).string());
     }
 
