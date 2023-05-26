@@ -39,3 +39,5 @@ jobs:
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
+
+      
