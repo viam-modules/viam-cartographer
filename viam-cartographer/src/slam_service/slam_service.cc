@@ -544,10 +544,12 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 			LOG(INFO) << "Returning file: " << to_return;
     			current_file_offline++;
 			return to_return;
-		} else {
-        		std::this_thread::sleep_for(5*data_rate_ms);
 		}
     	}
+
+        // Sleep for a short period of time if we didn't find any files. This is to prevent
+	// cartographer from using up too much CPU in this loop when there's no new data coming in.
+	std::this_thread::sleep_for(data_rate_ms);
     }
     return "";
 }
