@@ -647,7 +647,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
     }
 }
 
-cartographer::transform::Rigid3d SLAMServiceImpl::AddSensorReading(
+void SLAMServiceImpl::AddSensorReading(
     cartographer::sensor::TimedPointCloudData measurement,
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder,
     int trajectory_id, cartographer::transform::Rigid3d tmp_global_pose) {
@@ -661,7 +661,10 @@ cartographer::transform::Rigid3d SLAMServiceImpl::AddSensorReading(
                 map_builder.GetGlobalPose(trajectory_id, local_poses.back());
         }
     }
-    return tmp_global_pose;
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        latest_global_pose = tmp_global_pose;
+    }
 }
 
 void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
@@ -721,16 +724,11 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             LOG(INFO) << "Starting to save maps...";
             StartSaveMap();
         }
-        // Add data to the map_builder to add to the map
+        // Add data to the map_builder to add to the map and save a copy of the
+        // global pose
         auto measurement = map_builder.GetDataFromFile(file);
-        tmp_global_pose = AddSensorReading(measurement, trajectory_builder,
-                                           trajectory_id, tmp_global_pose);
-
-        // Save a copy of the global pose
-        {
-            std::lock_guard<std::mutex> lk(viam_response_mutex);
-            latest_global_pose = tmp_global_pose;
-        }
+        AddSensorReading(measurement, trajectory_builder, trajectory_id,
+                         tmp_global_pose);
 
         // This log line is needed by rdk integration tests.
         VLOG(1) << "Passed sensor data to SLAM " << file;

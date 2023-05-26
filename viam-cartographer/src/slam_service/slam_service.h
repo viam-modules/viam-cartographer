@@ -183,7 +183,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::string TryFileClose(std::ifstream &file, std::string filename);
 
     // AddSensorReading adds sensor readings to the map builder.
-    cartographer::transform::Rigid3d AddSensorReading(
+    void AddSensorReading(
         cartographer::sensor::TimedPointCloudData measurement,
         cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder,
         int trajectory_id, cartographer::transform::Rigid3d tmp_global_pose);
