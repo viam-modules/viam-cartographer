@@ -258,7 +258,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // started.
     std::string latest_pointcloud_map;
     // ---
-
 };
 
 }  // namespace viam
