@@ -242,6 +242,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::shared_mutex optimization_shared_mutex;
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
+    int trajectory_id;
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
@@ -257,8 +259,6 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::string latest_pointcloud_map;
     // ---
 
-    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    int trajectory_id;
 };
 
 }  // namespace viam
