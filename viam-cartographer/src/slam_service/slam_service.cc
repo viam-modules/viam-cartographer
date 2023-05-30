@@ -647,13 +647,12 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
     }
 }
 
-void SLAMServiceImpl::AddSensorReading(
+bool SLAMServiceImpl::AddSensorReading(
     cartographer::sensor::TimedPointCloudData measurement) {
     cartographer::transform::Rigid3d tmp_global_pose;
     bool update_latest_global_pose = false;
 
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
+    if (map_builder_mutex.try_lock()) {
         if (measurement.ranges.size() > 0) {
             trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
             auto local_poses = map_builder.GetLocalSlamResultPoses();
@@ -663,10 +662,14 @@ void SLAMServiceImpl::AddSensorReading(
                                                             local_poses.back());
             }
         }
-    }
-    if (update_latest_global_pose) {
-        std::lock_guard<std::mutex> lk(viam_response_mutex);
-        latest_global_pose = tmp_global_pose;
+        map_builder_mutex.unlock();
+        if (update_latest_global_pose) {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
+        }
+        return true;
+    } else {
+        return false;
     }
 }
 
