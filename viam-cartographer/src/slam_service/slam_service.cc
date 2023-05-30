@@ -544,10 +544,8 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
             // since it's possible it's still being written to.
             if (current_file_offline != file_list_offline.size() - 1) {
                 const auto to_return = file_list_offline[current_file_offline];
-                if (to_return != "") {
-                    current_file_offline++;
-                    return to_return;
-                }
+                current_file_offline++;
+                return to_return;
             }
         }
 
