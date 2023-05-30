@@ -542,14 +542,12 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         if (file_list_offline.size() > 2) {
             // If the current file is the last in the file list, skip it, since
             // it's possible it's still being written to.
-            if (current_file_offline == file_list_offline.size() - 1) {
-                continue;
-            }
-            const auto to_return = file_list_offline[current_file_offline];
-            if (to_return != "") {
-                LOG(INFO) << "Returning file: " << to_return;
-                current_file_offline++;
-                return to_return;
+            if (current_file_offline != file_list_offline.size() - 1) {
+                const auto to_return = file_list_offline[current_file_offline];
+                if (to_return != "") {
+                    current_file_offline++;
+                    return to_return;
+                }
             }
         }
 
@@ -557,6 +555,9 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         // to prevent cartographer from using up too much CPU in this loop when
         // there's no new data coming in.
         std::this_thread::sleep_for(data_rate_ms);
+
+        // This log line is needed by rdk integration tests.
+        VLOG(1) << "No more data available";
     }
     return "";
 }
