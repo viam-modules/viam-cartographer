@@ -41,7 +41,7 @@ jobs:
             
         else
             echo "no updates needed"
-            exit 0
+            exit 1
         fi
 
     - name: Add + Commit + Open PR
