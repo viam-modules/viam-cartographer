@@ -190,6 +190,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // received.
     void ProcessDataAndStartSavingMaps(double data_cutoff_time);
 
+    // GetPosition gets position in the format needed for the C API
+    int GetPosition(GetPositionResponse *response);
+
     // SetUpMapBuilder loads the lua file with default cartographer config
     // parameters depending on the action mode. Setting the correct action
     // mode has to happen before calling this function.
