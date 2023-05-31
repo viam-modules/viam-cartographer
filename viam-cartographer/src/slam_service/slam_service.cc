@@ -56,7 +56,27 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
-    GetPosition(response);
+    viam_carto_get_position_response* vcgpr;
+    GetPosition(vcgpr);
+
+    // Set pose for our response
+    Pose *myPose = response->mutable_pose();
+    myPose->set_x(vcgpr->x);
+    myPose->set_y(vcgpr->y);
+    myPose->set_z(vcgpr->z);
+
+    // Set extra for our response (currently stores quaternion)
+    google::protobuf::Struct *q;
+    google::protobuf::Struct *extra = response->mutable_extra();
+    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
+    q->mutable_fields()->operator[]("real").set_number_value(vcgpr->real);
+    q->mutable_fields()->operator[]("imag").set_number_value(vcgpr->imag);
+    q->mutable_fields()->operator[]("jmag").set_number_value(vcgpr->jmag);
+    q->mutable_fields()->operator[]("kmag").set_number_value(vcgpr->kmag);
+
+    // Set component_reference for our response
+    response->set_component_reference(vcgpr->component_reference);
+
     return grpc::Status::OK;
 }
 
@@ -160,7 +180,7 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-int SLAMServiceImpl::GetPosition(GetPositionResponse *response) {
+int SLAMServiceImpl::GetPosition(viam_carto_get_position_response *response) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
@@ -170,23 +190,17 @@ int SLAMServiceImpl::GetPosition(GetPositionResponse *response) {
     auto pos_vector = global_pose.translation();
     auto pos_quat = global_pose.rotation();
 
-    // Set pose for our response
-    Pose *myPose = response->mutable_pose();
-    myPose->set_x(pos_vector.x());
-    myPose->set_y(pos_vector.y());
-    myPose->set_z(pos_vector.z());
-
-    // Set extra for our response (currently stores quaternion)
-    google::protobuf::Struct *q;
-    google::protobuf::Struct *extra = response->mutable_extra();
-    q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("real").set_number_value(pos_quat.w());
-    q->mutable_fields()->operator[]("imag").set_number_value(pos_quat.x());
-    q->mutable_fields()->operator[]("jmag").set_number_value(pos_quat.y());
-    q->mutable_fields()->operator[]("kmag").set_number_value(pos_quat.z());
+    response->x = pos_vector.x();
+    response->y = pos_vector.y();
+    response->z = pos_vector.z();
+    
+    response->real = pos_quat.w();
+    response->imag = pos_quat.x();
+    response->jmag = pos_quat.y();
+    response->kmag = pos_quat.z();
 
     // Set component_reference for our response
-    response->set_component_reference(camera_name);
+    response->component_reference = const_cast<char*>(camera_name.c_str());
 
     return 0;
 }

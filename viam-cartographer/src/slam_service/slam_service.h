@@ -22,6 +22,35 @@
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
 
+
+// GetPositionResponse
+typedef struct viam_carto_get_position_response {
+  // millimeters from the origin
+  double x;
+  // millimeters from the origin
+  double y;
+  // millimeters from the origin
+  double z;
+  // z component of a vector defining axis of rotation
+  double o_x;
+  // x component of a vector defining axis of rotation
+  double o_y;
+  // y component of a vector defining axis of rotation
+  double o_z;
+  // degrees
+  double theta;
+
+  // Quaternian information
+  double real;
+  double imag;
+  double jmag;
+  double kmag;
+
+  char* component_reference;
+  // TODO: Need to also return quat information as the spaital math exists only
+  // on the go side
+} viam_carto_get_position_response;
+
 using google::protobuf::Struct;
 using grpc::ServerContext;
 using grpc::ServerWriter;
@@ -191,7 +220,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     void ProcessDataAndStartSavingMaps(double data_cutoff_time);
 
     // GetPosition gets position in the format needed for the C API
-    int GetPosition(GetPositionResponse *response);
+    int GetPosition(viam_carto_get_position_response *reponse);
 
     // SetUpMapBuilder loads the lua file with default cartographer config
     // parameters depending on the action mode. Setting the correct action
