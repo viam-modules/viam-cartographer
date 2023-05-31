@@ -57,7 +57,7 @@ std::atomic<bool> b_continue_session{true};
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
     viam_carto_get_position_response vcgpr;
-GetPosition(&vcgpr);
+    GetPosition(&vcgpr);
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
