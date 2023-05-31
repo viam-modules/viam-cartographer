@@ -540,8 +540,8 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
         // loop over and count the number of actual data files in the data
         // directory.
         if (file_list_offline.size() > 2) {
-            // If the current file is the last in the file list, we skip it,
-            // since it's possible it's still being written to.
+            // If the current file is the last in the file list, we don't return
+            // it yet, since it's possible it's still being written to.
             if (current_file_offline != file_list_offline.size() - 1) {
                 const auto to_return = file_list_offline[current_file_offline];
                 current_file_offline++;
@@ -549,13 +549,8 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
             }
         }
 
-        // Sleep for a short period of time if we didn't find any files. This is
-        // to prevent cartographer from using up too much CPU in this loop when
-        // there's no new data coming in.
-        std::this_thread::sleep_for(data_rate_ms);
-
         // This log line is needed by rdk integration tests.
-        VLOG(1) << "No more data available";
+        VLOG(1) << "No new data found";
     }
     return "";
 }
