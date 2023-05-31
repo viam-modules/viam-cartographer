@@ -3,7 +3,7 @@
 
 #include <cmath>
 
-#include "../src/io/color.h"
+#include "color.h"
 #include "cartographer/common/port.h"
 #include "glog/logging.h"
 

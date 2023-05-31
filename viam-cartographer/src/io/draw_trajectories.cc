@@ -1,5 +1,5 @@
 // This is an experimental integration of cartographer into RDK.
-#include "../src/io/draw_trajectories.h"
+#include "draw_trajectories.h"
 
 #include "cartographer/io/image.h"
 #include "cartographer/transform/transform.h"
