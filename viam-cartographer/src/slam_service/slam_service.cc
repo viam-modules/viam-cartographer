@@ -57,25 +57,25 @@ std::atomic<bool> b_continue_session{true};
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
     viam_carto_get_position_response vcgpr;
-    GetPosition(&vcgpr);
+GetPosition(&vcgpr);
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
-    myPose->set_x(vcgpr->x);
-    myPose->set_y(vcgpr->y);
-    myPose->set_z(vcgpr->z);
+    myPose->set_x(vcgpr.x);
+    myPose->set_y(vcgpr.y);
+    myPose->set_z(vcgpr.z);
 
     // Set extra for our response (currently stores quaternion)
     google::protobuf::Struct *q;
     google::protobuf::Struct *extra = response->mutable_extra();
     q = extra->mutable_fields()->operator[]("quat").mutable_struct_value();
-    q->mutable_fields()->operator[]("real").set_number_value(vcgpr->real);
-    q->mutable_fields()->operator[]("imag").set_number_value(vcgpr->imag);
-    q->mutable_fields()->operator[]("jmag").set_number_value(vcgpr->jmag);
-    q->mutable_fields()->operator[]("kmag").set_number_value(vcgpr->kmag);
+    q->mutable_fields()->operator[]("real").set_number_value(vcgpr.real);
+    q->mutable_fields()->operator[]("imag").set_number_value(vcgpr.imag);
+    q->mutable_fields()->operator[]("jmag").set_number_value(vcgpr.jmag);
+    q->mutable_fields()->operator[]("kmag").set_number_value(vcgpr.kmag);
 
     // Set component_reference for our response
-    response->set_component_reference(vcgpr->component_reference);
+    response->set_component_reference(vcgpr.component_reference);
 
     return grpc::Status::OK;
 }
