@@ -3,7 +3,22 @@
 
 namespace viam {
 namespace carto_facade {
-int CartoFacade::GetPosition(viam_carto_get_position_response *r) { return 0; };
+int CartoFacade::GetPosition(viam_carto_get_position_response *r) { 
+    bstring cr = bfromcstr("C++ component reference");
+    r->x = 100;
+    r->y = 200;
+    r->z = 300;
+    r->o_x = 400;
+    r->o_y = 500;
+    r->o_z = 600;
+    r->imag = 700;
+    r->jmag = 800;
+    r->kmag = 900;
+    r->theta = 1000;
+    r->real = 1100;
+    r->component_reference = cr;
+    return 0;
+};
 
 int CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
     return 0;
