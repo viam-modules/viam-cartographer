@@ -40,7 +40,7 @@ jobs:
             git status
             
         else
-            echo "no updates needed"
+            echo "No dependency updates needed"
             exit 1
         fi
 
