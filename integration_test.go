@@ -46,8 +46,8 @@ func testCartographerMap(t *testing.T, svc slam.Service) {
 
 // Checks the cartographer position within a defined tolerance.
 func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentRef string) {
-	expectedPos := r3.Vector{X: -0.004, Y: -0.004, Z: 0}
-	tolerancePos := 0.04
+	expectedPos := r3.Vector{X: -4, Y: -4, Z: 0}
+	tolerancePos := 40.0
 	expectedOri := &spatialmath.R4AA{Theta: 0, RX: 0, RY: 0, RZ: -1}
 	toleranceOri := 0.5
 
