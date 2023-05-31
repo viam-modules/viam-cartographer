@@ -37,7 +37,7 @@ typedef struct viam_carto_get_position_response {
   double jmag;
   double kmag;
 
-  const char *component_reference;
+  bstring component_reference;
   // TODO: Need to also return quat information as the spaital math exists only
   // on the go side
 } viam_carto_get_position_response;
@@ -101,13 +101,12 @@ typedef struct viam_carto_config {
 
 // viam_carto_init/4 takes a null viam_carto pointer and a viam_carto_config, a
 // viam_carto_algo_config, and empty errmsg
-//
 // On error: Returns a non 0 error code and mutates
 // errmsg with a string that contains an informative error message
 //
 // On success: Returns 0 & mutates viam_carto to contain handle to
 // initialized carto object
-int viam_carto_init(viam_carto **vc,                 // OUT
+int viam_carto_init(const viam_carto **vc,           // OUT
                     const viam_carto_config c,       //
                     const viam_carto_algo_config ac, //
                     char **errmsg                    // OUT
@@ -119,8 +118,8 @@ int viam_carto_init(viam_carto **vc,                 // OUT
 // errmsg with a string that contains an informative error message
 //
 // On success: Returns 0, starts cartographer
-int viam_carto_start(viam_carto **vc, // OUT
-                     char **errmsg    // OUT
+int viam_carto_start(const viam_carto **vc, // OUT
+                     char **errmsg          // OUT
 );
 
 // viam_carto_stop/2 takes a viam_carto pointer and an empty errmsg
@@ -129,8 +128,8 @@ int viam_carto_start(viam_carto **vc, // OUT
 // errmsg with a string that contains an informative error message
 //
 // On success: Returns 0, stops work begun by viam_carto_start()
-int viam_carto_stop(viam_carto **vc, // OUT
-                    char **errmsg    // OUT
+int viam_carto_stop(const viam_carto **vc, // OUT
+                    char **errmsg          // OUT
 );
 
 // viam_carto_stop/2 takes a viam_carto pointer and an empty errmsg
@@ -140,8 +139,8 @@ int viam_carto_stop(viam_carto **vc, // OUT
 //
 // On success: Returns 0, frees all resources aquired by
 // viam_carto_init/4
-int viam_carto_terminate(viam_carto **vc, //
-                         char **errmsg    // OUT
+int viam_carto_terminate(const viam_carto **vc, //
+                         char **errmsg          // OUT
 );
 
 // viam_carto_add_sensor_reading/3 takes a viam_carto pointer, a

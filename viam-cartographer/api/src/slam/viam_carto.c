@@ -9,7 +9,7 @@
 #include <string.h>
 #include <unistd.h>
 
-int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
+int viam_carto_init(const viam_carto **ppVC, const viam_carto_config c,
                     const viam_carto_algo_config ac, char **errmsg) {
   UNUSED(ac);
   if (ppVC == NULL) {
@@ -42,7 +42,7 @@ int viam_carto_init(viam_carto **ppVC, const viam_carto_config c,
   return VIAM_CARTO_SUCCESS;
 };
 
-int viam_carto_terminate(viam_carto **ppVC, char **errmsg) {
+int viam_carto_terminate(const viam_carto **ppVC, char **errmsg) {
   UNUSED(errmsg);
   int i = 0;
   int rc = BSTR_OK;
@@ -58,17 +58,17 @@ int viam_carto_terminate(viam_carto **ppVC, char **errmsg) {
   free((*ppVC)->sensors);
   // TODO: Error handling
   carto_facade_delete((*ppVC)->carto_obj);
-  free(*ppVC);
+  free((viam_carto *)*ppVC);
   return return_code;
 };
 
-int viam_carto_start(viam_carto **ppVC, char **errmsg) {
+int viam_carto_start(const viam_carto **ppVC, char **errmsg) {
   UNUSED(ppVC);
   UNUSED(errmsg);
   return VIAM_CARTO_SUCCESS;
 };
 
-int viam_carto_stop(viam_carto **ppVC, char **errmsg) {
+int viam_carto_stop(const viam_carto **ppVC, char **errmsg) {
   return VIAM_CARTO_SUCCESS;
   UNUSED(ppVC);
   UNUSED(errmsg);
@@ -93,16 +93,26 @@ int viam_carto_add_sensor_reading_destroy(viam_carto_sensor_reading *sr,
 int viam_carto_get_position(const viam_carto **ppVC,
                             viam_carto_get_position_response *r,
                             char **errmsg) {
-  UNUSED(ppVC);
-  UNUSED(r);
   UNUSED(errmsg);
+  viam_carto_get_position_response gpr =
+      carto_facade_get_position((*ppVC)->carto_obj);
+  *r = gpr;
   return VIAM_CARTO_SUCCESS;
 };
+
 int viam_carto_get_position_response_destroy(
     viam_carto_get_position_response *r, char **errmsg) {
-  UNUSED(r);
   UNUSED(errmsg);
+  int return_code = VIAM_CARTO_SUCCESS;
+  int rc = BSTR_OK;
+  rc = bdestroy(r->component_reference);
+  if (rc != BSTR_OK) {
+    // TODO: Write error messages
+    return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+  }
+  r->component_reference = NULL;
   return VIAM_CARTO_SUCCESS;
+  return return_code;
 };
 
 int viam_carto_get_point_cloud_map(const viam_carto **ppVC,

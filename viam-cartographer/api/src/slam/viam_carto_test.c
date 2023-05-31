@@ -12,7 +12,7 @@ static char *all_tests();
 
 static char *test_viam_carto_init() {
   // setup
-  viam_carto *vc;
+  const viam_carto *vc;
 
   // setup sensors list
   int sensors_len = 5;
@@ -55,6 +55,7 @@ static char *test_viam_carto_init() {
 
   // init
   char *errmsg = NULL;
+
   int rc = viam_carto_init(&vc, c, ac, &errmsg);
   mu_assert("error, rc != 0", rc == 0);
   mu_assert("error, errmsg != NULL", errmsg == NULL);
@@ -76,6 +77,29 @@ static char *test_viam_carto_init() {
     mu_assert("error, rc != BSTR_OK", rc == BSTR_OK);
   }
   free(sensors);
+  // get position
+  viam_carto_get_position_response r;
+  rc = viam_carto_get_position(&vc, &r, &errmsg);
+  mu_assert("error, viam_carto_get_position rc != 0", rc == 0);
+  bstring cr = bfromcstr("C++ component reference");
+  mu_assert("error, r.x != 100", r.x == 100);
+  mu_assert("error, r.y != 200", r.y == 200);
+  mu_assert("error, r.z != 300", r.z == 300);
+  mu_assert("error, r.o_x != 400", r.o_x == 400);
+  mu_assert("error, r.o_y != 500", r.o_y == 500);
+  mu_assert("error, r.o_z != 600", r.o_z == 600);
+  mu_assert("error, r.imag != 700", r.imag == 700);
+  mu_assert("error, r.jmag != 800", r.jmag == 800);
+  mu_assert("error, r.kmag != 900", r.kmag == 900);
+  mu_assert("error, r.theta != 1000", r.theta == 1000);
+  mu_assert("error, r.real != 1100", r.real == 1100);
+  mu_assert("error, biseq(r.component_reference, cr) != 1",
+            biseq(r.component_reference, cr) == 1);
+
+  bdestroy(cr);
+
+  rc = viam_carto_get_position_response_destroy(&r, &errmsg);
+  mu_assert("error, viam_carto_get_position_response_destroy rc != 0", rc == 0);
 
   // terminate
   rc = viam_carto_terminate(&vc, &errmsg);

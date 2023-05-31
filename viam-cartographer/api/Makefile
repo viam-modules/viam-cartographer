@@ -15,6 +15,8 @@ carto-test-c-valgrind: carto-test-c-build
 carto-test-c-gdb: carto-test-c-build
 	gdb --batch --ex run --ex bt --ex q --args bin/viam-carto-test-c
 
+setup-debug:
+	sudo apt install valgrind gdb
 
 clean:
 	rm -rf bin
@@ -34,10 +36,10 @@ carto-test-c-build: build-setup
 	gcc $(GCC_BSTRING_WARNINGS)  -c src/slam/bstrlib.c  -o build/bstrlib.o
 	# archive bstrlib static library
 	ar rcs build/libbstrlib.a build/bstrlib.o
-	# compile carto_facade c interface
-	gcc $(GCC_WARNINGS) -c src/slam/carto_facade.c -o build/carto_facade.o
 	# compile carto_facade c++ interface
 	gcc $(GPP_WARNINGS) -c src/slam/carto_facade_cpp.cpp -o build/carto_facade_cpp.o
+	# compile carto_facade c interface
+	gcc $(GCC_WARNINGS) -c src/slam/carto_facade.c -o build/carto_facade.o
 	# make archive containing both C & CPP code
 	ar rcs build/libcarto_facade.a build/carto_facade_cpp.o build/carto_facade.o
 	# compile viam_carto
