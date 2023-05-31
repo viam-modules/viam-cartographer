@@ -16,6 +16,7 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	pb "go.viam.com/api/service/slam/v1"
+	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/services/slam/grpchelper"
@@ -296,6 +297,14 @@ func (cartoSvc *cartographerService) StartDataProcess(
 			}
 		}
 	})
+}
+
+func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	if _, ok := req["feature_flag"]; ok {
+		featureFlags := map[string]interface{}{"response_in_millimeters": true}
+		return featureFlags, nil
+	}
+	return nil, viamgrpc.UnimplementedError
 }
 
 // Close out of all slam related processes.
