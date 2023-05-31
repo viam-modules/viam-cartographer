@@ -89,57 +89,23 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     ServerWriter<GetPointCloudMapResponse> *writer) {
-    std::string pointcloud_map;
-    // Write or grab the latest pointcloud map in form of a string
-    try {
-        std::shared_lock optimization_lock{optimization_shared_mutex,
-                                           std::defer_lock};
-        if (action_mode != ActionMode::LOCALIZING &&
-            optimization_lock.try_lock()) {
-            // We are able to lock the optimization_shared_mutex, which means
-            // that the optimization is not ongoing and we can grab the newest
-            // map
-            GetLatestSampledPointCloudMapString(pointcloud_map);
-            std::lock_guard<std::mutex> lk(viam_response_mutex);
-            latest_pointcloud_map = pointcloud_map;
-        } else {
-            // Either we are in localization mode or we couldn't lock the mutex
-            // which means the optimization process locked it and we need to use
-            // the backed up latest map
-            if (action_mode == ActionMode::LOCALIZING) {
-                LOG(INFO)
-                    << "In localization mode, using cached pointcloud map";
-            } else {
-                LOG(INFO)
-                    << "Optimization is occuring, using cached pointcloud map";
-            }
-            std::lock_guard<std::mutex> lk(viam_response_mutex);
-            pointcloud_map = latest_pointcloud_map;
-        }
-    } catch (std::exception &e) {
-        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
-                   << e.what();
-        std::terminate();
-    }
+    
+    viam_carto_get_point_cloud_map_response vcgpcmr;
+    int status = GetPointCloudMapC(&vcgpcmr);
 
-    if (pointcloud_map.empty()) {
-        LOG(ERROR) << "map pointcloud does not have points yet";
+    if (status == 1) {
         return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                            "map pointcloud does not have points yet");
+                                    "map pointcloud does not have points yet");
     }
 
-    std::string pcd_chunk;
     GetPointCloudMapResponse response;
-    for (int start_index = 0; start_index < pointcloud_map.size();
-         start_index += maximumGRPCByteChunkSize) {
-        pcd_chunk =
-            pointcloud_map.substr(start_index, maximumGRPCByteChunkSize);
-        response.set_point_cloud_pcd_chunk(pcd_chunk);
-        bool ok = writer->Write(response);
-        if (!ok)
-            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                "error while writing to stream: stream closed");
-    }
+    std::string point_cloud_pcd_string("hello");
+    response.set_point_cloud_pcd_chunk(point_cloud_pcd_string);
+    bool ok = writer->Write(response);
+    if (!ok)
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                        "error while writing to stream: stream closed");;
+
     return grpc::Status::OK;
 }
 
@@ -184,6 +150,55 @@ std::atomic<bool> b_continue_session{true};
     }
 
     return grpc::Status::OK;
+}
+
+int SLAMServiceImpl::GetPointCloudMapC(viam_carto_get_point_cloud_map_response *response) {
+    std::string pointcloud_map;
+    // Write or grab the latest pointcloud map in form of a string
+    try {
+        std::shared_lock optimization_lock{optimization_shared_mutex,
+                                           std::defer_lock};
+        if (action_mode != ActionMode::LOCALIZING &&
+            optimization_lock.try_lock()) {
+            // We are able to lock the optimization_shared_mutex, which means
+            // that the optimization is not ongoing and we can grab the newest
+            // map
+            GetLatestSampledPointCloudMapString(pointcloud_map);
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_pointcloud_map = pointcloud_map;
+        } else {
+            // Either we are in localization mode or we couldn't lock the mutex
+            // which means the optimization process locked it and we need to use
+            // the backed up latest map
+            if (action_mode == ActionMode::LOCALIZING) {
+                LOG(INFO)
+                    << "In localization mode, using cached pointcloud map";
+            } else {
+                LOG(INFO)
+                    << "Optimization is occuring, using cached pointcloud map";
+            }
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            pointcloud_map = latest_pointcloud_map;
+        }
+    } catch (std::exception &e) {
+        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
+                   << e.what();
+        std::terminate();
+    }
+
+    if (pointcloud_map.empty()) {
+        LOG(ERROR) << "map pointcloud does not have points yet";
+        return 1;
+    }
+
+    std::string pcd_chunk;
+    for (int start_index = 0; start_index < pointcloud_map.size();
+         start_index += maximumGRPCByteChunkSize) {
+        pcd_chunk =
+            pointcloud_map.substr(start_index, maximumGRPCByteChunkSize);
+        response->point_cloud_pcd = bfromcstr(pcd_chunk.c_str());
+    }
+    return 0;
 }
 
 void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,

@@ -2,6 +2,8 @@
 #ifndef SLAM_SERVICE_H_
 #define SLAM_SERVICE_H_
 
+#include "bstrlib.h"
+#include "bstrwrap.h"
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_context.h>
@@ -21,6 +23,10 @@
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
+
+typedef struct viam_carto_get_point_cloud_map_response {
+  bstring point_cloud_pcd;
+} viam_carto_get_point_cloud_map_response;
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
@@ -219,6 +225,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // beginning to process data. If cartographer fails to do this,
     // terminate the program.
     void CacheMapInLocalizationMode();
+
+    // GetPointCloudMap is a c compatible function
+    int GetPointCloudMapC(viam_carto_get_point_cloud_map_response *response);
 
     ActionMode action_mode = ActionMode::MAPPING;
 
