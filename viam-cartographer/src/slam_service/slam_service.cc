@@ -56,7 +56,7 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
-    viam_carto_get_position_response* vcgpr;
+    viam_carto_get_position_response *vcgpr;
     GetPosition(vcgpr);
 
     // Set pose for our response
@@ -193,14 +193,14 @@ int SLAMServiceImpl::GetPosition(viam_carto_get_position_response *response) {
     response->x = pos_vector.x();
     response->y = pos_vector.y();
     response->z = pos_vector.z();
-    
+
     response->real = pos_quat.w();
     response->imag = pos_quat.x();
     response->jmag = pos_quat.y();
     response->kmag = pos_quat.z();
 
     // Set component_reference for our response
-    response->component_reference = const_cast<char*>(camera_name.c_str());
+    response->component_reference = const_cast<char *>(camera_name.c_str());
 
     return 0;
 }
