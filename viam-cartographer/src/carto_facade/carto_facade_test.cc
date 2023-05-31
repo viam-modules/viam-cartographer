@@ -12,8 +12,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     CartoFacade c;
     viam_carto_get_position_response r;
     BOOST_TEST(c.GetPosition(&r) == 0);
-    // should leak
-    new CartoFacade;
 }
 
 BOOST_AUTO_TEST_SUITE_END()
