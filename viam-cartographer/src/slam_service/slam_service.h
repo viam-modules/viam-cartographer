@@ -93,6 +93,10 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // signaled.
     std::string GetNextDataFileOffline();
 
+    // GetNextDataFileOfflineHelper is a helper function used to test
+    // GetNextDataFileOffline
+    std::string GetNextDataFileOfflineHelper();
+
     // GetNextDataFileOnline returns the most recently generated data that has
     // not been been processed, blocking if no new file is found. Returns an
     // empty string if stop has been signaled.

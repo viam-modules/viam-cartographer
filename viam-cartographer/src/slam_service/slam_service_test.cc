@@ -343,6 +343,26 @@ BOOST_AUTO_TEST_CASE(GetNextDataFileOffline) {
     utils::removeTmpDirectory(tmp_dir);
 }
 
+BOOST_AUTO_TEST_CASE(GetNextDataFileOfflineHelper_not_enough_data) {
+    SLAMServiceImpl slamService;
+
+    // Create a temp directory that does not contain enough data files for
+    // mapping
+    std::vector<std::string> data_files{
+        "rplidar_data_2022-02-11T01:45:47.0764Z.pcd",
+        "rplidar_data_2022-02-11T01:46:41.4989Z.pcd"};
+    std::vector<std::string> map_files{};
+    // Create a unique path in the temp directory and add the files
+    boost::filesystem::path tmp_dir =
+        utils::createTmpDirectoryAndAddFiles(data_files, map_files);
+    slamService.path_to_data = tmp_dir.string() + "/data";
+
+    BOOST_TEST(slamService.GetNextDataFileOfflineHelper() == "");
+
+    // Remove the temporary directory and its contents
+    utils::removeTmpDirectory(tmp_dir);
+}
+
 BOOST_AUTO_TEST_CASE(GetNextDataFileOnline) {
     SLAMServiceImpl slamService;
 

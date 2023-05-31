@@ -527,31 +527,39 @@ void SLAMServiceImpl::RunSLAM() {
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
     while (b_continue_session) {
-        if (file_list_offline.size() - current_file_offline <= 2) {
-            file_list_offline =
-                viam::io::ListSortedFilesInDirectory(path_to_data);
-        }
-        // We're setting the minimum required files to be two for the following
-        // reasons:
-        // 1. Cartographer needs at least two PCD files to work properly.
-        // 2. A .DS_Store file is frequently added to the data directory when
-        // a user opens the directory on osx.
-        // Expecting a minimum of 3 files solves both problems without having to
-        // loop over and count the number of actual data files in the data
-        // directory.
-        if (file_list_offline.size() > 2) {
-            // If the current file is the last in the file list, we don't return
-            // it yet, since it's possible it's still being written to.
-            if (current_file_offline != file_list_offline.size() - 1) {
-                const auto to_return = file_list_offline[current_file_offline];
-                current_file_offline++;
-                return to_return;
-            }
+        const std::string file_name = GetNextDataFileOfflineHelper();
+        if (file_name != "") {
+            return file_name;
         }
 
         // This log line is needed by rdk integration tests.
         VLOG(1) << "No new data found";
     }
+    return "";
+}
+
+std::string SLAMServiceImpl::GetNextDataFileOfflineHelper() {
+    if (file_list_offline.size() - current_file_offline <= 2) {
+        file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
+    }
+    // We're setting the minimum required files to be two for the following
+    // reasons:
+    // 1. Cartographer needs at least two PCD files to work properly.
+    // 2. A .DS_Store file is frequently added to the data directory when
+    // a user opens the directory on osx.
+    // Expecting a minimum of 3 files solves both problems without having to
+    // loop over and count the number of actual data files in the data
+    // directory.
+    if (file_list_offline.size() > 2) {
+        // If the current file is the last in the file list, we don't return
+        // it yet, since it's possible it's still being written to.
+        if (current_file_offline != file_list_offline.size() - 1) {
+            const auto to_return = file_list_offline[current_file_offline];
+            current_file_offline++;
+            return to_return;
+        }
+    }
+
     return "";
 }
 
