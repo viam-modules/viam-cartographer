@@ -5,11 +5,16 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include "glog/logging.h"
 
 namespace viam {
 
 enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
 std::ostream& operator<<(std::ostream& os, const ActionMode& action_mode);
+
+extern std::atomic<bool> b_continue_session;
+
+void exit_loop_handler(int s);
 
 namespace utils {
 

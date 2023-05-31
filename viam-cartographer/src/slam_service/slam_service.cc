@@ -6,6 +6,10 @@
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
 #include <string>
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/server_builder.h>
+#include "glog/logging.h"
+#include <signal.h>
 
 #include "../io/file_handler.h"
 #include "../mapping/map_builder.h"
@@ -16,6 +20,7 @@
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
+#include "config.h"
 
 namespace {
 // Number of bytes in a pixel
@@ -214,6 +219,48 @@ void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,
         error_forwarded << "Failed to delete " << filename;
         throw std::runtime_error(error_forwarded.str());
     }
+}
+
+void SLAMServiceImpl::Init(int argc, char** argv) {
+    // glog only supports logging to files and stderr, not stdout.
+    FLAGS_logtostderr = 1;
+    google::InitGoogleLogging(argv[0]);
+    struct sigaction sigHandler;
+
+    sigHandler.sa_handler = viam::exit_loop_handler;
+    sigemptyset(&sigHandler.sa_mask);
+    sigHandler.sa_flags = 0;
+
+    sigaction(SIGTERM, &sigHandler, NULL);
+    sigaction(SIGINT, &sigHandler, NULL);
+
+    static_assert((sizeof(float) == 4) && (CHAR_BIT == 8) && (sizeof(int) == 4),
+                  "32 bit float & 8 bit char & 32 bit int is assumed");
+
+    viam::config::ParseAndValidateConfigParams(argc, argv, this);
+}
+
+std::unique_ptr<grpc::Server> SLAMServiceImpl::Start() {
+    // Setup the SLAM gRPC server
+    grpc::ServerBuilder builder;
+
+    std::unique_ptr<int> selected_port = std::make_unique<int>(0);
+    builder.AddListeningPort(port,
+                             grpc::InsecureServerCredentials(),
+                             selected_port.get());
+    // Increasing the gRPC max message size from the default value of 4MB to
+    // 32MB, to match the limit that is set in RDK. This is necessary for
+    // transmitting large pointclouds.
+    builder.SetMaxSendMessageSize(viam::maximumGRPCByteLimit);
+    builder.RegisterService(this);
+
+    // Start the SLAM gRPC server
+    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+
+    // This log line is needed by rdk to get the port.
+    LOG(INFO) << "Server listening on " << *selected_port << "\n";
+
+    return server;
 }
 
 std::string SLAMServiceImpl::TryFileClose(std::ifstream &tempFile,

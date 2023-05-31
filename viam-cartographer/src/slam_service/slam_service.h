@@ -50,7 +50,6 @@ static const double resolutionMeters = 0.05;
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
 
-extern std::atomic<bool> b_continue_session;
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
@@ -78,6 +77,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
     ::grpc::Status GetInternalState(
         ServerContext *context, const GetInternalStateRequest *request,
         ServerWriter<GetInternalStateResponse> *writer) override;
+
+    // Init initializes non-IO bound and inexpensive operations
+    void Init(int argc, char** argv);
+
+    // Start initializes IO-bound and expensive operations
+    std::unique_ptr<grpc::Server> Start();
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating

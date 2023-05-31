@@ -8,6 +8,11 @@
 
 namespace viam {
 
+void exit_loop_handler(int s) {
+    LOG(INFO) << "Finishing session.";
+    viam::b_continue_session = false;
+}
+
 std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
     std::string action_mode_str;
     if (action_mode == ActionMode::MAPPING) {
