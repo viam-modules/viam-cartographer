@@ -23,8 +23,8 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v3
-      id: gobump
     - name: Update go dependencies
+      id: gobump
       run: |
         sudo chown -R testbot .
         sudo -u testbot bash -lc 'go get -u .'
@@ -33,9 +33,6 @@ jobs:
         if [ -n "$GEN_DIFF" ]; then
             echo "::set-output name=needs_pr::true"
         fi
-    - name: check steps.gobump.outputs.needs_pr
-      run: echo ${{ steps.gobump.outputs.needs_pr }}
-
     - name: Add + Commit + Open PR
       if: steps.gobump.outputs.needs_pr == 'true'
       uses: peter-evans/create-pull-request@v5
