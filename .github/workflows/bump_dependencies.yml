@@ -44,4 +44,4 @@ jobs:
           delete-branch: true
           base: main
           title: Automated Go Dependencies Update
-          body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging          
+          body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging.
