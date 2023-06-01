@@ -91,6 +91,10 @@ test-cpp:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
 
 # Linux only
+setup-cpp-full-mod: 
+	sudo apt install -y valgrind gdb
+
+# Linux only
 test-cpp-full-mod-valgrind: build
 	valgrind --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
 
