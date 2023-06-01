@@ -8,6 +8,8 @@ on:
   schedule:
     - cron: '30 17 * * WED' # 12:30 EST on wednesdays
   workflow_dispatch:
+  push:
+    branches: [ 'workflows/update-dependencies' ]
 
 jobs:
   bump-versions:
