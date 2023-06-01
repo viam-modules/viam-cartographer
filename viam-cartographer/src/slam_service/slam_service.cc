@@ -99,12 +99,8 @@ std::atomic<bool> b_continue_session{true};
     }
 
     std::string pcd_chunk;
-    std::string pointcloud_map = std::string(vcgpcmr.point_cloud_pcd.str);
+    std::string pointcloud_map = std::string(vcgpcmr.point_cloud_pcd.str, vcgpcmr.point_cloud_pcd.len);
     GetPointCloudMapResponse response;
-
-    std::ofstream file("pointcloud_map_std_string_2.txt");
-    file << pointcloud_map;
-    file.close();
 
     for (int start_index = 0; start_index < pointcloud_map.size();
          start_index += maximumGRPCByteChunkSize) {
@@ -200,11 +196,6 @@ int SLAMServiceImpl::GetPointCloudMapC(viam_carto_get_point_cloud_map_response *
         LOG(ERROR) << "map pointcloud does not have points yet";
         return 1;
     }
-
-
-    std::ofstream file("pointcloud_map_std_string_1.txt");
-    file << pointcloud_map;
-    file.close();
 
     response->point_cloud_pcd.len = pointcloud_map.length();
     response->point_cloud_pcd.str = pointcloud_map.c_str();
