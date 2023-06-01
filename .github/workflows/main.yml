@@ -6,7 +6,7 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: [ 'main' ]
+    branches: [ 'RSDK-3144-create-carto-facade' ]
     paths-ignore:
       - 'README.md'
     tags:
@@ -19,11 +19,11 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@RSDK-3144-create-carto-facade
 
   appimage:
     needs: test
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@RSDK-3144-create-carto-facade
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
