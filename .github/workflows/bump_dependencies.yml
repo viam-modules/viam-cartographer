@@ -8,7 +8,8 @@ on:
   schedule:
     - cron: '30 17 * * WED' # 12:30 EST on wednesdays
   workflow_dispatch:
-
+  push:
+    branches: [ 'workflows/update-dependencies' ]
 jobs:
   bump-versions:
     name: Bump Package Versions
@@ -29,10 +30,10 @@ jobs:
         GEN_DIFF=$(git status -s)
         
         if [ -n "$GEN_DIFF" ]; then
-            echo "::set-output name=needs_pr::true"
+            echo "needs_pr=1" >> $GITHUB_OUTPUT
         fi
     - name: Add + Commit + Open PR
-      if: steps.gobump.outputs.needs_pr == 'true'
+      if: steps.gobump.outputs.needs_pr == 1
       uses: peter-evans/create-pull-request@v5
       with:
           commit-message: '[WORKFLOW] Updating go dependencies'
