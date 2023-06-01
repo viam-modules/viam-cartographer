@@ -102,6 +102,6 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'sudo go test -v -race -run TestCartographerIntegration'
 
-    - name: Run viam-cartographer full mod valgrind tests
+    - name: make test-cpp-full-mod-valgrind
       run: |
         sudo -u testbot bash -lc 'make test-cpp-full-mod-valgrind'
