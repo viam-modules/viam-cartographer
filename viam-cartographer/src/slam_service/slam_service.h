@@ -205,6 +205,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // called before running slam.
     double SetUpSLAM();
 
+    // SetupGrpcBuilder sets up, starts, and returns the SLAM gRPC server.
+    std::unique_ptr<grpc::Server> SetUpGrpcServer();
+
     // GetLatestPaintedMapSlices paints and returns the current map of
     // Cartographer
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
@@ -235,6 +238,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<std::string> file_list_offline;
     size_t current_file_offline = 0;
     std::string current_file_online;
+    double data_start_time;
 
     // If mutexes map_builder_mutex and optimization_shared_mutex are held
     // concurrently, then optimization_shared_mutex must be taken

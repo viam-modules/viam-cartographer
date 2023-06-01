@@ -241,25 +241,7 @@ void SLAMServiceImpl::Init(int argc, char** argv) {
 }
 
 std::unique_ptr<grpc::Server> SLAMServiceImpl::Start() {
-    // Setup the SLAM gRPC server
-    grpc::ServerBuilder builder;
-
-    std::unique_ptr<int> selected_port = std::make_unique<int>(0);
-    builder.AddListeningPort(port,
-                             grpc::InsecureServerCredentials(),
-                             selected_port.get());
-    // Increasing the gRPC max message size from the default value of 4MB to
-    // 32MB, to match the limit that is set in RDK. This is necessary for
-    // transmitting large pointclouds.
-    builder.SetMaxSendMessageSize(viam::maximumGRPCByteLimit);
-    builder.RegisterService(this);
-
-    // Start the SLAM gRPC server
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-
-    // This log line is needed by rdk to get the port.
-    LOG(INFO) << "Server listening on " << *selected_port << "\n";
-
+    std::unique_ptr<grpc::Server> server = SetUpGrpcServer();
     return server;
 }
 
@@ -562,6 +544,29 @@ double SLAMServiceImpl::SetUpSLAM() {
         CacheMapInLocalizationMode();
     }
     return data_start_time;
+}
+
+std::unique_ptr<grpc::Server> SLAMServiceImpl::SetUpGrpcServer() {
+    // Setup the SLAM gRPC server
+    grpc::ServerBuilder builder;
+
+    std::unique_ptr<int> selected_port = std::make_unique<int>(0);
+    builder.AddListeningPort(port,
+                             grpc::InsecureServerCredentials(),
+                             selected_port.get());
+    // Increasing the gRPC max message size from the default value of 4MB to
+    // 32MB, to match the limit that is set in RDK. This is necessary for
+    // transmitting large pointclouds.
+    builder.SetMaxSendMessageSize(viam::maximumGRPCByteLimit);
+    builder.RegisterService(this);
+
+    // Start the SLAM gRPC server
+    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
+
+    // This log line is needed by rdk to get the port.
+    LOG(INFO) << "Server listening on " << *selected_port << "\n";
+
+    return server;
 }
 
 void SLAMServiceImpl::RunSLAM() {
