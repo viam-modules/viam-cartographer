@@ -21,22 +21,19 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v3
-
+      id: gobump
     - name: Update go dependencies
       run: |
         sudo chown -R testbot .
         sudo -u testbot bash -lc 'go get -u .'
         GEN_DIFF=$(git status -s)
-
+        
         if [ -n "$GEN_DIFF" ]; then
-            echo 
-            git status
-        else
-            echo "No dependency updates needed"
-            exit 1
+            echo needs_pr=1 >> $GITHUB_OUTPUT
         fi
 
     - name: Add + Commit + Open PR
+      if: steps.gobump.outputs.needs_pr == 1
       uses: peter-evans/create-pull-request@v5
       with:
           commit-message: '[WORKFLOW] Updating go dependencies'
