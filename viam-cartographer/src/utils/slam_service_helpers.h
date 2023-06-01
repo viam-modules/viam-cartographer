@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+#include <atomic>
 
 #include "glog/logging.h"
 
