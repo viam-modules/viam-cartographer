@@ -23,8 +23,6 @@ extern "C" {
 #endif
 
 typedef struct viam_carto {
-    bstring *sensors;
-    int sensors_len;
     void *carto_obj;
 } viam_carto;
 
@@ -81,8 +79,8 @@ typedef enum viam_carto_MODE {
 } viam_carto_MODE;
 
 typedef enum viam_carto_LIDAR_CONFIG {
-    TWO_D = 0,
-    THREE_D = 1
+    VIAM_CARTO_TWO_D = 0,
+    VIAM_CARTO_THREE_D = 1
 } viam_carto_LIDAR_CONFIG;
 
 // return codes
@@ -116,6 +114,24 @@ typedef struct viam_carto_config {
     viam_carto_MODE mode;
     viam_carto_LIDAR_CONFIG lidar_config;
 } viam_carto_config;
+
+#ifdef __cplusplus
+namespace viam {
+namespace carto_facade {
+typedef struct config {
+    std::vector<std::string> sensors;
+    int map_rate_sec;
+    std::string data_dir;
+    std::string component_reference;
+    viam_carto_MODE mode;
+    viam_carto_LIDAR_CONFIG lidar_config;
+} config;
+
+// function to convert viam_carto_config into  viam::carto_facade::config
+config from_viam_carto_config(viam_carto_config vcc);
+}  // namespace carto_facade
+}  // namespace viam
+#endif
 
 // viam_carto_init/4 takes a null viam_carto pointer and a viam_carto_config, a
 // viam_carto_algo_config, and empty errmsg
@@ -289,6 +305,7 @@ static const double resolutionMeters = 0.05;
 
 class CartoFacade {
    public:
+    CartoFacade(const viam_carto_config c, const viam_carto_algo_config ac);
     // GetPosition returns the relative pose of the robot w.r.t the "origin"
     // of the map, which is the starting point from where the map was initially
     // created along with a component reference.
@@ -304,11 +321,11 @@ class CartoFacade {
     // maximumGRPCByteChunkSize
     int GetInternalState(viam_carto_get_internal_state_response *r);
 
+    int AddSensorReading(viam_carto_sensor_reading *sr);
+
     int Start();
 
     int Stop();
-
-    int AddSensorReading(viam_carto_sensor_reading *sr);
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
@@ -394,6 +411,8 @@ class CartoFacade {
     // double rotation_weight = 1.0;
 
    private:
+    viam::carto_facade::config config;
+    viam_carto_algo_config algo_config;
     // moved from namespace
     // std::atomic<bool> b_continue_session;
     // StartSaveMap starts the map saving process in a separate thread.
