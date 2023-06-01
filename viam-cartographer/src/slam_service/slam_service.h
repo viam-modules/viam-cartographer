@@ -21,6 +21,7 @@
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
+#include <grpcpp/server_builder.h>
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
@@ -78,11 +79,13 @@ class SLAMServiceImpl final : public SLAMService::Service {
         ServerContext *context, const GetInternalStateRequest *request,
         ServerWriter<GetInternalStateResponse> *writer) override;
 
-    // Init initializes non-IO bound and inexpensive operations
+    // Init initializes non-IO bound and inexpensive operations.
+    // It has to be called before calling Start().
     void Init(int argc, char** argv);
 
     // Start initializes IO-bound and expensive operations
-    std::unique_ptr<grpc::Server> Start();
+    // Init(...) has to be called before calling Start().
+    void Start();
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
@@ -238,7 +241,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<std::string> file_list_offline;
     size_t current_file_offline = 0;
     std::string current_file_online;
-    double data_start_time;
+    double data_start_time = 0;
+
+    std::unique_ptr<grpc::Server> slam_server;
 
     // If mutexes map_builder_mutex and optimization_shared_mutex are held
     // concurrently, then optimization_shared_mutex must be taken

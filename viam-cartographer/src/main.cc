@@ -13,7 +13,7 @@
 int main(int argc, char** argv) {
     viam::SLAMServiceImpl slamService;
     slamService.Init(argc, argv);
-    std::unique_ptr<grpc::Server> server = slamService.Start();
+    slamService.Start();
 
     try {
         slamService.RunSLAM();

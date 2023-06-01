@@ -240,9 +240,8 @@ void SLAMServiceImpl::Init(int argc, char** argv) {
     viam::config::ParseAndValidateConfigParams(argc, argv, this);
 }
 
-std::unique_ptr<grpc::Server> SLAMServiceImpl::Start() {
-    std::unique_ptr<grpc::Server> server = SetUpGrpcServer();
-    return server;
+void SLAMServiceImpl::Start() {
+    slam_server = SetUpGrpcServer();
 }
 
 std::string SLAMServiceImpl::TryFileClose(std::ifstream &tempFile,
