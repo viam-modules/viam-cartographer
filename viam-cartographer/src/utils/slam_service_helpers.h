@@ -5,6 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <string>
+
 #include "glog/logging.h"
 
 namespace viam {

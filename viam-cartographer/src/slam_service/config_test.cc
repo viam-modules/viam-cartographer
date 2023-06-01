@@ -12,12 +12,12 @@ BOOST_AUTO_TEST_SUITE(Config)
 void checkParseAndValidateConfigParamsException(int argc, char** argv,
                                                 const std::string& message) {
     SLAMServiceImpl slamService;
-    BOOST_CHECK_EXCEPTION(ParseAndValidateConfigParams(argc, argv, &slamService),
-                          std::runtime_error,
-                          [&message](const std::runtime_error& ex) {
-                              BOOST_CHECK_EQUAL(ex.what(), message);
-                              return true;
-                          });
+    BOOST_CHECK_EXCEPTION(
+        ParseAndValidateConfigParams(argc, argv, &slamService),
+        std::runtime_error, [&message](const std::runtime_error& ex) {
+            BOOST_CHECK_EQUAL(ex.what(), message);
+            return true;
+        });
 }
 
 char** toCharArrayArray(std::vector<std::string>& args) {

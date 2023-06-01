@@ -4,6 +4,7 @@
 
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
+#include <grpcpp/server_builder.h>
 #include <grpcpp/server_context.h>
 
 #include <atomic>
@@ -21,7 +22,6 @@
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
-#include <grpcpp/server_builder.h>
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
@@ -50,7 +50,6 @@ static const double resolutionMeters = 0.05;
 
 // Error log for when no submaps exist
 static const std::string errorNoSubmaps = "No submaps to paint";
-
 
 using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
@@ -81,7 +80,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
 
     // Init initializes non-IO bound and inexpensive operations.
     // Init(...) has to be called before calling Start().
-    void Init(int argc, char** argv);
+    void Init(int argc, char **argv);
 
     // Start initializes IO-bound and expensive operations
     // Init(...) has to be called before calling Start().

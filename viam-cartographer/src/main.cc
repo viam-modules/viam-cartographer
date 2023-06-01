@@ -1,14 +1,12 @@
 // This is an experimental integration of cartographer into RDK.
 
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/server_builder.h>
+
 #include <iostream>
 #include <thread>
 
 #include "slam_service/slam_service.h"
-
-
-
-#include <grpcpp/security/server_credentials.h>
-#include <grpcpp/server_builder.h>
 
 int main(int argc, char** argv) {
     viam::SLAMServiceImpl slamService;

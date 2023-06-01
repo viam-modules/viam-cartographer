@@ -2,7 +2,6 @@
 #ifndef VIAM_CARTOGRAPHER_IO_DRAW_TRAJECTORIES_H_
 #define VIAM_CARTOGRAPHER_IO_DRAW_TRAJECTORIES_H_
 
-#include "color.h"
 #include "cairo/cairo.h"
 #include "cartographer/io/color.h"
 #include "cartographer/io/image.h"
@@ -10,6 +9,7 @@
 #include "cartographer/mapping/proto/trajectory.pb.h"
 #include "cartographer/mapping/trajectory_node.h"
 #include "cartographer/transform/rigid_transform.h"
+#include "color.h"
 
 namespace viam {
 namespace io {

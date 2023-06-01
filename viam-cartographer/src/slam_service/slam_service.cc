@@ -1,15 +1,15 @@
 // This is an experimental integration of cartographer into RDK.
 #include "slam_service.h"
 
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/server_builder.h>
+#include <signal.h>
+
 #include <boost/uuid/uuid.hpp>             // uuid class
 #include <boost/uuid/uuid_generators.hpp>  // generators
 #include <boost/uuid/uuid_io.hpp>
 #include <iostream>
 #include <string>
-#include <grpcpp/security/server_credentials.h>
-#include <grpcpp/server_builder.h>
-#include "glog/logging.h"
-#include <signal.h>
 
 #include "../io/file_handler.h"
 #include "../mapping/map_builder.h"
@@ -19,8 +19,8 @@
 #include "cartographer/io/image.h"
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
-#include "glog/logging.h"
 #include "config.h"
+#include "glog/logging.h"
 
 namespace {
 // Number of bytes in a pixel
@@ -221,7 +221,7 @@ void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,
     }
 }
 
-void SLAMServiceImpl::Init(int argc, char** argv) {
+void SLAMServiceImpl::Init(int argc, char **argv) {
     // glog only supports logging to files and stderr, not stdout.
     FLAGS_logtostderr = 1;
     google::InitGoogleLogging(argv[0]);
@@ -560,8 +560,7 @@ std::unique_ptr<grpc::Server> SLAMServiceImpl::SetUpGrpcServer() {
     grpc::ServerBuilder builder;
 
     std::unique_ptr<int> selected_port = std::make_unique<int>(0);
-    builder.AddListeningPort(port,
-                             grpc::InsecureServerCredentials(),
+    builder.AddListeningPort(port, grpc::InsecureServerCredentials(),
                              selected_port.get());
     // Increasing the gRPC max message size from the default value of 4MB to
     // 32MB, to match the limit that is set in RDK. This is necessary for

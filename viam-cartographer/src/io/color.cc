@@ -3,8 +3,8 @@
 
 #include <cmath>
 
-#include "color.h"
 #include "cartographer/common/port.h"
+#include "color.h"
 #include "glog/logging.h"
 
 namespace viam {
