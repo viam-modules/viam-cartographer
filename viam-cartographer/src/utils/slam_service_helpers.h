@@ -2,10 +2,10 @@
 #ifndef SLAM_SERVICE_HELPER_FUNCTIONS_H_
 #define SLAM_SERVICE_HELPER_FUNCTIONS_H_
 
+#include <atomic>
 #include <chrono>
 #include <iostream>
 #include <string>
-#include <atomic>
 
 #include "glog/logging.h"
 
