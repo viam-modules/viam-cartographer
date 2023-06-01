@@ -21,14 +21,9 @@ jobs:
     steps:
     - name: Check out code
       uses: actions/checkout@v3
-      with:
-        ref: ${{ github.head_ref }}
-        token: ${{ secrets.GIT_ACCESS_TOKEN }}
 
     - name: Update go dependencies
       run: |
-        git init
-        git add .
         sudo chown -R testbot .
         sudo -u testbot bash -lc 'go get -u .'
         GEN_DIFF=$(git status -s)
@@ -36,7 +31,6 @@ jobs:
         if [ -n "$GEN_DIFF" ]; then
             echo 
             git status
-            
         else
             echo "No dependency updates needed"
             exit 1
