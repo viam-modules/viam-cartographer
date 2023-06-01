@@ -241,7 +241,19 @@ void SLAMServiceImpl::Init(int argc, char** argv) {
 }
 
 void SLAMServiceImpl::Start() {
+    LOG(INFO) << "Setting up SLAM gRPC Server";
     slam_server = SetUpGrpcServer();
+    LOG(INFO) << "Setting up cartographer";
+    SetUpSLAM();
+
+    // Prepare the trajectory builder and grab the active trajectory_id
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        // Set TrajectoryBuilder
+        trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
+                                                         {kRangeSensorId});
+        VLOG(1) << "Using trajectory ID: " << trajectory_id;
+    }
 }
 
 std::string SLAMServiceImpl::TryFileClose(std::ifstream &tempFile,
@@ -503,14 +515,13 @@ SLAMServiceImpl::GetLatestPaintedMapSlices() {
     return painted_slices;
 }
 
-double SLAMServiceImpl::SetUpSLAM() {
+void SLAMServiceImpl::SetUpSLAM() {
     // Setting the action mode has to happen before setting up the
     // map builder.
     SetActionMode();
     // Set up and build the MapBuilder
     SetUpMapBuilder();
 
-    double data_start_time = 0;
     if (action_mode == ActionMode::UPDATING ||
         action_mode == ActionMode::LOCALIZING) {
         // Check if there is an apriori map in the path_to_map directory
@@ -534,7 +545,7 @@ double SLAMServiceImpl::SetUpSLAM() {
             map_builder.LoadMapFromFile(
                 latest_map_filename, load_frozen_trajectory, optimize_on_start);
         }
-        data_start_time =
+        data_cutoff_time =
             viam::io::ReadTimeFromTimestamp(latest_map_filename.substr(
                 latest_map_filename.find(viam::io::filename_prefix) +
                     viam::io::filename_prefix.length(),
@@ -542,7 +553,6 @@ double SLAMServiceImpl::SetUpSLAM() {
 
         CacheMapInLocalizationMode();
     }
-    return data_start_time;
 }
 
 std::unique_ptr<grpc::Server> SLAMServiceImpl::SetUpGrpcServer() {
@@ -569,10 +579,8 @@ std::unique_ptr<grpc::Server> SLAMServiceImpl::SetUpGrpcServer() {
 }
 
 void SLAMServiceImpl::RunSLAM() {
-    LOG(INFO) << "Setting up cartographer";
-    double data_start_time = SetUpSLAM();
     LOG(INFO) << "Starting to run cartographer";
-    ProcessDataAndStartSavingMaps(data_start_time);
+    ProcessDataAndStartSavingMaps();
     LOG(INFO) << "Done running cartographer";
 }
 
@@ -698,18 +706,7 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
     }
 }
 
-void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
-    // Prepare the trajectory builder and grab the active trajectory_id
-    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    int trajectory_id;
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        // Set TrajectoryBuilder
-        trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
-                                                         {kRangeSensorId});
-        VLOG(1) << "Using trajectory ID: " << trajectory_id;
-    }
-
+void SLAMServiceImpl::ProcessDataAndStartSavingMaps() {
     LOG(INFO) << "Beginning to add data...";
 
     bool set_start_time = false;
@@ -730,7 +727,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 file.substr(file.find(viam::io::filename_prefix) +
                                 viam::io::filename_prefix.length(),
                             file.find(".pcd")));
-            if (file_time < data_start_time) {
+            if (file_time < data_cutoff_time) {
                 file = GetNextDataFile();
                 continue;
             }

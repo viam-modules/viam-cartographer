@@ -80,16 +80,18 @@ class SLAMServiceImpl final : public SLAMService::Service {
         ServerWriter<GetInternalStateResponse> *writer) override;
 
     // Init initializes non-IO bound and inexpensive operations.
-    // It has to be called before calling Start().
+    // Init(...) has to be called before calling Start().
     void Init(int argc, char** argv);
 
     // Start initializes IO-bound and expensive operations
     // Init(...) has to be called before calling Start().
+    // Start() has to be called before calling RunSLAM().
     void Start();
 
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
     // a new map, updating an apriori map, or localizing on an apriori map.
+    // Start() has to be called before calling RunSLAM().
     void RunSLAM();
 
     // GetNextDataFile returns the next data file to be processed, determined
@@ -191,12 +193,12 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::string TryFileClose(std::ifstream &file, std::string filename);
 
     // ProcessDataAndStartSavingMaps processes the data in the data directory
-    // that is newer than the provided data_cutoff_time
+    // that is newer than the data_cutoff_time
     // and starts the process to save maps in parallel. In offline mode,
     // all data in the directory is processed. In online mode, the most
     // recently generated data is processed until a shutdown signal is
     // received.
-    void ProcessDataAndStartSavingMaps(double data_cutoff_time);
+    void ProcessDataAndStartSavingMaps();
 
     // SetUpMapBuilder loads the lua file with default cartographer config
     // parameters depending on the action mode. Setting the correct action
@@ -206,7 +208,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // SetUpSLAM sets the correct action mode, prepares the map builder and
     // loads the right hyperparameters based on the action mode. Needs to be
     // called before running slam.
-    double SetUpSLAM();
+    void SetUpSLAM();
 
     // SetupGrpcBuilder sets up, starts, and returns the SLAM gRPC server.
     std::unique_ptr<grpc::Server> SetUpGrpcServer();
@@ -241,7 +243,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::vector<std::string> file_list_offline;
     size_t current_file_offline = 0;
     std::string current_file_online;
-    double data_start_time = 0;
+    double data_cutoff_time = 0;
 
     std::unique_ptr<grpc::Server> slam_server;
 
@@ -252,6 +254,8 @@ class SLAMServiceImpl final : public SLAMService::Service {
     std::shared_mutex optimization_shared_mutex;
     std::mutex map_builder_mutex;
     mapping::MapBuilder map_builder;
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
+    int trajectory_id;
 
     std::atomic<bool> finished_processing_offline{false};
     std::thread *thread_save_map_with_timestamp;
