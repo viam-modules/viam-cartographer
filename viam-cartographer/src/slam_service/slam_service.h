@@ -2,8 +2,6 @@
 #ifndef SLAM_SERVICE_H_
 #define SLAM_SERVICE_H_
 
-#include "bstrlib.h"
-#include "bstrwrap.h"
 #include <grpc/grpc.h>
 #include <grpcpp/server.h>
 #include <grpcpp/server_context.h>
@@ -17,6 +15,8 @@
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
+#include "bstrlib.h"
+#include "bstrwrap.h"
 #include "cairo/cairo.h"
 #include "cartographer/io/submap_painter.h"
 #include "common/v1/common.grpc.pb.h"
@@ -25,12 +25,12 @@
 #include "service/slam/v1/slam.pb.h"
 
 typedef struct string_with_null_chars {
-  const char* str;
-  int len;
+    const char *str;
+    int len;
 } string_with_null_chars;
 
 typedef struct viam_carto_get_point_cloud_map_response {
-  string_with_null_chars point_cloud_pcd;
+    string_with_null_chars point_cloud_pcd;
 } viam_carto_get_point_cloud_map_response;
 
 using google::protobuf::Struct;

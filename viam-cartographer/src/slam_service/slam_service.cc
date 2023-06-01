@@ -89,17 +89,17 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetPointCloudMap(
     ServerContext *context, const GetPointCloudMapRequest *request,
     ServerWriter<GetPointCloudMapResponse> *writer) {
-    
     viam_carto_get_point_cloud_map_response vcgpcmr;
     int status = GetPointCloudMapC(&vcgpcmr);
 
     if (status == 1) {
         return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                    "map pointcloud does not have points yet");
+                            "map pointcloud does not have points yet");
     }
 
     std::string pcd_chunk;
-    std::string pointcloud_map = std::string(vcgpcmr.point_cloud_pcd.str, vcgpcmr.point_cloud_pcd.len);
+    std::string pointcloud_map =
+        std::string(vcgpcmr.point_cloud_pcd.str, vcgpcmr.point_cloud_pcd.len);
     GetPointCloudMapResponse response;
 
     for (int start_index = 0; start_index < pointcloud_map.size();
@@ -158,7 +158,8 @@ std::atomic<bool> b_continue_session{true};
     return grpc::Status::OK;
 }
 
-int SLAMServiceImpl::GetPointCloudMapC(viam_carto_get_point_cloud_map_response *response) {
+int SLAMServiceImpl::GetPointCloudMapC(
+    viam_carto_get_point_cloud_map_response *response) {
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     try {
