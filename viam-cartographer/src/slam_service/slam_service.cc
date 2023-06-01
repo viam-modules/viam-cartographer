@@ -237,7 +237,7 @@ void SLAMServiceImpl::Init(int argc, char **argv) {
     static_assert((sizeof(float) == 4) && (CHAR_BIT == 8) && (sizeof(int) == 4),
                   "32 bit float & 8 bit char & 32 bit int is assumed");
 
-    viam::config::ParseAndValidateConfigParams(argc, argv, this);
+    viam::config::ParseAndValidateConfigParams(argc, argv, *this);
 }
 
 void SLAMServiceImpl::Start() {

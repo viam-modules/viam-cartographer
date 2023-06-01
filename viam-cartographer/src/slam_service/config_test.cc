@@ -13,7 +13,7 @@ void checkParseAndValidateConfigParamsException(int argc, char** argv,
                                                 const std::string& message) {
     SLAMServiceImpl slamService;
     BOOST_CHECK_EXCEPTION(
-        ParseAndValidateConfigParams(argc, argv, &slamService),
+        ParseAndValidateConfigParams(argc, argv, slamService),
         std::runtime_error, [&message](const std::runtime_error& ex) {
             BOOST_CHECK_EQUAL(ex.what(), message);
             return true;
@@ -70,7 +70,7 @@ BOOST_AUTO_TEST_CASE(OverwriteCartoConfigParam_invalid_parameter) {
         "{mode=2d," + parameter + "=" + std::to_string(parameter_value) + "}";
     const std::string message =
         "unsupported cartographer config parameter: " + parameter;
-    BOOST_CHECK_EXCEPTION(OverwriteCartoConfigParam(&slamService, parameter),
+    BOOST_CHECK_EXCEPTION(OverwriteCartoConfigParam(slamService, parameter),
                           std::runtime_error,
                           [&message](const std::runtime_error& ex) {
                               BOOST_CHECK_EQUAL(ex.what(), message);
@@ -99,7 +99,7 @@ BOOST_AUTO_TEST_CASE(OverwriteCartoConfigParam_valid_parameters) {
         int parameter_value = x.second;
         slamService.config_params = "{mode=2d," + parameter + "=" +
                                     std::to_string(parameter_value) + "}";
-        OverwriteCartoConfigParam(&slamService, parameter);
+        OverwriteCartoConfigParam(slamService, parameter);
         checkCartoConfigParams<int>(slamService, parameter, parameter_value);
     }
     for (auto const& x : param_value_map_floats) {
@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(OverwriteCartoConfigParam_valid_parameters) {
         int parameter_value = x.second;
         slamService.config_params = "{mode=2d," + parameter + "=" +
                                     std::to_string(parameter_value) + "}";
-        OverwriteCartoConfigParam(&slamService, parameter);
+        OverwriteCartoConfigParam(slamService, parameter);
         checkCartoConfigParams<float>(slamService, parameter, parameter_value);
     }
     for (auto const& x : param_value_map_doubles) {
@@ -115,7 +115,7 @@ BOOST_AUTO_TEST_CASE(OverwriteCartoConfigParam_valid_parameters) {
         int parameter_value = x.second;
         slamService.config_params = "{mode=2d," + parameter + "=" +
                                     std::to_string(parameter_value) + "}";
-        OverwriteCartoConfigParam(&slamService, parameter);
+        OverwriteCartoConfigParam(slamService, parameter);
         checkCartoConfigParams<double>(slamService, parameter, parameter_value);
     }
 }
@@ -212,7 +212,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config) {
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    config::ParseAndValidateConfigParams(argc, argv, &slamService);
+    config::ParseAndValidateConfigParams(argc, argv, slamService);
 
     auto tolerance = boost::test_tools::tolerance(0.00001);
     BOOST_TEST(slamService.path_to_data == "/path/to/data");
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    config::ParseAndValidateConfigParams(argc, argv, &slamService);
+    config::ParseAndValidateConfigParams(argc, argv, slamService);
 
     auto tolerance = boost::test_tools::tolerance(0.00001);
     BOOST_TEST(slamService.path_to_data == "/path/to/data");
@@ -308,7 +308,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.slam_mode == "2d");
     delete argv;
 }
@@ -327,7 +327,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.map_rate_sec.count() ==
                std::chrono::seconds(60).count());
     delete argv;
@@ -347,7 +347,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.data_rate_ms.count() ==
                std::chrono::milliseconds(200).count());
     delete argv;
@@ -364,7 +364,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config_no_camera) {
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.camera_name == "");
     BOOST_TEST(slamService.use_live_data == false);
     delete argv;
@@ -382,7 +382,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == true);
     delete argv;
@@ -400,7 +400,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.use_live_data == true);
     BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
@@ -437,7 +437,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.use_live_data == false);
     BOOST_TEST(slamService.delete_processed_data == false);
     delete argv;
@@ -455,7 +455,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.use_live_data == true);
     delete argv;
 }
@@ -508,7 +508,7 @@ BOOST_AUTO_TEST_CASE(
     int argc = args.size();
     char** argv = toCharArrayArray(args);
     SLAMServiceImpl slamService;
-    ParseAndValidateConfigParams(argc, argv, &slamService);
+    ParseAndValidateConfigParams(argc, argv, slamService);
     BOOST_TEST(slamService.use_live_data == false);
     delete argv;
 }
