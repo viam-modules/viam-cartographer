@@ -24,8 +24,13 @@
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
 
+typedef struct string_with_null_chars {
+  const char* str;
+  int len;
+} string_with_null_chars;
+
 typedef struct viam_carto_get_point_cloud_map_response {
-  bstring point_cloud_pcd;
+  string_with_null_chars point_cloud_pcd;
 } viam_carto_get_point_cloud_map_response;
 
 using google::protobuf::Struct;

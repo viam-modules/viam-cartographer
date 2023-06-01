@@ -98,14 +98,24 @@ std::atomic<bool> b_continue_session{true};
                                     "map pointcloud does not have points yet");
     }
 
+    std::string pcd_chunk;
+    std::string pointcloud_map = std::string(vcgpcmr.point_cloud_pcd.str);
     GetPointCloudMapResponse response;
-    std::string point_cloud_pcd_string("hello");
-    response.set_point_cloud_pcd_chunk(point_cloud_pcd_string);
-    bool ok = writer->Write(response);
-    if (!ok)
-        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
-                                        "error while writing to stream: stream closed");;
 
+    std::ofstream file("pointcloud_map_std_string_2.txt");
+    file << pointcloud_map;
+    file.close();
+
+    for (int start_index = 0; start_index < pointcloud_map.size();
+         start_index += maximumGRPCByteChunkSize) {
+        pcd_chunk =
+            pointcloud_map.substr(start_index, maximumGRPCByteChunkSize);
+        response.set_point_cloud_pcd_chunk(pcd_chunk);
+        bool ok = writer->Write(response);
+        if (!ok)
+            return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                                "error while writing to stream: stream closed");
+    }
     return grpc::Status::OK;
 }
 
@@ -191,13 +201,14 @@ int SLAMServiceImpl::GetPointCloudMapC(viam_carto_get_point_cloud_map_response *
         return 1;
     }
 
-    std::string pcd_chunk;
-    for (int start_index = 0; start_index < pointcloud_map.size();
-         start_index += maximumGRPCByteChunkSize) {
-        pcd_chunk =
-            pointcloud_map.substr(start_index, maximumGRPCByteChunkSize);
-        response->point_cloud_pcd = bfromcstr(pcd_chunk.c_str());
-    }
+
+    std::ofstream file("pointcloud_map_std_string_1.txt");
+    file << pointcloud_map;
+    file.close();
+
+    response->point_cloud_pcd.len = pointcloud_map.length();
+    response->point_cloud_pcd.str = pointcloud_map.c_str();
+
     return 0;
 }
 
