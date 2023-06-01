@@ -529,7 +529,13 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     while (b_continue_session) {
         const std::string file_name = GetNextDataFileOfflineHelper();
         if (file_name != "") {
-            return file_name;
+            if (file_name >= max_file_offline) {
+                max_file_offline = file_name;
+                return file_name;
+            } else {
+                LOG(INFO) << "New file was less than max. New: " << file_name
+                          << " Max: " << max_file_offline;
+            }
         }
 
         // This log line is needed by rdk integration tests.
