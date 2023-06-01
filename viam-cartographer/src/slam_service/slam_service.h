@@ -15,8 +15,6 @@
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
-#include "bstrlib.h"
-#include "bstrwrap.h"
 #include "cairo/cairo.h"
 #include "cartographer/io/submap_painter.h"
 #include "common/v1/common.grpc.pb.h"
