@@ -31,11 +31,11 @@ jobs:
         GEN_DIFF=$(git status -s)
         
         if [ -n "$GEN_DIFF" ]; then
-            echo "needs_pr=1" >> "$GITHUB_OUTPUT"
+            echo "::set-output name=needs_pr::true"
         fi
 
     - name: Add + Commit + Open PR
-      if: steps.gobump.outputs.needs_pr == 1
+      if: steps.gobump.outputs.needs_pr == 'true'
       uses: peter-evans/create-pull-request@v5
       with:
           commit-message: '[WORKFLOW] Updating go dependencies'
