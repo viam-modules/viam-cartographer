@@ -16,6 +16,7 @@
 #include "cartographer/mapping/id.h"
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
+#include "src/carto_facade/carto_facade.h"
 
 namespace {
 // Number of bytes in a pixel
@@ -50,6 +51,14 @@ int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
 }  // namespace
 
 namespace viam {
+
+std::string std_string_from_bstring(bstring b_str) {
+    int len = blength(b_str);
+    char *tmp = bstr2cstr(b_str, 0);
+    std::string std_str(tmp, len);
+    bcstrfree(tmp);
+    return std_str;
+}
 
 std::atomic<bool> b_continue_session{true};
 
@@ -99,7 +108,7 @@ std::atomic<bool> b_continue_session{true};
 
     std::string pcd_chunk;
     std::string pointcloud_map =
-        std::string(vcgpcmr.point_cloud_pcd.str, vcgpcmr.point_cloud_pcd.len);
+        std_string_from_bstring(vcgpcmr.point_cloud_pcd);
 
     std::ofstream out("post_conversion.txt");
     out << pointcloud_map;
@@ -220,8 +229,8 @@ int SLAMServiceImpl::GetPointCloudMapC(
     out2 << pointcloud_map.length();
     out2.close();
 
-    response->point_cloud_pcd.len = pointcloud_map.length();
-    response->point_cloud_pcd.str = pointcloud_map.c_str();
+
+    response->point_cloud_pcd = blk2bstr((const char*)pointcloud_map.c_str(), pointcloud_map.length());
 
     return 0;
 }

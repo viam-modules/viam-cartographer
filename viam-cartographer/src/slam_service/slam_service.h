@@ -21,15 +21,8 @@
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
-
-typedef struct string_with_null_chars {
-    const char *str;
-    int len;
-} string_with_null_chars;
-
-typedef struct viam_carto_get_point_cloud_map_response {
-    string_with_null_chars point_cloud_pcd;
-} viam_carto_get_point_cloud_map_response;
+#include "src/carto_facade/carto_facade.h"
+#include "src/carto_facade/bstrlib.h"
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
