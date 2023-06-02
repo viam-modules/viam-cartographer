@@ -100,6 +100,20 @@ std::atomic<bool> b_continue_session{true};
     std::string pcd_chunk;
     std::string pointcloud_map =
         std::string(vcgpcmr.point_cloud_pcd.str, vcgpcmr.point_cloud_pcd.len);
+
+    std::ofstream out("post_conversion.txt");
+    out << pointcloud_map;
+    out.close();
+
+
+    std::ofstream out2("post_length.txt");
+    out2 << pointcloud_map.length();
+    out2.close();
+
+    std::ofstream out3("point_cloud_pcd_length.txt");
+    out3 << pointcloud_map.length();
+    out3.close();
+
     GetPointCloudMapResponse response;
 
     for (int start_index = 0; start_index < pointcloud_map.size();
@@ -197,6 +211,14 @@ int SLAMServiceImpl::GetPointCloudMapC(
         LOG(ERROR) << "map pointcloud does not have points yet";
         return 1;
     }
+    
+    std::ofstream out("pre_conversion.txt");
+    out << pointcloud_map;
+    out.close();
+
+    std::ofstream out2("pre_length.txt");
+    out2 << pointcloud_map.length();
+    out2.close();
 
     response->point_cloud_pcd.len = pointcloud_map.length();
     response->point_cloud_pcd.str = pointcloud_map.c_str();
