@@ -167,7 +167,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config) {
     BOOST_TEST(c.sensors[3] == "sensor_4");
     BOOST_TEST(c.sensors[4] == "sensor_5");
 
-    viam_carto_config_teardown(vcc);
+    // viam_carto_config_teardown(vcc);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
