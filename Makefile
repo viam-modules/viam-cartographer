@@ -96,7 +96,7 @@ setup-cpp-full-mod:
 
 # Linux only
 test-cpp-full-mod-valgrind: build
-	valgrind --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
 
 # Linux only
 test-cpp-full-mod-gdb: build
