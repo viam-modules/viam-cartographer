@@ -103,5 +103,9 @@ jobs:
         sudo -u testbot bash -lc 'sudo go test -v -race -run TestCartographerIntegration'
 
     - name: make test-cpp-full-mod-valgrind
+      # Currently we only run valgrind on amd64 as x86
+      # doesn't valgrind clean due to what appears to be a bug in GLOG
+      # https://github.com/viamrobotics/viam-cartographer/actions/runs/5156238014/jobs/9287413446
+      if: matrix.platform == 'linux/amd64'
       run: |
         sudo -u testbot bash -lc 'make test-cpp-full-mod-valgrind'
