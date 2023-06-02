@@ -115,24 +115,6 @@ typedef struct viam_carto_config {
     viam_carto_LIDAR_CONFIG lidar_config;
 } viam_carto_config;
 
-#ifdef __cplusplus
-namespace viam {
-namespace carto_facade {
-typedef struct config {
-    std::vector<std::string> sensors;
-    int map_rate_sec;
-    std::string data_dir;
-    std::string component_reference;
-    viam_carto_MODE mode;
-    viam_carto_LIDAR_CONFIG lidar_config;
-} config;
-
-// function to convert viam_carto_config into  viam::carto_facade::config
-config from_viam_carto_config(viam_carto_config vcc);
-}  // namespace carto_facade
-}  // namespace viam
-#endif
-
 // viam_carto_init/4 takes a null viam_carto pointer and a viam_carto_config, a
 // viam_carto_algo_config, and empty errmsg
 // On error: Returns a non 0 error code and mutates
@@ -299,6 +281,18 @@ static const int checkForShutdownIntervalMicroseconds = 1e5;
 // represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
 static const double resolutionMeters = 0.05;
+
+typedef struct config {
+    std::vector<std::string> sensors;
+    int map_rate_sec;
+    std::string data_dir;
+    std::string component_reference;
+    viam_carto_MODE mode;
+    viam_carto_LIDAR_CONFIG lidar_config;
+} config;
+
+// function to convert viam_carto_config into  viam::carto_facade::config
+config from_viam_carto_config(viam_carto_config vcc);
 
 // Error log for when no submaps exist
 // std::string errorNoSubmaps = "No submaps to paint";
