@@ -21,8 +21,8 @@
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
-#include "src/carto_facade/carto_facade.h"
 #include "src/carto_facade/bstrlib.h"
+#include "src/carto_facade/carto_facade.h"
 
 using google::protobuf::Struct;
 using grpc::ServerContext;

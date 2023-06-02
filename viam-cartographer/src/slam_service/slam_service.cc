@@ -207,8 +207,9 @@ int SLAMServiceImpl::GetPointCloudMapC(
         LOG(ERROR) << "map pointcloud does not have points yet";
         return 1;
     }
-    
-    response->point_cloud_pcd = blk2bstr((const char*)pointcloud_map.c_str(), pointcloud_map.length());
+
+    response->point_cloud_pcd =
+        blk2bstr((const char *)pointcloud_map.c_str(), pointcloud_map.length());
 
     return 0;
 }
