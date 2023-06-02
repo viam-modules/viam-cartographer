@@ -129,7 +129,6 @@ extern int viam_carto_get_position_response_destroy(
         return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
     }
     r->component_reference = nullptr;
-    return VIAM_CARTO_SUCCESS;
     return return_code;
 };
 

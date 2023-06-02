@@ -57,7 +57,7 @@ viam_carto_algo_config viam_carto_algo_config_setup() {
 
 BOOST_AUTO_TEST_SUITE(CartoFacadeCPPAPI)
 
-BOOST_AUTO_TEST_CASE(CartoFacade_init_termainate) {
+BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     char *errmsg = nullptr;
     const viam_carto *vc;
     struct viam_carto_config vcc = viam_carto_config_setup();
