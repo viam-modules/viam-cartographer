@@ -90,6 +90,21 @@ install-lua-files:
 test-cpp:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
 
+# Linux only
+setup-cpp-full-mod: 
+	sudo apt install -y valgrind gdb
+
+# Linux only
+test-cpp-full-mod-valgrind: build
+	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+
+# Linux only
+test-cpp-full-mod-gdb: build
+	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+
+test-cpp-full-mod: build
+	viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+
 test-go:
 	go test -race ./...
 
