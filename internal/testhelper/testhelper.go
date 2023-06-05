@@ -20,6 +20,7 @@ import (
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/testutils/inject"
+	"go.viam.com/rdk/utils/contextutils"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 	"go.viam.com/utils/pexec"
@@ -42,6 +43,7 @@ const (
 	// sensor that is used in the GetAndSaveData function.
 	SensorValidationIntervalSecForTest = 1
 	testDialMaxTimeoutSec              = 1
+	TestTime                           = "2006-01-02T15:04:05.9999Z"
 )
 
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
@@ -67,7 +69,9 @@ func SetupDeps(sensors []string) resource.Dependencies {
 	for _, sensor := range sensors {
 		switch sensor {
 		case "good_lidar":
-			deps[camera.Named(sensor)] = getGoodLidar()
+			deps[camera.Named(sensor)] = getValidSensor(false)
+		case "replay_sensor":
+			deps[camera.Named(sensor)] = getValidSensor(true)
 		case "invalid_sensor":
 			deps[camera.Named(sensor)] = getInvalidSensor()
 		case "gibberish":
@@ -81,9 +85,15 @@ func SetupDeps(sensors []string) resource.Dependencies {
 	return deps
 }
 
-func getGoodLidar() *inject.Camera {
+func getValidSensor(isReplay bool) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		if isReplay {
+			md := ctx.Value(contextutils.MetadataContextKey)
+			if mdMap, ok := md.(map[string][]string); ok {
+				mdMap[contextutils.TimeRequestedMetadataKey] = []string{TestTime}
+			}
+		}
 		return pointcloud.New(), nil
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
