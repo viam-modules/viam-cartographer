@@ -212,6 +212,7 @@ int SLAMServiceImpl::GetInternalStateC(
     }
 
     response->internal_state = blk2bstr(buf.c_str(), buf.length());
+    return VIAM_CARTO_SUCCESS;
 }
 
 void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,
