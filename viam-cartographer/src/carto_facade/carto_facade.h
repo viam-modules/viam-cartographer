@@ -91,6 +91,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_DESTRUCTOR_ERROR 4
 #define VIAM_CARTO_SAVE_STATE_ERROR 5
 #define VIAM_CARTO_SERIALIZATION_ERROR 6
+#define VIAM_CARTO_UNKNOWN_ERROR 7
 
 typedef struct viam_carto_algo_config {
     int optimize_every_n_nodes;

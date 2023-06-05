@@ -171,6 +171,14 @@ std::string std_string_from_bstring(bstring b_str) {
         ;
     }
 
+    if (status == VIAM_CARTO_UNKNOWN_ERROR) {
+        // QUESTION: should e.what() be passed back somehow
+        std::ostringstream oss;
+        oss << "unknown error during data serialization.";
+        return grpc::Status(grpc::StatusCode::UNKNOWN, oss.str());
+        ;
+    }
+
     std::string buf = std_string_from_bstring(vcgicr.internal_state);
 
     std::string internal_state_chunk;
@@ -207,8 +215,12 @@ int SLAMServiceImpl::GetInternalStateC(
     // with loading the file into memory
     try {
         ConvertSavedMapToStream(filename, &buf);
+    } catch (std::runtime_error &e) {
+            LOG(ERROR) << e.what();
+            return VIAM_CARTO_SERIALIZATION_ERROR;
     } catch (std::exception &e) {
-        return VIAM_CARTO_SERIALIZATION_ERROR;
+            LOG(ERROR) << e.what();
+            return VIAM_CARTO_UNKNOWN_ERROR;
     }
 
     response->internal_state = blk2bstr(buf.c_str(), buf.length());
