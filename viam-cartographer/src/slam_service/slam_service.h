@@ -21,6 +21,8 @@
 #include "common/v1/common.pb.h"
 #include "service/slam/v1/slam.grpc.pb.h"
 #include "service/slam/v1/slam.pb.h"
+#include "src/carto_facade/bstrlib.h"
+#include "src/carto_facade/carto_facade.h"
 
 using google::protobuf::Struct;
 using grpc::ServerContext;
@@ -219,6 +221,9 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // beginning to process data. If cartographer fails to do this,
     // terminate the program.
     void CacheMapInLocalizationMode();
+
+    // GetInternalStateC is a c compatible function
+    int GetInternalStateC(viam_carto_get_internal_state_response *response);
 
     ActionMode action_mode = ActionMode::MAPPING;
 

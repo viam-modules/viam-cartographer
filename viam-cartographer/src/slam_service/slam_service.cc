@@ -53,6 +53,14 @@ namespace viam {
 
 std::atomic<bool> b_continue_session{true};
 
+std::string std_string_from_bstring(bstring b_str) {
+    int len = blength(b_str);
+    char *tmp = bstr2cstr(b_str, 0);
+    std::string std_str(tmp, len);
+    bcstrfree(tmp);
+    return std_str;
+}
+
 ::grpc::Status SLAMServiceImpl::GetPosition(ServerContext *context,
                                             const GetPositionRequest *request,
                                             GetPositionResponse *response) {
@@ -146,29 +154,24 @@ std::atomic<bool> b_continue_session{true};
 ::grpc::Status SLAMServiceImpl::GetInternalState(
     ServerContext *context, const GetInternalStateRequest *request,
     ServerWriter<GetInternalStateResponse> *writer) {
-    boost::uuids::uuid uuid = boost::uuids::random_generator()();
-    std::string filename = path_to_map + "/" + "temp_internal_state_" +
-                           boost::uuids::to_string(uuid) + ".pbstream";
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        bool ok = map_builder.SaveMapToFile(true, filename);
-        if (!ok) {
-            std::ostringstream oss;
-            oss << "Failed to save the state as a pbstream.";
-            return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
-        }
-    }
+    viam_carto_get_internal_state_response vcgicr;
+    int status = GetInternalStateC(&vcgicr);
 
-    std::string buf;
-    // deferring reading the pbstream file in chunks until we run into issues
-    // with loading the file into memory
-    try {
-        ConvertSavedMapToStream(filename, &buf);
-    } catch (std::exception &e) {
+    if (status == 1) {
         std::ostringstream oss;
-        oss << "error during data serialization: " << e.what();
+        oss << "Failed to save the state as a pbstream.";
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
+
+    if (status == 2) {
+        // QUESTION: should e.what() be passed back somehow
+        std::ostringstream oss;
+        oss << "error during data serialization.";
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
+        ;
+    }
+
+    std::string buf = std_string_from_bstring(vcgicr.internal_state);
 
     std::string internal_state_chunk;
     GetInternalStateResponse response;
@@ -184,6 +187,31 @@ std::atomic<bool> b_continue_session{true};
     }
 
     return grpc::Status::OK;
+}
+
+int SLAMServiceImpl::GetInternalStateC(
+    viam_carto_get_internal_state_response *response) {
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    std::string filename = path_to_map + "/" + "temp_internal_state_" +
+                           boost::uuids::to_string(uuid) + ".pbstream";
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        bool ok = map_builder.SaveMapToFile(true, filename);
+        if (!ok) {
+            return 1;
+        }
+    }
+
+    std::string buf;
+    // deferring reading the pbstream file in chunks until we run into issues
+    // with loading the file into memory
+    try {
+        ConvertSavedMapToStream(filename, &buf);
+    } catch (std::exception &e) {
+        return 2;
+    }
+
+    response->internal_state = blk2bstr(buf.c_str(), buf.length());
 }
 
 void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,
