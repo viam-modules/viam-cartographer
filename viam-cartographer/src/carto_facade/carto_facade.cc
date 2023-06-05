@@ -66,6 +66,20 @@ int CartoFacade::Stop() { return VIAM_CARTO_SUCCESS; };
 int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
 };
+void setup_glog(int minloglevel,
+                               int verbose) {
+    google::InitGoogleLogging("cartographer");
+    FLAGS_logtostderr = 1;
+    FLAGS_minloglevel = minloglevel;
+    FLAGS_v = verbose;
+}
+
+void teardown_glog() {
+    FLAGS_logtostderr = 0;
+    FLAGS_minloglevel = 0;
+    FLAGS_v = 0;
+    google::ShutdownGoogleLogging();
+}
 }  // namespace carto_facade
 }  // namespace viam
 
@@ -81,10 +95,7 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
     if (vcl == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
-    google::InitGoogleLogging("cartographer");
-    FLAGS_logtostderr = 1;
-    FLAGS_minloglevel = minloglevel;
-    FLAGS_v = verbose;
+    viam::carto_facade::setup_glog(minloglevel, verbose);
     vcl->minloglevel = minloglevel;
     vcl->verbose = verbose;
 
@@ -94,10 +105,7 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
 };
 
 extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
-    FLAGS_logtostderr = 0;
-    FLAGS_minloglevel = 0;
-    FLAGS_v = 0;
-    google::ShutdownGoogleLogging();
+    viam::carto_facade::teardown_glog();
     free(*ppVCL);
     *ppVCL = nullptr;
     return VIAM_CARTO_SUCCESS;

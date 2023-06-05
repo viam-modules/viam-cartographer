@@ -127,3 +127,7 @@ appimage-ci: build
 	mkdir -p etc/packaging/appimages/deploy/
 	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
 	chmod 755 etc/packaging/appimages/deploy/*.AppImage
+
+counter-c: 
+	gcc $(GCC_WARNINGS)  -c slam_service_c/main.c -o viam-cartographer/build/main.o
+	g++ $(GPP_WARNINGS)  viam-cartographer/build/main.o -Lviam-cartographer/build  -lviam-cartographer -lglog -o bin/counter-c
