@@ -89,6 +89,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_VC_INVALID 2
 #define VIAM_CARTO_OUT_OF_MEMORY 3
 #define VIAM_CARTO_DESTRUCTOR_ERROR 4
+#define VIAM_CARTO_POINTCLOUD_HAS_NO_POINTS 5
 
 typedef struct viam_carto_algo_config {
     int optimize_every_n_nodes;

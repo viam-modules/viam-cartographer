@@ -101,7 +101,7 @@ std::atomic<bool> b_continue_session{true};
     viam_carto_get_point_cloud_map_response vcgpcmr;
     int status = GetPointCloudMapC(&vcgpcmr);
 
-    if (status == 1) {
+    if (status == VIAM_CARTO_POINTCLOUD_HAS_NO_POINTS) {
         return grpc::Status(grpc::StatusCode::UNAVAILABLE,
                             "map pointcloud does not have points yet");
     }
@@ -205,13 +205,13 @@ int SLAMServiceImpl::GetPointCloudMapC(
 
     if (pointcloud_map.empty()) {
         LOG(ERROR) << "map pointcloud does not have points yet";
-        return 1;
+        return VIAM_CARTO_POINTCLOUD_HAS_NO_POINTS;
     }
 
     response->point_cloud_pcd =
         blk2bstr((const char *)pointcloud_map.c_str(), pointcloud_map.length());
 
-    return 0;
+    return VIAM_CARTO_SUCCESS;
 }
 
 void SLAMServiceImpl::ConvertSavedMapToStream(std::string filename,
