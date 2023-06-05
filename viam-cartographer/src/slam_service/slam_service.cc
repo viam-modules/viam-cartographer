@@ -216,11 +216,11 @@ int SLAMServiceImpl::GetInternalStateC(
     try {
         ConvertSavedMapToStream(filename, &buf);
     } catch (std::runtime_error &e) {
-            LOG(ERROR) << e.what();
-            return VIAM_CARTO_SERIALIZATION_ERROR;
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_SERIALIZATION_ERROR;
     } catch (std::exception &e) {
-            LOG(ERROR) << e.what();
-            return VIAM_CARTO_UNKNOWN_ERROR;
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
     }
 
     response->internal_state = blk2bstr(buf.c_str(), buf.length());
