@@ -118,18 +118,18 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	}
 
 	// If the server provided timestamps correlated with the point cloud, extract the time
-	// received from the metadata and use that instead of the current time.
-	timeRec := time.Now()
-	timeReceivedMetadata, ok := md[contextutils.TimeReceivedMetadataKey]
+	// requested from the metadata and use that instead of the current time.
+	timeReq := time.Now()
+	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 	if ok {
-		timeRec, err = time.Parse(time.RFC3339Nano, timeReceivedMetadata[0])
+		timeReq, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 		if err != nil {
-			logger.Warnw("couldn't parse time received", "error", err)
+			logger.Warnw("couldn't parse time", "error", err)
 			return "", err
 		}
 	}
 
 	dataDir := filepath.Join(dataDirectory, "data")
-	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", timeRec)
+	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", timeReq)
 	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
 }
