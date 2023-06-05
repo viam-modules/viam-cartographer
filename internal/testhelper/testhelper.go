@@ -43,7 +43,8 @@ const (
 	// sensor that is used in the GetAndSaveData function.
 	SensorValidationIntervalSecForTest = 1
 	testDialMaxTimeoutSec              = 1
-	TestTime                           = "2006-01-02T15:04:05.9999Z"
+	// TestTime can be used to test specific timestamps provided by a replay sensor.
+	TestTime = "2006-01-02T15:04:05.9999Z"
 )
 
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
@@ -69,9 +70,9 @@ func SetupDeps(sensors []string) resource.Dependencies {
 	for _, sensor := range sensors {
 		switch sensor {
 		case "good_lidar":
-			deps[camera.Named(sensor)] = getValidSensor(false)
+			deps[camera.Named(sensor)] = getGoodLidar()
 		case "replay_sensor":
-			deps[camera.Named(sensor)] = getValidSensor(true)
+			deps[camera.Named(sensor)] = getReplaySensor()
 		case "invalid_sensor":
 			deps[camera.Named(sensor)] = getInvalidSensor()
 		case "gibberish":
@@ -85,14 +86,29 @@ func SetupDeps(sensors []string) resource.Dependencies {
 	return deps
 }
 
-func getValidSensor(isReplay bool) *inject.Camera {
+func getGoodLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		if isReplay {
-			md := ctx.Value(contextutils.MetadataContextKey)
-			if mdMap, ok := md.(map[string][]string); ok {
-				mdMap[contextutils.TimeRequestedMetadataKey] = []string{TestTime}
-			}
+		return pointcloud.New(), nil
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		return nil, errors.New("lidar not camera")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{}, nil
+	}
+	return cam
+}
+
+func getReplaySensor() *inject.Camera {
+	cam := &inject.Camera{}
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{TestTime}
 		}
 		return pointcloud.New(), nil
 	}
