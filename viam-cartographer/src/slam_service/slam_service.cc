@@ -529,6 +529,12 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     while (b_continue_session) {
         const std::string file_name = GetNextDataFileOfflineHelper();
         if (file_name != "") {
+            // The library we use to see the contents of the data directory has
+            // nondeterministic results when the directory is still being
+            // written to. Because of this, it's possible that we will miss a
+            // file and then rediscover it the next time we list the sorted
+            // files. If this happens, we need to skip the file, since
+            // cartographer cannot accept data out-of-order.
             if (file_name >= max_file_offline) {
                 max_file_offline = file_name;
                 return file_name;
