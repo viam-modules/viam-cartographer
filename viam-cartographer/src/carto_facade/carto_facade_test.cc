@@ -1,9 +1,10 @@
 #include "carto_facade.h"
-#include "glog/logging.h"
 
 #include <boost/test/unit_test.hpp>
 #include <cstring>
 #include <exception>
+
+#include "glog/logging.h"
 
 namespace viam {
 namespace carto_facade {
@@ -82,10 +83,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     struct viam_carto_config vcc = viam_carto_config_setup();
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
     BOOST_TEST(viam_carto_init(nullptr, lib, vcc, ac) == VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_init(nullptr, nullptr, vcc, ac) == VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_init(&vc, nullptr, vcc, ac) == VIAM_CARTO_LIB_INVALID);
+    BOOST_TEST(viam_carto_init(nullptr, nullptr, vcc, ac) ==
+               VIAM_CARTO_VC_INVALID);
+    BOOST_TEST(viam_carto_init(&vc, nullptr, vcc, ac) ==
+               VIAM_CARTO_LIB_INVALID);
     lib->initialized = false;
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_LIB_NOT_INITIALIZED);
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) ==
+               VIAM_CARTO_LIB_NOT_INITIALIZED);
     lib->initialized = true;
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
 

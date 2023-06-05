@@ -79,6 +79,9 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL) {
     FLAGS_logtostderr = 1;
     google::InitGoogleLogging("cartographer");
     viam_carto_lib *vcl = (viam_carto_lib *)malloc(sizeof(viam_carto_lib));
+    if (vcl == nullptr) {
+        return VIAM_CARTO_OUT_OF_MEMORY;
+    }
     vcl->initialized = 1;
 
     *ppVCL = vcl;
@@ -111,6 +114,9 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
 
     // allocate viam_carto struct
     viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));
+    if (vc == nullptr) {
+        return VIAM_CARTO_OUT_OF_MEMORY;
+    }
 
     vc->carto_obj = new viam::carto_facade::CartoFacade(pVCL, c, ac);
 
