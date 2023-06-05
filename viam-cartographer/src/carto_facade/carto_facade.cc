@@ -161,7 +161,6 @@ extern int viam_carto_get_position_response_destroy(
     int rc = BSTR_OK;
     rc = bdestroy(r->component_reference);
     if (rc != BSTR_OK) {
-        // TODO: Write error messages
         return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
     }
     r->component_reference = nullptr;

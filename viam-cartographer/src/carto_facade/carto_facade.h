@@ -57,8 +57,6 @@ typedef struct viam_carto_get_position_response {
     double kmag;
 
     bstring component_reference;
-    // TODO: Need to also return quat information as the spaital math exists
-    // only on the go side
 } viam_carto_get_position_response;
 
 typedef struct viam_carto_get_point_cloud_map_response {
@@ -124,19 +122,29 @@ typedef struct viam_carto_config {
     viam_carto_LIDAR_CONFIG lidar_config;
 } viam_carto_config;
 
+// viam_carto_lib_init/4 takes an empty viam_carto_lib pointer to pointer
+// On error: Returns a non 0 error code
+//
+// On success: Returns 0 & mutates viam_carto_lib to contain a handle to
+// the initialized library state.
 extern int viam_carto_lib_init(viam_carto_lib **vcl  // OUT
 );
 
+// viam_carto_lib_terminate/4 takes a valid viam_carto_lib pointer to pointer
+// On error: Returns a non 0 error code
+//
+// On success: Returns 0, frees all resources aquired by
+// viam_carto_lib_init/4
 extern int viam_carto_lib_terminate(viam_carto_lib **vcl  // OUT
 );
 
-// viam_carto_init/4 takes a null viam_carto pointer and a viam_carto_config, a
+// viam_carto_init/4 takes an empty viam_carto pointer to pointer,
+// a viam_carto_lib pointer and a viam_carto_config, and a
 // viam_carto_algo_config
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0 & mutates viam_carto to contain handle to
 // initialized carto object
-// TODO: Change all const viam_carto **vc to viam_carto **vc
 extern int viam_carto_init(viam_carto **vc,            // OUT
                            viam_carto_lib *pVCL,       //
                            const viam_carto_config c,  //
@@ -144,25 +152,23 @@ extern int viam_carto_init(viam_carto **vc,            // OUT
 
 // viam_carto_start/2 takes a viam_carto pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, starts cartographer
-// TODO: Change all const viam_carto **vc which don't hcange the vc pointer to
-// to viam_carto *vc
 extern int viam_carto_start(viam_carto *vc  // OUT
 );
 
 // viam_carto_stop/2 takes a viam_carto pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, stops work begun by viam_carto_start()
 extern int viam_carto_stop(viam_carto *vc  // OUT
 );
 
-// viam_carto_stop/2 takes a viam_carto pointer
+// viam_carto_terminate/2 takes a viam_carto pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, frees all resources aquired by
 // viam_carto_init/4
@@ -172,7 +178,7 @@ extern int viam_carto_terminate(viam_carto **vc  //
 // viam_carto_add_sensor_reading/3 takes a viam_carto pointer, a
 // viam_carto_sensor_reading
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // An expected error is VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK(1)
 //
@@ -183,7 +189,7 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,                      //
 
 // viam_carto_add_sensor_reading_destroy/2 takes a viam_carto pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, frees the viam_carto_sensor_reading.
 extern int viam_carto_add_sensor_reading_destroy(
@@ -193,7 +199,7 @@ extern int viam_carto_add_sensor_reading_destroy(
 // viam_carto_get_position/3 takes a viam_carto pointer, a
 // viam_carto_get_position_response pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, mutates viam_carto_get_position_response
 // to contain the response
@@ -203,7 +209,7 @@ extern int viam_carto_get_position(viam_carto *vc,                      //
 
 // viam_carto_get_position_response_destroy/2 takes a viam_carto pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, frees the viam_carto_get_position_response.
 extern int viam_carto_get_position_response_destroy(
@@ -213,7 +219,7 @@ extern int viam_carto_get_position_response_destroy(
 // viam_carto_get_point_cloud_map/3 takes a viam_carto pointer, a
 // viam_carto_get_point_cloud_map_response pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, mutates viam_carto_get_point_cloud_map_response
 // to contain the response
@@ -224,7 +230,7 @@ extern int viam_carto_get_point_cloud_map(
 
 // viam_carto_get_point_cloud_map_response_destroy/2 takes a viam_carto pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, frees the viam_carto_get_point_cloud_map_response.
 extern int viam_carto_get_point_cloud_map_response_destroy(
@@ -234,7 +240,7 @@ extern int viam_carto_get_point_cloud_map_response_destroy(
 // viam_carto_get_internal_state/3 takes a viam_carto pointer, a
 // viam_carto_get_internal_state_response pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, mutates viam_carto_get_internal_state_response
 // to contain the response
@@ -245,7 +251,7 @@ extern int viam_carto_get_internal_state(
 
 // viam_carto_get_internal_state_response_destroy/2 takes a viam_carto pointer
 //
-// On error: Returns a non 0 error code and mutates
+// On error: Returns a non 0 error code
 //
 // On success: Returns 0, frees the viam_carto_get_internal_state_response.
 extern int viam_carto_get_internal_state_response_destroy(
