@@ -62,22 +62,46 @@ BOOST_AUTO_TEST_SUITE(CartoFacadeCPPAPI)
 BOOST_AUTO_TEST_CASE(CartoFacade_lib_init_terminate) {
     viam_carto_lib *lib;
     BOOST_TEST(FLAGS_logtostderr == 0);
-    BOOST_TEST(viam_carto_lib_init(nullptr) == VIAM_CARTO_LIB_INVALID);
+    BOOST_TEST(viam_carto_lib_init(nullptr, 0, 0) == VIAM_CARTO_LIB_INVALID);
     BOOST_TEST(FLAGS_logtostderr == 0);
-    BOOST_TEST(viam_carto_lib_init(&lib) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(FLAGS_logtostderr == 1);
+    BOOST_TEST(FLAGS_v == 0);
+    BOOST_TEST(FLAGS_minloglevel == 0);
+    BOOST_TEST(viam_carto_lib_init(&lib, 2, 3) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(lib != nullptr);
-    BOOST_TEST(lib->initialized == true);
+    BOOST_TEST(lib->minloglevel == 2);
+    BOOST_TEST(lib->verbose == 3);
+    // begin global side effects
+    BOOST_TEST(FLAGS_logtostderr == 1);
+    BOOST_TEST(FLAGS_minloglevel == 2);
+    BOOST_TEST(FLAGS_v == 3);
+    // end global side effects
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(lib == nullptr);
     BOOST_TEST(FLAGS_logtostderr == 0);
+    BOOST_TEST(FLAGS_v == 0);
+    BOOST_TEST(FLAGS_minloglevel == 0);
+}
+
+BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
+    viam_carto_lib *lib;
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 0) == VIAM_CARTO_SUCCESS);
+
+    viam_carto *vc;
+    struct viam_carto_config vcc = viam_carto_config_no_sensors_setup();
+    struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
+
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) ==
+               VIAM_CARTO_SENSORS_LIST_EMPTY);
+
+    viam_carto_config_teardown(vcc);
+
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }
 
 BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     // library init
     viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(lib->initialized == true);
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 0) == VIAM_CARTO_SUCCESS);
 
     viam_carto *vc;
     struct viam_carto_config vcc = viam_carto_config_setup();
@@ -87,10 +111,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
                VIAM_CARTO_VC_INVALID);
     BOOST_TEST(viam_carto_init(&vc, nullptr, vcc, ac) ==
                VIAM_CARTO_LIB_INVALID);
-    lib->initialized = false;
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) ==
-               VIAM_CARTO_LIB_NOT_INITIALIZED);
-    lib->initialized = true;
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
 
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
@@ -103,7 +123,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
 BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     // library init
     viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 0) == VIAM_CARTO_SUCCESS);
 
     // Setup
     viam_carto *vc;
@@ -174,7 +194,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 BOOST_AUTO_TEST_CASE(CartoFacade_config) {
     // library init
     viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 0) == VIAM_CARTO_SUCCESS);
 
     struct viam_carto_config vcc = viam_carto_config_setup();
 

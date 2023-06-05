@@ -69,20 +69,24 @@ int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
 }  // namespace carto_facade
 }  // namespace viam
 
-extern int viam_carto_lib_init(viam_carto_lib **ppVCL) {
+extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
+                               int verbose) {
     if (ppVCL == nullptr) {
         return VIAM_CARTO_LIB_INVALID;
     }
     if (!((sizeof(float) == 4) && (CHAR_BIT == 8) && (sizeof(int) == 4))) {
         return VIAM_CARTO_LIB_PLATFORM_INVALID;
     }
-    FLAGS_logtostderr = 1;
-    google::InitGoogleLogging("cartographer");
     viam_carto_lib *vcl = (viam_carto_lib *)malloc(sizeof(viam_carto_lib));
     if (vcl == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
-    vcl->initialized = 1;
+    google::InitGoogleLogging("cartographer");
+    FLAGS_logtostderr = 1;
+    FLAGS_minloglevel = minloglevel;
+    FLAGS_v = verbose;
+    vcl->minloglevel = minloglevel;
+    vcl->verbose = verbose;
 
     *ppVCL = vcl;
 
@@ -91,6 +95,8 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL) {
 
 extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
     FLAGS_logtostderr = 0;
+    FLAGS_minloglevel = 0;
+    FLAGS_v = 0;
     google::ShutdownGoogleLogging();
     free(*ppVCL);
     *ppVCL = nullptr;

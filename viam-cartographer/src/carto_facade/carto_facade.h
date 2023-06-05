@@ -24,7 +24,8 @@ extern "C" {
 
 // Represents library level state
 typedef struct viam_carto_lib {
-    int initialized;
+    int minloglevel;
+    int verbose;
 } viam_carto_lib;
 
 // Represents carto instance level state
@@ -127,8 +128,8 @@ typedef struct viam_carto_config {
 //
 // On success: Returns 0 & mutates viam_carto_lib to contain a handle to
 // the initialized library state.
-extern int viam_carto_lib_init(viam_carto_lib **vcl  // OUT
-);
+extern int viam_carto_lib_init(viam_carto_lib **vcl,  // OUT
+                               int minloglevel, int verbose);
 
 // viam_carto_lib_terminate/4 takes a valid viam_carto_lib pointer to pointer
 // On error: Returns a non 0 error code
