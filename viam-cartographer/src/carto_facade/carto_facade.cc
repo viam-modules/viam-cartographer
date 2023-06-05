@@ -114,10 +114,6 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         return VIAM_CARTO_LIB_INVALID;
     }
 
-    if (!pVCL->initialized) {
-        return VIAM_CARTO_LIB_NOT_INITIALIZED;
-    }
-
     // allocate viam_carto struct
     viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));
     if (vc == nullptr) {

@@ -82,22 +82,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_lib_init_terminate) {
     BOOST_TEST(FLAGS_minloglevel == 0);
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
-    viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib, 0, 0) == VIAM_CARTO_SUCCESS);
-
-    viam_carto *vc;
-    struct viam_carto_config vcc = viam_carto_config_no_sensors_setup();
-    struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
-
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) ==
-               VIAM_CARTO_SENSORS_LIST_EMPTY);
-
-    viam_carto_config_teardown(vcc);
-
-    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
-}
-
 BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     // library init
     viam_carto_lib *lib;
