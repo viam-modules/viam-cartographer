@@ -106,6 +106,16 @@ std::atomic<bool> b_continue_session{true};
                             "map pointcloud does not have points yet");
     }
 
+    if (status == VIAM_CARTO_UNKNOWN_ERROR) {
+        return grpc::Status(grpc::StatusCode::UNAVAILABLE,
+                            "cannot encode pointcloud");
+    }
+
+    if (status == VIAM_CARTO_POINTCLOUD_ENCODING_ERROR) {
+        return grpc::Status(grpc::StatusCode::UNKNOWN,
+                            "cannot encode pointcloud");
+    }
+
     std::string pcd_chunk;
     std::string pointcloud_map =
         std_string_from_bstring(vcgpcmr.point_cloud_pcd);
@@ -197,10 +207,14 @@ int SLAMServiceImpl::GetPointCloudMapC(
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             pointcloud_map = latest_pointcloud_map;
         }
+    } catch (std::runtime_error &e) {
+        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
+                   << e.what();
+        return VIAM_CARTO_POINTCLOUD_ENCODING_ERROR;
     } catch (std::exception &e) {
         LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
                    << e.what();
-        std::terminate();
+        return VIAM_CARTO_UNKNOWN_ERROR;
     }
 
     if (pointcloud_map.empty()) {
@@ -209,7 +223,7 @@ int SLAMServiceImpl::GetPointCloudMapC(
     }
 
     response->point_cloud_pcd =
-        blk2bstr((const char *)pointcloud_map.c_str(), pointcloud_map.length());
+        blk2bstr(pointcloud_map.c_str(), pointcloud_map.length());
 
     return VIAM_CARTO_SUCCESS;
 }
