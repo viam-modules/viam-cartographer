@@ -1,0 +1,43 @@
+name: Bump Versions
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+on:
+  schedule:
+    - cron: '30 17 * * WED' # 12:30 EST on wednesdays
+  workflow_dispatch:
+
+jobs:
+  bump-versions:
+    name: Bump Package Versions
+    if: github.repository_owner == 'viamrobotics'
+    runs-on: [self-hosted, x64]
+    container:
+      image: ghcr.io/viamrobotics/canon:amd64
+    timeout-minutes: 10
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+    - name: Update go dependencies
+      id: gobump
+      run: |
+        sudo chown -R testbot .
+        sudo -u testbot bash -lc 'go get -u .'
+        GEN_DIFF=$(git status -s)
+        
+        if [ -n "$GEN_DIFF" ]; then
+            echo "needs_pr=1" >> $GITHUB_OUTPUT
+        fi
+    - name: Add + Commit + Open PR
+      if: steps.gobump.outputs.needs_pr == 1
+      uses: peter-evans/create-pull-request@v5
+      with:
+          commit-message: '[WORKFLOW] Updating go dependencies'
+          branch: 'workflow/update-dependencies'
+          delete-branch: true
+          base: main
+          title: Automated Go Dependencies Update
+          body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging.
