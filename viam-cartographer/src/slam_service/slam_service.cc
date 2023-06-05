@@ -157,13 +157,13 @@ std::string std_string_from_bstring(bstring b_str) {
     viam_carto_get_internal_state_response vcgicr;
     int status = GetInternalStateC(&vcgicr);
 
-    if (status == 1) {
+    if (status == VIAM_CARTO_SAVE_STATE_ERROR) {
         std::ostringstream oss;
         oss << "Failed to save the state as a pbstream.";
         return grpc::Status(grpc::StatusCode::UNAVAILABLE, oss.str());
     }
 
-    if (status == 2) {
+    if (status == VIAM_CARTO_SERIALIZATION_ERROR) {
         // QUESTION: should e.what() be passed back somehow
         std::ostringstream oss;
         oss << "error during data serialization.";
@@ -198,7 +198,7 @@ int SLAMServiceImpl::GetInternalStateC(
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         bool ok = map_builder.SaveMapToFile(true, filename);
         if (!ok) {
-            return 1;
+            return VIAM_CARTO_SAVE_STATE_ERROR;
         }
     }
 
@@ -208,7 +208,7 @@ int SLAMServiceImpl::GetInternalStateC(
     try {
         ConvertSavedMapToStream(filename, &buf);
     } catch (std::exception &e) {
-        return 2;
+        return VIAM_CARTO_SERIALIZATION_ERROR;
     }
 
     response->internal_state = blk2bstr(buf.c_str(), buf.length());
