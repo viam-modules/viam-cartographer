@@ -76,11 +76,6 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL) {
     if (!((sizeof(float) == 4) && (CHAR_BIT == 8) && (sizeof(int) == 4))) {
         return VIAM_CARTO_LIB_PLATFORM_INVALID;
     }
-    /* if (google::IsGoogleLoggingInitialized()) { */
-    /*     return VIAM_CARTO_LIB_ALREADY_INITIALIZED; */
-    /* } */
-
-    /* assert(FLAGS_logtostderr == 0); */
     FLAGS_logtostderr = 1;
     google::InitGoogleLogging("cartographer");
     viam_carto_lib *vcl = (viam_carto_lib *)malloc(sizeof(viam_carto_lib));
@@ -92,9 +87,6 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL) {
 };
 
 extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
-    /* if (!(google::IsGoogleLoggingInitialized())) { */
-    /*     return VIAM_CARTO_LIB_ALREADY_TERMINATED; */
-    /* } */
     FLAGS_logtostderr = 0;
     google::ShutdownGoogleLogging();
     free(*ppVCL);
