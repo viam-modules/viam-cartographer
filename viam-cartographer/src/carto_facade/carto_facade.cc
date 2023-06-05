@@ -14,6 +14,30 @@ std::string std_string_from_bstring(bstring b_str) {
     return std_str;
 }
 
+void validate_mode(viam_carto_MODE mode) {
+    switch (mode) {
+        case VIAM_CARTO_LOCALIZING:
+            break;
+        case VIAM_CARTO_MAPPING:
+            break;
+        case VIAM_CARTO_UPDATING:
+            break;
+        default:
+            throw VIAM_CARTO_SLAM_MODE_INVALID;
+    }
+}
+
+void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
+    switch (lidar_config) {
+        case VIAM_CARTO_TWO_D:
+            break;
+        case VIAM_CARTO_THREE_D:
+            break;
+        default:
+            throw VIAM_CARTO_LIDAR_CONFIG_INVALID;
+    }
+}
+
 config from_viam_carto_config(viam_carto_config vcc) {
     struct config c;
     for (int i = 0; i < vcc.sensors_len; i++) {
@@ -25,6 +49,21 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.map_rate_sec = vcc.map_rate_sec;
     c.mode = vcc.mode;
     c.lidar_config = vcc.lidar_config;
+    if (c.sensors.size() == 0) {
+        throw VIAM_CARTO_SENSORS_LIST_EMPTY;
+    }
+    if (c.data_dir.size() == 0) {
+        throw VIAM_CARTO_DATA_DIR_EMPTY;
+    }
+    if (c.map_rate_sec < 0) {
+        throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
+    }
+    if (c.component_reference.empty()) {
+        throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
+    }
+    validate_mode(c.mode);
+    validate_lidar_config(c.lidar_config);
+
     return c;
 };
 
@@ -33,6 +72,10 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     lib = pVCL;
     config = from_viam_carto_config(c);
     algo_config = ac;
+    path_to_data = config.data_dir + "/data";
+    // TODO: Change to "/internal_state"
+    path_to_internal_state = config.data_dir + "/map";
+    b_continue_session = true;
 };
 
 int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
@@ -120,7 +163,16 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
 
-    vc->carto_obj = new viam::carto_facade::CartoFacade(pVCL, c, ac);
+    try {
+        vc->carto_obj = new viam::carto_facade::CartoFacade(pVCL, c, ac);
+    } catch (int err) {
+        free(vc);
+        return err;
+    } catch (std::exception &e) {
+        free(vc);
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
 
     // point to newly created viam_carto struct
     *ppVC = vc;
