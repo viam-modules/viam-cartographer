@@ -1,5 +1,6 @@
 // This is an experimental integration of cartographer into RDK.
 #include "carto_facade.h"
+
 #include "glog/logging.h"
 
 namespace viam {
@@ -126,13 +127,9 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_start(viam_carto *vc) {
-    return VIAM_CARTO_SUCCESS;
-};
+extern int viam_carto_start(viam_carto *vc) { return VIAM_CARTO_SUCCESS; };
 
-extern int viam_carto_stop(viam_carto *vc) {
-    return VIAM_CARTO_SUCCESS;
-};
+extern int viam_carto_stop(viam_carto *vc) { return VIAM_CARTO_SUCCESS; };
 
 extern int viam_carto_terminate(viam_carto **ppVC) {
     viam::carto_facade::CartoFacade *cf =
@@ -147,7 +144,8 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_add_sensor_reading_destroy(viam_carto_sensor_reading *sr) {
+extern int viam_carto_add_sensor_reading_destroy(
+    viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
 };
 

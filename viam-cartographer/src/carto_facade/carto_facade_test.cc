@@ -100,8 +100,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     // // GetPosition
     viam_carto_get_position_response pr;
     // // Test
-    BOOST_TEST(viam_carto_get_position(vc, &pr) ==
-               VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
 
     BOOST_TEST(pr.x == 100);
     BOOST_TEST(pr.y == 200);
@@ -124,24 +123,21 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     // AddSensorReading
     viam_carto_sensor_reading sr;
-    BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
-               VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
 
     BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
                VIAM_CARTO_SUCCESS);
 
     // GetPointCloudMap
     viam_carto_get_point_cloud_map_response mr;
-    BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
-               VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) == VIAM_CARTO_SUCCESS);
 
     BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
                VIAM_CARTO_SUCCESS);
 
     // GetInternalState
     viam_carto_get_internal_state_response isr;
-    BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
-               VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_get_internal_state(vc, &isr) == VIAM_CARTO_SUCCESS);
 
     BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
                VIAM_CARTO_SUCCESS);
