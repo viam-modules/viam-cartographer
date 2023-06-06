@@ -277,6 +277,7 @@ extern int viam_carto_get_internal_state_response_destroy(
 #ifdef __cplusplus
 namespace viam {
 namespace carto_facade {
+enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
 // The resolutionMeters variable defines the area in meters that each pixel
@@ -298,41 +299,11 @@ config from_viam_carto_config(viam_carto_config vcc);
 
 // Error log for when no submaps exist
 // std::string errorNoSubmaps = "No submaps to paint";
-enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
 
 const std::string configuration_mapping_basename = "mapping_new_map.lua";
 const std::string configuration_localization_basename = "locating_in_map.lua";
 const std::string configuration_update_basename = "updating_a_map.lua";
 
-const auto HEADERTEMPLATE =
-    "VERSION .7\n"
-    "FIELDS x y z\n"
-    // NOTE: If a float is more than 4 bytes
-    // on a given platform
-    // this size will be inaccurate
-    "SIZE 4 4 4\n"
-    "TYPE F F F\n"
-    "COUNT 1 1 1\n"
-    "WIDTH %d\n"
-    "HEIGHT 1\n"
-    "VIEWPOINT 0 0 0 1 0 0 0\n"
-    "POINTS %d\n"
-    "DATA binary\n";
-
-const auto HEADERTEMPLATECOLOR =
-    "VERSION .7\n"
-    "FIELDS x y z rgb\n"
-    // NOTE: If a float is more than 4 bytes
-    // on a given platform
-    // this size will be inaccurate
-    "SIZE 4 4 4 4\n"
-    "TYPE F F F I\n"
-    "COUNT 1 1 1 1\n"
-    "WIDTH %d\n"
-    "HEIGHT 1\n"
-    "VIEWPOINT 0 0 0 1 0 0 0\n"
-    "POINTS %d\n"
-    "DATA binary\n";
 carto_facade::ActionMode determine_action_mode(
     std::string path_to_map, std::chrono::seconds map_rate_sec);
 /* std::string get_latest_map_filename(std::string path_to_map); */
