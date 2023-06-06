@@ -545,10 +545,32 @@ void SLAMServiceImpl::RunSLAM() {
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
-    if (!b_continue_session) {
-        return "";
+    while (b_continue_session) {
+        const std::string file_name = GetNextDataFileOfflineHelper();
+        if (file_name != "") {
+            // The library we use to see the contents of the data directory has
+            // nondeterministic results when the directory is still being
+            // written to. Because of this, it's possible that we will miss a
+            // file and then rediscover it the next time we list the sorted
+            // files. If this happens, we need to skip the file, since
+            // cartographer cannot accept data out-of-order.
+            if (file_name >= max_file_offline) {
+                max_file_offline = file_name;
+                return file_name;
+            } else {
+                LOG(INFO) << "New file was less than max. New: " << file_name
+                          << " Max: " << max_file_offline;
+            }
+        }
+
+        // This log line is needed by rdk integration tests.
+        VLOG(1) << "No new data found";
     }
-    if (file_list_offline.size() == 0) {
+    return "";
+}
+
+std::string SLAMServiceImpl::GetNextDataFileOfflineHelper() {
+    if (file_list_offline.size() - current_file_offline <= 2) {
         file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     }
     // We're setting the minimum required files to be two for the following
@@ -559,17 +581,17 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
     // Expecting a minimum of 3 files solves both problems without having to
     // loop over and count the number of actual data files in the data
     // directory.
-    if (file_list_offline.size() <= 2) {
-        throw std::runtime_error("not enough data in data directory");
+    if (file_list_offline.size() > 2) {
+        // If the current file is the last in the file list, we don't return
+        // it yet, since it's possible it's still being written to.
+        if (current_file_offline != file_list_offline.size() - 1) {
+            const auto to_return = file_list_offline[current_file_offline];
+            current_file_offline++;
+            return to_return;
+        }
     }
-    if (current_file_offline == file_list_offline.size()) {
-        // This log line is needed by rdk integration tests.
-        LOG(INFO) << "Finished processing offline data";
-        return "";
-    }
-    const auto to_return = file_list_offline[current_file_offline];
-    current_file_offline++;
-    return to_return;
+
+    return "";
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
