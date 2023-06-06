@@ -7,7 +7,7 @@
 #include <shared_mutex>
 #include <string>
 
-#include "../mapping/map_builder.h"
+#include "map_builder.h"
 #include "bstrlib.h"
 #include "bstrwrap.h"
 
@@ -447,7 +447,7 @@ class CartoFacade {
     std::string configuration_directory;
 
     std::mutex map_builder_mutex;
-    mapping::MapBuilder map_builder;
+    MapBuilder map_builder;
     cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     ActionMode action_mode = ActionMode::MAPPING;

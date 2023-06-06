@@ -129,7 +129,7 @@ int CartoFacade::IOInit() {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Set TrajectoryBuilder
         trajectory_id = map_builder.SetTrajectoryBuilder(
-            &trajectory_builder, {mapping::kRangeSensorId});
+            &trajectory_builder, {kRangeSensorId});
         VLOG(1) << "Using trajectory ID: " << trajectory_id;
     }
 
