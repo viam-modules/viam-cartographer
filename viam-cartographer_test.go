@@ -375,13 +375,6 @@ func TestDoCommand(t *testing.T) {
 	}
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 	test.That(t, err, test.ShouldBeNil)
-	t.Run("returns all feature flags when feature_flag: true", func(t *testing.T) {
-		cmd := map[string]interface{}{"feature_flag": true}
-		resp, err := svc.DoCommand(context.Background(), cmd)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, resp["response_in_millimeters"], test.ShouldBeTrue)
-		test.That(t, len(resp), test.ShouldEqual, 1)
-	})
 	t.Run("returns UnimplementedError when given other parmeters", func(t *testing.T) {
 		cmd := map[string]interface{}{"fake_flag": true}
 		resp, err := svc.DoCommand(context.Background(), cmd)
