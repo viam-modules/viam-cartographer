@@ -53,7 +53,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
         throw VIAM_CARTO_SENSORS_LIST_EMPTY;
     }
     if (c.data_dir.size() == 0) {
-        throw VIAM_CARTO_DATA_DIR_EMPTY;
+        throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
     }
     if (c.map_rate_sec < 0) {
         throw VIAM_CARTO_MAP_RATE_SEC_INVALID;

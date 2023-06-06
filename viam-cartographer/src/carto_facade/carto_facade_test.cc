@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
                                 "", "some component refereance", sensors_vec);
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_empty_data_dir, ac) ==
-               VIAM_CARTO_DATA_DIR_EMPTY);
+               VIAM_CARTO_DATA_DIR_NOT_PROVIDED);
 
     struct viam_carto_config vcc_empty_component_ref =
         viam_carto_config_setup(1, VIAM_CARTO_LOCALIZING, VIAM_CARTO_THREE_D,
