@@ -676,8 +676,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Set TrajectoryBuilder
-        trajectory_id = map_builder.SetTrajectoryBuilder(
-            &trajectory_builder, {kRangeSensorId});
+        trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
+                                                         {kRangeSensorId});
         VLOG(1) << "Using trajectory ID: " << trajectory_id;
     }
 
@@ -731,8 +731,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
             if (measurement.ranges.size() > 0) {
-                trajectory_builder->AddSensorData(
-                    kRangeSensorId.id, measurement);
+                trajectory_builder->AddSensorData(kRangeSensorId.id,
+                                                  measurement);
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
                 if (local_poses.size() > 0) {
                     tmp_global_pose = map_builder.GetGlobalPose(
