@@ -153,15 +153,13 @@ func New(
 		}
 	}()
 
-	if cartoSvc.useLiveData {
+	if cartoSvc.primarySensorName != "" {
 		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
 			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "getting and saving data failed")
 		}
 		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
-		logger.Debug("Running in live mode")
-	} else {
-		logger.Debug("Running in offline mode")
+		logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 	}
 
 	if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
@@ -248,55 +246,83 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
 func (cartoSvc *cartographerService) StartDataProcess(
-	cancelCtx context.Context,
+	ctx context.Context,
 	lidar lidar.Lidar,
 	c chan int,
 ) {
 	cartoSvc.activeBackgroundWorkers.Add(1)
-	if err := cancelCtx.Err(); err != nil {
+	if err := ctx.Err(); err != nil {
 		if !errors.Is(err, context.Canceled) {
 			cartoSvc.logger.Errorw("unexpected error in SLAM service", "error", err)
 		}
 		cartoSvc.activeBackgroundWorkers.Done()
 		return
 	}
-	goutils.PanicCapturingGo(func() {
-		ticker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
-		defer ticker.Stop()
-		defer cartoSvc.activeBackgroundWorkers.Done()
 
-		for {
-			if err := cancelCtx.Err(); err != nil {
+	goutils.PanicCapturingGo(func() {
+		if !cartoSvc.useLiveData {
+			// If we're not using live data, we read from the sensor as fast as
+			// possible, since the sensor is just playing back pre-captured data.
+			cartoSvc.readData(ctx, lidar, c)
+		} else {
+			cartoSvc.readDataOnInterval(ctx, lidar, c)
+		}
+	})
+}
+
+func (cartoSvc *cartographerService) readData(ctx context.Context, lidar lidar.Lidar, c chan int) {
+	for {
+		if err := ctx.Err(); err != nil {
+			if !errors.Is(err, context.Canceled) {
+				cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
+			}
+			return
+		}
+
+		cartoSvc.getNextDataPoint(ctx, lidar, c)
+	}
+}
+
+func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lidar lidar.Lidar, c chan int) {
+	ticker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
+	defer ticker.Stop()
+	defer cartoSvc.activeBackgroundWorkers.Done()
+
+	for {
+		if err := ctx.Err(); err != nil {
+			if !errors.Is(err, context.Canceled) {
+				cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
+			}
+			return
+		}
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			if err := ctx.Err(); err != nil {
 				if !errors.Is(err, context.Canceled) {
 					cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
 				}
 				return
 			}
 
-			select {
-			case <-cancelCtx.Done():
-				return
-			case <-ticker.C:
-				cartoSvc.activeBackgroundWorkers.Add(1)
-				if err := cancelCtx.Err(); err != nil {
-					if !errors.Is(err, context.Canceled) {
-						cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
-					}
-					cartoSvc.activeBackgroundWorkers.Done()
-					return
-				}
-				goutils.PanicCapturingGo(func() {
-					defer cartoSvc.activeBackgroundWorkers.Done()
-					if _, err := dim2d.GetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-						cartoSvc.logger.Warn(err)
-					}
-					if c != nil {
-						c <- 1
-					}
-				})
-			}
+			cartoSvc.activeBackgroundWorkers.Add(1)
+			goutils.PanicCapturingGo(func() {
+				defer cartoSvc.activeBackgroundWorkers.Done()
+				cartoSvc.getNextDataPoint(ctx, lidar, c)
+			})
 		}
-	})
+	}
+}
+
+func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
+	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
+		cartoSvc.logger.Warn(err)
+	}
+	if c != nil {
+		c <- 1
+	}
 }
 
 func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {

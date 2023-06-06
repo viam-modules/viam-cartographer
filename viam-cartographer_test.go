@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 
@@ -152,6 +153,8 @@ func TestDataProcess(t *testing.T) {
 	slamSvc := svc.(testhelper.Service)
 
 	t.Run("Successful startup of data process with good lidar", func(t *testing.T) {
+		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
+
 		sensors := []string{"good_lidar"}
 		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
@@ -162,7 +165,7 @@ func TestDataProcess(t *testing.T) {
 
 		<-c
 		cancelFunc()
-		files, err := os.ReadDir(dataDir + "/data/")
+		files, err := os.ReadDir(filepath.Join(dataDir, "data"))
 		test.That(t, len(files), test.ShouldBeGreaterThanOrEqualTo, 1)
 		test.That(t, err, test.ShouldBeNil)
 	})
@@ -182,6 +185,25 @@ func TestDataProcess(t *testing.T) {
 		latestLoggedEntry := allObs[len(allObs)-1]
 		cancelFunc()
 		test.That(t, fmt.Sprint(latestLoggedEntry), test.ShouldContainSubstring, "invalid sensor")
+	})
+
+	t.Run("When replay sensor is configured, we read timestamps from the context", func(t *testing.T) {
+		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
+
+		sensors := []string{"replay_sensor"}
+		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
+
+		cancelCtx, cancelFunc := context.WithCancel(context.Background())
+		c := make(chan int, 100)
+		slamSvc.StartDataProcess(cancelCtx, lidar, c)
+
+		<-c
+		cancelFunc()
+		files, err := os.ReadDir(filepath.Join(dataDir, "data"))
+		test.That(t, len(files), test.ShouldBeGreaterThanOrEqualTo, 1)
+		test.That(t, files[0].Name(), test.ShouldContainSubstring, testhelper.TestTime)
+		test.That(t, err, test.ShouldBeNil)
 	})
 
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
