@@ -300,10 +300,6 @@ func (cartoSvc *cartographerService) StartDataProcess(
 }
 
 func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
-	if _, ok := req["feature_flag"]; ok {
-		featureFlags := map[string]interface{}{"response_in_millimeters": true}
-		return featureFlags, nil
-	}
 	return nil, viamgrpc.UnimplementedError
 }
 
