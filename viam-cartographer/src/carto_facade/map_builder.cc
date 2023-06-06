@@ -3,7 +3,6 @@
 
 #include <sstream>
 
-#include "io.h"
 #include "cartographer/common/configuration_file_resolver.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
 #include "cartographer/io/proto_stream.h"
@@ -12,6 +11,7 @@
 #include "cartographer/mapping/map_builder_interface.h"
 #include "cartographer/mapping/trajectory_builder_interface.h"
 #include "glog/logging.h"
+#include "io.h"
 #include "map_builder.h"
 
 namespace viam {
@@ -115,7 +115,8 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
     if (start_time == -1) {
         throw std::runtime_error("start_time has not been initialized");
     }
-    point_cloud = viam::carto_facade::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
+    point_cloud = viam::carto_facade::io::TimedPointCloudDataFromPCDBuilder(
+        file, start_time);
 
     return point_cloud;
 }

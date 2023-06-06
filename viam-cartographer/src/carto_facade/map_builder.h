@@ -3,6 +3,7 @@
 #define VIAM_CARTO_FACADE_MAP_BUILDER_H
 
 #include <string>
+
 #include "cartographer/io/proto_stream.h"
 #include "cartographer/mapping/2d/grid_2d.h"
 #include "cartographer/mapping/internal/2d/local_trajectory_builder_2d.h"
