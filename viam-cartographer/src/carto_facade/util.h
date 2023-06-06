@@ -41,8 +41,8 @@ std::string pcd_header(int mapSize, bool hasColor);
 void write_float_to_buffer_in_bytes(std::string &buffer, float f);
 
 void write_int_to_buffer_in_bytes(std::string &buffer, int d);
-} // namespace util
-} // namespace carto_facade
-} // namespace viam
+}  // namespace util
+}  // namespace carto_facade
+}  // namespace viam
 
-#endif // CARTO_FACADE_UTIL_H
+#endif  // CARTO_FACADE_UTIL_H
