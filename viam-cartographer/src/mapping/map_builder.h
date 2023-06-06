@@ -18,10 +18,6 @@
 
 namespace viam {
 namespace mapping {
-using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
-
-const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
-const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 
 class MapBuilder {
    public:
