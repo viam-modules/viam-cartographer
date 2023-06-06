@@ -5,6 +5,7 @@
 #include <atomic>
 #include <shared_mutex>
 #include <string>
+#include <chrono>
 
 #include "../mapping/map_builder.h"
 #include "bstrlib.h"
@@ -285,7 +286,6 @@ static const double resolutionMeters = 0.05;
 
 typedef struct config {
     std::vector<std::string> sensors;
-    // TODO: convert to
     std::chrono::seconds map_rate_sec;
     std::string data_dir;
     std::string component_reference;
@@ -303,6 +303,42 @@ enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
 const std::string configuration_mapping_basename = "mapping_new_map.lua";
 const std::string configuration_localization_basename = "locating_in_map.lua";
 const std::string configuration_update_basename = "updating_a_map.lua";
+
+const auto HEADERTEMPLATE =
+    "VERSION .7\n"
+    "FIELDS x y z\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4\n"
+    "TYPE F F F\n"
+    "COUNT 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
+
+const auto HEADERTEMPLATECOLOR =
+    "VERSION .7\n"
+    "FIELDS x y z rgb\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4 4\n"
+    "TYPE F F F I\n"
+    "COUNT 1 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
+carto_facade::ActionMode determine_action_mode(
+    std::string path_to_map, std::chrono::seconds map_rate_sec);
+/* std::string get_latest_map_filename(std::string path_to_map); */
+/* std::string pcd_header(int mapSize, bool hasColor); */
+/* void write_float_to_buffer_in_bytes(std::string &buffer, float f); */
+/* void write_int_to_buffer_in_bytes(std::string &buffer, int d); */
 
 class CartoFacade {
    public:
@@ -501,43 +537,6 @@ class CartoFacade {
     // ---
 };
 }  // namespace carto_facade
-namespace utils {
-const auto HEADERTEMPLATE =
-    "VERSION .7\n"
-    "FIELDS x y z\n"
-    // NOTE: If a float is more than 4 bytes
-    // on a given platform
-    // this size will be inaccurate
-    "SIZE 4 4 4\n"
-    "TYPE F F F\n"
-    "COUNT 1 1 1\n"
-    "WIDTH %d\n"
-    "HEIGHT 1\n"
-    "VIEWPOINT 0 0 0 1 0 0 0\n"
-    "POINTS %d\n"
-    "DATA binary\n";
-
-const auto HEADERTEMPLATECOLOR =
-    "VERSION .7\n"
-    "FIELDS x y z rgb\n"
-    // NOTE: If a float is more than 4 bytes
-    // on a given platform
-    // this size will be inaccurate
-    "SIZE 4 4 4 4\n"
-    "TYPE F F F I\n"
-    "COUNT 1 1 1 1\n"
-    "WIDTH %d\n"
-    "HEIGHT 1\n"
-    "VIEWPOINT 0 0 0 1 0 0 0\n"
-    "POINTS %d\n"
-    "DATA binary\n";
-carto_facade::ActionMode determine_action_mode(
-    std::string path_to_map, std::chrono::seconds map_rate_sec);
-std::string GetLatestMapFilename(std::string path_to_map);
-std::string pcdHeader(int mapSize, bool hasColor);
-void writeFloatToBufferInBytes(std::string &buffer, float f);
-void writeIntToBufferInBytes(std::string &buffer, int d);
-}  // namespace utils
 }  // namespace viam
 
 #else

@@ -3,6 +3,7 @@
 
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/format.hpp>
 
 #include "glog/logging.h"
 
@@ -203,16 +204,14 @@ int CartoFacade::Stop() { return VIAM_CARTO_SUCCESS; };
 int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
 };
-}  // namespace carto_facade
-namespace utils {
 std::ostream &operator<<(std::ostream &os,
                          const viam::carto_facade::ActionMode &action_mode) {
     std::string action_mode_str;
-    if (action_mode == ActionMode::MAPPING) {
+    if (action_mode == viam::carto_facade::ActionMode::MAPPING) {
         action_mode_str = "mapping";
-    } else if (action_mode == ActionMode::LOCALIZING) {
+    } else if (action_mode == viam::carto_facade::ActionMode::LOCALIZING) {
         action_mode_str = "localizing";
-    } else if (action_mode == ActionMode::UPDATING) {
+    } else if (action_mode == viam::carto_facade::ActionMode::UPDATING) {
         action_mode_str = "updating";
     } else {
         throw std::runtime_error("invalid ActionMode value");
@@ -221,11 +220,22 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
-ActionMode determine_action_mode(std::string path_to_map,
+std::vector<std::string> list_sorted_files_in_directory(
+    std::string data_directory) {
+    std::vector<std::string> file_paths;
+
+    for (const auto& entry : boost::filesystem::directory_iterator(data_directory)) {
+        file_paths.push_back((entry.path()).string());
+    }
+
+    sort(file_paths.begin(), file_paths.end());
+    return file_paths;
+}
+
+viam::carto_facade::ActionMode determine_action_mode(std::string path_to_map,
                                  std::chrono::seconds map_rate_sec) {
     // Check if there is an apriori map in the path_to_map directory
-    std::vector<std::string> map_filenames =
-        viam::io::ListSortedFilesInDirectory(path_to_map);
+    std::vector<std::string> map_filenames = list_sorted_files_in_directory(path_to_map);
 
     // Check if there is a *.pbstream map in the path_to_map directory
     for (auto filename : map_filenames) {
@@ -235,11 +245,11 @@ ActionMode determine_action_mode(std::string path_to_map,
             if (map_rate_sec.count() == 0) {
                 // This log line is needed by rdk integration tests.
                 LOG(INFO) << "Running in localization only mode";
-                return ActionMode::LOCALIZING;
+                return viam::carto_facade::ActionMode::LOCALIZING;
             }
             // This log line is needed by rdk integration tests.
             LOG(INFO) << "Running in updating mode";
-            return ActionMode::UPDATING;
+            return viam::carto_facade::ActionMode::UPDATING;
         }
     }
     if (map_rate_sec.count() == 0) {
@@ -249,14 +259,14 @@ ActionMode determine_action_mode(std::string path_to_map,
     }
     // This log line is needed by rdk integration tests.
     LOG(INFO) << "Running in mapping mode";
-    return ActionMode::MAPPING;
+    return viam::carto_facade::ActionMode::MAPPING;
 }
 
-std::string GetLatestMapFilename(std::string path_to_map) {
+std::string get_latest_map_filename(std::string path_to_map) {
     std::string latest_map_filename;
 
     std::vector<std::string> map_filenames =
-        viam::io::ListSortedFilesInDirectory(path_to_map);
+        list_sorted_files_in_directory(path_to_map);
     bool found_map = false;
     for (int i = map_filenames.size() - 1; i >= 0; i--) {
         if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
@@ -272,28 +282,27 @@ std::string GetLatestMapFilename(std::string path_to_map) {
     return latest_map_filename;
 }
 
-std::string pcdHeader(int mapSize, bool hasColor) {
+std::string pcd_header(int mapSize, bool hasColor) {
     if (hasColor)
         return str(boost::format(HEADERTEMPLATECOLOR) % mapSize % mapSize);
     else
         return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
 }
 
-void writeFloatToBufferInBytes(std::string &buffer, float f) {
+void write_float_to_buffer_in_bytes(std::string &buffer, float f) {
     auto p = (const char *)(&f);
     for (std::size_t i = 0; i < sizeof(float); ++i) {
         buffer.push_back(p[i]);
     }
 }
 
-void writeIntToBufferInBytes(std::string &buffer, int d) {
+void write_int_to_buffer_in_bytes(std::string &buffer, int d) {
     auto p = (const char *)(&d);
     for (std::size_t i = 0; i < sizeof(int); ++i) {
         buffer.push_back(p[i]);
     }
 }
-
-}  // namespace utils
+}  // namespace carto_facade
 }  // namespace viam
 
 extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,

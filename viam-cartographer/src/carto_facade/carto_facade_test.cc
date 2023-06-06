@@ -217,7 +217,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     BOOST_TEST((cf->path_to_internal_state) == "/tmp/some/direcory/map");
     BOOST_TEST((cf->b_continue_session) == true);
     BOOST_TEST((cf->config.sensors) == sensors_vec);
-    BOOST_TEST((cf->config.map_rate_sec) == 1);
+    BOOST_TEST((cf->config.map_rate_sec).count() == 1);
     BOOST_TEST((cf->config.data_dir) == "/tmp/some/direcory");
     BOOST_TEST((cf->config.component_reference) == "some component refereance");
     BOOST_TEST((cf->config.mode) == VIAM_CARTO_LOCALIZING);
@@ -329,7 +329,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config) {
     BOOST_TEST(c.component_reference == "some component refereance");
     BOOST_TEST(c.data_dir == "/tmp/some/direcory");
     BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
-    BOOST_TEST(c.map_rate_sec == 1);
+    BOOST_TEST(c.map_rate_sec.count() == 1);
     BOOST_TEST(c.mode == VIAM_CARTO_LOCALIZING);
     BOOST_TEST(c.sensors.size() == 5);
     BOOST_TEST(c.sensors[0] == "sensor_1");
