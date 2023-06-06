@@ -3,15 +3,15 @@
 #define CARTO_FACADE_H
 
 #include <atomic>
-// #include <shared_mutex>
+#include <shared_mutex>
 #include <string>
 
+#include "../mapping/map_builder.h"
 #include "bstrlib.h"
 #include "bstrwrap.h"
 
 // #include "../io/draw_trajectories.h"
 // #include "../io/file_handler.h"
-// #include "../mapping/map_builder.h"
 // #include "../utils/slam_service_helpers.h"
 // #include "Eigen/Core"
 // #include "cairo/cairo.h"
@@ -104,6 +104,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_LIDAR_CONFIG_INVALID 12
 #define VIAM_CARTO_MAP_RATE_SEC_INVALID 13
 #define VIAM_CARTO_COMPONENT_REFERENCE_INVALID 14
+#define VIAM_CARTO_LUA_CONFIG_NOT_FOUND 15
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -285,8 +286,7 @@ static const double resolutionMeters = 0.05;
 typedef struct config {
     std::vector<std::string> sensors;
     // TODO: convert to
-    // std::chrono::seconds map_rate_sec;
-    int map_rate_sec;
+    std::chrono::seconds map_rate_sec;
     std::string data_dir;
     std::string component_reference;
     viam_carto_MODE mode;
@@ -298,11 +298,19 @@ config from_viam_carto_config(viam_carto_config vcc);
 
 // Error log for when no submaps exist
 // std::string errorNoSubmaps = "No submaps to paint";
+enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
+
+const std::string configuration_mapping_basename = "mapping_new_map.lua";
+const std::string configuration_localization_basename = "locating_in_map.lua";
+const std::string configuration_update_basename = "updating_a_map.lua";
 
 class CartoFacade {
    public:
     CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
                 const viam_carto_algo_config ac);
+
+    int IOInit();
+
     // GetPosition returns the relative pose of the robot w.r.t the "origin"
     // of the map, which is the starting point from where the map was initially
     // created along with a component reference.
@@ -369,8 +377,6 @@ class CartoFacade {
     // double GetTranslationWeightFromMapBuilder();
     // double GetRotationWeightFromMapBuilder();
 
-    // std::string configuration_directory;
-
     // The size of the buffer has to be the same as
     // dataBufferSize in RDK's builtin_test.go
     // const int data_buffer_size = 4;
@@ -402,6 +408,13 @@ class CartoFacade {
     std::string path_to_data;
     std::string path_to_internal_state;
     std::atomic<bool> b_continue_session;
+    std::string configuration_directory;
+
+    std::mutex map_builder_mutex;
+    mapping::MapBuilder map_builder;
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
+    int trajectory_id;
+    ActionMode action_mode = ActionMode::MAPPING;
 
    private:
     // moved from namespace
@@ -463,13 +476,6 @@ class CartoFacade {
     // terminate the program.
     // void CacheMapInLocalizationMode();
 
-    // ActionMode action_mode = ActionMode::MAPPING;
-
-    // const std::string configuration_mapping_basename = "mapping_new_map.lua";
-    // const std::string configuration_localization_basename =
-    //     "locating_in_map.lua";
-    // const std::string configuration_update_basename = "updating_a_map.lua";
-
     // std::vector<std::string> file_list_offline;
     // size_t current_file_offline = 0;
     // std::string current_file_online;
@@ -479,8 +485,6 @@ class CartoFacade {
     // before map_builder_mutex. No other mutexes are expected to
     // be held concurrently.
     // std::shared_mutex optimization_shared_mutex;
-    // std::mutex map_builder_mutex;
-    // mapping::MapBuilder map_builder;
 
     // std::atomic<bool> finished_processing_offline{false};
     // std::thread *thread_save_map_with_timestamp;
@@ -497,6 +501,43 @@ class CartoFacade {
     // ---
 };
 }  // namespace carto_facade
+namespace utils {
+const auto HEADERTEMPLATE =
+    "VERSION .7\n"
+    "FIELDS x y z\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4\n"
+    "TYPE F F F\n"
+    "COUNT 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
+
+const auto HEADERTEMPLATECOLOR =
+    "VERSION .7\n"
+    "FIELDS x y z rgb\n"
+    // NOTE: If a float is more than 4 bytes
+    // on a given platform
+    // this size will be inaccurate
+    "SIZE 4 4 4 4\n"
+    "TYPE F F F I\n"
+    "COUNT 1 1 1 1\n"
+    "WIDTH %d\n"
+    "HEIGHT 1\n"
+    "VIEWPOINT 0 0 0 1 0 0 0\n"
+    "POINTS %d\n"
+    "DATA binary\n";
+carto_facade::ActionMode determine_action_mode(
+    std::string path_to_map, std::chrono::seconds map_rate_sec);
+std::string GetLatestMapFilename(std::string path_to_map);
+std::string pcdHeader(int mapSize, bool hasColor);
+void writeFloatToBufferInBytes(std::string &buffer, float f);
+void writeIntToBufferInBytes(std::string &buffer, int d);
+}  // namespace utils
 }  // namespace viam
 
 #else

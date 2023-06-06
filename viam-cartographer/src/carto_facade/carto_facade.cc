@@ -1,11 +1,13 @@
 // This is an experimental integration of cartographer into RDK.
 #include "carto_facade.h"
 
+#include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/filesystem.hpp>
+
 #include "glog/logging.h"
 
 namespace viam {
 namespace carto_facade {
-
 std::string std_string_from_bstring(bstring b_str) {
     int len = blength(b_str);
     char *tmp = bstr2cstr(b_str, 0);
@@ -46,7 +48,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
 
     c.data_dir = std_string_from_bstring(vcc.data_dir);
     c.component_reference = std_string_from_bstring(vcc.component_reference);
-    c.map_rate_sec = vcc.map_rate_sec;
+    c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.mode = vcc.mode;
     c.lidar_config = vcc.lidar_config;
     if (c.sensors.size() == 0) {
@@ -55,7 +57,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
     if (c.data_dir.size() == 0) {
         throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
     }
-    if (c.map_rate_sec < 0) {
+    if (vcc.map_rate_sec < 0) {
         throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
     }
     if (c.component_reference.empty()) {
@@ -67,6 +69,43 @@ config from_viam_carto_config(viam_carto_config vcc) {
     return c;
 };
 
+std::string find_lua_files() {
+    std::string configuration_directory;
+    auto programLocation = boost::dll::program_location();
+    auto relativePathToLuas = programLocation.parent_path().parent_path();
+    relativePathToLuas.append("share/cartographer/lua_files");
+    boost::filesystem::path absolutePathToLuas(
+        "/usr/local/share/cartographer/lua_files");
+    if (exists(relativePathToLuas)) {
+        VLOG(1) << "Using lua files from relative path";
+        configuration_directory = relativePathToLuas.string();
+    } else if (exists(absolutePathToLuas)) {
+        VLOG(1) << "Using lua files from absolute path";
+        configuration_directory = absolutePathToLuas.string();
+    } else {
+        LOG(ERROR) << "No lua files found, looked in " << relativePathToLuas;
+        LOG(ERROR) << "Use 'make install-lua-files' to install lua files into "
+                      "/usr/local/share";
+    }
+    return configuration_directory;
+};
+
+const std::string action_mode_lua_config_filename(ActionMode am) {
+    switch (am) {
+        case ActionMode::MAPPING:
+            return configuration_mapping_basename;
+            break;
+        case ActionMode::LOCALIZING:
+            return configuration_localization_basename;
+            break;
+        case ActionMode::UPDATING:
+            return configuration_update_basename;
+            break;
+        default:
+            throw VIAM_CARTO_SLAM_MODE_INVALID;
+    }
+};
+
 CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
                          const viam_carto_algo_config ac) {
     lib = pVCL;
@@ -76,6 +115,61 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     // TODO: Change to "/internal_state"
     path_to_internal_state = config.data_dir + "/map";
     b_continue_session = true;
+};
+
+int CartoFacade::IOInit() {
+    auto cd = find_lua_files();
+    if (cd.empty()) {
+        return VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
+    }
+    configuration_directory = cd;
+
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        // Set TrajectoryBuilder
+        trajectory_id = map_builder.SetTrajectoryBuilder(
+            &trajectory_builder, {mapping::kRangeSensorId});
+        VLOG(1) << "Using trajectory ID: " << trajectory_id;
+    }
+
+    // Setting the action mode has to happen before setting up the
+    // map builder.
+    /* action_mode = viam::utils::determine_action_mode(path_to_internal_state,
+     */
+    /*                                                  config.map_rate_sec); */
+    /* auto config_basename = action_mode_lua_config_filename(action_mode); */
+    /* { */
+    /*     std::lock_guard<std::mutex> lk(map_builder_mutex); */
+    /*     map_builder.SetUp(configuration_directory, config_basename); */
+
+    /* map_builder.OverwriteOptimizeEveryNNodes( */
+    /*     algo_config.optimize_every_n_nodes); */
+    /* map_builder.OverwriteNumRangeData(algo_config.num_range_data); */
+    /* map_builder.OverwriteMissingDataRayLength( */
+    /*     algo_config.missing_data_ray_length); */
+    /* map_builder.OverwriteMaxRange(algo_config.max_range); */
+    /* map_builder.OverwriteMinRange(algo_config.min_range); */
+    /* if (action_mode == ActionMode::LOCALIZING) { */
+    /*     map_builder.OverwriteMaxSubmapsToKeep(algo_config.max_submaps_to_keep);
+     */
+    /* } */
+    /* if (action_mode == ActionMode::UPDATING) { */
+    /*     map_builder.OverwriteFreshSubmapsCount(algo_config.fresh_submaps_count);
+     */
+    /*     map_builder.OverwriteMinCoveredArea(algo_config.min_covered_area); */
+    /*     map_builder.OverwriteMinAddedSubmapsCount( */
+    /*         algo_config.min_added_submaps_count); */
+    /* } */
+    /* map_builder.OverwriteOccupiedSpaceWeight(algo_config.occupied_space_weight);
+     */
+    /* map_builder.OverwriteTranslationWeight(algo_config.translation_weight);
+     */
+    /* map_builder.OverwriteRotationWeight(algo_config.rotation_weight); */
+
+    /*     map_builder.BuildMapBuilder(); */
+    /* } */
+
+    return VIAM_CARTO_SUCCESS;
 };
 
 int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
@@ -110,6 +204,96 @@ int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
 };
 }  // namespace carto_facade
+namespace utils {
+std::ostream &operator<<(std::ostream &os,
+                         const viam::carto_facade::ActionMode &action_mode) {
+    std::string action_mode_str;
+    if (action_mode == ActionMode::MAPPING) {
+        action_mode_str = "mapping";
+    } else if (action_mode == ActionMode::LOCALIZING) {
+        action_mode_str = "localizing";
+    } else if (action_mode == ActionMode::UPDATING) {
+        action_mode_str = "updating";
+    } else {
+        throw std::runtime_error("invalid ActionMode value");
+    }
+    os << action_mode_str;
+    return os;
+}
+
+ActionMode determine_action_mode(std::string path_to_map,
+                                 std::chrono::seconds map_rate_sec) {
+    // Check if there is an apriori map in the path_to_map directory
+    std::vector<std::string> map_filenames =
+        viam::io::ListSortedFilesInDirectory(path_to_map);
+
+    // Check if there is a *.pbstream map in the path_to_map directory
+    for (auto filename : map_filenames) {
+        if (filename.find(".pbstream") != std::string::npos) {
+            // There is an apriori map present, so we're running either in
+            // updating or localization mode.
+            if (map_rate_sec.count() == 0) {
+                // This log line is needed by rdk integration tests.
+                LOG(INFO) << "Running in localization only mode";
+                return ActionMode::LOCALIZING;
+            }
+            // This log line is needed by rdk integration tests.
+            LOG(INFO) << "Running in updating mode";
+            return ActionMode::UPDATING;
+        }
+    }
+    if (map_rate_sec.count() == 0) {
+        throw std::runtime_error(
+            "set to localization mode (map_rate_sec = 0) but couldn't find "
+            "apriori map to localize on");
+    }
+    // This log line is needed by rdk integration tests.
+    LOG(INFO) << "Running in mapping mode";
+    return ActionMode::MAPPING;
+}
+
+std::string GetLatestMapFilename(std::string path_to_map) {
+    std::string latest_map_filename;
+
+    std::vector<std::string> map_filenames =
+        viam::io::ListSortedFilesInDirectory(path_to_map);
+    bool found_map = false;
+    for (int i = map_filenames.size() - 1; i >= 0; i--) {
+        if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
+            latest_map_filename = map_filenames.at(i);
+            found_map = true;
+            break;
+        }
+    }
+    if (!found_map) {
+        throw std::runtime_error("cannot find maps but they should be present");
+    }
+
+    return latest_map_filename;
+}
+
+std::string pcdHeader(int mapSize, bool hasColor) {
+    if (hasColor)
+        return str(boost::format(HEADERTEMPLATECOLOR) % mapSize % mapSize);
+    else
+        return str(boost::format(HEADERTEMPLATE) % mapSize % mapSize);
+}
+
+void writeFloatToBufferInBytes(std::string &buffer, float f) {
+    auto p = (const char *)(&f);
+    for (std::size_t i = 0; i < sizeof(float); ++i) {
+        buffer.push_back(p[i]);
+    }
+}
+
+void writeIntToBufferInBytes(std::string &buffer, int d) {
+    auto p = (const char *)(&d);
+    for (std::size_t i = 0; i < sizeof(int); ++i) {
+        buffer.push_back(p[i]);
+    }
+}
+
+}  // namespace utils
 }  // namespace viam
 
 extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
