@@ -224,7 +224,8 @@ std::vector<std::string> list_sorted_files_in_directory(
     std::string data_directory) {
     std::vector<std::string> file_paths;
 
-    for (const auto& entry : boost::filesystem::directory_iterator(data_directory)) {
+    for (const auto &entry :
+         boost::filesystem::directory_iterator(data_directory)) {
         file_paths.push_back((entry.path()).string());
     }
 
@@ -232,10 +233,11 @@ std::vector<std::string> list_sorted_files_in_directory(
     return file_paths;
 }
 
-viam::carto_facade::ActionMode determine_action_mode(std::string path_to_map,
-                                 std::chrono::seconds map_rate_sec) {
+viam::carto_facade::ActionMode determine_action_mode(
+    std::string path_to_map, std::chrono::seconds map_rate_sec) {
     // Check if there is an apriori map in the path_to_map directory
-    std::vector<std::string> map_filenames = list_sorted_files_in_directory(path_to_map);
+    std::vector<std::string> map_filenames =
+        list_sorted_files_in_directory(path_to_map);
 
     // Check if there is a *.pbstream map in the path_to_map directory
     for (auto filename : map_filenames) {

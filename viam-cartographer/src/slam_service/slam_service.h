@@ -52,10 +52,6 @@ static const std::string errorNoSubmaps = "No submaps to paint";
 
 extern std::atomic<bool> b_continue_session;
 
-using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
-const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
-const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
-
 class SLAMServiceImpl final : public SLAMService::Service {
    public:
     // GetPosition returns the relative pose of the robot w.r.t the "origin"

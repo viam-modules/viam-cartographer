@@ -22,7 +22,6 @@ using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
-double kDuration = 4.;  // Seconds.
 
 class MapBuilder {
    public:
