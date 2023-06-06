@@ -211,8 +211,7 @@ int SLAMServiceImpl::GetPointCloudMapC(
         LOG(ERROR) << e.what();
         return VIAM_CARTO_POINTCLOUD_ENCODING_ERROR;
     } catch (std::exception &e) {
-        LOG(ERROR) << "Stopping Cartographer: error encoding pointcloud: "
-                   << e.what();
+        LOG(ERROR) << e.what();
         return VIAM_CARTO_UNKNOWN_ERROR;
     }
 
