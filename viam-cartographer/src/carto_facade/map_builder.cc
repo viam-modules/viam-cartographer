@@ -3,7 +3,7 @@
 
 #include <sstream>
 
-#include "../io/file_handler.h"
+#include "io.h"
 #include "cartographer/common/configuration_file_resolver.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
 #include "cartographer/io/proto_stream.h"
@@ -102,7 +102,7 @@ MapBuilder::GetLocalSlamResultCallback() {
 }
 
 void MapBuilder::SetStartTime(std::string initial_filename) {
-    start_time = viam::io::ReadTimeFromTimestamp(
+    start_time = viam::carto_facade::io::ReadTimeFromTimestamp(
         initial_filename.substr(initial_filename.find(io::filename_prefix) +
                                     io::filename_prefix.length(),
                                 initial_filename.find(".pcd")));
@@ -115,7 +115,7 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
     if (start_time == -1) {
         throw std::runtime_error("start_time has not been initialized");
     }
-    point_cloud = viam::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
+    point_cloud = viam::carto_facade::io::TimedPointCloudDataFromPCDBuilder(file, start_time);
 
     return point_cloud;
 }
