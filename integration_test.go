@@ -224,7 +224,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 				deleteProcessedData,
 				useLiveData)
 		}
-		if strings.Contains(line, "Finished optimizing final map") {
+		if strings.Contains(line, "No new data found") {
 			break
 		}
 	}
