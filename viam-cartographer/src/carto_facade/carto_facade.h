@@ -284,7 +284,7 @@ static const double resolutionMeters = 0.05;
 
 typedef struct config {
     std::vector<std::string> sensors;
-    // TODO: convert to 
+    // TODO: convert to
     // std::chrono::seconds map_rate_sec;
     int map_rate_sec;
     std::string data_dir;
