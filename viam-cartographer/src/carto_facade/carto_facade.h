@@ -2,7 +2,7 @@
 #ifndef CARTO_FACADE_H
 #define CARTO_FACADE_H
 
-// #include <atomic>
+#include <atomic>
 // #include <shared_mutex>
 #include <string>
 
@@ -97,8 +97,16 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_LIB_PLATFORM_INVALID 5
 #define VIAM_CARTO_LIB_INVALID 6
 #define VIAM_CARTO_LIB_NOT_INITIALIZED 7
+#define VIAM_CARTO_SENSORS_LIST_EMPTY 8
+#define VIAM_CARTO_UNKNOWN_ERROR 9
+#define VIAM_CARTO_DATA_DIR_NOT_PROVIDED 10
+#define VIAM_CARTO_SLAM_MODE_INVALID 11
+#define VIAM_CARTO_LIDAR_CONFIG_INVALID 12
+#define VIAM_CARTO_MAP_RATE_SEC_INVALID 13
+#define VIAM_CARTO_COMPONENT_REFERENCE_INVALID 14
 
 typedef struct viam_carto_algo_config {
+    bool optimize_on_start;
     int optimize_every_n_nodes;
     int num_range_data;
     float missing_data_ray_length;
@@ -276,6 +284,8 @@ static const double resolutionMeters = 0.05;
 
 typedef struct config {
     std::vector<std::string> sensors;
+    // TODO: convert to
+    // std::chrono::seconds map_rate_sec;
     int map_rate_sec;
     std::string data_dir;
     std::string component_reference;
@@ -359,18 +369,7 @@ class CartoFacade {
     // double GetTranslationWeightFromMapBuilder();
     // double GetRotationWeightFromMapBuilder();
 
-    // std::string path_to_data;
-    // std::string path_to_map;
     // std::string configuration_directory;
-    // std::string config_params;
-    // std::string port;
-    // std::string camera_name;
-    // std::chrono::milliseconds data_rate_ms;
-    // std::chrono::seconds map_rate_sec;
-    // std::string slam_mode;
-    // std::atomic<bool> optimize_on_start{false};
-    // std::atomic<bool> use_live_data{false};
-    // bool delete_processed_data = false;
 
     // The size of the buffer has to be the same as
     // dataBufferSize in RDK's builtin_test.go
@@ -397,12 +396,15 @@ class CartoFacade {
     // double translation_weight = 10.0;
     // double rotation_weight = 1.0;
 
-   private:
     viam_carto_lib *lib;
     viam::carto_facade::config config;
     viam_carto_algo_config algo_config;
+    std::string path_to_data;
+    std::string path_to_internal_state;
+    std::atomic<bool> b_continue_session;
+
+   private:
     // moved from namespace
-    // std::atomic<bool> b_continue_session;
     // StartSaveMap starts the map saving process in a separate thread.
     // void StartSaveMap();
 
