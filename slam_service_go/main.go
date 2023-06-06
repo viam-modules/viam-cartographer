@@ -1,7 +1,7 @@
 package main
 
 /*
-  #cgo LDFLAGS: -v -L../viam-cartographer/build  -lviam-cartographer  -lstdc++ -lpthread
+  #cgo LDFLAGS: -v -L../viam-cartographer/build  -lviam-cartographer -lglog -lstdc++ -lpthread
 	#include "../viam-cartographer/src/carto_facade/carto_facade.h"
 */
 import "C"
