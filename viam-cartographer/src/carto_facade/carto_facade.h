@@ -78,11 +78,11 @@ typedef struct viam_carto_sensor_reading {
     uint64_t sensor_reading_time_unix_micro;
 } viam_carto_sensor_reading;
 
-typedef enum viam_carto_MODE {
-    VIAM_CARTO_LOCALIZING = 0,
-    VIAM_CARTO_MAPPING = 1,
-    VIAM_CARTO_UPDATING = 2
-} viam_carto_MODE;
+/* typedef enum viam_carto_MODE { */
+/*     VIAM_CARTO_LOCALIZING = 0, */
+/*     VIAM_CARTO_MAPPING = 1, */
+/*     VIAM_CARTO_UPDATING = 2 */
+/* } viam_carto_MODE; */
 
 typedef enum viam_carto_LIDAR_CONFIG {
     VIAM_CARTO_TWO_D = 0,
@@ -129,7 +129,7 @@ typedef struct viam_carto_config {
     int map_rate_sec;
     bstring data_dir;
     bstring component_reference;
-    viam_carto_MODE mode;
+    /* viam_carto_MODE mode; */
     viam_carto_LIDAR_CONFIG lidar_config;
 } viam_carto_config;
 
@@ -290,7 +290,7 @@ typedef struct config {
     std::chrono::seconds map_rate_sec;
     std::string data_dir;
     std::string component_reference;
-    viam_carto_MODE mode;
+    /* viam_carto_MODE mode; */
     viam_carto_LIDAR_CONFIG lidar_config;
 } config;
 

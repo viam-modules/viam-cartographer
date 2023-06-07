@@ -17,19 +17,6 @@ std::string std_string_from_bstring(bstring b_str) {
     return std_str;
 }
 
-void validate_mode(viam_carto_MODE mode) {
-    switch (mode) {
-        case VIAM_CARTO_LOCALIZING:
-            break;
-        case VIAM_CARTO_MAPPING:
-            break;
-        case VIAM_CARTO_UPDATING:
-            break;
-        default:
-            throw VIAM_CARTO_SLAM_MODE_INVALID;
-    }
-}
-
 void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
     switch (lidar_config) {
         case VIAM_CARTO_TWO_D:
@@ -50,7 +37,6 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.data_dir = std_string_from_bstring(vcc.data_dir);
     c.component_reference = std_string_from_bstring(vcc.component_reference);
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
-    c.mode = vcc.mode;
     c.lidar_config = vcc.lidar_config;
     if (c.sensors.size() == 0) {
         throw VIAM_CARTO_SENSORS_LIST_EMPTY;
@@ -64,31 +50,38 @@ config from_viam_carto_config(viam_carto_config vcc) {
     if (c.component_reference.empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
     }
-    validate_mode(c.mode);
     validate_lidar_config(c.lidar_config);
 
     return c;
 };
 
 std::string find_lua_files() {
-    std::string configuration_directory;
     auto programLocation = boost::dll::program_location();
+    auto localRelativePathToLuas = programLocation.parent_path().parent_path();
+    localRelativePathToLuas.append("lua_files");
     auto relativePathToLuas = programLocation.parent_path().parent_path();
     relativePathToLuas.append("share/cartographer/lua_files");
     boost::filesystem::path absolutePathToLuas(
         "/usr/local/share/cartographer/lua_files");
+
     if (exists(relativePathToLuas)) {
-        VLOG(1) << "Using lua files from relative path";
-        configuration_directory = relativePathToLuas.string();
+        VLOG(1) << "Using lua files from relative path "
+                << relativePathToLuas.string();
+        return relativePathToLuas.string();
+    } else if (exists(localRelativePathToLuas)) {
+        VLOG(1) << "Using lua files from local relative path "
+                << localRelativePathToLuas.string();
+        return localRelativePathToLuas.string();
     } else if (exists(absolutePathToLuas)) {
-        VLOG(1) << "Using lua files from absolute path";
-        configuration_directory = absolutePathToLuas.string();
+        VLOG(1) << "Using lua files from absolute path "
+                << absolutePathToLuas.string();
+        return absolutePathToLuas.string();
     } else {
         LOG(ERROR) << "No lua files found, looked in " << relativePathToLuas;
         LOG(ERROR) << "Use 'make install-lua-files' to install lua files into "
                       "/usr/local/share";
+        return "";
     }
-    return configuration_directory;
 };
 
 const std::string action_mode_lua_config_filename(ActionMode am) {
@@ -119,19 +112,22 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
 };
 
 int CartoFacade::IOInit() {
+    // TODO: Make this API user configurable
     auto cd = find_lua_files();
     if (cd.empty()) {
         return VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
     }
     configuration_directory = cd;
 
-    {
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        // Set TrajectoryBuilder
-        trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
-                                                         {kRangeSensorId});
-        VLOG(1) << "Using trajectory ID: " << trajectory_id;
-    }
+    /* { */
+    /*   std::lock_guard<std::mutex> lk(map_builder_mutex); */
+    /*   // Set TrajectoryBuilder */
+    /*   trajectory_id = */
+    /*       map_builder.SetTrajectoryBuilder(&trajectory_builder,
+     * {kRangeSensorId}); */
+    /*   VLOG(1) << "Using trajectory_builder: " << trajectory_builder; */
+    /*   VLOG(1) << "Using trajectory ID: " << trajectory_id; */
+    /* } */
 
     // Setting the action mode has to happen before setting up the
     // map builder.
@@ -339,7 +335,14 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     }
 
     try {
-        vc->carto_obj = new viam::carto_facade::CartoFacade(pVCL, c, ac);
+        viam::carto_facade::CartoFacade *cf =
+            new viam::carto_facade::CartoFacade(pVCL, c, ac);
+        int rc = cf->IOInit();
+        if (rc != VIAM_CARTO_SUCCESS) {
+            delete cf;
+            throw rc;
+        }
+        vc->carto_obj = cf;
     } catch (int err) {
         free(vc);
         return err;
