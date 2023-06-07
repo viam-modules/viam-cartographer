@@ -9,6 +9,21 @@
 
 namespace viam {
 namespace carto_facade {
+namespace fs = boost::filesystem;
+std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
+    std::string action_mode_str;
+    if (action_mode == ActionMode::MAPPING) {
+        action_mode_str = "mapping";
+    } else if (action_mode == ActionMode::LOCALIZING) {
+        action_mode_str = "localizing";
+    } else if (action_mode == ActionMode::UPDATING) {
+        action_mode_str = "updating";
+    } else {
+        throw std::runtime_error("invalid ActionMode value");
+    }
+    os << action_mode_str;
+    return os;
+}
 std::string std_string_from_bstring(bstring b_str) {
     int len = blength(b_str);
     char *tmp = bstr2cstr(b_str, 0);
@@ -96,6 +111,8 @@ const std::string action_mode_lua_config_filename(ActionMode am) {
             return configuration_update_basename;
             break;
         default:
+            LOG(ERROR)
+                << "action_mode_lua_config_filename: action mode is invalid";
             throw VIAM_CARTO_SLAM_MODE_INVALID;
     }
 };
@@ -105,19 +122,59 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     lib = pVCL;
     config = from_viam_carto_config(c);
     algo_config = ac;
-    path_to_data = config.data_dir + "/data";
-    // TODO: Change to "/internal_state"
-    path_to_internal_state = config.data_dir + "/map";
+    path_to_internal_state = config.data_dir + "/internal_state";
     b_continue_session = true;
 };
 
-int CartoFacade::IOInit() {
+void setup_filesystem(std::string data_dir,
+                      std::string path_to_internal_state) {
+    // setup internal state directory if it doesn't exist
+    auto perms =
+        fs::perms::group_all | fs::perms::owner_all | fs::perms::others_read;
+    try {
+        // if directory doesn't exist, create it with expected structure
+        if (!fs::is_directory(data_dir)) {
+            VLOG(1) << "data_dir doesn't exist. Creating " << data_dir;
+            fs::create_directory(data_dir);
+            VLOG(1) << "setting data_dir permissions";
+            fs::permissions(data_dir, perms);
+        }
+        if (!fs::is_directory(path_to_internal_state)) {
+            VLOG(1) << "data_dir's internal_state directory, doesn't exist. "
+                       "Creating "
+                    << path_to_internal_state;
+            fs::create_directory(path_to_internal_state);
+            VLOG(1)
+                << "setting data_dir's internal_state directory's permissions";
+            fs::permissions(path_to_internal_state, perms);
+        }
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        throw VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR;
+    }
+}
+
+void CartoFacade::IOInit() {
+    if (fs::is_directory(config.data_dir + "/map")) {
+        LOG(ERROR) << "data directory " << config.data_dir
+                   << " is invalid as it contains deprecated format i.e. /map "
+                      "subdirectory";
+        throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
+    }
+    setup_filesystem(config.data_dir, path_to_internal_state);
+    action_mode =
+        determine_action_mode(path_to_internal_state, config.map_rate_sec);
     // TODO: Make this API user configurable
     auto cd = find_lua_files();
     if (cd.empty()) {
-        return VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
+        throw VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
     }
     configuration_directory = cd;
+    auto config_basename = action_mode_lua_config_filename(action_mode);
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SetUp(configuration_directory, config_basename);
+    }
 
     /* { */
     /*   std::lock_guard<std::mutex> lk(map_builder_mutex); */
@@ -131,10 +188,6 @@ int CartoFacade::IOInit() {
 
     // Setting the action mode has to happen before setting up the
     // map builder.
-    /* action_mode = viam::utils::determine_action_mode(path_to_internal_state,
-     */
-    /*                                                  config.map_rate_sec); */
-    /* auto config_basename = action_mode_lua_config_filename(action_mode); */
     /* { */
     /*     std::lock_guard<std::mutex> lk(map_builder_mutex); */
     /*     map_builder.SetUp(configuration_directory, config_basename); */
@@ -165,8 +218,6 @@ int CartoFacade::IOInit() {
 
     /*     map_builder.BuildMapBuilder(); */
     /* } */
-
-    return VIAM_CARTO_SUCCESS;
 };
 
 int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
@@ -200,28 +251,11 @@ int CartoFacade::Stop() { return VIAM_CARTO_SUCCESS; };
 int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
 };
-std::ostream &operator<<(std::ostream &os,
-                         const viam::carto_facade::ActionMode &action_mode) {
-    std::string action_mode_str;
-    if (action_mode == viam::carto_facade::ActionMode::MAPPING) {
-        action_mode_str = "mapping";
-    } else if (action_mode == viam::carto_facade::ActionMode::LOCALIZING) {
-        action_mode_str = "localizing";
-    } else if (action_mode == viam::carto_facade::ActionMode::UPDATING) {
-        action_mode_str = "updating";
-    } else {
-        throw std::runtime_error("invalid ActionMode value");
-    }
-    os << action_mode_str;
-    return os;
-}
 
-std::vector<std::string> list_sorted_files_in_directory(
-    std::string data_directory) {
+std::vector<std::string> list_sorted_files_in_directory(std::string directory) {
     std::vector<std::string> file_paths;
 
-    for (const auto &entry :
-         boost::filesystem::directory_iterator(data_directory)) {
+    for (const auto &entry : boost::filesystem::directory_iterator(directory)) {
         file_paths.push_back((entry.path()).string());
     }
 
@@ -230,13 +264,14 @@ std::vector<std::string> list_sorted_files_in_directory(
 }
 
 viam::carto_facade::ActionMode determine_action_mode(
-    std::string path_to_map, std::chrono::seconds map_rate_sec) {
-    // Check if there is an apriori map in the path_to_map directory
-    std::vector<std::string> map_filenames =
-        list_sorted_files_in_directory(path_to_map);
+    std::string path_to_internal_state, std::chrono::seconds map_rate_sec) {
+    // Check if there is an apriori map (intenral state) in the
+    // path_to_internal_state directory
+    std::vector<std::string> internal_state_filenames =
+        list_sorted_files_in_directory(path_to_internal_state);
 
     // Check if there is a *.pbstream map in the path_to_map directory
-    for (auto filename : map_filenames) {
+    for (auto filename : internal_state_filenames) {
         if (filename.find(".pbstream") != std::string::npos) {
             // There is an apriori map present, so we're running either in
             // updating or localization mode.
@@ -251,9 +286,9 @@ viam::carto_facade::ActionMode determine_action_mode(
         }
     }
     if (map_rate_sec.count() == 0) {
-        throw std::runtime_error(
-            "set to localization mode (map_rate_sec = 0) but couldn't find "
-            "apriori map to localize on");
+        LOG(ERROR) << "set to localization mode (map_rate_sec = 0) but "
+                      "couldn't find apriori map to localize on";
+        throw VIAM_CARTO_SLAM_MODE_INVALID;
     }
     // This log line is needed by rdk integration tests.
     LOG(INFO) << "Running in mapping mode";
@@ -333,16 +368,10 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     if (vc == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
+    viam::carto_facade::CartoFacade *cf;
 
     try {
-        viam::carto_facade::CartoFacade *cf =
-            new viam::carto_facade::CartoFacade(pVCL, c, ac);
-        int rc = cf->IOInit();
-        if (rc != VIAM_CARTO_SUCCESS) {
-            delete cf;
-            throw rc;
-        }
-        vc->carto_obj = cf;
+        cf = new viam::carto_facade::CartoFacade(pVCL, c, ac);
     } catch (int err) {
         free(vc);
         return err;
@@ -351,6 +380,20 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         LOG(ERROR) << e.what();
         return VIAM_CARTO_UNKNOWN_ERROR;
     }
+
+    try {
+        cf->IOInit();
+    } catch (int err) {
+        delete cf;
+        free(vc);
+        return err;
+    } catch (std::exception &e) {
+        delete cf;
+        free(vc);
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+    vc->carto_obj = cf;
 
     // point to newly created viam_carto struct
     *ppVC = vc;

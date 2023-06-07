@@ -106,6 +106,8 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_MAP_RATE_SEC_INVALID 13
 #define VIAM_CARTO_COMPONENT_REFERENCE_INVALID 14
 #define VIAM_CARTO_LUA_CONFIG_NOT_FOUND 15
+#define VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE 16
+#define VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR 17
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -278,6 +280,7 @@ extern int viam_carto_get_internal_state_response_destroy(
 namespace viam {
 namespace carto_facade {
 enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
+std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode);
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
 // The resolutionMeters variable defines the area in meters that each pixel
@@ -316,7 +319,7 @@ class CartoFacade {
     CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
                 const viam_carto_algo_config ac);
 
-    int IOInit();
+    void IOInit();
 
     // GetPosition returns the relative pose of the robot w.r.t the "origin"
     // of the map, which is the starting point from where the map was initially
