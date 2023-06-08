@@ -109,6 +109,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_LUA_CONFIG_NOT_FOUND 15
 #define VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE 16
 #define VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR 17
+#define VIAM_CARTO_MAP_CREATION_ERROR 18
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;

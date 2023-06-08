@@ -6,6 +6,7 @@
 #include <boost/format.hpp>
 
 #include "glog/logging.h"
+#include "map_builder.h"
 #include "util.h"
 
 namespace viam {
@@ -107,8 +108,7 @@ std::string find_lua_files() {
     localRelativePathToLuas.append("lua_files");
     auto relativePathToLuas = programLocation.parent_path().parent_path();
     relativePathToLuas.append("share/cartographer/lua_files");
-    fs::path absolutePathToLuas(
-        "/usr/local/share/cartographer/lua_files");
+    fs::path absolutePathToLuas("/usr/local/share/cartographer/lua_files");
 
     if (exists(relativePathToLuas)) {
         VLOG(1) << "Using lua files from relative path "
@@ -236,7 +236,6 @@ void CartoFacade::IOInit() {
     auto config_basename = action_mode_lua_config_filename(action_mode);
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        VLOG(1) << "calling map_builder.SetUp";
         map_builder.SetUp(configuration_directory, config_basename);
         VLOG(1) << "overwriting map_builder config";
         map_builder.OverwriteOptimizeEveryNNodes(
@@ -261,10 +260,12 @@ void CartoFacade::IOInit() {
             algo_config.occupied_space_weight);
         map_builder.OverwriteTranslationWeight(algo_config.translation_weight);
         map_builder.OverwriteRotationWeight(algo_config.rotation_weight);
-        VLOG(1) << "building MapBuilder";
         map_builder.BuildMapBuilder();
     }
 
+    // TODO: google cartographer will termiante the program if
+    // the internal state is invalid
+    // see https://viam.atlassian.net/browse/RSDK-3553
     if (action_mode == ActionMode::UPDATING ||
         action_mode == ActionMode::LOCALIZING) {
         // Check if there is an apriori map in the path_to_map directory
@@ -339,16 +340,16 @@ void CartoFacade::CacheMapInLocalizationMode() {
             GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
 
         } catch (std::exception &e) {
-            LOG(ERROR) << "Stopping Cartographer: error encoding localized "
+            LOG(ERROR) << "error encoding localized "
                           "pointcloud map: "
                        << e.what();
-            std::terminate();
+            throw VIAM_CARTO_MAP_CREATION_ERROR;
         }
 
         if (pointcloud_map_tmp.empty()) {
-            LOG(ERROR) << "Stopping Cartographer: error encoding localized "
+            LOG(ERROR) << "error encoding localized "
                           "pointcloud map: no map points";
-            std::terminate();
+            throw VIAM_CARTO_MAP_CREATION_ERROR;
         }
 
         {

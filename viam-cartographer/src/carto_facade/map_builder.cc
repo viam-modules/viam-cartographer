@@ -25,6 +25,9 @@ MapBuilder::GetLocalSlamResultPoses() {
 
 void MapBuilder::SetUp(std::string configuration_directory,
                        std::string configuration_basename) {
+    VLOG(1) << "MapBuilder::SetUp configuration_directory: "
+            << configuration_directory
+            << " configuration_basename: " << configuration_basename;
     auto file_resolver =
         absl::make_unique<cartographer::common::ConfigurationFileResolver>(
             std::vector<std::string>{configuration_directory});
@@ -44,11 +47,10 @@ void MapBuilder::SetUp(std::string configuration_directory,
     trajectory_builder_options_ =
         cartographer::mapping::CreateTrajectoryBuilderOptions(
             trajectory_builder_parameters.get());
-
-    return;
 }
 
 void MapBuilder::BuildMapBuilder() {
+    VLOG(1) << "MapBuilder::BuildMapBuilder";
     map_builder_ =
         cartographer::mapping::CreateMapBuilder(map_builder_options_);
 }
