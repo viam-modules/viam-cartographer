@@ -104,7 +104,7 @@ install-lua-files:
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 
 test-cpp:
-	cd viam-cartographer && ./scripts/test_cartographer.sh
+	viam-cartographer/build/unit_tests -p -l all
 
 # Linux only
 setup-cpp-full-mod: 
