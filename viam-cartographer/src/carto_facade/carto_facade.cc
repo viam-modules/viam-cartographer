@@ -217,12 +217,14 @@ std::string get_latest_internal_state_filename(std::string path_to_map) {
 }
 
 void CartoFacade::IOInit() {
+    // Detect if data_dir has deprecated format
     if (fs::is_directory(config.data_dir + "/map")) {
         LOG(ERROR) << "data directory " << config.data_dir
                    << " is invalid as it contains deprecated format i.e. /map "
                       "subdirectory";
         throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
     }
+    // Setup file system for saving map
     setup_filesystem(config.data_dir, path_to_internal_state);
     action_mode =
         determine_action_mode(path_to_internal_state, config.map_rate_sec);
@@ -233,7 +235,9 @@ void CartoFacade::IOInit() {
         throw VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
     }
     configuration_directory = cd;
+    // Detect action mode
     auto config_basename = action_mode_lua_config_filename(action_mode);
+    // Setup MapBuilder
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SetUp(configuration_directory, config_basename);
@@ -290,7 +294,6 @@ void CartoFacade::IOInit() {
                                         algo_config.optimize_on_start);
         } else {
             // Load apriori map
-            VLOG(1) << "getting map_builder_mutex";
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             VLOG(1) << "calling map_builder.LoadMapFromFile "
                        "latest_internal_state_filename: "
@@ -301,7 +304,6 @@ void CartoFacade::IOInit() {
             map_builder.LoadMapFromFile(latest_internal_state_filename,
                                         load_frozen_trajectory,
                                         algo_config.optimize_on_start);
-            VLOG(1) << "called map_builder.LoadMapFromFile";
         }
 
         CacheMapInLocalizationMode();
