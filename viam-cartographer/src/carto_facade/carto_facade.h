@@ -9,6 +9,7 @@
 
 #include "bstrlib.h"
 #include "bstrwrap.h"
+#include "cartographer/io/submap_painter.h"
 #include "map_builder.h"
 
 // #include "../io/draw_trajectories.h"
@@ -301,7 +302,7 @@ typedef struct config {
 config from_viam_carto_config(viam_carto_config vcc);
 
 // Error log for when no submaps exist
-// std::string errorNoSubmaps = "No submaps to paint";
+static const std::string errorNoSubmaps = "No submaps to paint";
 
 const std::string configuration_mapping_basename = "mapping_new_map.lua";
 const std::string configuration_localization_basename = "locating_in_map.lua";
@@ -342,6 +343,11 @@ class CartoFacade {
 
     int Stop();
 
+    // non api methods
+    void BackupLatestMap();
+    void CacheMapInLocalizationMode();
+    void GetLatestSampledPointCloudMapString(std::string &pointcloud);
+    cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
     // RunSLAM sets up and runs cartographer. It runs cartographer in
     // the ActionMode mode: Either creating
     // a new map, updating an apriori map, or localizing on an apriori map.
@@ -494,12 +500,12 @@ class CartoFacade {
     // concurrently, then optimization_shared_mutex must be taken
     // before map_builder_mutex. No other mutexes are expected to
     // be held concurrently.
-    // std::shared_mutex optimization_shared_mutex;
+    std::shared_mutex optimization_shared_mutex;
 
     // std::atomic<bool> finished_processing_offline{false};
     // std::thread *thread_save_map_with_timestamp;
 
-    // std::mutex viam_response_mutex;
+    std::mutex viam_response_mutex;
     // cartographer::transform::Rigid3d latest_global_pose =
     //     cartographer::transform::Rigid3d();
 
@@ -507,7 +513,7 @@ class CartoFacade {
     // send the most recent map out while cartographer works on creating an
     // optimized map. It is only updated right before the optimization is
     // started.
-    // std::string latest_pointcloud_map;
+    std::string latest_pointcloud_map;
     // ---
 };
 }  // namespace carto_facade
