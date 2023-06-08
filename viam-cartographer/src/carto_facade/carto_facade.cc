@@ -309,18 +309,22 @@ void CartoFacade::IOInit() {
         CacheMapInLocalizationMode();
     }
 
+    // Prepare the trajectory builder and grab the active trajectory_id
     /* { */
     /*   std::lock_guard<std::mutex> lk(map_builder_mutex); */
     /*   // Set TrajectoryBuilder */
+    /*   VLOG(1) << "BEFORE trajectory_builder: " << trajectory_builder; */
     /*   trajectory_id = */
-    /*       map_builder.SetTrajectoryBuilder(&trajectory_builder,
-     * {kRangeSensorId}); */
+    /*       map_builder.SetTrajectoryBuilder(&trajectory_builder, */
+    /* {kRangeSensorId}); */
     /*   VLOG(1) << "Using trajectory_builder: " << trajectory_builder; */
     /*   VLOG(1) << "Using trajectory ID: " << trajectory_id; */
     /* } */
-
-    // Setting the action mode has to happen before setting up the
-    // map builder.
+    // MAYBE THE BELOW BELONGS IN START
+    /* if (!(map_rate_sec == std::chrono::seconds(0))) { */
+    /*   thread_save_map_with_timestamp = */
+    /*     new std::thread([&]() { this->SaveMapWithTimestamp(); }); */
+    /* } */
 };
 
 void CartoFacade::BackupLatestMap() {

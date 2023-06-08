@@ -49,18 +49,18 @@ void viam_carto_config_teardown(viam_carto_config vcc) {
 viam_carto_algo_config viam_carto_algo_config_setup() {
     struct viam_carto_algo_config ac;
     ac.optimize_on_start = false;
-    ac.optimize_every_n_nodes = 1;
-    ac.num_range_data = 2;
-    ac.missing_data_ray_length = 3.1;
-    ac.max_range = 4.1;
-    ac.min_range = 0.1;
-    ac.max_submaps_to_keep = 6;
-    ac.fresh_submaps_count = 7;
-    ac.min_covered_area = 8.1;
-    ac.min_added_submaps_count = 9;
-    ac.occupied_space_weight = 10.1;
-    ac.translation_weight = 11.1;
-    ac.rotation_weight = 12.1;
+    ac.optimize_every_n_nodes = 3;
+    ac.num_range_data = 100;
+    ac.missing_data_ray_length = 25.0;
+    ac.max_range = 25.0;
+    ac.min_range = 0.2;
+    ac.max_submaps_to_keep = 3;
+    ac.fresh_submaps_count = 3;
+    ac.min_covered_area = 1.0;
+    ac.min_added_submaps_count = 1;
+    ac.occupied_space_weight = 20.0;
+    ac.translation_weight = 10.0;
+    ac.rotation_weight = 1.0;
     return ac;
 }
 
@@ -166,6 +166,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, nullptr, vcc, ac) ==
                VIAM_CARTO_LIB_INVALID);
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    VLOG(1) << "BEFORE sleep";
+    std::this_thread::sleep_for(std::chrono::seconds(3));
+    VLOG(1) << "AFTER sleep";
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
 
     viam_carto_config_teardown(vcc_no_sensors);
@@ -339,21 +342,21 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
         static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     BOOST_TEST((cf->lib) == lib);
     BOOST_TEST((cf->algo_config.optimize_on_start) == false);
-    BOOST_TEST((cf->algo_config.optimize_every_n_nodes) == 1);
-    BOOST_TEST((cf->algo_config.num_range_data) == 2);
-    BOOST_TEST((cf->algo_config.missing_data_ray_length) == 3.1,
+    BOOST_TEST((cf->algo_config.optimize_every_n_nodes) == 3);
+    BOOST_TEST((cf->algo_config.num_range_data) == 100);
+    BOOST_TEST((cf->algo_config.missing_data_ray_length) == 25,
                tt::tolerance(0.001));
-    BOOST_TEST((cf->algo_config.max_range) == 4.1, tt::tolerance(0.001));
-    BOOST_TEST((cf->algo_config.min_range) == 0.1, tt::tolerance(0.001));
-    BOOST_TEST((cf->algo_config.max_submaps_to_keep) == 6);
-    BOOST_TEST((cf->algo_config.fresh_submaps_count) == 7);
-    BOOST_TEST((cf->algo_config.min_covered_area) == 8.1, tt::tolerance(0.001));
-    BOOST_TEST((cf->algo_config.min_added_submaps_count) == 9);
-    BOOST_TEST((cf->algo_config.occupied_space_weight) == 10.1,
+    BOOST_TEST((cf->algo_config.max_range) == 25, tt::tolerance(0.001));
+    BOOST_TEST((cf->algo_config.min_range) == 0.2, tt::tolerance(0.001));
+    BOOST_TEST((cf->algo_config.max_submaps_to_keep) == 3);
+    BOOST_TEST((cf->algo_config.fresh_submaps_count) == 3);
+    BOOST_TEST((cf->algo_config.min_covered_area) == 1, tt::tolerance(0.001));
+    BOOST_TEST((cf->algo_config.min_added_submaps_count) == 1);
+    BOOST_TEST((cf->algo_config.occupied_space_weight) == 20,
                tt::tolerance(0.001));
-    BOOST_TEST((cf->algo_config.translation_weight) == 11.1,
+    BOOST_TEST((cf->algo_config.translation_weight) == 10,
                tt::tolerance(0.001));
-    BOOST_TEST((cf->algo_config.rotation_weight) == 12.1, tt::tolerance(0.001));
+    BOOST_TEST((cf->algo_config.rotation_weight) == 1, tt::tolerance(0.001));
     auto path_to_internal_state = tmp_dir / fs::path("/internal_state");
     BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
     BOOST_TEST((cf->b_continue_session) == true);
