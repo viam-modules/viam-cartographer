@@ -2,9 +2,13 @@
 #ifndef CARTO_FACADE_H
 #define CARTO_FACADE_H
 
+#ifdef __cplusplus
 #include <atomic>
 // #include <shared_mutex>
 #include <string>
+#else
+#include<stdbool.h>  
+#endif
 
 #include "bstrlib.h"
 #include "bstrwrap.h"
