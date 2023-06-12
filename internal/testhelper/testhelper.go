@@ -148,7 +148,7 @@ func getIntegrationLidar() *inject.Camera {
 			if i >= NumPointClouds {
 				return nil, errors.New("No more cartographer point clouds")
 			}
-			file, err := os.Open(artifact.MustPath("slam/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
+			file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 			if err != nil {
 				return nil, err
 			}
