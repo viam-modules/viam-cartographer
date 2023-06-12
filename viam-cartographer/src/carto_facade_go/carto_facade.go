@@ -35,7 +35,7 @@ type CViamCartoLib struct {
 	viam_carto_lib *C.viam_carto_lib
 }
 
-func NewCViamCartoLibObj(miniloglevel int, verbose int) (*CViamCartoLib, error) {
+func NewViamCartoLib(miniloglevel int, verbose int) (*CViamCartoLib, error) {
 	pVcl := C.alloc_viam_carto_lib()
 	defer C.free_alloc_viam_carto_lib(pVcl)
 
@@ -52,7 +52,7 @@ func NewCViamCartoLibObj(miniloglevel int, verbose int) (*CViamCartoLib, error) 
 	return &vcl, nil
 }
 
-func (vcl *CViamCartoLib) TerminateCViamCartoLibObj() error {
+func (vcl *CViamCartoLib) TerminateViamCartoLib() error {
 	status := C.viam_carto_lib_terminate((**C.viam_carto_lib)(unsafe.Pointer(vcl)))
 	if !successfulCCall(status) {
 		// TODO: how to make this error useful?
@@ -65,6 +65,7 @@ type CViamCarto struct {
 	impl *C.viam_carto
 }
 
+// TODO: properly pass config
 func get_config() C.viam_carto_config {
 	vcc := C.viam_carto_config{}
 
@@ -76,6 +77,12 @@ func get_config() C.viam_carto_config {
 	vcc.sensors = pSensor
 	vcc.sensors_len = C.int(sz)
 
+	data_dir := C.bfromcstr(C.CString("data_dir"))
+	vcc.data_dir = data_dir
+
+	component_reference := C.bfromcstr(C.CString("comp_ref"))
+	vcc.component_reference = component_reference
+
 	return vcc
 }
 
@@ -83,7 +90,7 @@ func clean_config(vcc C.viam_carto_config) {
 	C.free_bstring_array(vcc.sensors)
 }
 
-func NewCViamCartoObj(vcl CViamCartoLib) (*CViamCarto, error) {
+func NewViamCarto(vcl CViamCartoLib) (*CViamCarto, error) {
 	pVc := C.alloc_viam_carto()
 	defer C.free_alloc_viam_carto(pVc)
 

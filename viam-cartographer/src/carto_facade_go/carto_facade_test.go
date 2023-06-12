@@ -1,6 +1,7 @@
 package carto_facade_test
 
 import (
+	"context"
 	"testing"
 
 	cartoFacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
@@ -8,28 +9,28 @@ import (
 )
 
 func TestViamCartoCGoAPI(t *testing.T) {
-	pvcl, err := cartoFacade.NewCViamCartoLibObj(1, 1)
+	pvcl, err := cartoFacade.NewViamCartoLib(1, 1)
 
 	t.Run("initialize viam_carto_lib", func(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 	})
 
+	vc, err := cartoFacade.NewViamCarto(*pvcl)
 	t.Run("initialize viam_carto", func(t *testing.T) {
-		vc, err := cartoFacade.NewCViamCartoObj(*pvcl)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)
 	})
 
-	// t.Run("terminate viam_carto", func(t *testing.T) {
-	// 	err = pvcl.TerminateCViamCartoObj()
-	// 	test.That(t, err, test.ShouldBeNil)
-	// })
+	t.Run("terminate viam_carto", func(t *testing.T) {
+		err = vc.TerminateViamCarto(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+	})
 
-	// t.Run("terminate viam_carto_lib", func(t *testing.T) {
-	// 	err = pvcl.TerminateCViamCartoLibObj()
-	// 	test.That(t, err, test.ShouldBeNil)
-	// })
+	t.Run("terminate viam_carto_lib", func(t *testing.T) {
+		err = pvcl.TerminateViamCartoLib()
+		test.That(t, err, test.ShouldBeNil)
+	})
 }
 
 // func TestStart(t *testing.T) {
