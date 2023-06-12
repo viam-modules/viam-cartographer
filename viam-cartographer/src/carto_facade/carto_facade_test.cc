@@ -214,6 +214,25 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
         viam::carto_facade::CartoFacade *cf1 =
             static_cast<viam::carto_facade::CartoFacade *>(vc1->carto_obj);
         BOOST_TEST(cf1->action_mode == ActionMode::MAPPING);
+        BOOST_TEST(cf1->map_builder.GetOptimizeEveryNNodes() ==
+                   ac.optimize_every_n_nodes);
+        BOOST_TEST(cf1->map_builder.GetNumRangeData() == ac.num_range_data);
+        BOOST_TEST(cf1->map_builder.GetMissingDataRayLength() ==
+                       ac.missing_data_ray_length,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf1->map_builder.GetMaxRange() == ac.max_range,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf1->map_builder.GetMinRange() == ac.min_range,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf1->map_builder.GetOccupiedSpaceWeight() ==
+                       ac.occupied_space_weight,
+                   tt::tolerance(0.001));
+        BOOST_TEST(
+            cf1->map_builder.GetTranslationWeight() == ac.translation_weight,
+            tt::tolerance(0.001));
+        BOOST_TEST(cf1->map_builder.GetRotationWeight() == ac.rotation_weight,
+                   tt::tolerance(0.001));
+        // END TEST
         BOOST_TEST(viam_carto_terminate(&vc1) == VIAM_CARTO_SUCCESS);
         viam_carto_config_teardown(vcc_mapping);
     }
@@ -257,6 +276,30 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
         viam::carto_facade::CartoFacade *cf2 =
             static_cast<viam::carto_facade::CartoFacade *>(vc2->carto_obj);
         BOOST_TEST(cf2->action_mode == ActionMode::UPDATING);
+        BOOST_TEST(cf2->map_builder.GetOptimizeEveryNNodes() ==
+                   ac.optimize_every_n_nodes);
+        BOOST_TEST(cf2->map_builder.GetNumRangeData() == ac.num_range_data);
+        BOOST_TEST(cf2->map_builder.GetMissingDataRayLength() ==
+                       ac.missing_data_ray_length,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf2->map_builder.GetMaxRange() == ac.max_range,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf2->map_builder.GetMinRange() == ac.min_range,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf2->map_builder.GetFreshSubmapsCount() ==
+                   ac.fresh_submaps_count);
+        BOOST_TEST(cf2->map_builder.GetMinCoveredArea() == ac.min_covered_area,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf2->map_builder.GetMinAddedSubmapsCount() ==
+                   ac.min_added_submaps_count);
+        BOOST_TEST(cf2->map_builder.GetOccupiedSpaceWeight() ==
+                       ac.occupied_space_weight,
+                   tt::tolerance(0.001));
+        BOOST_TEST(
+            cf2->map_builder.GetTranslationWeight() == ac.translation_weight,
+            tt::tolerance(0.001));
+        BOOST_TEST(cf2->map_builder.GetRotationWeight() == ac.rotation_weight,
+                   tt::tolerance(0.001));
         BOOST_TEST(viam_carto_terminate(&vc2) == VIAM_CARTO_SUCCESS);
         viam_carto_config_teardown(vcc_updating);
     }
@@ -291,6 +334,26 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
         viam::carto_facade::CartoFacade *cf3 =
             static_cast<viam::carto_facade::CartoFacade *>(vc4->carto_obj);
         BOOST_TEST(cf3->action_mode == ActionMode::LOCALIZING);
+        BOOST_TEST(cf3->map_builder.GetOptimizeEveryNNodes() ==
+                   ac.optimize_every_n_nodes);
+        BOOST_TEST(cf3->map_builder.GetNumRangeData() == ac.num_range_data);
+        BOOST_TEST(cf3->map_builder.GetMissingDataRayLength() ==
+                       ac.missing_data_ray_length,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf3->map_builder.GetMaxRange() == ac.max_range,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf3->map_builder.GetMinRange() == ac.min_range,
+                   tt::tolerance(0.001));
+        BOOST_TEST(cf3->map_builder.GetMaxSubmapsToKeep() ==
+                   ac.max_submaps_to_keep);
+        BOOST_TEST(cf3->map_builder.GetOccupiedSpaceWeight() ==
+                       ac.occupied_space_weight,
+                   tt::tolerance(0.001));
+        BOOST_TEST(
+            cf3->map_builder.GetTranslationWeight() == ac.translation_weight,
+            tt::tolerance(0.001));
+        BOOST_TEST(cf3->map_builder.GetRotationWeight() == ac.rotation_weight,
+                   tt::tolerance(0.001));
         BOOST_TEST(viam_carto_terminate(&vc4) == VIAM_CARTO_SUCCESS);
         viam_carto_config_teardown(vcc_localizing);
     }
