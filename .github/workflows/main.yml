@@ -6,7 +6,8 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: [ 'main' ]
+  # remove workflowtest
+    branches: [ 'workflowtest' ]
     paths-ignore:
       - 'README.md'
     tags:
