@@ -27,6 +27,7 @@ const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
 
 class MapBuilder {
    public:
+    ~MapBuilder();
     // SetUp reads in the cartographer parameters via reading in the lua files.
     void SetUp(std::string configuration_directory,
                std::string configuration_basename);
@@ -56,16 +57,11 @@ class MapBuilder {
     // string if it fails.
     std::string TryFileClose(std::ifstream& file, std::string filename);
 
-    // SetTrajectoryBuilder sets the trajectory builder options and returns the
-    // active trajectory_id.
-    int SetTrajectoryBuilder(
-        cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
-        std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>
-            sensorId);
+    void StartLidarTrajectoryBuilder();
 
     // SetStartTime sets the start_time to the time stamp from the first sensor
     // file that is being read in.
-    void SetStartTime(std::string initial_filename);
+    void SetStartTime(double input_start_time);
 
     // GetDataFromFile creates a TimedPointCloudData object from reading in
     // a PCD file.
@@ -74,10 +70,9 @@ class MapBuilder {
     // GetLocalSlamResultPoses returns the local slam result poses.
     std::vector<::cartographer::transform::Rigid3d> GetLocalSlamResultPoses();
 
-    // GetGlobalPose returns the local pose based on the provided trajectory_id
-    // and local pose.
+    // GetGlobalPose returns the local pose based on the provided a local pose.
     cartographer::transform::Rigid3d GetGlobalPose(
-        int trajectory_id, cartographer::transform::Rigid3d& local_pose);
+        cartographer::transform::Rigid3d& local_pose);
 
     // GetLocalSlamResultCallback saves the local pose in the
     // local_slam_result_poses array.
@@ -113,6 +108,8 @@ class MapBuilder {
     double GetRotationWeight();
 
     std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder_;
+    cartographer::mapping::TrajectoryBuilderInterface* trajectory_builder;
+    int trajectory_id;
     cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
     cartographer::mapping::proto::TrajectoryBuilderOptions
         trajectory_builder_options_;

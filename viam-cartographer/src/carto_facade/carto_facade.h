@@ -429,8 +429,6 @@ class CartoFacade {
 
     std::mutex map_builder_mutex;
     MapBuilder map_builder;
-    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
-    int trajectory_id;
     ActionMode action_mode = ActionMode::MAPPING;
 
    private:

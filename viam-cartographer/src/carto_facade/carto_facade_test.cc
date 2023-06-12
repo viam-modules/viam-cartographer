@@ -166,9 +166,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, nullptr, vcc, ac) ==
                VIAM_CARTO_LIB_INVALID);
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
-    VLOG(1) << "BEFORE sleep";
-    std::this_thread::sleep_for(std::chrono::seconds(3));
-    VLOG(1) << "AFTER sleep";
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
 
     viam_carto_config_teardown(vcc_no_sensors);

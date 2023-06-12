@@ -17,6 +17,20 @@
 
 namespace viam {
 namespace carto_facade {
+MapBuilder::~MapBuilder() {
+    // This is needed as the google cartographer MapBuilder class
+    // doesn't have a destructor which cleans up all the TrajectoryBuilder
+    // instances started from a given MapBuilder.
+    // This destructor ensures the TrajectoryBuilder is cleaned up with
+    // the MapBuilder.
+    //
+    // If we don't do this, there will still be trajectory related
+    // threads doing work in google cartographer, which will try
+    // to access the deleted MapBuilder, which will throw exceptions.
+    if (map_builder_ != nullptr && trajectory_builder != nullptr) {
+        map_builder_->FinishTrajectory(trajectory_id);
+    }
+}
 
 std::vector<::cartographer::transform::Rigid3d>
 MapBuilder::GetLocalSlamResultPoses() {
@@ -65,7 +79,7 @@ void MapBuilder::LoadMapFromFile(std::string map_filename,
         LOG(INFO) << "Optimizing map on start, this may take a few minutes";
         map_builder_->pose_graph()->RunFinalOptimization();
     }
-    for (auto&& trajectory_ids_pair : trajectory_ids_map)
+    for (auto &&trajectory_ids_pair : trajectory_ids_map)
         VLOG(1) << "Trajectory ids mapping from apriori map: "
                 << trajectory_ids_pair.first << " "
                 << trajectory_ids_pair.second;
@@ -81,15 +95,14 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     return ok;
 }
 
-int MapBuilder::SetTrajectoryBuilder(
-    cartographer::mapping::TrajectoryBuilderInterface** trajectory_builder,
-    std::set<cartographer::mapping::TrajectoryBuilderInterface::SensorId>
-        sensorIdSet) {
-    int trajectory_id = map_builder_->AddTrajectoryBuilder(
-        sensorIdSet, trajectory_builder_options_, GetLocalSlamResultCallback());
+void MapBuilder::StartLidarTrajectoryBuilder() {
+    VLOG(1) << "MapBuilder::StartLidarTrajectoryBuilder";
+    trajectory_id = map_builder_->AddTrajectoryBuilder(
+        {kRangeSensorId}, trajectory_builder_options_,
+        GetLocalSlamResultCallback());
+    VLOG(1) << "Using trajectory ID: " << trajectory_id;
 
-    *trajectory_builder = map_builder_->GetTrajectoryBuilder(trajectory_id);
-    return trajectory_id;
+    trajectory_builder = map_builder_->GetTrajectoryBuilder(trajectory_id);
 }
 
 cartographer::mapping::MapBuilderInterface::LocalSlamResultCallback
@@ -104,11 +117,8 @@ MapBuilder::GetLocalSlamResultCallback() {
     };
 }
 
-void MapBuilder::SetStartTime(std::string initial_filename) {
-    start_time = viam::carto_facade::io::ReadTimeFromTimestamp(
-        initial_filename.substr(initial_filename.find(io::filename_prefix) +
-                                    io::filename_prefix.length(),
-                                initial_filename.find(".pcd")));
+void MapBuilder::SetStartTime(double input_start_time) {
+    start_time = input_start_time;
 }
 
 cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
@@ -127,7 +137,7 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
 // TODO: There might still be a lot of room to improve accuracy & speed.
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(
-    int trajectory_id, cartographer::transform::Rigid3d& local_pose) {
+    cartographer::transform::Rigid3d &local_pose) {
     auto local_transform =
         map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
     return local_transform * local_pose;

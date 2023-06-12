@@ -309,19 +309,9 @@ void CartoFacade::IOInit() {
         CacheMapInLocalizationMode();
     }
 
-    // Prepare the trajectory builder and grab the active trajectory_id
-    // START HERE: This when viam_carto_terminate is called & the
-    // CartoFacade object destructor calls the MapBuilder destructor
-    // it causes the trajectory builder to throw exceptions.
-    // Try changing the trajectory id to be a unique pointer.
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        // Set TrajectoryBuilder
-        VLOG(1) << "BEFORE trajectory_builder: " << trajectory_builder;
-        trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
-                                                         {kRangeSensorId});
-        VLOG(1) << "Using trajectory_builder: " << trajectory_builder;
-        VLOG(1) << "Using trajectory ID: " << trajectory_id;
+        map_builder.StartLidarTrajectoryBuilder();
     }
     // MAYBE THE BELOW BELONGS IN START
     /* if (!(map_rate_sec == std::chrono::seconds(0))) { */
