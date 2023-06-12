@@ -226,6 +226,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
             fs::path(
                 ".artifact/data/viam-cartographer/outputs/viam-office-02-22-3/"
                 "internal_state/internal_state_0.pbstream");
+
+        VLOG(1) << "internal_state_artifact_source: "
+                << internal_state_artifact_source;
+        VLOG(1) << "exists(internal_state_artifact_source): "
+                << exists(internal_state_artifact_source);
+        VLOG(1) << "internal_state_dir: " << internal_state_dir;
+        VLOG(1) << "exists(internal_state_dir): " << exists(internal_state_dir);
         auto internal_state_artifact_target =
             internal_state_dir /
             fs::path("map_data_2022-02-11T01:44:53.1903Z.pbstream");
