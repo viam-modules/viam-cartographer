@@ -72,6 +72,8 @@ else
 	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
 endif
 	
+
+	
 build: build-module
 ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
 	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
