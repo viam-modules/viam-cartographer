@@ -7,11 +7,13 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <cstring>
 #include <exception>
+#include <filesystem>
 
 #include "glog/logging.h"
 
 namespace tt = boost::test_tools;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
+namespace bfs = boost::filesystem;
 
 namespace viam {
 namespace carto_facade {
@@ -96,7 +98,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
 
     viam_carto *vc;
     std::vector<std::string> empty_sensors_vec;
-    fs::path tmp_dir = fs::temp_directory_path() / fs::unique_path();
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
 
     struct viam_carto_config vcc_no_sensors =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
@@ -138,7 +141,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_lidar_config, ac) ==
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
 
-    fs::path deprecated_path = tmp_dir / fs::unique_path();
+    fs::path deprecated_path = tmp_dir / fs::path(bfs::unique_path().string());
     fs::create_directories(deprecated_path.string() + "/map");
 
     struct viam_carto_config vcc_deprecated_path =
@@ -147,7 +150,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_deprecated_path, ac) ==
                VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE);
 
-    fs::path invalid_path = tmp_dir / fs::unique_path() / fs::unique_path();
+    fs::path invalid_path = tmp_dir / fs::path(bfs::unique_path().string()) /
+                            fs::path(bfs::unique_path().string());
 
     struct viam_carto_config vcc_invalid_path =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, invalid_path.string(),
@@ -187,7 +191,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
     std::vector<std::string> empty_sensors_vec;
-    fs::path tmp_dir = fs::temp_directory_path() / fs::unique_path();
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     std::vector<std::string> sensors_vec;
     sensors_vec.push_back("sensor_1");
     sensors_vec.push_back("sensor_2");
@@ -307,7 +312,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
 
     {
         // invalid
-        auto empty_dir = tmp_dir / fs::unique_path();
+        auto empty_dir = tmp_dir / fs::path(bfs::unique_path().string());
         ;
         viam_carto *vc6;
         struct viam_carto_config vcc_invalid =
@@ -336,7 +341,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     sensors_vec.push_back("sensor_3");
     sensors_vec.push_back("sensor_4");
     sensors_vec.push_back("sensor_5");
-    fs::path tmp_dir = fs::temp_directory_path() / fs::unique_path();
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
                                 "some component refereance", sensors_vec);
@@ -361,7 +367,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     BOOST_TEST((cf->algo_config.translation_weight) == 10,
                tt::tolerance(0.001));
     BOOST_TEST((cf->algo_config.rotation_weight) == 1, tt::tolerance(0.001));
-    auto path_to_internal_state = tmp_dir / fs::path("/internal_state");
+    auto path_to_internal_state = tmp_dir / fs::path("internal_state");
+
     BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
     BOOST_TEST((cf->b_continue_session) == true);
     BOOST_TEST((cf->config.sensors) == sensors_vec);
@@ -391,7 +398,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     sensors_vec.push_back("sensor_3");
     sensors_vec.push_back("sensor_4");
     sensors_vec.push_back("sensor_5");
-    fs::path tmp_dir = fs::temp_directory_path() / fs::unique_path();
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
@@ -471,7 +479,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config) {
     sensors_vec.push_back("sensor_3");
     sensors_vec.push_back("sensor_4");
     sensors_vec.push_back("sensor_5");
-    fs::path tmp_dir = fs::temp_directory_path() / fs::unique_path();
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
