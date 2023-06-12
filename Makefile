@@ -117,7 +117,7 @@ install:
 	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
 
 appimage: build
-	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe rplidar-module-`uname -m`.yml
+	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe cartographer-module-`uname -m`.yml
 	mkdir -p etc/packaging/appimages/deploy/
 	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
 	chmod 755 etc/packaging/appimages/deploy/*.AppImage

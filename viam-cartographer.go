@@ -5,7 +5,6 @@ package viamcartographer
 import (
 	"bufio"
 	"context"
-	"fmt"
 	"io"
 	"os"
 	"strconv"
@@ -337,7 +336,6 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
 		}
 	}()
-	fmt.Println("---------------------- CLOSE ----------------------")
 	cartoSvc.cancelFunc()
 	if cartoSvc.bufferSLAMProcessLogs {
 		if cartoSvc.slamProcessLogReader != nil {
