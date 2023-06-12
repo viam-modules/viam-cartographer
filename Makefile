@@ -26,6 +26,7 @@ clean:
 clean-all:
 	git clean -fxd
 
+
 ensure-submodule-initialized:
 	@if [ ! -d "viam-cartographer/cartographer/cartographer" ]; then \
 		echo "Submodule was not found. Initializing..."; \
