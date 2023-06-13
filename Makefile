@@ -1,9 +1,14 @@
 BUILD_CHANNEL?=local
 TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
-PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):${PATH}"
+PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):$(HOME)/go/bin/:${PATH}"
 GIT_REVISION = $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION?=$(shell git tag --points-at | sort -Vr | head -n1)
 GO_BUILD_LDFLAGS = -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+
+ARTIFACT="~/go/bin/artifact"
+
+artifact-pull:
+	PATH=${PATH_WITH_TOOLS} artifact pull
 
 bufinstall:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
@@ -71,6 +76,7 @@ ifeq ("Darwin", "$(shell uname -s)")
 else
 	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
 endif
+	@make artifact-pull
 	
 build: build-module
 ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
@@ -85,7 +91,6 @@ build-module:
 install-lua-files:
 	sudo mkdir -p /usr/local/share/cartographer/lua_files/
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
-	sudo cp viam-cartographer/cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
 
 test-cpp:
 	cd viam-cartographer && ./scripts/test_cartographer.sh

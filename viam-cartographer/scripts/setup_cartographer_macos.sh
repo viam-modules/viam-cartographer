@@ -7,3 +7,4 @@ brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl
 brew unlink protobuf@3
 brew unlink protobuf
 brew unlink protobuf@21 && brew link protobuf@21
+go install go.viam.com/utils/artifact/cmd/artifact
