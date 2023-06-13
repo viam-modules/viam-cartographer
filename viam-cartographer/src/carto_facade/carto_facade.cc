@@ -112,7 +112,8 @@ int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
 }  // namespace carto_facade
 }  // namespace viam
 
-extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel, int verbose) {
+extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
+                               int verbose) {
     if (ppVCL == nullptr) {
         return VIAM_CARTO_LIB_INVALID;
     }

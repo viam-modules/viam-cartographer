@@ -1,10 +1,11 @@
-package carto_facade
+package cartoFacade
 
 /*
 	#cgo CFLAGS: -I../carto_facade
   	#cgo LDFLAGS: -v -L../../build  -lviam-cartographer -lglog -lstdc++ -lpthread
 
 	#include "../carto_facade/carto_facade.h"
+	// TODO: confirm bstring import is necessary and why
 	#include "bstrlib.h"
 
 	viam_carto_lib* alloc_viam_carto_lib() { return (viam_carto_lib*) malloc(sizeof(viam_carto_lib)); }
@@ -17,6 +18,7 @@ package carto_facade
 	void free_bstring_array(bstring* p) { free(p); }
 */
 import "C"
+
 import (
 	"context"
 	"errors"
@@ -27,94 +29,101 @@ import (
 	"go.viam.com/rdk/spatialmath"
 )
 
-func successfulCCall(status C.int) bool {
+func successfulStatus(status C.int) bool {
 	return int(status) == int(C.VIAM_CARTO_SUCCESS)
 }
 
+// CViamCartoLib is a struct to hold the c type viam_carto_lib
 type CViamCartoLib struct {
-	viam_carto_lib *C.viam_carto_lib
+	viamCartolib *C.viam_carto_lib
 }
 
-func NewViamCartoLib(miniloglevel int, verbose int) (*CViamCartoLib, error) {
+// NewViamCartoLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
+func NewViamCartoLib(miniloglevel, verbose int) (CViamCartoLib, error) {
 	pVcl := C.alloc_viam_carto_lib()
 	defer C.free_alloc_viam_carto_lib(pVcl)
 
 	ppVcl := (**C.viam_carto_lib)(unsafe.Pointer(pVcl))
 
 	status := C.viam_carto_lib_init(ppVcl, C.int(miniloglevel), C.int(verbose))
-	if !successfulCCall(status) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
-		return nil, errors.New(fmt.Sprintf("Error initializing viam_carto_lib status = %d", status))
+		return CViamCartoLib{}, fmt.Errorf("error initializing viam_carto_lib status = %d", status)
 	}
 
-	vcl := CViamCartoLib{viam_carto_lib: (*C.viam_carto_lib)(*ppVcl)}
+	vcl := CViamCartoLib{viamCartolib: (*ppVcl)}
 
-	return &vcl, nil
+	return vcl, nil
 }
 
+// TerminateViamCartoLib calls viam_carto_lib_terminate to clean up memory for viam carto lib.
 func (vcl *CViamCartoLib) TerminateViamCartoLib() error {
 	status := C.viam_carto_lib_terminate((**C.viam_carto_lib)(unsafe.Pointer(vcl)))
-	if !successfulCCall(status) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return errors.New(string(status))
 	}
 	return nil
 }
 
+// CViamCarto is a struct to hold the c type viam_carto
 type CViamCarto struct {
-	impl *C.viam_carto
+	viamCarto *C.viam_carto
 }
 
 // TODO: properly pass config
-func get_config() C.viam_carto_config {
+func getConfig() C.viam_carto_config {
 	vcc := C.viam_carto_config{}
 
 	sz := 1
 	pSensor := C.alloc_bstring_array(C.size_t(sz))
-	sensor_slice := unsafe.Slice(pSensor, sz)
-	sensor_slice[0] = C.bfromcstr(C.CString("rplidar"))
+	sensorSlice := unsafe.Slice(pSensor, sz)
+	sensorSlice[0] = C.bfromcstr(C.CString("rplidar"))
 
 	vcc.sensors = pSensor
 	vcc.sensors_len = C.int(sz)
 
-	data_dir := C.bfromcstr(C.CString("data_dir"))
-	vcc.data_dir = data_dir
+	dataDir := C.bfromcstr(C.CString("data_dir"))
+	vcc.data_dir = dataDir
 
-	component_reference := C.bfromcstr(C.CString("comp_ref"))
-	vcc.component_reference = component_reference
+	componentReference := C.bfromcstr(C.CString("comp_ref"))
+	vcc.component_reference = componentReference
 
 	return vcc
 }
 
-func clean_config(vcc C.viam_carto_config) {
+func cleanConfig(vcc C.viam_carto_config) {
 	C.free_bstring_array(vcc.sensors)
 }
 
+// NewViamCarto calls viam_carto_init and returns a pointer to a viam carto object.
 func NewViamCarto(vcl CViamCartoLib) (*CViamCarto, error) {
+	// TODO: get vcl as a param & initialize c queue channel here
 	pVc := C.alloc_viam_carto()
 	defer C.free_alloc_viam_carto(pVc)
 
 	ppVc := (**C.viam_carto)(unsafe.Pointer(pVc))
 
 	// TODO: Init with data
-	vcc := get_config()
-	defer clean_config(vcc)
+	vcc := getConfig()
+	defer cleanConfig(vcc)
 	vcac := C.viam_carto_algo_config{}
 
-	status := C.viam_carto_init(ppVc, vcl.viam_carto_lib, vcc, vcac)
-	if !successfulCCall(status) {
+	status := C.viam_carto_init(ppVc, vcl.viamCartolib, vcc, vcac)
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
-		return nil, errors.New(fmt.Sprintf("Error initializing viam_carto status = %d", status))
+		return nil, fmt.Errorf("error initializing viam_carto status = %d", status)
 	}
 
-	vc := CViamCarto{impl: (*C.viam_carto)(*ppVc)}
+	vc := CViamCarto{viamCarto: (*C.viam_carto)(*ppVc)}
 	return &vc, nil
 }
 
+// Start is a wrapper for viam_carto_start
 func (vc *CViamCarto) Start(ctx context.Context) error {
-	status := C.viam_carto_start(vc.impl)
+	status := C.viam_carto_start(vc.viamCarto)
 
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return errors.New(string(status))
 	}
@@ -122,10 +131,11 @@ func (vc *CViamCarto) Start(ctx context.Context) error {
 	return nil
 }
 
+// Stop is a wrapper for viam_carto_stop
 func (vc *CViamCarto) Stop(ctx context.Context) error {
-	status := C.viam_carto_stop(vc.impl)
+	status := C.viam_carto_stop(vc.viamCarto)
 
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return errors.New(string(status))
 	}
@@ -133,10 +143,11 @@ func (vc *CViamCarto) Stop(ctx context.Context) error {
 	return nil
 }
 
+// TerminateViamCarto calls viam_carto_terminate to clean up memory for viam carto
 func (vc *CViamCarto) TerminateViamCarto(ctx context.Context) error {
-	status := C.viam_carto_terminate(&vc.impl)
+	status := C.viam_carto_terminate(&vc.viamCarto)
 
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return errors.New(string(status))
 	}
@@ -144,22 +155,24 @@ func (vc *CViamCarto) TerminateViamCarto(ctx context.Context) error {
 	return nil
 }
 
+// CViamCartoAddSensorReading is a struct to hold the c type viam_carto_sensor_reading
 type CViamCartoAddSensorReading struct {
 	vcasr C.viam_carto_sensor_reading
 }
 
+// AddSensorReading is a wrapper for viam_carto_add_sensor_reading
 func (vc *CViamCarto) AddSensorReading(ctx context.Context) error {
 	resp := CViamCartoAddSensorReading{vcasr: C.viam_carto_sensor_reading{}}
 
-	status := C.viam_carto_add_sensor_reading(vc.impl, &resp.vcasr)
+	status := C.viam_carto_add_sensor_reading(vc.viamCarto, &resp.vcasr)
 
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return errors.New(string(status))
 	}
 
 	status = C.viam_carto_add_sensor_reading_destroy(&resp.vcasr)
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return errors.New(string(status))
 	}
@@ -167,16 +180,18 @@ func (vc *CViamCarto) AddSensorReading(ctx context.Context) error {
 	return nil
 }
 
+// CViamCartoGetPositionResponse is a struct to hold the c type viam_carto_get_position_response
 type CViamCartoGetPositionResponse struct {
 	vcgpr C.viam_carto_get_position_response
 }
 
+// GetPosition is a wrapper for viam_carto_get_position
 func (vc *CViamCarto) GetPosition(ctx context.Context) (spatialmath.Pose, string, error) {
 	resp := CViamCartoGetPositionResponse{vcgpr: C.viam_carto_get_position_response{}}
 
-	status := C.viam_carto_get_position(vc.impl, &resp.vcgpr)
+	status := C.viam_carto_get_position(vc.viamCarto, &resp.vcgpr)
 
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return nil, "", errors.New(string(status))
 	}
@@ -184,7 +199,8 @@ func (vc *CViamCarto) GetPosition(ctx context.Context) (spatialmath.Pose, string
 	pos := r3.Vector{
 		X: float64(resp.vcgpr.x),
 		Y: float64(resp.vcgpr.y),
-		Z: float64(resp.vcgpr.z)}
+		Z: float64(resp.vcgpr.z),
+	}
 
 	// TODO: What should be done with quat info?
 	// quat := &spatialmath.Quaternion{
@@ -196,10 +212,11 @@ func (vc *CViamCarto) GetPosition(ctx context.Context) (spatialmath.Pose, string
 	ori := &spatialmath.OrientationVectorDegrees{
 		OX: float64(resp.vcgpr.o_x),
 		OY: float64(resp.vcgpr.o_y),
-		OZ: float64(resp.vcgpr.o_z)}
+		OZ: float64(resp.vcgpr.o_z),
+	}
 
 	status = C.viam_carto_get_position_response_destroy(&resp.vcgpr)
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return nil, "", errors.New(string(status))
 	}
@@ -208,22 +225,24 @@ func (vc *CViamCarto) GetPosition(ctx context.Context) (spatialmath.Pose, string
 	return spatialmath.NewPose(pos, ori), "", nil
 }
 
+// CViamCartoGetPointCloudMapResponse is a struct to hold the c type viam_carto_get_point_cloud_map_response
 type CViamCartoGetPointCloudMapResponse struct {
 	vcgpcmr C.viam_carto_get_point_cloud_map_response
 }
 
+// GetPointCloudMap is a wrapper for viam_carto_get_point_cloud_map
 func (vc *CViamCarto) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	resp := CViamCartoGetPointCloudMapResponse{vcgpcmr: C.viam_carto_get_point_cloud_map_response{}}
 
-	status := C.viam_carto_get_point_cloud_map(vc.impl, &resp.vcgpcmr)
+	status := C.viam_carto_get_point_cloud_map(vc.viamCarto, &resp.vcgpcmr)
 
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return nil, errors.New(string(status))
 	}
 
 	status = C.viam_carto_get_point_cloud_map_response_destroy(&resp.vcgpcmr)
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return nil, errors.New(string(status))
 	}
@@ -231,22 +250,24 @@ func (vc *CViamCarto) GetPointCloudMap(ctx context.Context) (func() ([]byte, err
 	return nil, nil
 }
 
+// CViamCartoGetInternalStateResponse is a struct to hold the c type viam_carto_get_internal_state_response
 type CViamCartoGetInternalStateResponse struct {
 	vcgisr C.viam_carto_get_internal_state_response
 }
 
+// GetInternalState is a wrapper for viam_carto_get_internal_state
 func (vc *CViamCarto) GetInternalState(ctx context.Context) (func() ([]byte, error), error) {
 	resp := CViamCartoGetInternalStateResponse{vcgisr: C.viam_carto_get_internal_state_response{}}
 
-	status := C.viam_carto_get_internal_state(vc.impl, &resp.vcgisr)
+	status := C.viam_carto_get_internal_state(vc.viamCarto, &resp.vcgisr)
 
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return nil, errors.New(string(status))
 	}
 
 	status = C.viam_carto_get_internal_state_response_destroy(&resp.vcgisr)
-	if int(status) != int(C.VIAM_CARTO_SUCCESS) {
+	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
 		return nil, errors.New(string(status))
 	}

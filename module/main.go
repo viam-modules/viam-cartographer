@@ -55,6 +55,7 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	// Start the module
 	err = cartoModule.Start(ctx)
 	defer cartoModule.Close(ctx)
+	// TODO: defer terminate viam_carto_lib
 	if err != nil {
 		return err
 	}

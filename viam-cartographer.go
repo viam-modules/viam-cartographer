@@ -28,10 +28,16 @@ import (
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
+	cartoFacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
+	cfq "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_queue"
 )
 
 // Model is the model name of cartographer.
 var Model = resource.NewModel("viam", "slam", "cartographer")
+
+// TODO: instantiate viam_carto_lib with correct loglevels and verbosity
+// Question: what to do with this error?
+var ViamCartoLib, err = cartoFacade.NewViamCartoLib(1, 1)
 
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
@@ -122,8 +128,11 @@ func New(
 		return nil, err
 	}
 
+	cartoFacadeQueue := cfq.NewCartoFacadeQueue()
+
 	// Need to pass in a long-lived context because ctx is short-lived
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+	cartoFacadeCancelCtx, cartoFacadeCancelFunc := context.WithCancel(context.Background())
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
@@ -140,9 +149,19 @@ func New(
 		dataRateMs:            dataRateMsec,
 		mapRateSec:            mapRateSec,
 		cancelFunc:            cancelFunc,
+		cartoFacadeQueue:      cartoFacadeQueue,
+		cartoFacadeCancelFunc: cartoFacadeCancelFunc,
 		logger:                logger,
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
 	}
+
+	cartoSvc.StartBackgroundWorker(cartoFacadeCancelCtx)
+	cViamCarto := cartoSvc.cartoFacadeQueue.HandleIncomingRequest(
+		cartoFacadeCancelCtx,
+		cfq.Initialize,
+		map[cfq.InputType]interface{}{},
+	)
+	cartoSvc.cViamCarto = cViamCarto.(cartoFacade.CViamCarto)
 
 	success := false
 	defer func() {
@@ -187,6 +206,8 @@ type cartographerService struct {
 	slamProcess       pexec.ProcessManager
 	clientAlgo        pb.SLAMServiceClient
 	clientAlgoClose   func() error
+	cartoFacadeQueue  cfq.CartoFacadeQueue
+	cViamCarto        cartoFacade.CViamCarto
 
 	configParams        map[string]string
 	dataDirectory       string
@@ -198,6 +219,7 @@ type cartographerService struct {
 	mapRateSec int
 
 	cancelFunc              func()
+	cartoFacadeCancelFunc   func()
 	logger                  golog.Logger
 	activeBackgroundWorkers sync.WaitGroup
 
@@ -205,6 +227,28 @@ type cartographerService struct {
 	slamProcessLogReader         io.ReadCloser
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
+}
+
+func (cartoSvc *cartographerService) StartBackgroundWorker(ctx context.Context) {
+	cartoSvc.activeBackgroundWorkers.Add(1)
+
+	goutils.PanicCapturingGo(func() {
+		defer cartoSvc.activeBackgroundWorkers.Done()
+		for {
+			select {
+			case workToDo := <-cartoSvc.cartoFacadeQueue.Queue:
+				result, err := workToDo.DoWork(ViamCartoLib, cartoSvc.cViamCarto)
+				if err == nil {
+					workToDo.Result <- result
+				} else {
+					workToDo.Result <- err
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+
+	})
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -331,6 +375,7 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
+	// TODO: add request to terminate CViamCarto
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)

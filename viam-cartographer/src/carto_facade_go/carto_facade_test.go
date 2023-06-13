@@ -1,22 +1,21 @@
-package carto_facade_test
+package cartoFacade
 
 import (
 	"context"
 	"testing"
 
-	cartoFacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
 	"go.viam.com/test"
 )
 
 func TestViamCartoCGoAPI(t *testing.T) {
-	pvcl, err := cartoFacade.NewViamCartoLib(1, 1)
+	pvcl, err := NewViamCartoLib(1, 1)
 
 	t.Run("initialize viam_carto_lib", func(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 	})
 
-	vc, err := cartoFacade.NewViamCarto(*pvcl)
+	vc, err := NewViamCarto(pvcl)
 	t.Run("initialize viam_carto", func(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)
@@ -38,7 +37,6 @@ func TestViamCartoCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, name, test.ShouldEqual, "")
 
-		// Question: Actually getting 100.00000000000003 for pos.Point().X, is this error acceptable?
 		test.That(t, pos.Point().X, test.ShouldAlmostEqual, 100, .001)
 		test.That(t, pos.Point().Y, test.ShouldAlmostEqual, 200, .001)
 		test.That(t, pos.Point().Z, test.ShouldAlmostEqual, 300, .001)
@@ -47,7 +45,6 @@ func TestViamCartoCGoAPI(t *testing.T) {
 		test.That(t, pos.Orientation().OrientationVectorDegrees().OX, test.ShouldAlmostEqual, .455, .001)
 		test.That(t, pos.Orientation().OrientationVectorDegrees().OY, test.ShouldAlmostEqual, .569, .001)
 		test.That(t, pos.Orientation().OrientationVectorDegrees().OZ, test.ShouldAlmostEqual, .683, .001)
-
 	})
 
 	t.Run("test getPointCloudMap", func(t *testing.T) {

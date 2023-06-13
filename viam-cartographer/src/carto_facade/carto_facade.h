@@ -7,7 +7,7 @@
 // #include <shared_mutex>
 #include <string>
 #else
-#include<stdbool.h>  
+#include <stdbool.h>
 #endif
 
 #include "bstrlib.h"
