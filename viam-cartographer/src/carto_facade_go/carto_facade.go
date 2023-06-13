@@ -1,4 +1,5 @@
-package cartoFacade
+// Package cartofacade provides an api to call into c code
+package cartofacade
 
 /*
 	#cgo CFLAGS: -I../carto_facade
@@ -97,7 +98,7 @@ func cleanConfig(vcc C.viam_carto_config) {
 }
 
 // NewViamCarto calls viam_carto_init and returns a pointer to a viam carto object.
-func NewViamCarto(vcl CViamCartoLib) (*CViamCarto, error) {
+func NewViamCarto(vcl CViamCartoLib) (CViamCarto, error) {
 	// TODO: get vcl as a param & initialize c queue channel here
 	pVc := C.alloc_viam_carto()
 	defer C.free_alloc_viam_carto(pVc)
@@ -112,11 +113,11 @@ func NewViamCarto(vcl CViamCartoLib) (*CViamCarto, error) {
 	status := C.viam_carto_init(ppVc, vcl.viamCartolib, vcc, vcac)
 	if !successfulStatus(status) {
 		// TODO: how to make this error useful?
-		return nil, fmt.Errorf("error initializing viam_carto status = %d", status)
+		return CViamCarto{}, fmt.Errorf("error initializing viam_carto status = %d", status)
 	}
 
-	vc := CViamCarto{viamCarto: (*C.viam_carto)(*ppVc)}
-	return &vc, nil
+	vc := CViamCarto{viamCarto: (*ppVc)}
+	return vc, nil
 }
 
 // Start is a wrapper for viam_carto_start

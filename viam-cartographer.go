@@ -35,9 +35,10 @@ import (
 // Model is the model name of cartographer.
 var Model = resource.NewModel("viam", "slam", "cartographer")
 
+// ViamCartoLib instantiates the c viam_carto_lib struct and provides global vars from the lib such as the logger.
 // TODO: instantiate viam_carto_lib with correct loglevels and verbosity
 // Question: what to do with this error?
-var ViamCartoLib, err = cartoFacade.NewViamCartoLib(1, 1)
+var ViamCartoLib, _ = cartoFacade.NewViamCartoLib(1, 1)
 
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
@@ -237,7 +238,7 @@ func (cartoSvc *cartographerService) StartBackgroundWorker(ctx context.Context) 
 		for {
 			select {
 			case workToDo := <-cartoSvc.cartoFacadeQueue.Queue:
-				result, err := workToDo.DoWork(ViamCartoLib, cartoSvc.cViamCarto)
+				result, err := workToDo.DoWork(ctx, ViamCartoLib, cartoSvc.cViamCarto)
 				if err == nil {
 					workToDo.Result <- result
 				} else {
@@ -247,7 +248,6 @@ func (cartoSvc *cartographerService) StartBackgroundWorker(ctx context.Context) 
 				return
 			}
 		}
-
 	})
 }
 
@@ -375,7 +375,12 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
-	// TODO: add request to terminate CViamCarto
+	if err := cartoSvc.cartoFacadeQueue.HandleIncomingRequest(ctx, cfq.Initialize, map[cfq.InputType]interface{}{}); err != nil {
+		return errors.Wrap(err.(error), "error occurred during closeout of viam_carto")
+	} else {
+		cartoSvc.cartoFacadeCancelFunc()
+	}
+
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
