@@ -24,17 +24,10 @@ static const std::string time_format = "%Y-%m-%dT%H:%M:%S.0000Z";
 const std::string MakeFilenameWithTimestamp(std::string path_to_dir,
                                             std::time_t t);
 
-// ListSortedFilesInDirectory returns a list of the files in the directory
-// sorted by name.
-std::vector<std::string> ListSortedFilesInDirectory(std::string data_directory);
-
 // TimedPointCloudDataFromPCDBuilder creates a TimedPointCloudData object
 // from a PCD file.
 cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time);
-
-// RemoveFile removes the file at the provided path.
-void RemoveFile(std::string);
 
 // Converts UTC time string to a double value.
 double ReadTimeFromTimestamp(std::string timestamp);

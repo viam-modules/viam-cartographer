@@ -113,6 +113,7 @@ class MapBuilder {
     cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
     cartographer::mapping::proto::TrajectoryBuilderOptions
         trajectory_builder_options_;
+    double data_start_time = 0;
 
    private:
     std::vector<::cartographer::transform::Rigid3d> local_slam_result_poses_;

@@ -58,6 +58,7 @@ std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
     os << action_mode_str;
     return os;
 }
+
 std::string std_string_from_bstring(bstring b_str) {
     int len = blength(b_str);
     char *tmp = bstr2cstr(b_str, 0);
@@ -199,23 +200,25 @@ std::vector<std::string> list_sorted_files_in_directory(std::string directory) {
 }
 
 std::string get_latest_internal_state_filename(std::string path_to_map) {
-    std::string latest_map_filename;
+    std::string latest_internal_state_filename;
 
-    std::vector<std::string> map_filenames =
+    std::vector<std::string> internal_state_filename =
         list_sorted_files_in_directory(path_to_map);
-    bool found_map = false;
-    for (int i = map_filenames.size() - 1; i >= 0; i--) {
-        if (map_filenames.at(i).find(".pbstream") != std::string::npos) {
-            latest_map_filename = map_filenames.at(i);
-            found_map = true;
+    bool found_internal_state = false;
+    for (int i = internal_state_filename.size() - 1; i >= 0; i--) {
+        if (internal_state_filename.at(i).find(".pbstream") !=
+            std::string::npos) {
+            latest_internal_state_filename = internal_state_filename.at(i);
+            found_internal_state = true;
             break;
         }
     }
-    if (!found_map) {
-        throw std::runtime_error("cannot find maps but they should be present");
+    if (!found_internal_state) {
+        throw std::runtime_error(
+            "cannot find internal state but they should be present");
     }
 
-    return latest_map_filename;
+    return latest_internal_state_filename;
 }
 
 void CartoFacade::IOInit() {
@@ -673,9 +676,9 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         free(vc);
         return err;
     } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
         delete cf;
         free(vc);
-        LOG(ERROR) << e.what();
         return VIAM_CARTO_UNKNOWN_ERROR;
     }
     vc->carto_obj = cf;

@@ -72,6 +72,12 @@ void MapBuilder::BuildMapBuilder() {
 void MapBuilder::LoadMapFromFile(std::string map_filename,
                                  bool load_frozen_trajectory,
                                  bool optimize_on_start) {
+    data_start_time =
+        viam::carto_facade::io::ReadTimeFromTimestamp(map_filename.substr(
+            map_filename.find(viam::carto_facade::io::filename_prefix) +
+                viam::carto_facade::io::filename_prefix.length(),
+            map_filename.find(".pbstream")));
+
     std::map<int, int> trajectory_ids_map =
         map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
 
