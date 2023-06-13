@@ -8,7 +8,7 @@
 #include <string>
 #else
 #include <stdbool.h>
-// #include <stdint.h>
+#include <stdint.h>
 #endif
 
 #include "bstrlib.h"
