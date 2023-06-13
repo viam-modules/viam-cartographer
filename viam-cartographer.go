@@ -35,7 +35,7 @@ import (
 // Model is the model name of cartographer.
 var Model = resource.NewModel("viam", "slam", "cartographer")
 
-// ViamCartoLib instantiates the c viam_carto_lib struct and provides global vars from the lib such as the logger.
+// ViamCartoLib holds a location for the global reference to viam_carto_lib.
 var ViamCartoLib *cartoFacade.CViamCartoLib
 
 const (
