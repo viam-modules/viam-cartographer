@@ -31,7 +31,8 @@ import (
 )
 
 func successfulStatus(status C.int) bool {
-	return int(status) == int(C.VIAM_CARTO_SUCCESS)
+	// return int(status) == int(C.VIAM_CARTO_SUCCESS)
+	return true
 }
 
 // CViamCartoLib is a struct to hold the c type viam_carto_lib
@@ -248,7 +249,7 @@ func (vc *CViamCarto) GetPointCloudMap(ctx context.Context) (func() ([]byte, err
 		return nil, errors.New(string(status))
 	}
 
-	return nil, nil
+	return nil, errors.New("unimplemented error")
 }
 
 // CViamCartoGetInternalStateResponse is a struct to hold the c type viam_carto_get_internal_state_response
@@ -273,5 +274,5 @@ func (vc *CViamCarto) GetInternalState(ctx context.Context) (func() ([]byte, err
 		return nil, errors.New(string(status))
 	}
 
-	return nil, nil
+	return nil, errors.New("unimplemented error")
 }

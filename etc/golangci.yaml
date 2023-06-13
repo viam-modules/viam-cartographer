@@ -25,6 +25,7 @@ linters:
     - gofmt
     - goimports
     - golint
+    - gocritic
     - gomnd
     - ifshort
     - importas

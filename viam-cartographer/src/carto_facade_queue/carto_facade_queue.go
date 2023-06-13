@@ -49,13 +49,24 @@ type WorkItem struct {
 }
 
 // DoWork provides the logic to call the correct cgo functions with the correct input.
-func (w *WorkItem) DoWork(ctx context.Context, cViamCartoLib cartoFacade.CViamCartoLib, cViamCarto cartoFacade.CViamCarto) (interface{}, error) {
+func (w *WorkItem) DoWork(
+	ctx context.Context,
+	cViamCartoLib cartoFacade.CViamCartoLib,
+	cViamCarto cartoFacade.CViamCarto,
+) (interface{}, error) {
 	// TODO: logic for all grpc calls
-	if w.workType == Initialize {
+	switch w.workType {
+	case Initialize:
 		return cartoFacade.NewViamCarto(cViamCartoLib)
-	} else if w.workType == Terminate {
+	case GetPosition:
+		return nil, fmt.Errorf("no worktype found for: %v", w.workType)
+	case GetInternalState:
+		return nil, fmt.Errorf("no worktype found for: %v", w.workType)
+	case GetPointCloudMap:
+		return nil, fmt.Errorf("no worktype found for: %v", w.workType)
+	case Terminate:
 		return cViamCarto.TerminateViamCarto(ctx), nil
-	} else if w.workType == TestType {
+	case TestType:
 		return w.inputs[TestInput], nil
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", w.workType)

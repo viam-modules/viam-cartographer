@@ -375,9 +375,8 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 	if err := cartoSvc.cartoFacadeQueue.HandleIncomingRequest(ctx, cfq.Terminate, map[cfq.InputType]interface{}{}); err != nil {
 		return errors.Wrap(err.(error), "error occurred during closeout of viam_carto")
-	} else {
-		cartoSvc.cartoFacadeCancelFunc()
 	}
+	cartoSvc.cartoFacadeCancelFunc()
 
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {

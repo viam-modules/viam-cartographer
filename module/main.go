@@ -3,7 +3,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/edaniels/golog"
@@ -57,7 +57,7 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	// TODO: instantiate viam_carto_lib with correct loglevels and verbosity
 	vcl, err := cartofacade.NewViamCartoLib(1, 1)
 	if err == nil {
-		return fmt.Errorf("unable to initialize viam_carto_lib.")
+		return errors.New("unable to initialize viam_carto_lib")
 	}
 	viamcartographer.ViamCartoLib = &vcl
 
