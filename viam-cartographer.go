@@ -236,7 +236,7 @@ func (cartoSvc *cartographerService) StartBackgroundWorker(ctx context.Context) 
 		for {
 			select {
 			case workToDo := <-cartoSvc.cartoFacadeQueue.Queue:
-				result, err := workToDo.DoWork(ctx, ViamCartoLib, cartoSvc.cViamCarto)
+				result, err := workToDo.DoWork(ctx, *ViamCartoLib, cartoSvc.cViamCarto)
 				if err == nil {
 					workToDo.Result <- result
 				} else {
