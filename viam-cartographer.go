@@ -373,7 +373,7 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
-	if err := cartoSvc.cartoFacadeQueue.HandleIncomingRequest(ctx, cfq.Initialize, map[cfq.InputType]interface{}{}); err != nil {
+	if err := cartoSvc.cartoFacadeQueue.HandleIncomingRequest(ctx, cfq.Terminate, map[cfq.InputType]interface{}{}); err != nil {
 		return errors.Wrap(err.(error), "error occurred during closeout of viam_carto")
 	} else {
 		cartoSvc.cartoFacadeCancelFunc()
