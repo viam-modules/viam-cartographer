@@ -36,9 +36,7 @@ import (
 var Model = resource.NewModel("viam", "slam", "cartographer")
 
 // ViamCartoLib instantiates the c viam_carto_lib struct and provides global vars from the lib such as the logger.
-// TODO: instantiate viam_carto_lib with correct loglevels and verbosity
-// Question: what to do with this error?
-var ViamCartoLib, _ = cartoFacade.NewViamCartoLib(1, 1)
+var ViamCartoLib *cartoFacade.CViamCartoLib
 
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
