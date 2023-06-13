@@ -1,5 +1,4 @@
 // This is an experimental integration of cartographer into RDK.
-// TODO: Rename this to map_builder_facade
 #include "cartographer/mapping/map_builder.h"
 
 #include <sstream>
