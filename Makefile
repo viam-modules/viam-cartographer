@@ -91,7 +91,6 @@ build-module:
 install-lua-files:
 	sudo mkdir -p /usr/local/share/cartographer/lua_files/
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
-	sudo cp viam-cartographer/cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
 
 test-cpp:
 	cd viam-cartographer && ./scripts/test_cartographer.sh
