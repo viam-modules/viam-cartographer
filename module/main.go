@@ -3,7 +3,6 @@ package main
 
 import (
 	"context"
-	"errors"
 	"strings"
 
 	"github.com/edaniels/golog"
@@ -12,7 +11,6 @@ import (
 	"go.viam.com/utils"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	cartofacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
 )
 
 // Versioning variables which are replaced by LD flags.
@@ -54,26 +52,12 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 		return err
 	}
 
-	// TODO: instantiate viam_carto_lib with correct loglevels and verbosity
-	vcl, err := cartofacade.NewViamCartoLib(1, 1)
-	if err == nil {
-		return errors.New("unable to initialize viam_carto_lib")
-	}
-	viamcartographer.ViamCartoLib = &vcl
-
 	// Start the module
 	err = cartoModule.Start(ctx)
 	defer cartoModule.Close(ctx)
 	if err != nil {
 		return err
 	}
-
-	defer func() {
-		err := vcl.TerminateViamCartoLib()
-		if err != nil {
-			logger.Error(err)
-		}
-	}()
 
 	<-ctx.Done()
 	return nil

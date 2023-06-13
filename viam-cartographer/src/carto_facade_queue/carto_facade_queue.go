@@ -82,8 +82,8 @@ type CartoFacadeQueue struct {
 }
 
 // NewCartoFacadeQueue instantiates the CartoFacadeQueue struct.
-func NewCartoFacadeQueue() CartoFacadeQueue {
-	return CartoFacadeQueue{Queue: make(chan WorkItem)}
+func NewCartoFacadeQueue(CViamCartoLib *cartofacade.CViamCartoLib) CartoFacadeQueue {
+	return CartoFacadeQueue{Queue: make(chan WorkItem), CViamCartoLib: CViamCartoLib, CViamCarto: cartofacade.CViamCarto{}}
 }
 
 // HandleIncomingRequest puts incoming requests on the queue and consumes from queue.

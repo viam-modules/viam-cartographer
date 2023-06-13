@@ -35,9 +35,6 @@ import (
 // Model is the model name of cartographer.
 var Model = resource.NewModel("viam", "slam", "cartographer")
 
-// ViamCartoLib holds a location for the global reference to viam_carto_lib.
-var ViamCartoLib *cartoFacade.CViamCartoLib
-
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
 	DefaultExecutableName                = "carto_grpc_server"
@@ -129,7 +126,6 @@ func New(
 
 	// Need to pass in a long-lived context because ctx is short-lived
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
-	cartoFacadeCancelCtx, cartoFacadeCancelFunc := context.WithCancel(context.Background())
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
@@ -146,12 +142,9 @@ func New(
 		dataRateMs:            dataRateMsec,
 		mapRateSec:            mapRateSec,
 		cancelFunc:            cancelFunc,
-		cartoFacadeCancelFunc: cartoFacadeCancelFunc,
 		logger:                logger,
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
 	}
-
-	cartoSvc.cartoFacadeQueue = setUpCartoFacadeQueue(cartoFacadeCancelCtx, &cartoSvc.activeBackgroundWorkers)
 
 	success := false
 	defer func() {
@@ -184,27 +177,6 @@ func New(
 
 	success = true
 	return cartoSvc, nil
-}
-
-func setUpCartoFacadeQueue(cartoFacadeCancelCtx context.Context, activeBackgroundWorkers *sync.WaitGroup) cfq.CartoFacadeQueue {
-	// intialize CartoFacadeQueue struct
-	cartoFacadeQueue := cfq.NewCartoFacadeQueue()
-	// set lib on struct
-	cartoFacadeQueue.CViamCartoLib = ViamCartoLib
-
-	// start background goroutine to consume from queue and do work
-	cartoFacadeQueue.StartBackgroundWorker(cartoFacadeCancelCtx, activeBackgroundWorkers)
-	// send job to initialize CViamCarto
-	cViamCarto := cartoFacadeQueue.HandleIncomingRequest(
-		cartoFacadeCancelCtx,
-		cfq.Initialize,
-		map[cfq.InputType]interface{}{},
-	)
-	// set carto obj on struct
-	cartoFacadeQueue.CViamCarto = cViamCarto.(cartoFacade.CViamCarto)
-
-	return cartoFacadeQueue
-
 }
 
 // cartographerService is the structure of the slam service.
