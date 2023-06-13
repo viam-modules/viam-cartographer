@@ -12,6 +12,10 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+-- Copied from https://github.com/cartographer-project/cartographer/tree/ef00de2317dcf7895b09f18cc4d87f8b533a019b/configuration_files
+-- This must be kept in sync with the corresponding lua files in the
+-- google carbtographer project, when updating the google cartographer
+-- git submodule
 TRAJECTORY_BUILDER_2D = {
   use_imu_data = true,
   min_range = 0.,
