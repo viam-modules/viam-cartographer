@@ -1,6 +1,6 @@
 // This is an experimental integration of cartographer into RDK.
-#ifndef CARTO_FACADE_UTIL_H
-#define CARTO_FACADE_UTIL_H
+#ifndef VIAM_CARTO_FACADE_UTIL_H
+#define VIAM_CARTO_FACADE_UTIL_H
 
 #include <string>
 
@@ -45,4 +45,4 @@ void write_int_to_buffer_in_bytes(std::string &buffer, int d);
 }  // namespace carto_facade
 }  // namespace viam
 
-#endif  // CARTO_FACADE_UTIL_H
+#endif  // VIAM_CARTO_FACADE_UTIL_H

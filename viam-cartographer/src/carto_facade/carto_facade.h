@@ -1,6 +1,6 @@
 // This is an experimental integration of cartographer into RDK.
-#ifndef CARTO_FACADE_H
-#define CARTO_FACADE_H
+#ifndef VIAM_CARTO_FACADE_H
+#define VIAM_CARTO_FACADE_H
 
 #include <atomic>
 #include <chrono>
@@ -440,4 +440,4 @@ typedef struct CartoFacade CartoFacade;
 #endif
 // END C++ API
 
-#endif  // CARTO_FACADE_H
+#endif  // VIAM_CARTO_FACADE_H

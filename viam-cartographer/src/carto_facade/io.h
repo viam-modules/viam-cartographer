@@ -1,6 +1,6 @@
 // This is an experimental integration of cartographer into RDK.
-#ifndef CARTO_FACADE_IO_H
-#define CARTO_FACADE_IO_H
+#ifndef VIAM_CARTO_FACADE_IO_H
+#define VIAM_CARTO_FACADE_IO_H
 
 #include <inttypes.h>
 
@@ -36,4 +36,4 @@ double ReadTimeFromTimestamp(std::string timestamp);
 }  // namespace carto_facade
 }  // namespace viam
 
-#endif  // CARTO_FACADE_IO_H
+#endif  // VIAM_CARTO_FACADE_IO_H
