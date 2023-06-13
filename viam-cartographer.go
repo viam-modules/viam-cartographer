@@ -127,8 +127,6 @@ func New(
 		return nil, err
 	}
 
-	cartoFacadeQueue := cfq.NewCartoFacadeQueue()
-
 	// Need to pass in a long-lived context because ctx is short-lived
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	cartoFacadeCancelCtx, cartoFacadeCancelFunc := context.WithCancel(context.Background())
@@ -148,19 +146,12 @@ func New(
 		dataRateMs:            dataRateMsec,
 		mapRateSec:            mapRateSec,
 		cancelFunc:            cancelFunc,
-		cartoFacadeQueue:      cartoFacadeQueue,
 		cartoFacadeCancelFunc: cartoFacadeCancelFunc,
 		logger:                logger,
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
 	}
 
-	cartoSvc.StartBackgroundWorker(cartoFacadeCancelCtx)
-	cViamCarto := cartoSvc.cartoFacadeQueue.HandleIncomingRequest(
-		cartoFacadeCancelCtx,
-		cfq.Initialize,
-		map[cfq.InputType]interface{}{},
-	)
-	cartoSvc.cViamCarto = cViamCarto.(cartoFacade.CViamCarto)
+	cartoSvc.cartoFacadeQueue = setUpCartoFacadeQueue(cartoFacadeCancelCtx, &cartoSvc.activeBackgroundWorkers)
 
 	success := false
 	defer func() {
@@ -195,6 +186,27 @@ func New(
 	return cartoSvc, nil
 }
 
+func setUpCartoFacadeQueue(cartoFacadeCancelCtx context.Context, activeBackgroundWorkers *sync.WaitGroup) cfq.CartoFacadeQueue {
+	// intialize CartoFacadeQueue struct
+	cartoFacadeQueue := cfq.NewCartoFacadeQueue()
+	// set lib on struct
+	cartoFacadeQueue.CViamCartoLib = ViamCartoLib
+
+	// start background goroutine to consume from queue and do work
+	cartoFacadeQueue.StartBackgroundWorker(cartoFacadeCancelCtx, activeBackgroundWorkers)
+	// send job to initialize CViamCarto
+	cViamCarto := cartoFacadeQueue.HandleIncomingRequest(
+		cartoFacadeCancelCtx,
+		cfq.Initialize,
+		map[cfq.InputType]interface{}{},
+	)
+	// set carto obj on struct
+	cartoFacadeQueue.CViamCarto = cViamCarto.(cartoFacade.CViamCarto)
+
+	return cartoFacadeQueue
+
+}
+
 // cartographerService is the structure of the slam service.
 type cartographerService struct {
 	resource.Named
@@ -226,27 +238,6 @@ type cartographerService struct {
 	slamProcessLogReader         io.ReadCloser
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
-}
-
-func (cartoSvc *cartographerService) StartBackgroundWorker(ctx context.Context) {
-	cartoSvc.activeBackgroundWorkers.Add(1)
-
-	goutils.PanicCapturingGo(func() {
-		defer cartoSvc.activeBackgroundWorkers.Done()
-		for {
-			select {
-			case workToDo := <-cartoSvc.cartoFacadeQueue.Queue:
-				result, err := workToDo.DoWork(ctx, *ViamCartoLib, cartoSvc.cViamCarto)
-				if err == nil {
-					workToDo.Result <- result
-				} else {
-					workToDo.Result <- err
-				}
-			case <-ctx.Done():
-				return
-			}
-		}
-	})
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,

@@ -4,9 +4,11 @@ package cartofacadequeue
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
-	cartoFacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
+	cartofacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
+	goutils "go.viam.com/utils"
 )
 
 // WorkType defines the grpc call that is being made.
@@ -51,13 +53,13 @@ type WorkItem struct {
 // DoWork provides the logic to call the correct cgo functions with the correct input.
 func (w *WorkItem) DoWork(
 	ctx context.Context,
-	cViamCartoLib cartoFacade.CViamCartoLib,
-	cViamCarto cartoFacade.CViamCarto,
+	cViamCartoLib cartofacade.CViamCartoLib,
+	cViamCarto cartofacade.CViamCarto,
 ) (interface{}, error) {
 	// TODO: logic for all grpc calls
 	switch w.workType {
 	case Initialize:
-		return cartoFacade.NewViamCarto(cViamCartoLib)
+		return cartofacade.NewViamCarto(cViamCartoLib)
 	case GetPosition:
 		return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 	case GetInternalState:
@@ -74,7 +76,9 @@ func (w *WorkItem) DoWork(
 
 // CartoFacadeQueue represents a queue to consume work from and enforce one call into C at a time.
 type CartoFacadeQueue struct {
-	Queue chan WorkItem
+	Queue         chan WorkItem
+	CViamCartoLib *cartofacade.CViamCartoLib
+	CViamCarto    cartofacade.CViamCarto
 }
 
 // NewCartoFacadeQueue instantiates the CartoFacadeQueue struct.
@@ -107,4 +111,25 @@ func (cfq *CartoFacadeQueue) HandleIncomingRequest(ctx context.Context, workType
 	case <-ctx.Done():
 		return nil
 	}
+}
+
+func (cfq *CartoFacadeQueue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
+	activeBackgroundWorkers.Add(1)
+
+	goutils.PanicCapturingGo(func() {
+		defer activeBackgroundWorkers.Done()
+		for {
+			select {
+			case workToDo := <-cfq.Queue:
+				result, err := workToDo.DoWork(ctx, *cfq.CViamCartoLib, cfq.CViamCarto)
+				if err == nil {
+					workToDo.Result <- result
+				} else {
+					workToDo.Result <- err
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	})
 }
