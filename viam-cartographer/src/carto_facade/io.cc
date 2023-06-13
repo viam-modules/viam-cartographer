@@ -68,25 +68,6 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     return timed_pcd;
 }
 
-std::vector<std::string> ListSortedFilesInDirectory(
-    std::string data_directory) {
-    std::vector<std::string> file_paths;
-
-    for (const auto& entry : fs::directory_iterator(data_directory)) {
-        file_paths.push_back((entry.path()).string());
-    }
-
-    sort(file_paths.begin(), file_paths.end());
-    return file_paths;
-}
-
-void RemoveFile(std::string file_path) {
-    if (remove(file_path.c_str()) != 0) {
-        LOG(ERROR) << "Error removing file";
-    }
-    return;
-}
-
 double ReadTimeFromTimestamp(std::string timestamp) {
     std::string::size_type sz;
     auto partial_time_format = time_format.substr(0, time_format.find("."));
