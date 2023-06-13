@@ -25,11 +25,13 @@ struct ColorARGB {
 // set in DrawTexture at
 // https://github.com/cartographer-project/cartographer/blob/ef00de231
 // 7dcf7895b09f18cc4d87f8b533a019b/cartographer/io/submap_painter.cc#L206-L207
-bool CheckIfEmptyPixel(ColorARGB pixel_color) { return (pixel_color.G == 0); }
+bool check_if_empty_pixel(ColorARGB pixel_color) {
+    return (pixel_color.G == 0);
+}
 
 // Convert the scale of a specified color channel from the given UCHAR
 // range of 0 - 255 to an inverse probability range of 100 - 0.
-int CalculateProbabilityFromColorChannels(ColorARGB pixel_color) {
+int calculate_probability_from_color_channels(ColorARGB pixel_color) {
     unsigned char max_val = UCHAR_MAX;
     unsigned char min_val = 0;
     unsigned char max_prob = 100;
@@ -323,7 +325,13 @@ void CartoFacade::IOInit() {
 void CartoFacade::BackupLatestMap() {
     VLOG(1) << "BackupLatestMap()";
     std::string pointcloud_map_tmp;
-    GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+    try {
+        GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+
+    } catch (std::exception &e) {
+        LOG(ERROR) << "error encoding pointcloud map: " << e.what();
+        throw VIAM_CARTO_MAP_CREATION_ERROR;
+    }
     std::lock_guard<std::mutex> lk(viam_response_mutex);
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
 }
@@ -489,13 +497,13 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
             pixel_color.B = image_data_ptr[byte_index + 0];
 
             // Skip pixel if it contains empty data (default color)
-            if (CheckIfEmptyPixel(pixel_color)) {
+            if (check_if_empty_pixel(pixel_color)) {
                 continue;
             }
 
             // Determine probability based on the color of the pixel and skip if
             // it is 0
-            int prob = CalculateProbabilityFromColorChannels(pixel_color);
+            int prob = calculate_probability_from_color_channels(pixel_color);
             if (prob == 0) {
                 continue;
             }
