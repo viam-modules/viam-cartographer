@@ -28,8 +28,6 @@ import (
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
-	cartoFacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
-	cfq "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_queue"
 )
 
 // Model is the model name of cartographer.
@@ -189,8 +187,6 @@ type cartographerService struct {
 	slamProcess       pexec.ProcessManager
 	clientAlgo        pb.SLAMServiceClient
 	clientAlgoClose   func() error
-	cartoFacadeQueue  cfq.CartoFacadeQueue
-	cViamCarto        cartoFacade.CViamCarto
 
 	configParams        map[string]string
 	dataDirectory       string
@@ -202,7 +198,6 @@ type cartographerService struct {
 	mapRateSec int
 
 	cancelFunc              func()
-	cartoFacadeCancelFunc   func()
 	logger                  golog.Logger
 	activeBackgroundWorkers sync.WaitGroup
 
@@ -336,11 +331,6 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
-	if err := cartoSvc.cartoFacadeQueue.HandleIncomingRequest(ctx, cfq.Terminate, map[cfq.InputType]interface{}{}); err != nil {
-		return errors.Wrap(err.(error), "error occurred during closeout of viam_carto")
-	}
-	cartoSvc.cartoFacadeCancelFunc()
-
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
