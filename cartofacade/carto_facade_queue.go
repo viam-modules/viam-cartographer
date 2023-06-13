@@ -1,5 +1,4 @@
-// Package cartofacadequeue defines all necessary components to enforce one call into c per cartofacade.
-package cartofacadequeue
+package cartofacade
 
 import (
 	"context"
@@ -7,7 +6,6 @@ import (
 	"sync"
 	"time"
 
-	cartofacade "github.com/viamrobotics/viam-cartographer/viam-cartographer/src/carto_facade_go"
 	goutils "go.viam.com/utils"
 )
 
@@ -53,13 +51,13 @@ type WorkItem struct {
 // DoWork provides the logic to call the correct cgo functions with the correct input.
 func (w *WorkItem) DoWork(
 	ctx context.Context,
-	cViamCartoLib cartofacade.CViamCartoLib,
-	cViamCarto cartofacade.CViamCarto,
+	cartoLib CartoLib,
+	cViamCarto Carto,
 ) (interface{}, error) {
 	// TODO: logic for all grpc calls
 	switch w.workType {
 	case Initialize:
-		return cartofacade.NewViamCarto(cViamCartoLib)
+		return NewViamCarto(cartoLib)
 	case GetPosition:
 		return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 	case GetInternalState:
@@ -77,13 +75,13 @@ func (w *WorkItem) DoWork(
 // CartoFacadeQueue represents a queue to consume work from and enforce one call into C at a time.
 type CartoFacadeQueue struct {
 	Queue         chan WorkItem
-	CViamCartoLib *cartofacade.CViamCartoLib
-	CViamCarto    cartofacade.CViamCarto
+	CViamCartoLib *CartoLib
+	CViamCarto    Carto
 }
 
 // NewCartoFacadeQueue instantiates the CartoFacadeQueue struct.
-func NewCartoFacadeQueue(CViamCartoLib *cartofacade.CViamCartoLib) CartoFacadeQueue {
-	return CartoFacadeQueue{Queue: make(chan WorkItem), CViamCartoLib: CViamCartoLib, CViamCarto: cartofacade.CViamCarto{}}
+func NewCartoFacadeQueue(cartoLib *CartoLib) CartoFacadeQueue {
+	return CartoFacadeQueue{Queue: make(chan WorkItem), CViamCartoLib: cartoLib, CViamCarto: Carto{}}
 }
 
 // HandleIncomingRequest puts incoming requests on the queue and consumes from queue.
