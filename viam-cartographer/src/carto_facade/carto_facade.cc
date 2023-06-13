@@ -132,6 +132,7 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
     vcl->verbose = verbose;
 
     *ppVCL = vcl;
+    
     return VIAM_CARTO_SUCCESS;
 };
 
