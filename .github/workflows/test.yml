@@ -57,7 +57,7 @@ jobs:
 
     - name: apt update
       run: |
-        sudo -u testbot bash -lc 'apt update'
+        sudo -u testbot bash -lc 'sudo apt update'
 
     - name: Verify no uncommitted changes from make lint
       run: |
