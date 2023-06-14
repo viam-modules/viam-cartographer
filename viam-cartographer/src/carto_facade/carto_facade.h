@@ -342,7 +342,7 @@ class CartoFacade {
     int Stop();
 
     // non api methods
-    void BackupLatestMap();
+    void CacheLatestMap();
     void CacheMapInLocalizationMode();
     void GetLatestSampledPointCloudMapString(std::string &pointcloud);
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
@@ -403,9 +403,9 @@ class CartoFacade {
     // streamed point clouds.
     // void GetLatestSampledPointCloudMapString(std::string &pointcloud);
 
-    // BackupLatestMap extracts and saves the latest map as a backup in
+    // CacheLatestMap extracts and saves the latest map as a backup in
     // the respective member variables.
-    // void BackupLatestMap();
+    // void CacheLatestMap();
 
     // If using the LOCALIZING action mode, cache a copy of the map before
     // beginning to process data. If cartographer fails to do this,

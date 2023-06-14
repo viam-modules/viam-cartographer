@@ -287,7 +287,7 @@ void CartoFacade::IOInit() {
         bool load_frozen_trajectory = (action_mode == ActionMode::LOCALIZING);
         if (algo_config.optimize_on_start) {
             VLOG(1) << "running optimize_on_start";
-            BackupLatestMap();
+            CacheLatestMap();
 
             std::unique_lock optimization_lock{optimization_shared_mutex,
                                                std::defer_lock};
@@ -300,12 +300,6 @@ void CartoFacade::IOInit() {
         } else {
             // Load apriori map
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            VLOG(1) << "calling map_builder.LoadMapFromFile "
-                       "latest_internal_state_filename: "
-                    << latest_internal_state_filename
-                    << " load_frozen_trajectory: " << load_frozen_trajectory
-                    << " algo_config.optimize_on_start: "
-                    << algo_config.optimize_on_start;
             map_builder.LoadMapFromFile(latest_internal_state_filename,
                                         load_frozen_trajectory,
                                         algo_config.optimize_on_start);
@@ -320,8 +314,8 @@ void CartoFacade::IOInit() {
     }
 };
 
-void CartoFacade::BackupLatestMap() {
-    VLOG(1) << "BackupLatestMap()";
+void CartoFacade::CacheLatestMap() {
+    VLOG(1) << "CacheLatestMap()";
     std::string pointcloud_map_tmp;
     try {
         GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
@@ -568,7 +562,7 @@ int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
 
 viam::carto_facade::ActionMode determine_action_mode(
     std::string path_to_internal_state, std::chrono::seconds map_rate_sec) {
-    // Check if there is an apriori map (intenral state) in the
+    // Check if there is an apriori map (internal state) in the
     // path_to_internal_state directory
     std::vector<std::string> internal_state_filenames =
         list_sorted_files_in_directory(path_to_internal_state);

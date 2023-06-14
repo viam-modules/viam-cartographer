@@ -68,17 +68,23 @@ void MapBuilder::BuildMapBuilder() {
         cartographer::mapping::CreateMapBuilder(map_builder_options_);
 }
 
-void MapBuilder::LoadMapFromFile(std::string map_filename,
+void MapBuilder::LoadMapFromFile(std::string internal_state_filename,
                                  bool load_frozen_trajectory,
                                  bool optimize_on_start) {
-    data_start_time =
-        viam::carto_facade::io::ReadTimeFromTimestamp(map_filename.substr(
-            map_filename.find(viam::carto_facade::io::filename_prefix) +
+    VLOG(1) << "calling map_builder.LoadMapFromFile "
+               "latest_internal_state_filename: "
+            << internal_state_filename
+            << " load_frozen_trajectory: " << load_frozen_trajectory
+            << " algo_config.optimize_on_start: " << optimize_on_start;
+    data_start_time = viam::carto_facade::io::ReadTimeFromTimestamp(
+        internal_state_filename.substr(
+            internal_state_filename.find(
+                viam::carto_facade::io::filename_prefix) +
                 viam::carto_facade::io::filename_prefix.length(),
-            map_filename.find(".pbstream")));
+            internal_state_filename.find(".pbstream")));
 
-    std::map<int, int> trajectory_ids_map =
-        map_builder_->LoadStateFromFile(map_filename, load_frozen_trajectory);
+    std::map<int, int> trajectory_ids_map = map_builder_->LoadStateFromFile(
+        internal_state_filename, load_frozen_trajectory);
 
     if (optimize_on_start) {
         LOG(INFO) << "Optimizing map on start, this may take a few minutes";
