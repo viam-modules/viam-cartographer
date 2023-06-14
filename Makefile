@@ -85,6 +85,13 @@ else
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
 endif
 
+build-debug: build-module
+ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
+	cd viam-cartographer && ./scripts/build_viam_cartographer_debug.sh 
+else 
+	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer_debug.sh
+endif
+
 build-module:
 	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
@@ -93,21 +100,21 @@ install-lua-files:
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 
 test-cpp:
-	cd viam-cartographer && ./scripts/test_cartographer.sh
+	viam-cartographer/build/unit_tests -p -l all
 
 # Linux only
 setup-cpp-full-mod: 
 	sudo apt install -y valgrind gdb
 
 # Linux only
-test-cpp-full-mod-valgrind: build
-	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+test-cpp-full-mod-valgrind: build-debug
+	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io -t CartoFacadeCPPAPI
 
 # Linux only
-test-cpp-full-mod-gdb: build
+test-cpp-full-mod-gdb: build-debug
 	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
 
-test-cpp-full-mod: build
+test-cpp-full-mod: build-debug
 	viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
 
 test-go:
