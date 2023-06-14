@@ -6,6 +6,7 @@
 #include <boost/format.hpp>
 
 #include "glog/logging.h"
+#include "io.h"
 #include "map_builder.h"
 #include "util.h"
 
@@ -157,7 +158,8 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     config = from_viam_carto_config(c);
     algo_config = ac;
     path_to_internal_state = config.data_dir + "/internal_state";
-    b_continue_session = true;
+    continue_session.store(true);
+    started.store(false);
 };
 
 void setup_filesystem(std::string data_dir,
@@ -552,9 +554,79 @@ int CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
     return VIAM_CARTO_SUCCESS;
 };
 
-int CartoFacade::Start() { return VIAM_CARTO_SUCCESS; };
+int CartoFacade::Start() {
+    StartSaveMap();
+    started = true;
+    return VIAM_CARTO_SUCCESS;
+};
 
-int CartoFacade::Stop() { return VIAM_CARTO_SUCCESS; };
+void CartoFacade::StartSaveMap() {
+    if (config.map_rate_sec == std::chrono::seconds(0)) {
+        return;
+    }
+    thread_save_map_with_timestamp =
+        std::make_unique<std::thread>([&]() { this->SaveMapWithTimestamp(); });
+    // TODO: Mark that start has succeeded
+}
+
+void CartoFacade::StopSaveMap() {
+    continue_session.store(false);
+    if (config.map_rate_sec == std::chrono::seconds(0)) {
+        return;
+    }
+    thread_save_map_with_timestamp->join();
+}
+
+void CartoFacade::SaveMapWithTimestamp() {
+    auto check_for_shutdown_interval_usec =
+        std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
+    while (continue_session.load()) {
+        auto start = std::chrono::high_resolution_clock::now();
+        // Sleep for config.map_rate_sec duration, but check frequently for
+        // shutdown
+        while (continue_session.load()) {
+            std::chrono::duration<double, std::milli> time_elapsed_msec =
+                std::chrono::high_resolution_clock::now() - start;
+            if (time_elapsed_msec >= config.map_rate_sec) {
+                VLOG(1) << "time_elapsed_msec >= config.map_rate_sec";
+                break;
+            }
+            if (config.map_rate_sec - time_elapsed_msec >=
+                check_for_shutdown_interval_usec) {
+                VLOG(1) << "config.map_rate_sec - time_elapsed_msec >= "
+                           "check_for_shutdown_interval_usec";
+                std::this_thread::sleep_for(check_for_shutdown_interval_usec);
+            } else {
+                VLOG(1) << "else";
+                std::this_thread::sleep_for(config.map_rate_sec -
+                                            time_elapsed_msec);
+                break;
+            }
+        }
+
+        // Breakout without saving if the session has ended
+
+        if (!continue_session.load()) {
+            LOG(INFO) << "Saving final optimized map";
+        }
+        std::time_t t = std::time(nullptr);
+        const std::string filename_with_timestamp =
+            viam::carto_facade::io::MakeFilenameWithTimestamp(
+                path_to_internal_state, t);
+
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SaveMapToFile(true, filename_with_timestamp);
+        if (!continue_session.load()) {
+            LOG(INFO) << "Finished saving final optimized map";
+            break;
+        }
+    }
+}
+
+int CartoFacade::Stop() {
+    StopSaveMap();
+    return VIAM_CARTO_SUCCESS;
+};
 
 int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
@@ -677,9 +749,39 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_start(viam_carto *vc) { return VIAM_CARTO_SUCCESS; };
+extern int viam_carto_start(viam_carto *vc) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+    viam::carto_facade::CartoFacade *cf =
+        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+    try {
+        cf->Start();
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+    return VIAM_CARTO_SUCCESS;
+};
 
-extern int viam_carto_stop(viam_carto *vc) { return VIAM_CARTO_SUCCESS; };
+extern int viam_carto_stop(viam_carto *vc) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+    viam::carto_facade::CartoFacade *cf =
+        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+    try {
+        cf->Stop();
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+    return VIAM_CARTO_SUCCESS;
+};
 
 extern int viam_carto_terminate(viam_carto **ppVC) {
     viam::carto_facade::CartoFacade *cf =

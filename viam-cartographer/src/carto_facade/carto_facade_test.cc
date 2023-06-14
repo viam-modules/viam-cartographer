@@ -433,7 +433,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     auto path_to_internal_state = tmp_dir / fs::path("internal_state");
 
     BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
-    BOOST_TEST((cf->b_continue_session) == true);
+    BOOST_TEST((cf->continue_session) == true);
+    BOOST_TEST((cf->started) == false);
     BOOST_TEST((cf->config.sensors) == sensors_vec);
     BOOST_TEST((cf->config.map_rate_sec).count() == 1);
     BOOST_TEST((cf->config.data_dir) == tmp_dir.string());
@@ -565,6 +566,48 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config) {
     viam_carto_config_teardown(vcc);
 
     fs::remove_all(tmp_dir);
+    // library terminate
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
+}
+
+BOOST_AUTO_TEST_CASE(CartoFacade_start_stop) {
+    //  validate invalid pointer
+    BOOST_TEST(viam_carto_start(nullptr) == VIAM_CARTO_VC_INVALID);
+    BOOST_TEST(viam_carto_stop(nullptr) == VIAM_CARTO_VC_INVALID);
+
+    // library init
+    viam_carto_lib *lib;
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
+
+    // Setup
+    viam_carto *vc;
+    std::vector<std::string> sensors_vec;
+    sensors_vec.push_back("sensor_1");
+    sensors_vec.push_back("sensor_2");
+    sensors_vec.push_back("sensor_3");
+    sensors_vec.push_back("sensor_4");
+    sensors_vec.push_back("sensor_5");
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
+    struct viam_carto_config vcc =
+        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
+
+                                "some component refereance", sensors_vec);
+    struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
+
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+
+    // // Start
+    BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
+
+    // Stop
+    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
+
+    // Terminate
+    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
+    viam_carto_config_teardown(vcc);
+    fs::remove_all(tmp_dir);
+
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }

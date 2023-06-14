@@ -351,7 +351,8 @@ class CartoFacade {
     viam_carto_algo_config algo_config;
     std::string path_to_data;
     std::string path_to_internal_state;
-    std::atomic<bool> b_continue_session;
+    std::atomic<bool> continue_session;
+    std::atomic<bool> started;
     std::string configuration_directory;
     ActionMode action_mode = ActionMode::MAPPING;
 
@@ -365,15 +366,15 @@ class CartoFacade {
    private:
     // moved from namespace
     // StartSaveMap starts the map saving process in a separate thread.
-    // void StartSaveMap();
+    void StartSaveMap();
 
     // StopSaveMap stops the map saving process that is running in a separate
     // thread.
-    // void StopSaveMap();
+    void StopSaveMap();
 
     // SaveMapWithTimestamp saves maps with a filename that includes the
     // timestamp of the time when the map is saved.
-    // void SaveMapWithTimestamp();
+    void SaveMapWithTimestamp();
 
     // ConvertSavedMapToStream converted the saved pbstream to the passed in
     // string and deletes the file.
@@ -419,7 +420,7 @@ class CartoFacade {
     std::shared_mutex optimization_shared_mutex;
 
     // std::atomic<bool> finished_processing_offline{false};
-    // std::thread *thread_save_map_with_timestamp;
+    std::unique_ptr<std::thread> thread_save_map_with_timestamp;
 
     std::mutex viam_response_mutex;
     // cartographer::transform::Rigid3d latest_global_pose =
