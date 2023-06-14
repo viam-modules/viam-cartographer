@@ -223,9 +223,9 @@ std::string get_latest_internal_state_filename(std::string path_to_map) {
 
 void CartoFacade::IOInit() {
     // Detect if data_dir has deprecated format
-    if (fs::is_directory(config.data_dir + "/map")) {
+    if (fs::is_directory(config.data_dir + "/data")) {
         LOG(ERROR) << "data directory " << config.data_dir
-                   << " is invalid as it contains deprecated format i.e. /map "
+                   << " is invalid as it contains deprecated format i.e. /data "
                       "subdirectory";
         throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
     }
@@ -318,11 +318,6 @@ void CartoFacade::IOInit() {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.StartLidarTrajectoryBuilder();
     }
-    // MAYBE THE BELOW BELONGS IN START
-    /* if (!(map_rate_sec == std::chrono::seconds(0))) { */
-    /*   thread_save_map_with_timestamp = */
-    /*     new std::thread([&]() { this->SaveMapWithTimestamp(); }); */
-    /* } */
 };
 
 void CartoFacade::BackupLatestMap() {

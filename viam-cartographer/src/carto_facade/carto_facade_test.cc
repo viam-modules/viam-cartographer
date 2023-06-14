@@ -142,7 +142,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
 
     fs::path deprecated_path = tmp_dir / fs::path(bfs::unique_path().string());
-    fs::create_directories(deprecated_path.string() + "/map");
+    fs::create_directories(deprecated_path.string() + "/data");
 
     struct viam_carto_config vcc_deprecated_path =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, deprecated_path.string(),
