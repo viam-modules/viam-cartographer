@@ -55,9 +55,9 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         submodules: recursive
 
-    - name: apt update
+    - name: update system packages
       run: |
-        sudo apt update
+        sudo -u testbot bash -lc 'sudo apt update'
 
     - name: Verify no uncommitted changes from make lint
       run: |
