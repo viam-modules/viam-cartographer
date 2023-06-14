@@ -6,7 +6,7 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: [ 'main' ]
+    branches: [ 'blank-pr' ]
     paths-ignore:
       - 'README.md'
     tags:
@@ -14,16 +14,16 @@ on:
       - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
-# and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
-# Don't forget to tag back to @main before merge.
+# and tag your working branch instead of @blank-pr in any viamrobotics/viam-cartographer "uses" below.
+# Don't forget to tag back to @blank-pr before merge.
 
 jobs:
   test:
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@blank-pr
 
   appimage:
     needs: test
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@blank-pr
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
