@@ -2,8 +2,6 @@
 // This is an Experimental package.
 package viamcartographer
 
-// blank
-
 import (
 	"bufio"
 	"context"
