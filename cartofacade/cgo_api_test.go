@@ -37,7 +37,6 @@ func TestGetConfig(t *testing.T) {
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, twoD)
 	})
-
 }
 
 func TestCGoAPI(t *testing.T) {

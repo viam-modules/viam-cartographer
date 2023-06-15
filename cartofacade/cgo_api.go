@@ -47,7 +47,7 @@ type GetPositionResponse struct {
 	value C.viam_carto_get_position_response
 }
 
-// GetPositionTempHolder holds values returned from c to be processed later
+// GetPositionHolder holds values returned from c to be processed later
 type GetPositionHolder struct {
 	x float64
 	y float64
@@ -71,6 +71,7 @@ type GetInternalStateResponse struct {
 	value C.viam_carto_get_internal_state_response
 }
 
+// LidarConfig represents the lidar configuration
 type LidarConfig int64
 
 const (
@@ -78,20 +79,12 @@ const (
 	threeD
 )
 
-type Mode int64
-
-const (
-	localizing Mode = iota
-	mapping
-	updating
-)
-
+// CartoConfig contains config values from app
 type CartoConfig struct {
 	sensors            []string
 	mapRateSecond      int
 	dataDir            string
 	componentReference string
-	mode               Mode
 	lidarConfig        LidarConfig
 }
 
@@ -129,7 +122,7 @@ func (vcl *CartoLib) TerminateCartoLib() error {
 	return nil
 }
 
-// NewViamCarto calls viam_carto_init and returns a pointer to a viam carto object.
+// NewCarto calls viam_carto_init and returns a pointer to a viam carto object.
 func NewCarto(cfg CartoConfig, vcl CartoLib) (Carto, error) {
 	pVc := C.alloc_viam_carto()
 	defer C.free_alloc_viam_carto(pVc)
@@ -172,7 +165,7 @@ func (vc *Carto) Stop(ctx context.Context) error {
 	return nil
 }
 
-// TerminateViamCarto calls viam_carto_terminate to clean up memory for viam carto
+// TerminateCarto calls viam_carto_terminate to clean up memory for viam carto
 func (vc *Carto) TerminateCarto(ctx context.Context) error {
 	status := C.viam_carto_terminate(&vc.value)
 
@@ -341,8 +334,8 @@ func getErrorFromStatusCode(status C.int) error {
 	switch int(status) {
 	case C.VIAM_CARTO_SUCCESS:
 		return nil
-	case C.VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK:
-		return errors.New("error: VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK")
+	case C.VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK:
+		return errors.New("error: VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 	case C.VIAM_CARTO_VC_INVALID:
 		return errors.New("error: VIAM_CARTO_VC_INVALID")
 	case C.VIAM_CARTO_OUT_OF_MEMORY:

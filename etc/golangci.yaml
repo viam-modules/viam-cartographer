@@ -17,6 +17,7 @@ linters:
     - forcetypeassert
     - funlen
     - gocognit
+    - gocritic
     - godox
     - goerr113
     - gochecknoglobals
