@@ -55,6 +55,10 @@ jobs:
         ref: ${{ github.event.pull_request.head.sha }}
         submodules: recursive
 
+    - name: apt update
+      run: |
+        sudo apt update
+
     - name: Verify no uncommitted changes from make lint
       run: |
         git init
@@ -69,7 +73,7 @@ jobs:
             exit 1
         fi
 
-    - name: make bufinstall buf setup
+    - name: make bufinstall buf setup setup-cpp-full-mod
       uses: nick-fields/retry@v2
       with:
         timeout_minutes: 5
@@ -78,7 +82,7 @@ jobs:
         shell: bash
         command: |
           chown -R testbot:testbot .
-          sudo -u testbot bash -lc 'make bufinstall buf setup'
+          sudo -u testbot bash -lc 'make bufinstall buf setup setup-cpp-full-mod'
 
     - name: make build
       run: |
@@ -101,3 +105,11 @@ jobs:
       if: matrix.platform == 'linux/amd64'
       run: |
         sudo -u testbot bash -lc 'sudo go test -v -race -run TestCartographerIntegration'
+
+    - name: make test-cpp-full-mod-valgrind
+      # Currently we only run valgrind on arm64 as x86
+      # doesn't valgrind clean due to what appears to be a bug in GLOG
+      # https://github.com/viamrobotics/viam-cartographer/actions/runs/5156238014/jobs/9287413446
+      if: matrix.platform != 'linux/amd64'
+      run: |
+        sudo -u testbot bash -lc 'make test-cpp-full-mod-valgrind'

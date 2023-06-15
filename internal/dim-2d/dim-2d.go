@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/resource"
+	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
 
 	"github.com/viamrobotics/viam-cartographer/dataprocess"
@@ -106,6 +107,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::GetAndSaveData")
 	defer span.End()
 
+	ctx, md := contextutils.ContextWithMetadata(ctx)
 	pointcloud, err := lidar.GetData(ctx)
 	if err != nil {
 		if err.Error() == opTimeoutErrorMessage {
@@ -115,7 +117,19 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 		return "", err
 	}
 
+	// If the server provided timestamps correlated with the point cloud, extract the time
+	// requested from the metadata and use that instead of the current time.
+	timeReq := time.Now()
+	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+	if ok {
+		timeReq, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+		if err != nil {
+			logger.Warnw("couldn't parse time", "error", err)
+			return "", err
+		}
+	}
+
 	dataDir := filepath.Join(dataDirectory, "data")
-	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", time.Now())
+	filename := dataprocess.CreateTimestampFilename(dataDir, lidar.Name, ".pcd", timeReq)
 	return filename, dataprocess.WritePCDToFile(pointcloud, filename)
 }

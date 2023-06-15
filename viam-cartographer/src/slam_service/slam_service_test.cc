@@ -332,13 +332,7 @@ BOOST_AUTO_TEST_CASE(SetActionMode_invalid_case) {
 //         utils::createTmpDirectoryAndAddFiles(data_files, map_files);
 //     slamService.path_to_data = tmp_dir.string() + "/data";
 
-//     const std::string message = "not enough data in data directory";
-//     BOOST_CHECK_EXCEPTION(slamService.GetNextDataFileOffline(),
-//                           std::runtime_error,
-//                           [&message](const std::runtime_error& ex) {
-//                               BOOST_CHECK_EQUAL(ex.what(), message);
-//                               return true;
-//                           });
+    // BOOST_TEST(slamService.GetNextDataFileOfflineHelper() == "");
 
 //     // Remove the temporary directory and its contents
 //     utils::removeTmpDirectory(tmp_dir);
@@ -360,10 +354,10 @@ BOOST_AUTO_TEST_CASE(SetActionMode_invalid_case) {
 //         utils::createTmpDirectoryAndAddFiles(data_files, map_files);
 //     slamService.path_to_data = tmp_dir.string() + "/data";
 
-//     for (int i = 0; i < data_files.size(); i++) {
-//         BOOST_TEST(slamService.GetNextDataFileOffline() ==
-//                    (slamService.path_to_data + "/" + data_files[i]));
-//     }
+    // for (int i = 0; i < data_files.size() - 1; i++) {
+    //     BOOST_TEST(slamService.GetNextDataFileOffline() ==
+    //                (slamService.path_to_data + "/" + data_files[i]));
+    // }
 
 //     // Remove the temporary directory and its contents
 //     utils::removeTmpDirectory(tmp_dir);

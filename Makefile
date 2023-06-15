@@ -1,17 +1,19 @@
 BUILD_CHANNEL?=local
 TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
-PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):${PATH}"
+PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):$(HOME)/go/bin/:${PATH}"
 GIT_REVISION = $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION?=$(shell git tag --points-at | sort -Vr | head -n1)
 GO_BUILD_LDFLAGS = -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
 
-set-pkg-config-openssl:
-	pkg-config openssl || export PKG_CONFIG_PATH=$$PKG_CONFIG_PATH:`find \`which brew > /dev/null && brew --prefix\` -name openssl.pc | head -n1 | xargs dirname`
+ARTIFACT="~/go/bin/artifact"
+
+artifact-pull:
+	PATH=${PATH_WITH_TOOLS} artifact pull
 
 bufinstall:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
 
-bufsetup: set-pkg-config-openssl
+bufsetup:
 	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 
@@ -68,19 +70,26 @@ lint-go:
 
 lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: ensure-submodule-initialized set-pkg-config-openssl
+setup: ensure-submodule-initialized
 ifeq ("Darwin", "$(shell uname -s)")
 	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
 else
 	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
 endif
+	@make artifact-pull
 	
-
 build: build-module
 ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
 	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
 else 
 	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
+endif
+
+build-debug: build-module
+ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
+	cd viam-cartographer && ./scripts/build_viam_cartographer_debug.sh 
+else 
+	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer_debug.sh
 endif
 
 build-module:
@@ -89,10 +98,24 @@ build-module:
 install-lua-files:
 	sudo mkdir -p /usr/local/share/cartographer/lua_files/
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
-	sudo cp viam-cartographer/cartographer/configuration_files/* /usr/local/share/cartographer/lua_files/
 
 test-cpp:
-	cd viam-cartographer && ./scripts/test_cartographer.sh
+	viam-cartographer/build/unit_tests -p -l all
+
+# Linux only
+setup-cpp-full-mod: 
+	sudo apt install -y valgrind gdb
+
+# Linux only
+test-cpp-full-mod-valgrind: build-debug
+	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io -t CartoFacadeCPPAPI
+
+# Linux only
+test-cpp-full-mod-gdb: build-debug
+	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+
+test-cpp-full-mod: build-debug
+	viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
 
 test-go:
 	go test -race ./...

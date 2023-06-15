@@ -10,11 +10,13 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"testing"
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 
@@ -151,6 +153,8 @@ func TestDataProcess(t *testing.T) {
 	slamSvc := svc.(testhelper.Service)
 
 	t.Run("Successful startup of data process with good lidar", func(t *testing.T) {
+		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
+
 		sensors := []string{"good_lidar"}
 		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
@@ -161,7 +165,7 @@ func TestDataProcess(t *testing.T) {
 
 		<-c
 		cancelFunc()
-		files, err := os.ReadDir(dataDir + "/data/")
+		files, err := os.ReadDir(filepath.Join(dataDir, "data"))
 		test.That(t, len(files), test.ShouldBeGreaterThanOrEqualTo, 1)
 		test.That(t, err, test.ShouldBeNil)
 	})
@@ -181,6 +185,25 @@ func TestDataProcess(t *testing.T) {
 		latestLoggedEntry := allObs[len(allObs)-1]
 		cancelFunc()
 		test.That(t, fmt.Sprint(latestLoggedEntry), test.ShouldContainSubstring, "invalid sensor")
+	})
+
+	t.Run("When replay sensor is configured, we read timestamps from the context", func(t *testing.T) {
+		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
+
+		sensors := []string{"replay_sensor"}
+		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
+
+		cancelCtx, cancelFunc := context.WithCancel(context.Background())
+		c := make(chan int, 100)
+		slamSvc.StartDataProcess(cancelCtx, lidar, c)
+
+		<-c
+		cancelFunc()
+		files, err := os.ReadDir(filepath.Join(dataDir, "data"))
+		test.That(t, len(files), test.ShouldBeGreaterThanOrEqualTo, 1)
+		test.That(t, files[0].Name(), test.ShouldContainSubstring, testhelper.TestTime)
+		test.That(t, err, test.ShouldBeNil)
 	})
 
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
@@ -333,6 +356,39 @@ func TestSLAMProcess(t *testing.T) {
 		grpcServer.Stop()
 	})
 
+	testhelper.ClearDirectory(t, dataDir)
+}
+
+func TestDoCommand(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
+	test.That(t, err, test.ShouldBeNil)
+	grpcServer, port := setupTestGRPCServer(t)
+	attrCfg := &vcConfig.Config{
+		Sensors:       []string{"good_lidar"},
+		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
+		DataDirectory: dataDir,
+		MapRateSec:    &testMapRateSec,
+		DataRateMsec:  testDataRateMsec,
+		Port:          "localhost:" + strconv.Itoa(port),
+		UseLiveData:   &_true,
+	}
+	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+	test.That(t, err, test.ShouldBeNil)
+	t.Run("returns UnimplementedError when given other parmeters", func(t *testing.T) {
+		cmd := map[string]interface{}{"fake_flag": true}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
+		test.That(t, resp, test.ShouldBeNil)
+	})
+	t.Run("returns UnimplementedError when given no parmeters", func(t *testing.T) {
+		cmd := map[string]interface{}{}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
+		test.That(t, resp, test.ShouldBeNil)
+	})
+	grpcServer.Stop()
+	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	testhelper.ClearDirectory(t, dataDir)
 }
 

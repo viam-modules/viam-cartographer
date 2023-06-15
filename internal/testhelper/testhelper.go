@@ -20,6 +20,7 @@ import (
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/testutils/inject"
+	"go.viam.com/rdk/utils/contextutils"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 	"go.viam.com/utils/pexec"
@@ -42,6 +43,8 @@ const (
 	// sensor that is used in the GetAndSaveData function.
 	SensorValidationIntervalSecForTest = 1
 	testDialMaxTimeoutSec              = 1
+	// TestTime can be used to test specific timestamps provided by a replay sensor.
+	TestTime = "2006-01-02T15:04:05.9999Z"
 )
 
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
@@ -68,6 +71,8 @@ func SetupDeps(sensors []string) resource.Dependencies {
 		switch sensor {
 		case "good_lidar":
 			deps[camera.Named(sensor)] = getGoodLidar()
+		case "replay_sensor":
+			deps[camera.Named(sensor)] = getReplaySensor()
 		case "invalid_sensor":
 			deps[camera.Named(sensor)] = getInvalidSensor()
 		case "gibberish":
@@ -84,6 +89,27 @@ func SetupDeps(sensors []string) resource.Dependencies {
 func getGoodLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		return pointcloud.New(), nil
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		return nil, errors.New("lidar not camera")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{}, nil
+	}
+	return cam
+}
+
+func getReplaySensor() *inject.Camera {
+	cam := &inject.Camera{}
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{TestTime}
+		}
 		return pointcloud.New(), nil
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
@@ -122,7 +148,7 @@ func getIntegrationLidar() *inject.Camera {
 			if i >= NumPointClouds {
 				return nil, errors.New("No more cartographer point clouds")
 			}
-			file, err := os.Open(artifact.MustPath("slam/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
+			file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 			if err != nil {
 				return nil, err
 			}

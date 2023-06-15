@@ -24,6 +24,10 @@ fi
 pushd build
 
 echo building viam-cartographer
-cmake .. -G Ninja -DCMAKE_CXX_STANDARD=17 -DCMAKE_PREFIX_PATH=`brew --prefix` -DQt5_DIR=$(brew --prefix qt5)/lib/cmake/Qt5
+cmake .. -G Ninja \
+  -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_PREFIX_PATH=`brew --prefix` \
+  -DQt5_DIR=$(brew --prefix qt5)/lib/cmake/Qt5 \
+  -DCMAKE_BUILD_TYPE=Debug
+
 ninja
-popd

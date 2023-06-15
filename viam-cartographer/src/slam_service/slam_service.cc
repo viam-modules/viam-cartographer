@@ -67,9 +67,9 @@ std::atomic<bool> b_continue_session{true};
 
     // Set pose for our response
     Pose *myPose = response->mutable_pose();
-    myPose->set_x(pos_vector.x());
-    myPose->set_y(pos_vector.y());
-    myPose->set_z(pos_vector.z());
+    myPose->set_x(pos_vector.x() * 1000);
+    myPose->set_y(pos_vector.y() * 1000);
+    myPose->set_z(pos_vector.z() * 1000);
 
     // Set extra for our response (currently stores quaternion)
     google::protobuf::Struct *q;
@@ -526,12 +526,33 @@ void SLAMServiceImpl::RunSLAM() {
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOffline() {
-    if (!b_continue_session) {
-        return "";
+    while (b_continue_session) {
+        const std::string file_name = GetNextDataFileOfflineHelper();
+        if (file_name != "") {
+            // The library we use to see the contents of the data directory has
+            // nondeterministic results when the directory is still being
+            // written to. Because of this, it's possible that we will miss a
+            // file and then rediscover it the next time we list the sorted
+            // files. If this happens, we need to skip the file, since
+            // cartographer cannot accept data out-of-order.
+            if (file_name >= max_file_offline) {
+                max_file_offline = file_name;
+                return file_name;
+            } else {
+                LOG(INFO) << "New file was less than max. New: " << file_name
+                          << " Max: " << max_file_offline;
+            }
+        }
+
+        // This log line is needed by rdk integration tests.
+        VLOG(1) << "No new data found";
     }
-    // if (file_list_offline.size() == 0) {
-        std::vector<std::string> file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
-        // LOG(INFO) << "yo SLAM POC: number of data: " << file_list_offline.size();
+    return "";
+}
+
+std::string SLAMServiceImpl::GetNextDataFileOfflineHelper() {
+    // if (file_list_offline.size() - current_file_offline <= 2) {
+        file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     // }
     // We're setting the minimum required files to be two for the following
     // reasons:

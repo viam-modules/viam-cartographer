@@ -1,9 +1,10 @@
 #!/bin/bash
 echo "Installing cartographer external dependencies"
 brew update
-brew upgrade
-brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3
+brew install abseil boost ceres-solver protobuf@21 ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc 
 brew link lua@5.3
-brew install openssl eigen gflags glog suite-sparse sphinx-doc pcl
-brew link protobuf
-brew link openssl --force
+brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl
+brew unlink protobuf@3
+brew unlink protobuf
+brew unlink protobuf@21 && brew link protobuf@21
+go install go.viam.com/utils/artifact/cmd/artifact
