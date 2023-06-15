@@ -300,19 +300,6 @@ func bstringToGoString(bstr C.bstring) string {
 	return C.GoString(C.bstr2cstr(bstr, 0))
 }
 
-func getMode(mode Mode) C.viam_carto_MODE {
-	switch mode {
-	case localizing:
-		return C.VIAM_CARTO_LOCALIZING
-	case mapping:
-		return C.VIAM_CARTO_MAPPING
-	case updating:
-		return C.VIAM_CARTO_UPDATING
-	}
-	// TODO: some error case?
-	return 0
-}
-
 func getLidarConfig(lidarConfig LidarConfig) C.viam_carto_LIDAR_CONFIG {
 	switch lidarConfig {
 	case twoD:
@@ -340,7 +327,6 @@ func getConfig(cfg CartoConfig) C.viam_carto_config {
 	vcc.map_rate_sec = C.int(cfg.mapRateSecond)
 	vcc.data_dir = C.bfromcstr(C.CString(cfg.dataDir))
 	vcc.component_reference = C.bfromcstr(C.CString(cfg.componentReference))
-	vcc.mode = getMode(cfg.mode)
 	vcc.lidar_config = getLidarConfig(cfg.lidarConfig)
 
 	return vcc

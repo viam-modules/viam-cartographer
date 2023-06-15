@@ -14,7 +14,6 @@ func getTestConfig() CartoConfig {
 		mapRateSecond:      5,
 		dataDir:            "data-dir",
 		componentReference: "component",
-		mode:               updating,
 		lidarConfig:        twoD,
 	}
 }
@@ -36,7 +35,6 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, componentReference, test.ShouldResemble, "component")
 		FreeBstringArray(vcc.sensors)
 
-		test.That(t, vcc.mode, test.ShouldEqual, updating)
 		test.That(t, vcc.lidar_config, test.ShouldEqual, twoD)
 	})
 
