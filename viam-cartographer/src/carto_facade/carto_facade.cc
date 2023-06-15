@@ -1,10 +1,63 @@
 // This is an experimental integration of cartographer into RDK.
 #include "carto_facade.h"
 
+#include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/format.hpp>
+
 #include "glog/logging.h"
+#include "map_builder.h"
+#include "util.h"
 
 namespace viam {
 namespace carto_facade {
+namespace fs = boost::filesystem;
+// Number of bytes in a pixel
+static const int bytesPerPixel = 4;
+struct ColorARGB {
+    unsigned char A;
+    unsigned char R;
+    unsigned char G;
+    unsigned char B;
+};
+
+// Check if the green color channel is 0 to filter unobserved pixels which is
+// set in DrawTexture at
+// https://github.com/cartographer-project/cartographer/blob/ef00de231
+// 7dcf7895b09f18cc4d87f8b533a019b/cartographer/io/submap_painter.cc#L206-L207
+bool check_if_empty_pixel(ColorARGB pixel_color) {
+    return (pixel_color.G == 0);
+}
+
+// Convert the scale of a specified color channel from the given UCHAR
+// range of 0 - 255 to an inverse probability range of 100 - 0.
+int calculate_probability_from_color_channels(ColorARGB pixel_color) {
+    unsigned char max_val = UCHAR_MAX;
+    unsigned char min_val = 0;
+    unsigned char max_prob = 100;
+    unsigned char min_prob = 0;
+
+    // Probability is currently determined solely by the red color channel.
+    unsigned char color_channel_val = pixel_color.R;
+    unsigned char prob = (max_val - color_channel_val) * (max_prob - min_prob) /
+                         (max_val - min_val);
+    return prob;
+}
+
+std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
+    std::string action_mode_str;
+    if (action_mode == ActionMode::MAPPING) {
+        action_mode_str = "mapping";
+    } else if (action_mode == ActionMode::LOCALIZING) {
+        action_mode_str = "localizing";
+    } else if (action_mode == ActionMode::UPDATING) {
+        action_mode_str = "updating";
+    } else {
+        throw std::runtime_error("invalid ActionMode value");
+    }
+    os << action_mode_str;
+    return os;
+}
 
 std::string std_string_from_bstring(bstring b_str) {
     int len = blength(b_str);
@@ -12,19 +65,6 @@ std::string std_string_from_bstring(bstring b_str) {
     std::string std_str(tmp, len);
     bcstrfree(tmp);
     return std_str;
-}
-
-void validate_mode(viam_carto_MODE mode) {
-    switch (mode) {
-        case VIAM_CARTO_LOCALIZING:
-            break;
-        case VIAM_CARTO_MAPPING:
-            break;
-        case VIAM_CARTO_UPDATING:
-            break;
-        default:
-            throw VIAM_CARTO_SLAM_MODE_INVALID;
-    }
 }
 
 void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
@@ -46,8 +86,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
 
     c.data_dir = std_string_from_bstring(vcc.data_dir);
     c.component_reference = std_string_from_bstring(vcc.component_reference);
-    c.map_rate_sec = vcc.map_rate_sec;
-    c.mode = vcc.mode;
+    c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.lidar_config = vcc.lidar_config;
     if (c.sensors.size() == 0) {
         throw VIAM_CARTO_SENSORS_LIST_EMPTY;
@@ -55,16 +94,61 @@ config from_viam_carto_config(viam_carto_config vcc) {
     if (c.data_dir.size() == 0) {
         throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
     }
-    if (c.map_rate_sec < 0) {
+    if (vcc.map_rate_sec < 0) {
         throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
     }
     if (c.component_reference.empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
     }
-    validate_mode(c.mode);
     validate_lidar_config(c.lidar_config);
 
     return c;
+};
+
+std::string find_lua_files() {
+    auto programLocation = boost::dll::program_location();
+    auto localRelativePathToLuas = programLocation.parent_path().parent_path();
+    localRelativePathToLuas.append("lua_files");
+    auto relativePathToLuas = programLocation.parent_path().parent_path();
+    relativePathToLuas.append("share/cartographer/lua_files");
+    fs::path absolutePathToLuas("/usr/local/share/cartographer/lua_files");
+
+    if (exists(relativePathToLuas)) {
+        VLOG(1) << "Using lua files from relative path "
+                << relativePathToLuas.string();
+        return relativePathToLuas.string();
+    } else if (exists(localRelativePathToLuas)) {
+        VLOG(1) << "Using lua files from local relative path "
+                << localRelativePathToLuas.string();
+        return localRelativePathToLuas.string();
+    } else if (exists(absolutePathToLuas)) {
+        VLOG(1) << "Using lua files from absolute path "
+                << absolutePathToLuas.string();
+        return absolutePathToLuas.string();
+    } else {
+        LOG(ERROR) << "No lua files found, looked in " << relativePathToLuas;
+        LOG(ERROR) << "Use 'make install-lua-files' to install lua files into "
+                      "/usr/local/share";
+        return "";
+    }
+};
+
+const std::string action_mode_lua_config_filename(ActionMode am) {
+    switch (am) {
+        case ActionMode::MAPPING:
+            return configuration_mapping_basename;
+            break;
+        case ActionMode::LOCALIZING:
+            return configuration_localization_basename;
+            break;
+        case ActionMode::UPDATING:
+            return configuration_update_basename;
+            break;
+        default:
+            LOG(ERROR)
+                << "action_mode_lua_config_filename: action mode is invalid";
+            throw VIAM_CARTO_SLAM_MODE_INVALID;
+    }
 };
 
 CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
@@ -72,11 +156,377 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     lib = pVCL;
     config = from_viam_carto_config(c);
     algo_config = ac;
-    path_to_data = config.data_dir + "/data";
-    // TODO: Change to "/internal_state"
-    path_to_internal_state = config.data_dir + "/map";
+    path_to_internal_state = config.data_dir + "/internal_state";
     b_continue_session = true;
 };
+
+void setup_filesystem(std::string data_dir,
+                      std::string path_to_internal_state) {
+    // setup internal state directory if it doesn't exist
+    auto perms =
+        fs::perms::group_all | fs::perms::owner_all | fs::perms::others_read;
+    try {
+        // if directory doesn't exist, create it with expected structure
+        if (!fs::is_directory(data_dir)) {
+            VLOG(1) << "data_dir doesn't exist. Creating " << data_dir;
+            fs::create_directory(data_dir);
+            VLOG(1) << "setting data_dir permissions";
+            fs::permissions(data_dir, perms);
+        }
+        if (!fs::is_directory(path_to_internal_state)) {
+            VLOG(1) << "data_dir's internal_state directory, doesn't exist. "
+                       "Creating "
+                    << path_to_internal_state;
+            fs::create_directory(path_to_internal_state);
+            VLOG(1)
+                << "setting data_dir's internal_state directory's permissions";
+            fs::permissions(path_to_internal_state, perms);
+        }
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        throw VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR;
+    }
+}
+
+std::vector<std::string> list_sorted_files_in_directory(std::string directory) {
+    std::vector<std::string> file_paths;
+
+    for (const auto &entry : fs::directory_iterator(directory)) {
+        file_paths.push_back((entry.path()).string());
+    }
+
+    sort(file_paths.begin(), file_paths.end());
+    return file_paths;
+}
+
+std::string get_latest_internal_state_filename(std::string path_to_map) {
+    std::string latest_internal_state_filename;
+
+    std::vector<std::string> internal_state_filename =
+        list_sorted_files_in_directory(path_to_map);
+    bool found_internal_state = false;
+    for (int i = internal_state_filename.size() - 1; i >= 0; i--) {
+        if (internal_state_filename.at(i).find(".pbstream") !=
+            std::string::npos) {
+            latest_internal_state_filename = internal_state_filename.at(i);
+            found_internal_state = true;
+            break;
+        }
+    }
+    if (!found_internal_state) {
+        throw std::runtime_error(
+            "cannot find internal state but they should be present");
+    }
+
+    return latest_internal_state_filename;
+}
+
+void CartoFacade::IOInit() {
+    // Detect if data_dir has deprecated format
+    if (fs::is_directory(config.data_dir + "/data")) {
+        LOG(ERROR) << "data directory " << config.data_dir
+                   << " is invalid as it contains deprecated format i.e. /data "
+                      "subdirectory";
+        throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
+    }
+    // Setup file system for saving map
+    setup_filesystem(config.data_dir, path_to_internal_state);
+    action_mode =
+        determine_action_mode(path_to_internal_state, config.map_rate_sec);
+    VLOG(1) << "slam action mode: " << action_mode;
+    // TODO: Make this API user configurable
+    auto cd = find_lua_files();
+    if (cd.empty()) {
+        throw VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
+    }
+    configuration_directory = cd;
+    // Detect action mode
+    auto config_basename = action_mode_lua_config_filename(action_mode);
+    // Setup MapBuilder
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.SetUp(configuration_directory, config_basename);
+        VLOG(1) << "overwriting map_builder config";
+        map_builder.OverwriteOptimizeEveryNNodes(
+            algo_config.optimize_every_n_nodes);
+        map_builder.OverwriteNumRangeData(algo_config.num_range_data);
+        map_builder.OverwriteMissingDataRayLength(
+            algo_config.missing_data_ray_length);
+        map_builder.OverwriteMaxRange(algo_config.max_range);
+        map_builder.OverwriteMinRange(algo_config.min_range);
+        if (action_mode == ActionMode::LOCALIZING) {
+            map_builder.OverwriteMaxSubmapsToKeep(
+                algo_config.max_submaps_to_keep);
+        }
+        if (action_mode == ActionMode::UPDATING) {
+            map_builder.OverwriteFreshSubmapsCount(
+                algo_config.fresh_submaps_count);
+            map_builder.OverwriteMinCoveredArea(algo_config.min_covered_area);
+            map_builder.OverwriteMinAddedSubmapsCount(
+                algo_config.min_added_submaps_count);
+        }
+        map_builder.OverwriteOccupiedSpaceWeight(
+            algo_config.occupied_space_weight);
+        map_builder.OverwriteTranslationWeight(algo_config.translation_weight);
+        map_builder.OverwriteRotationWeight(algo_config.rotation_weight);
+        map_builder.BuildMapBuilder();
+    }
+
+    // TODO: google cartographer will termiante the program if
+    // the internal state is invalid
+    // see https://viam.atlassian.net/browse/RSDK-3553
+    if (action_mode == ActionMode::UPDATING ||
+        action_mode == ActionMode::LOCALIZING) {
+        // Check if there is an apriori map in the path_to_map directory
+        std::string latest_internal_state_filename =
+            get_latest_internal_state_filename(path_to_internal_state);
+        VLOG(1) << "latest_internal_state_filename: "
+                << latest_internal_state_filename;
+        // load_frozen_trajectory has to be true for LOCALIZING action mode,
+        // and false for UPDATING action mode.
+        bool load_frozen_trajectory = (action_mode == ActionMode::LOCALIZING);
+        if (algo_config.optimize_on_start) {
+            VLOG(1) << "running optimize_on_start";
+            CacheLatestMap();
+
+            std::unique_lock optimization_lock{optimization_shared_mutex,
+                                               std::defer_lock};
+            optimization_lock.lock();
+            // Load apriori map
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            map_builder.LoadMapFromFile(latest_internal_state_filename,
+                                        load_frozen_trajectory,
+                                        algo_config.optimize_on_start);
+        } else {
+            // Load apriori map
+            std::lock_guard<std::mutex> lk(map_builder_mutex);
+            map_builder.LoadMapFromFile(latest_internal_state_filename,
+                                        load_frozen_trajectory,
+                                        algo_config.optimize_on_start);
+        }
+
+        CacheMapInLocalizationMode();
+    }
+
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.StartLidarTrajectoryBuilder();
+    }
+};
+
+void CartoFacade::CacheLatestMap() {
+    VLOG(1) << "CacheLatestMap()";
+    std::string pointcloud_map_tmp;
+    try {
+        GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+
+    } catch (std::exception &e) {
+        LOG(ERROR) << "error encoding pointcloud map: " << e.what();
+        throw VIAM_CARTO_MAP_CREATION_ERROR;
+    }
+    std::lock_guard<std::mutex> lk(viam_response_mutex);
+    latest_pointcloud_map = std::move(pointcloud_map_tmp);
+}
+
+// If using the LOCALIZING action mode, cache a copy of the map before
+// beginning to process data. If cartographer fails to do this,
+// terminate the program
+void CartoFacade::CacheMapInLocalizationMode() {
+    VLOG(1) << "CacheMapInLocalizationMode()";
+    if (action_mode == ActionMode::LOCALIZING) {
+        std::string pointcloud_map_tmp;
+        try {
+            GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
+
+        } catch (std::exception &e) {
+            LOG(ERROR) << "error encoding localized "
+                          "pointcloud map: "
+                       << e.what();
+            throw VIAM_CARTO_MAP_CREATION_ERROR;
+        }
+
+        if (pointcloud_map_tmp.empty()) {
+            LOG(ERROR) << "error encoding localized "
+                          "pointcloud map: no map points";
+            throw VIAM_CARTO_MAP_CREATION_ERROR;
+        }
+
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_pointcloud_map = std::move(pointcloud_map_tmp);
+        }
+    }
+}
+
+cartographer::io::PaintSubmapSlicesResult
+CartoFacade::GetLatestPaintedMapSlices() {
+    VLOG(1) << "GetLatestPaintedMapSlices()";
+    cartographer::mapping::MapById<
+        cartographer::mapping::SubmapId,
+        cartographer::mapping::PoseGraphInterface::SubmapPose>
+        submap_poses;
+    std::map<cartographer::mapping::SubmapId,
+             cartographer::mapping::proto::SubmapQuery::Response>
+        response_protos;
+
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        submap_poses =
+            map_builder.map_builder_->pose_graph()->GetAllSubmapPoses();
+
+        for (const auto &&submap_id_pose : submap_poses) {
+            cartographer::mapping::proto::SubmapQuery::Response
+                &response_proto = response_protos[submap_id_pose.id];
+            const std::string error = map_builder.map_builder_->SubmapToProto(
+                submap_id_pose.id, &response_proto);
+            if (error != "") {
+                throw std::runtime_error(error);
+            }
+        }
+    }
+
+    std::map<cartographer::mapping::SubmapId, ::cartographer::io::SubmapSlice>
+        submap_slices;
+
+    if (submap_poses.size() == 0) {
+        throw std::runtime_error(viam::carto_facade::errorNoSubmaps);
+    }
+
+    for (const auto &&submap_id_pose : submap_poses) {
+        auto submap_textures =
+            absl::make_unique<::cartographer::io::SubmapTextures>();
+        submap_textures->version =
+            response_protos[submap_id_pose.id].submap_version();
+        for (const auto &texture_proto :
+             response_protos[submap_id_pose.id].textures()) {
+            const std::string compressed_cells(texture_proto.cells().begin(),
+                                               texture_proto.cells().end());
+            submap_textures->textures.emplace_back(
+                ::cartographer::io::SubmapTexture{
+                    ::cartographer::io::UnpackTextureData(
+                        compressed_cells, texture_proto.width(),
+                        texture_proto.height()),
+                    texture_proto.width(), texture_proto.height(),
+                    texture_proto.resolution(),
+                    cartographer::transform::ToRigid3(
+                        texture_proto.slice_pose())});
+        }
+
+        // Prepares SubmapSlice
+        ::cartographer::io::SubmapSlice &submap_slice =
+            submap_slices[submap_id_pose.id];
+        const auto fetched_texture = submap_textures->textures.begin();
+        submap_slice.pose = submap_id_pose.data.pose;
+        submap_slice.width = fetched_texture->width;
+        submap_slice.height = fetched_texture->height;
+        submap_slice.slice_pose = fetched_texture->slice_pose;
+        submap_slice.resolution = fetched_texture->resolution;
+        submap_slice.cairo_data.clear();
+
+        submap_slice.surface = ::cartographer::io::DrawTexture(
+            fetched_texture->pixels.intensity, fetched_texture->pixels.alpha,
+            fetched_texture->width, fetched_texture->height,
+            &submap_slice.cairo_data);
+    }
+    cartographer::io::PaintSubmapSlicesResult painted_slices =
+        cartographer::io::PaintSubmapSlices(submap_slices, resolutionMeters);
+
+    return painted_slices;
+}
+
+void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
+    VLOG(1) << "GetLatestSampledPointCloudMapString()";
+    std::unique_ptr<cartographer::io::PaintSubmapSlicesResult> painted_slices =
+        nullptr;
+    try {
+        painted_slices =
+            std::make_unique<cartographer::io::PaintSubmapSlicesResult>(
+                GetLatestPaintedMapSlices());
+    } catch (std::exception &e) {
+        if (e.what() == viam::carto_facade::errorNoSubmaps) {
+            LOG(INFO) << "Error creating pcd map: " << e.what();
+            return;
+        } else {
+            std::string errorLog = "Error writing submap to proto: ";
+            errorLog += e.what();
+            LOG(ERROR) << errorLog;
+            throw std::runtime_error(errorLog);
+        }
+    }
+
+    // Get data from painted surface in ARGB32 format
+    auto painted_surface = painted_slices->surface.get();
+    auto image_format = cairo_image_surface_get_format(painted_surface);
+    if (image_format != cartographer::io::kCairoFormat) {
+        std::string error_log =
+            "Error cairo surface in wrong format, expected Cairo_Format_ARGB32";
+        LOG(ERROR) << error_log;
+        throw std::runtime_error(error_log);
+    }
+    int width = cairo_image_surface_get_width(painted_surface);
+    int height = cairo_image_surface_get_height(painted_surface);
+    auto image_data_ptr = cairo_image_surface_get_data(painted_surface);
+
+    // Get pixel containing map origin (0, 0)
+    float origin_pixel_x = painted_slices->origin.x();
+    float origin_pixel_y = painted_slices->origin.y();
+
+    // Iterate over image data and add to pointcloud buffer
+    int num_points = 0;
+    std::string pcd_data;
+    for (int pixel_y = 0; pixel_y < height; pixel_y++) {
+        for (int pixel_x = 0; pixel_x < width; pixel_x++) {
+            // Get byte index associated with pixel
+            int pixel_index = pixel_x + pixel_y * width;
+            int byte_index = pixel_index * bytesPerPixel;
+
+            // We assume we are running on a little-endian system, so the ARGB
+            // order is reversed
+            ColorARGB pixel_color;
+            pixel_color.A = image_data_ptr[byte_index + 3];
+            pixel_color.R = image_data_ptr[byte_index + 2];
+            pixel_color.G = image_data_ptr[byte_index + 1];
+            pixel_color.B = image_data_ptr[byte_index + 0];
+
+            // Skip pixel if it contains empty data (default color)
+            if (check_if_empty_pixel(pixel_color)) {
+                continue;
+            }
+
+            // Determine probability based on the color of the pixel and skip if
+            // it is 0
+            int prob = calculate_probability_from_color_channels(pixel_color);
+            if (prob == 0) {
+                continue;
+            }
+
+            // Convert pixel location to pointcloud point in meters
+            float x_pos = (pixel_x - origin_pixel_x) * resolutionMeters;
+            // Y is inverted to match output from getPosition()
+            float y_pos = -(pixel_y - origin_pixel_y) * resolutionMeters;
+            float z_pos = 0;  // Z is 0 in 2D SLAM
+
+            // Add point to buffer
+            viam::carto_facade::util::write_float_to_buffer_in_bytes(pcd_data,
+                                                                     x_pos);
+            viam::carto_facade::util::write_float_to_buffer_in_bytes(pcd_data,
+                                                                     y_pos);
+            viam::carto_facade::util::write_float_to_buffer_in_bytes(pcd_data,
+                                                                     z_pos);
+            viam::carto_facade::util::write_int_to_buffer_in_bytes(pcd_data,
+                                                                   prob);
+
+            num_points++;
+        }
+    }
+
+    // Write our PCD file, which is written as a binary.
+    pointcloud = viam::carto_facade::util::pcd_header(num_points, true);
+
+    // Writes data buffer to the pointcloud string
+    pointcloud += pcd_data;
+    return;
+}
 
 int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     bstring cr = bfromcstr("C++ component reference");
@@ -109,6 +559,39 @@ int CartoFacade::Stop() { return VIAM_CARTO_SUCCESS; };
 int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
 };
+
+viam::carto_facade::ActionMode determine_action_mode(
+    std::string path_to_internal_state, std::chrono::seconds map_rate_sec) {
+    // Check if there is an apriori map (internal state) in the
+    // path_to_internal_state directory
+    std::vector<std::string> internal_state_filenames =
+        list_sorted_files_in_directory(path_to_internal_state);
+
+    // Check if there is a *.pbstream map in the path_to_map directory
+    for (auto filename : internal_state_filenames) {
+        if (filename.find(".pbstream") != std::string::npos) {
+            // There is an apriori map present, so we're running either in
+            // updating or localization mode.
+            if (map_rate_sec.count() == 0) {
+                // This log line is needed by rdk integration tests.
+                LOG(INFO) << "Running in localization only mode";
+                return viam::carto_facade::ActionMode::LOCALIZING;
+            }
+            // This log line is needed by rdk integration tests.
+            LOG(INFO) << "Running in updating mode";
+            return viam::carto_facade::ActionMode::UPDATING;
+        }
+    }
+    if (map_rate_sec.count() == 0) {
+        LOG(ERROR) << "set to localization mode (map_rate_sec = 0) but "
+                      "couldn't find apriori map to localize on";
+        throw VIAM_CARTO_SLAM_MODE_INVALID;
+    }
+    // This log line is needed by rdk integration tests.
+    LOG(INFO) << "Running in mapping mode";
+    return viam::carto_facade::ActionMode::MAPPING;
+}
+
 }  // namespace carto_facade
 }  // namespace viam
 
@@ -162,9 +645,10 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     if (vc == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
+    viam::carto_facade::CartoFacade *cf;
 
     try {
-        vc->carto_obj = new viam::carto_facade::CartoFacade(pVCL, c, ac);
+        cf = new viam::carto_facade::CartoFacade(pVCL, c, ac);
     } catch (int err) {
         free(vc);
         return err;
@@ -173,6 +657,20 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         LOG(ERROR) << e.what();
         return VIAM_CARTO_UNKNOWN_ERROR;
     }
+
+    try {
+        cf->IOInit();
+    } catch (int err) {
+        delete cf;
+        free(vc);
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        delete cf;
+        free(vc);
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+    vc->carto_obj = cf;
 
     // point to newly created viam_carto struct
     *ppVC = vc;
