@@ -102,12 +102,12 @@ func NewCartoLib(miniloglevel, verbose int) (CartoLib, error) {
 
 	ppVcl := (**C.viam_carto_lib)(unsafe.Pointer(&pVcl))
 	/*
-		// ppVcl := (**C.viam_carto_lib)(goPtr)
 		todo: what is going on here? are we not getting correct amount of indirection?
-				fmt.Printf("%#v\n", pVcl) = &cartofacade._Ctype_struct_viam_carto_lib{minloglevel:0, verbose:0}
-				fmt.Println(&pVcl) = 0x14000128078
-				fmt.Println(goPtr) = 0x600001ee8000
-				fmt.Println(ppVcl) = 0x600001ee8000
+					fmt.Printf("%#v\n", pVcl) = &cartofacade._Ctype_struct_viam_carto_lib{minloglevel:0, verbose:0}
+					fmt.Println(&pVcl) = 0x14000128078
+					fmt.Println(goPtr) = 0x600001ee8000
+					// ppVcl := (**C.viam_carto_lib)(goPtr)
+					fmt.Println(ppVcl) = 0x600001ee8000
 	*/
 
 	status := C.viam_carto_lib_init(ppVcl, C.int(miniloglevel), C.int(verbose))
@@ -188,7 +188,7 @@ func (vc *Carto) AddSensorReading(ctx context.Context, readings []byte, timestam
 	sensorReading := C.viam_carto_sensor_reading{}
 	sensorReading.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
 
-	sensorReading.sensor_reading_time_unix_micro = 1 // TODO: convert to c time
+	sensorReading.sensor_reading_time_unix_micro = _Ctype_ulonglong(timestamp.UnixMicro())
 
 	resp := AddSensorReading{value: sensorReading}
 
