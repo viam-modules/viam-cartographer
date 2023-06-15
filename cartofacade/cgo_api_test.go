@@ -42,7 +42,7 @@ func TestGetConfig(t *testing.T) {
 
 }
 
-func TestViamCartoCGoAPI(t *testing.T) {
+func TestCGoAPI(t *testing.T) {
 	pvcl, err := NewCartoLib(1, 1)
 
 	t.Run("initialize viam_carto_lib", func(t *testing.T) {

@@ -100,14 +100,14 @@ func NewCartoLib(miniloglevel, verbose int) (CartoLib, error) {
 	pVcl := C.alloc_viam_carto_lib()
 	defer C.free_alloc_viam_carto_lib(pVcl)
 
-	goPtr := (unsafe.Pointer(pVcl))
-	ppVcl := (**C.viam_carto_lib)(goPtr)
+	ppVcl := (**C.viam_carto_lib)(unsafe.Pointer(&pVcl))
 	/*
+		// ppVcl := (**C.viam_carto_lib)(goPtr)
 		todo: what is going on here? are we not getting correct amount of indirection?
-			fmt.Printf("%#v\n", pVcl) = &cartofacade._Ctype_struct_viam_carto_lib{minloglevel:0, verbose:0}
-			fmt.Println(&pVcl) = 0x14000128078
-			fmt.Println(goPtr) = 0x600001ee8000
-			fmt.Println(ppVcl) = 0x600001ee8000
+				fmt.Printf("%#v\n", pVcl) = &cartofacade._Ctype_struct_viam_carto_lib{minloglevel:0, verbose:0}
+				fmt.Println(&pVcl) = 0x14000128078
+				fmt.Println(goPtr) = 0x600001ee8000
+				fmt.Println(ppVcl) = 0x600001ee8000
 	*/
 
 	status := C.viam_carto_lib_init(ppVcl, C.int(miniloglevel), C.int(verbose))
@@ -134,7 +134,7 @@ func NewCarto(cfg CartoConfig, vcl CartoLib) (Carto, error) {
 	pVc := C.alloc_viam_carto()
 	defer C.free_alloc_viam_carto(pVc)
 
-	ppVc := (**C.viam_carto)(unsafe.Pointer(pVc))
+	ppVc := (**C.viam_carto)(unsafe.Pointer(&pVc))
 
 	vcc := getConfig(cfg)
 	defer C.free_bstring_array(vcc.sensors)
