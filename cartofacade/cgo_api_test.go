@@ -18,6 +18,24 @@ func getTestConfig() CartoConfig {
 	}
 }
 
+func getAlgoTestConfig() CartoAlgoConfig {
+	return CartoAlgoConfig{
+		optimizeOnStart:      false,
+		optimizeEveryNNodes:  0,
+		numRangeData:         0,
+		missingDataRayLength: 0.0,
+		maxRange:             0.0,
+		minRange:             0.0,
+		maxSubmapsToKeep:     0,
+		freshSubmapsCount:    0,
+		minCoveredArea:       0.0,
+		minAddedSubmapsCount: 0,
+		occupiedSpaceWeight:  0.0,
+		translationWeight:    0.0,
+		rotationWeight:       0.0,
+	}
+}
+
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converte between c and go", func(t *testing.T) {
 		cfg := getTestConfig()
@@ -48,7 +66,8 @@ func TestCGoAPI(t *testing.T) {
 	})
 
 	cfg := getTestConfig()
-	vc, err := NewCarto(cfg, pvcl)
+	algoCfg := getAlgoTestConfig()
+	vc, err := NewCarto(cfg, algoCfg, pvcl)
 	t.Run("initialize viam_carto", func(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)

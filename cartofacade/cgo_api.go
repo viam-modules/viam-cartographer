@@ -6,8 +6,6 @@ package cartofacade
   	#cgo LDFLAGS: -L../viam-cartographer/build -L../viam-cartographer/cartographer/build -lcartographer  -lviam-cartographer -lgrpc  -lgpr  -labsl_flags  -labsl_flags_internal  -labsl_flags_reflection  -labsl_flags_private_handle_accessor  -labsl_flags_commandlineflag  -labsl_flags_commandlineflag_internal  -labsl_flags_config  -labsl_flags_program_name  -labsl_flags_marshalling  -labsl_raw_hash_set  -labsl_hashtablez_sampler  -labsl_hash  -labsl_city  -labsl_low_level_hash  -labsl_random_distributions  -labsl_random_seed_sequences  -labsl_random_internal_pool_urbg  -labsl_random_internal_randen  -labsl_random_internal_randen_hwaes  -labsl_random_internal_randen_hwaes_impl  -labsl_random_internal_randen_slow  -labsl_random_internal_platform  -labsl_random_internal_seed_material  -labsl_random_seed_gen_exception  -labsl_statusor  -labsl_status  -labsl_cord  -labsl_cordz_info  -labsl_cord_internal  -labsl_cordz_functions  -labsl_exponential_biased  -labsl_cordz_handle  -labsl_crc_cord_state  -labsl_crc32c  -labsl_crc_internal  -labsl_crc_cpu_detect  -labsl_bad_optional_access  -labsl_strerror  -labsl_str_format_internal  -labsl_synchronization  -labsl_graphcycles_internal  -labsl_stacktrace  -labsl_symbolize  -labsl_debugging_internal  -labsl_demangle_internal  -labsl_malloc_internal  -labsl_time  -labsl_civil_time  -labsl_strings  -labsl_strings_internal  -labsl_base  -labsl_spinlock_wait  -labsl_int128  -labsl_throw_delegate  -labsl_time_zone  -labsl_bad_variant_access  -labsl_raw_logging_internal  -labsl_log_severity  -lgrpc++  -lgrpc  -lgpr  -labsl_flags  -labsl_flags_internal  -labsl_flags_reflection  -labsl_flags_private_handle_accessor  -labsl_flags_commandlineflag  -labsl_flags_commandlineflag_internal  -labsl_flags_config  -labsl_flags_program_name  -labsl_flags_marshalling  -labsl_raw_hash_set  -labsl_hashtablez_sampler  -labsl_hash  -labsl_city  -labsl_low_level_hash  -labsl_random_distributions  -labsl_random_seed_sequences  -labsl_random_internal_pool_urbg  -labsl_random_internal_randen  -labsl_random_internal_randen_hwaes  -labsl_random_internal_randen_hwaes_impl  -labsl_random_internal_randen_slow  -labsl_random_internal_platform  -labsl_random_internal_seed_material  -labsl_random_seed_gen_exception  -labsl_statusor  -labsl_status  -labsl_cord  -labsl_cordz_info  -labsl_cord_internal  -labsl_cordz_functions  -labsl_exponential_biased  -labsl_cordz_handle  -labsl_crc_cord_state  -labsl_crc32c  -labsl_crc_internal  -labsl_crc_cpu_detect  -labsl_bad_optional_access  -labsl_strerror  -labsl_str_format_internal  -labsl_synchronization  -labsl_graphcycles_internal  -labsl_stacktrace  -labsl_symbolize  -labsl_debugging_internal  -labsl_demangle_internal  -labsl_malloc_internal  -labsl_time  -labsl_civil_time  -labsl_strings  -labsl_strings_internal  -labsl_base  -labsl_spinlock_wait  -labsl_int128  -labsl_throw_delegate  -labsl_time_zone  -labsl_bad_variant_access  -labsl_raw_logging_internal  -labsl_log_severity -lpthread  -lgrpc++ -lcairo -llua -lstdc++ -lceres -lprotobuf -lglog -lboost_system -lboost_filesystem -lboost_iostreams -lpcl_io -lpcl_common
 
 	#include "../viam-cartographer/src/carto_facade/carto_facade.h"
-	// TODO: confirm bstring import is necessary and why
-	#include "bstrlib.h"
 
 	viam_carto_lib* alloc_viam_carto_lib() { return (viam_carto_lib*) malloc(sizeof(viam_carto_lib)); }
 	void free_alloc_viam_carto_lib(viam_carto_lib* p) { free(p); }
@@ -88,6 +86,23 @@ type CartoConfig struct {
 	lidarConfig        LidarConfig
 }
 
+// CartoAlgoConfig contains config values from app
+type CartoAlgoConfig struct {
+	optimizeOnStart      bool
+	optimizeEveryNNodes  int
+	numRangeData         int
+	missingDataRayLength float64
+	maxRange             float64
+	minRange             float64
+	maxSubmapsToKeep     int
+	freshSubmapsCount    int
+	minCoveredArea       float64
+	minAddedSubmapsCount int
+	occupiedSpaceWeight  float64
+	translationWeight    float64
+	rotationWeight       float64
+}
+
 // NewCartoLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
 func NewCartoLib(miniloglevel, verbose int) (CartoLib, error) {
 	pVcl := C.alloc_viam_carto_lib()
@@ -95,7 +110,7 @@ func NewCartoLib(miniloglevel, verbose int) (CartoLib, error) {
 
 	ppVcl := (**C.viam_carto_lib)(unsafe.Pointer(&pVcl))
 	/*
-		todo: what is going on here? are we not getting correct amount of indirection?
+		Question: what is going on here? are we not getting correct amount of indirection?
 					fmt.Printf("%#v\n", pVcl) = &cartofacade._Ctype_struct_viam_carto_lib{minloglevel:0, verbose:0}
 					fmt.Println(&pVcl) = 0x14000128078
 					fmt.Println(goPtr) = 0x600001ee8000
@@ -123,7 +138,7 @@ func (vcl *CartoLib) TerminateCartoLib() error {
 }
 
 // NewCarto calls viam_carto_init and returns a pointer to a viam carto object.
-func NewCarto(cfg CartoConfig, vcl CartoLib) (Carto, error) {
+func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 	pVc := C.alloc_viam_carto()
 	defer C.free_alloc_viam_carto(pVc)
 
@@ -132,8 +147,7 @@ func NewCarto(cfg CartoConfig, vcl CartoLib) (Carto, error) {
 	vcc := getConfig(cfg)
 	defer C.free_bstring_array(vcc.sensors)
 
-	// TODO: what needs to go in here?
-	vcac := C.viam_carto_algo_config{}
+	vcac := getAlgoConfig(acfg)
 
 	status := C.viam_carto_init(ppVc, vcl.value, vcc, vcac)
 	if err := getErrorFromStatusCode(status); err != nil {
@@ -300,7 +314,7 @@ func getLidarConfig(lidarConfig LidarConfig) C.viam_carto_LIDAR_CONFIG {
 	case threeD:
 		return C.VIAM_CARTO_THREE_D
 	}
-	// TODO: some error case?
+	// Question: how should we represent an error case?
 	return 0
 }
 
@@ -323,6 +337,24 @@ func getConfig(cfg CartoConfig) C.viam_carto_config {
 	vcc.lidar_config = getLidarConfig(cfg.lidarConfig)
 
 	return vcc
+}
+
+func getAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
+	vcac := C.viam_carto_algo_config{}
+	vcac.optimize_on_start = C.bool(acfg.optimizeOnStart)
+	vcac.optimize_every_n_nodes = C.int(acfg.optimizeEveryNNodes)
+	vcac.num_range_data = C.int(acfg.numRangeData)
+	vcac.missing_data_ray_length = C.float(acfg.missingDataRayLength)
+	vcac.max_range = C.float(acfg.maxRange)
+	vcac.min_range = C.float(acfg.minRange)
+	vcac.max_submaps_to_keep = C.int(acfg.maxSubmapsToKeep)
+	vcac.fresh_submaps_count = C.int(acfg.freshSubmapsCount)
+	vcac.min_covered_area = C.double(acfg.minCoveredArea)
+	vcac.min_added_submaps_count = C.int(acfg.minAddedSubmapsCount)
+	vcac.occupied_space_weight = C.double(acfg.occupiedSpaceWeight)
+	vcac.translation_weight = C.double(acfg.translationWeight)
+	vcac.rotation_weight = C.double(acfg.rotationWeight)
+	return vcac
 }
 
 // FreeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
