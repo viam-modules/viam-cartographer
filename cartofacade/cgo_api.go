@@ -188,7 +188,7 @@ func (vc *Carto) AddSensorReading(ctx context.Context, readings []byte, timestam
 	sensorReading := C.viam_carto_sensor_reading{}
 	sensorReading.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
 
-	sensorReading.sensor_reading_time_unix_micro = _Ctype_ulonglong(timestamp.UnixMicro())
+	sensorReading.sensor_reading_time_unix_micro = 1 //_Ctype_ulonglong(timestamp.UnixMicro())
 
 	resp := AddSensorReading{value: sensorReading}
 
