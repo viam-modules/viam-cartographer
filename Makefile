@@ -44,7 +44,7 @@ ensure-submodule-initialized:
 	else \
 		echo "Submodule found successfully"; \
 	fi
-	cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_build_utils/carto.patch
+	cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch
 
 lint-setup-cpp:
 ifeq ("Darwin", "$(shell uname -s)")
