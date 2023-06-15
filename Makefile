@@ -11,6 +11,7 @@ artifact-pull:
 	PATH=${PATH_WITH_TOOLS} artifact pull
 
 bufinstall:
+	sudo apt-get update
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
 
 bufsetup:
