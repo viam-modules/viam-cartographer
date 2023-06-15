@@ -7,26 +7,32 @@ GO_BUILD_LDFLAGS = -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevisi
 
 ARTIFACT="~/go/bin/artifact"
 
+ifneq (, $(shell which brew))
+	EXTRA_CMAKE_FLAGS := -DCMAKE_PREFIX_PATH=$(shell brew --prefix) -DQt5_DIR=$(shell brew --prefix qt5)/lib/cmake/Qt5
+	export PKG_CONFIG_PATH := $(shell brew --prefix openssl@3)/lib/pkgconfig
+endif
+
+default: build
+
 artifact-pull:
 	PATH=${PATH_WITH_TOOLS} artifact pull
 
 bufinstall:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
 
-bufsetup:
+grpc/bin/buf:
 	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
-	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
 
-buf: bufsetup
+grpc/bin/protoc-gen-grpc-cpp:
+	which grpc_cpp_plugin && ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
+
+buf: grpc/bin/buf grpc/bin/protoc-gen-grpc-cpp 
 	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
 	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
 	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
 
 clean:
-	rm -rf grpc
-	rm -rf bin
-	rm -rf viam-cartographer/build
-	rm -rf viam-cartographer/cartographer/build
+	rm -rf grpc bin viam-cartographer/build
 
 clean-all:
 	git clean -fxd
@@ -38,6 +44,7 @@ ensure-submodule-initialized:
 	else \
 		echo "Submodule found successfully"; \
 	fi
+	cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_build_utils/carto.patch
 
 lint-setup-cpp:
 ifeq ("Darwin", "$(shell uname -s)")
@@ -71,26 +78,14 @@ lint-go:
 lint: ensure-submodule-initialized lint-cpp lint-go
 
 setup: ensure-submodule-initialized
-ifeq ("Darwin", "$(shell uname -s)")
-	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
-else
-	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
-endif
+	viam-cartographer/scripts/setup_cartographer.sh
 	@make artifact-pull
-	
-build: build-module
-ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
-	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
-else 
-	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
-endif
 
-build-debug: build-module
-ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
-	cd viam-cartographer && ./scripts/build_viam_cartographer_debug.sh 
-else 
-	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer_debug.sh
-endif
+build: ensure-submodule-initialized buf build-module
+	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
+
+build-debug: EXTRA_CMAKE_FLAGS+=" -DCMAKE_BUILD_TYPE=Debug"
+build-debug: build
 
 build-module:
 	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
