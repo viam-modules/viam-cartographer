@@ -199,8 +199,7 @@ std::vector<std::string> list_sorted_files_in_directory(std::string directory) {
     return file_paths;
 }
 
-std::string get_latest_internal_state_filename(
-    std::string path_to_internal_state) {
+std::string get_latest_internal_state_filename(std::string path_to_internal_state) {
     std::string latest_internal_state_filename;
 
     std::vector<std::string> internal_state_filename =
@@ -278,8 +277,7 @@ void CartoFacade::IOInit() {
     // see https://viam.atlassian.net/browse/RSDK-3553
     if (action_mode == ActionMode::UPDATING ||
         action_mode == ActionMode::LOCALIZING) {
-        // Check if there is an apriori map (internal state) in the
-        // path_to_internal_state directory
+        // Check if there is an apriori map (internal state) in the path_to_internal_state directory
         std::string latest_internal_state_filename =
             get_latest_internal_state_filename(path_to_internal_state);
         VLOG(1) << "latest_internal_state_filename: "
@@ -564,8 +562,8 @@ void CartoFacade::StartSaveInternalState() {
     if (config.map_rate_sec == std::chrono::seconds(0)) {
         return;
     }
-    thread_save_internal_state = std::make_unique<std::thread>(
-        [&]() { this->SaveInternalStateOnInterval(); });
+    thread_save_internal_state =
+        std::make_unique<std::thread>([&]() { this->SaveInternalStateOnInterval(); });
 }
 
 void CartoFacade::StopSaveInternalState() {
@@ -638,12 +636,11 @@ viam::carto_facade::ActionMode determine_action_mode(
     std::vector<std::string> internal_state_filenames =
         list_sorted_files_in_directory(path_to_internal_state);
 
-    // Check if there is a *.pbstream internal state in the
-    // path_to_internal_state directory
+    // Check if there is a *.pbstream internal state in the path_to_internal_state directory
     for (auto filename : internal_state_filenames) {
         if (filename.find(".pbstream") != std::string::npos) {
-            // There is an apriori map (internal state) present, so we're
-            // running either in updating or localization mode.
+            // There is an apriori map (internal state) present, so we're running either in
+            // updating or localization mode.
             if (map_rate_sec.count() == 0) {
                 // This log line is needed by rdk integration tests.
                 LOG(INFO) << "Running in localization only mode";
