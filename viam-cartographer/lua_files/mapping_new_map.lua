@@ -14,6 +14,11 @@ TRAJECTORY_BUILDER.trajectory_builder_2d.min_range = 0.2
 TRAJECTORY_BUILDER.trajectory_builder_2d.max_range = 25.
 TRAJECTORY_BUILDER.trajectory_builder_2d.missing_data_ray_length = 25 -- DO NOT CHANGE
 
+TRAJECTORY_BUILDER.trajectory_builder_2d.real_time_correlative_scan_matcher.linear_search_window = 0.5
+TRAJECTORY_BUILDER.trajectory_builder_2d.real_time_correlative_scan_matcher.angular_search_window = 0.5
+TRAJECTORY_BUILDER.trajectory_builder_2d.real_time_correlative_scan_matcher.translation_delta_cost_weight = 0.5
+TRAJECTORY_BUILDER.trajectory_builder_2d.real_time_correlative_scan_matcher.rotation_delta_cost_weight = 0.5
+
 -- tuneable:
 TRAJECTORY_BUILDER.trajectory_builder_2d.submaps.num_range_data = 100
 
