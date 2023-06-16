@@ -19,8 +19,8 @@ package cartofacade
 
 	bstring* alloc_bstring_array(size_t len) { return (bstring*) malloc(len * sizeof(bstring)); }
 	void free_bstring_array(bstring* p, int len) {
-		    for (int i = 0; i < len; i++) {
-				bdestroy(p[i]);
+		for (int i = 0; i < len; i++) {
+			bdestroy(p[i]);
 		}
 		free(p);
 	}
