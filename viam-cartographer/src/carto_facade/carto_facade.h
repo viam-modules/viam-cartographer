@@ -349,10 +349,8 @@ class CartoFacade {
     viam_carto_lib *lib;
     viam::carto_facade::config config;
     viam_carto_algo_config algo_config;
-    std::string path_to_data;
     std::string path_to_internal_state;
-    std::atomic<bool> continue_session;
-    std::atomic<bool> started;
+    std::atomic<bool> started{false};
     std::string configuration_directory;
     ActionMode action_mode = ActionMode::MAPPING;
 

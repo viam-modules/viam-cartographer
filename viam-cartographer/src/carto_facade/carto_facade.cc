@@ -158,8 +158,6 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     config = from_viam_carto_config(c);
     algo_config = ac;
     path_to_internal_state = config.data_dir + "/internal_state";
-    continue_session.store(true);
-    started.store(false);
 };
 
 void setup_filesystem(std::string data_dir,
@@ -555,8 +553,8 @@ int CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
 };
 
 int CartoFacade::Start() {
-    StartSaveMap();
     started = true;
+    StartSaveMap();
     return VIAM_CARTO_SUCCESS;
 };
 
@@ -566,11 +564,10 @@ void CartoFacade::StartSaveMap() {
     }
     thread_save_map_with_timestamp =
         std::make_unique<std::thread>([&]() { this->SaveMapWithTimestamp(); });
-    // TODO: Mark that start has succeeded
 }
 
 void CartoFacade::StopSaveMap() {
-    continue_session.store(false);
+    started = false;
     if (config.map_rate_sec == std::chrono::seconds(0)) {
         return;
     }
@@ -580,11 +577,11 @@ void CartoFacade::StopSaveMap() {
 void CartoFacade::SaveMapWithTimestamp() {
     auto check_for_shutdown_interval_usec =
         std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
-    while (continue_session.load()) {
+    while (started) {
         auto start = std::chrono::high_resolution_clock::now();
         // Sleep for config.map_rate_sec duration, but check frequently for
         // shutdown
-        while (continue_session.load()) {
+        while (started) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
             if (time_elapsed_msec >= config.map_rate_sec) {
@@ -606,7 +603,7 @@ void CartoFacade::SaveMapWithTimestamp() {
 
         // Breakout without saving if the session has ended
 
-        if (!continue_session.load()) {
+        if (!started) {
             LOG(INFO) << "Saving final optimized map";
         }
         std::time_t t = std::time(nullptr);
@@ -616,7 +613,7 @@ void CartoFacade::SaveMapWithTimestamp() {
 
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SaveMapToFile(true, filename_with_timestamp);
-        if (!continue_session.load()) {
+        if (!started) {
             LOG(INFO) << "Finished saving final optimized map";
             break;
         }

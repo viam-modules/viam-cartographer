@@ -433,7 +433,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     auto path_to_internal_state = tmp_dir / fs::path("internal_state");
 
     BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
-    BOOST_TEST((cf->continue_session) == true);
     BOOST_TEST((cf->started) == false);
     BOOST_TEST((cf->config.sensors) == sensors_vec);
     BOOST_TEST((cf->config.map_rate_sec).count() == 1);
@@ -596,12 +595,27 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop) {
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    viam::carto_facade::CartoFacade *cf =
+        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+    BOOST_TEST(cf->started == false);
+
+    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
+    BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
 
     // // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(cf->started == true);
+
+    // Confirm at least one map is persisted within the map_rate_sec
+    VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
+    std::this_thread::sleep_for(cf->config.map_rate_sec +
+                                std::chrono::seconds(1));
+    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
+    BOOST_TEST(!fs::is_empty(cf->path_to_internal_state));
 
     // Stop
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(cf->started == false);
 
     // Terminate
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
