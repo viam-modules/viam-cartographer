@@ -18,6 +18,13 @@ func getTestConfig() CartoConfig {
 	}
 }
 
+func getBadTestConfig() CartoConfig {
+	return CartoConfig{
+		Sensors:     []string{"rplidar", "imu"},
+		LidarConfig: twoD,
+	}
+}
+
 func getTestAlgoConfig() CartoAlgoConfig {
 	return CartoAlgoConfig{
 		optimizeOnStart:      false,
@@ -106,10 +113,18 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, pvcl, test.ShouldNotBeNil)
 	})
 
-	cfg := getTestConfig()
+	cfg := getBadTestConfig()
 	algoCfg := getTestAlgoConfig()
 	vc, err := New(cfg, algoCfg, pvcl)
-	t.Run("initialize viam_carto", func(t *testing.T) {
+	t.Run("initialize viam_carto incorrectly", func(t *testing.T) {
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
+		test.That(t, vc, test.ShouldNotBeNil)
+	})
+
+	cfg = getTestConfig()
+	algoCfg = getTestAlgoConfig()
+	vc, err = New(cfg, algoCfg, pvcl)
+	t.Run("initialize viam_carto correctly", func(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)
 	})

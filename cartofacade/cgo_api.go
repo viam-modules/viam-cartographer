@@ -441,15 +441,15 @@ func toError(status C.int) error {
 	case C.VIAM_CARTO_UNKNOWN_ERROR:
 		return errors.New("VIAM_CARTO_UNKNOWN_ERROR")
 	case C.VIAM_CARTO_DATA_DIR_NOT_PROVIDED:
-		return errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED ")
+		return errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED")
 	case C.VIAM_CARTO_SLAM_MODE_INVALID:
-		return errors.New("VIAM_CARTO_SLAM_MODE_INVALID ")
+		return errors.New("VIAM_CARTO_SLAM_MODE_INVALID")
 	case C.VIAM_CARTO_LIDAR_CONFIG_INVALID:
-		return errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID ")
+		return errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID")
 	case C.VIAM_CARTO_MAP_RATE_SEC_INVALID:
-		return errors.New("VIAM_CARTO_MAP_RATE_SEC_INVALID ")
+		return errors.New("VIAM_CARTO_MAP_RATE_SEC_INVALID")
 	case C.VIAM_CARTO_COMPONENT_REFERENCE_INVALID:
-		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID ")
+		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID")
 	default:
 		return errors.New("status code unclassified")
 	}
