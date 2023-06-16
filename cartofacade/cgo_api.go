@@ -255,7 +255,7 @@ func (vc *Carto) GetPointCloudMap() ([]byte, error) {
 	}
 
 	if value.point_cloud_pcd != nil {
-		return C.GoBytes(unsafe.Pointer(value.point_cloud_pcd.data), value.point_cloud_pcd.slen), nil
+		return bstringToByteSlice(value.point_cloud_pcd), nil
 	}
 	return nil, errors.New("nil pointcloud")
 }
@@ -276,7 +276,7 @@ func (vc *Carto) GetInternalState() ([]byte, error) {
 	}
 
 	if value.internal_state != nil {
-		return C.GoBytes(unsafe.Pointer(value.internal_state.data), value.internal_state.slen), nil
+		return bstringToByteSlice(value.internal_state), nil
 	}
 	return nil, errors.New("nil internal state")
 }
@@ -406,6 +406,10 @@ func toSensorReading(readings []byte, timestamp time.Time) C.viam_carto_sensor_r
 	sr.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
 	sr.sensor_reading_time_unix_micro = C.ulonglong(timestamp.UnixMicro())
 	return sr
+}
+
+func bstringToByteSlice(bstr C.bstring) []byte {
+	return C.GoBytes(unsafe.Pointer(bstr.data), bstr.slen)
 }
 
 // freeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)

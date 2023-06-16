@@ -90,6 +90,14 @@ func TestToSensorReading(t *testing.T) {
 	})
 }
 
+func TestBstringToByteSlice(t *testing.T) {
+	t.Run("b strings are properly converted to byte slices", func(t *testing.T) {
+		bstring := goStringToBstring("hell0!")
+		bytes := bstringToByteSlice(bstring)
+		test.That(t, bytes, test.ShouldResemble, []byte("hell0!"))
+	})
+}
+
 func TestCGoAPI(t *testing.T) {
 	pvcl, err := NewLib(1, 1)
 
