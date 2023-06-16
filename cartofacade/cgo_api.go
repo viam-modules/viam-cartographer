@@ -18,12 +18,16 @@ package cartofacade
 	void free_alloc_viam_carto(viam_carto* p) { free(p); }
 
 	bstring* alloc_bstring_array(size_t len) { return (bstring*) malloc(len * sizeof(bstring)); }
-	void free_bstring_array(bstring* p) { free(p); }
+	void free_bstring_array(bstring* p, int len) {
+		    for (int i = 0; i < len; i++) {
+				bdestroy(p[i]);
+		}
+		free(p);
+	}
 */
 import "C"
 
 import (
-	"context"
 	"errors"
 	"time"
 	"unsafe"
@@ -39,38 +43,28 @@ type Carto struct {
 	value *C.viam_carto
 }
 
-// AddSensorReading holds the c type viam_carto_sensor_reading
-type AddSensorReading struct {
-	value C.viam_carto_sensor_reading
+// getPointCloudMapResponse is a struct to hold the c type viam_carto_get_point_cloud_map_response
+type getPointCloudMapResponse struct {
+	value C.viam_carto_get_point_cloud_map_response
 }
 
-// GetPositionResponse holds the c type viam_carto_get_position_response
-type GetPositionResponse struct {
-	value C.viam_carto_get_position_response
-}
+// GetPosition holds values returned from c to be processed later
+type GetPosition struct {
+	X float64
+	Y float64
+	Z float64
 
-// GetPositionHolder holds values returned from c to be processed later
-type GetPositionHolder struct {
-	x float64
-	y float64
-	z float64
+	Ox    float64
+	Oy    float64
+	Oz    float64
+	Theta float64
 
-	ox    float64
-	oy    float64
-	oz    float64
-	theta float64
+	Real float64
+	Imag float64
+	Jmag float64
+	Kmag float64
 
-	real float64
-	imag float64
-	jmag float64
-	kmag float64
-
-	compReference string
-}
-
-// GetInternalStateResponse holds the c type viam_carto_get_internal_state_response
-type GetInternalStateResponse struct {
-	value C.viam_carto_get_internal_state_response
+	ComponentReference string
 }
 
 // LidarConfig represents the lidar configuration
@@ -83,11 +77,11 @@ const (
 
 // CartoConfig contains config values from app
 type CartoConfig struct {
-	sensors            []string
-	mapRateSecond      int
-	dataDir            string
-	componentReference string
-	lidarConfig        LidarConfig
+	Sensors            []string
+	MapRateSecond      int
+	DataDir            string
+	ComponentReference string
+	LidarConfig        LidarConfig
 }
 
 // CartoAlgoConfig contains config values from app
@@ -95,9 +89,9 @@ type CartoAlgoConfig struct {
 	optimizeOnStart      bool
 	optimizeEveryNNodes  int
 	numRangeData         int
-	missingDataRayLength float64
-	maxRange             float64
-	minRange             float64
+	missingDataRayLength float32
+	maxRange             float32
+	minRange             float32
 	maxSubmapsToKeep     int
 	freshSubmapsCount    int
 	minCoveredArea       float64
@@ -107,8 +101,18 @@ type CartoAlgoConfig struct {
 	rotationWeight       float64
 }
 
-// NewCartoLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
-func NewCartoLib(miniloglevel, verbose int) (CartoLib, error) {
+// sensorReading holds the c type viam_carto_sensor_reading
+type sensorReading struct {
+	value C.viam_carto_sensor_reading
+}
+
+// getInternalStateResponse holds the c type viam_carto_get_internal_state_response
+type getInternalStateResponse struct {
+	value C.viam_carto_get_internal_state_response
+}
+
+// NewLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
+func NewLib(miniloglevel, verbose int) (CartoLib, error) {
 	pVcl := C.alloc_viam_carto_lib()
 	if pVcl == nil {
 		return CartoLib{}, errors.New("unable to allocate memory for viam carto lib")
@@ -126,7 +130,7 @@ func NewCartoLib(miniloglevel, verbose int) (CartoLib, error) {
 	*/
 
 	status := C.viam_carto_lib_init(ppVcl, C.int(miniloglevel), C.int(verbose))
-	if err := getErrorFromStatusCode(status); err != nil {
+	if err := toError(status); err != nil {
 		return CartoLib{}, err
 	}
 
@@ -135,17 +139,17 @@ func NewCartoLib(miniloglevel, verbose int) (CartoLib, error) {
 	return vcl, nil
 }
 
-// TerminateCartoLib calls viam_carto_lib_terminate to clean up memory for viam carto lib.
-func (vcl *CartoLib) TerminateCartoLib() error {
-	status := C.viam_carto_lib_terminate((**C.viam_carto_lib)(unsafe.Pointer(vcl)))
-	if err := getErrorFromStatusCode(status); err != nil {
+// Terminate calls viam_carto_lib_terminate to clean up memory for viam carto lib.
+func (vcl *CartoLib) Terminate() error {
+	status := C.viam_carto_lib_terminate(&vcl.value)
+	if err := toError(status); err != nil {
 		return err
 	}
 	return nil
 }
 
-// NewCarto calls viam_carto_init and returns a pointer to a viam carto object.
-func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
+// New calls viam_carto_init and returns a pointer to a viam carto object.
+func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 	pVc := C.alloc_viam_carto()
 	if pVc == nil {
 		return Carto{}, errors.New("unable to allocate memory for viam carto")
@@ -158,12 +162,12 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error
 	if err != nil {
 		return Carto{}, err
 	}
-	defer C.free_bstring_array(vcc.sensors)
+	defer C.free_bstring_array(vcc.sensors, vcc.sensors_len)
 
-	vcac := getAlgoConfig(acfg)
+	vcac := toAlgoConfig(acfg)
 
 	status := C.viam_carto_init(ppVc, vcl.value, vcc, vcac)
-	if err := getErrorFromStatusCode(status); err != nil {
+	if err := toError(status); err != nil {
 		return Carto{}, err
 	}
 
@@ -171,10 +175,10 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error
 }
 
 // Start is a wrapper for viam_carto_start
-func (vc *Carto) Start(ctx context.Context) error {
+func (vc *Carto) Start() error {
 	status := C.viam_carto_start(vc.value)
 
-	if err := getErrorFromStatusCode(status); err != nil {
+	if err := toError(status); err != nil {
 		return err
 	}
 
@@ -182,21 +186,21 @@ func (vc *Carto) Start(ctx context.Context) error {
 }
 
 // Stop is a wrapper for viam_carto_stop
-func (vc *Carto) Stop(ctx context.Context) error {
+func (vc *Carto) Stop() error {
 	status := C.viam_carto_stop(vc.value)
 
-	if err := getErrorFromStatusCode(status); err != nil {
+	if err := toError(status); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// TerminateCarto calls viam_carto_terminate to clean up memory for viam carto
-func (vc *Carto) TerminateCarto(ctx context.Context) error {
+// Terminate calls viam_carto_terminate to clean up memory for viam carto
+func (vc *Carto) Terminate() error {
 	status := C.viam_carto_terminate(&vc.value)
 
-	if err := getErrorFromStatusCode(status); err != nil {
+	if err := toError(status); err != nil {
 		return err
 	}
 
@@ -204,158 +208,174 @@ func (vc *Carto) TerminateCarto(ctx context.Context) error {
 }
 
 // AddSensorReading is a wrapper for viam_carto_add_sensor_reading
-func (vc *Carto) AddSensorReading(ctx context.Context, readings []byte, timestamp time.Time) error {
-	sensorReading := C.viam_carto_sensor_reading{}
-	sensorReading.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
+func (vc *Carto) AddSensorReading(readings []byte, timestamp time.Time) (C.viam_carto_sensor_reading, error) {
+	sr := C.viam_carto_sensor_reading{}
+	sr.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
 
-	sensorReading.sensor_reading_time_unix_micro = C.ulonglong(timestamp.UnixMicro())
+	sr.sensor_reading_time_unix_micro = C.ulonglong(timestamp.UnixMicro())
 
-	resp := AddSensorReading{value: sensorReading}
+	resp := sensorReading{value: sr}
 
 	status := C.viam_carto_add_sensor_reading(vc.value, &resp.value)
 
-	if err := getErrorFromStatusCode(status); err != nil {
-		return err
+	if err := toError(status); err != nil {
+		return C.viam_carto_sensor_reading{}, err
 	}
 
 	status = C.viam_carto_add_sensor_reading_destroy(&resp.value)
-	if err := getErrorFromStatusCode(status); err != nil {
-		return err
+	if err := toError(status); err != nil {
+		return C.viam_carto_sensor_reading{}, err
 	}
 
-	return nil
+	return sr, nil
 }
 
 // GetPosition is a wrapper for viam_carto_get_position
-func (vc *Carto) GetPosition(ctx context.Context) (GetPositionHolder, error) {
-	resp := GetPositionResponse{value: C.viam_carto_get_position_response{}}
+func (vc *Carto) GetPosition() (GetPosition, error) {
+	value := C.viam_carto_get_position_response{}
 
-	status := C.viam_carto_get_position(vc.value, &resp.value)
+	status := C.viam_carto_get_position(vc.value, &value)
 
-	if err := getErrorFromStatusCode(status); err != nil {
-		return GetPositionHolder{}, err
+	if err := toError(status); err != nil {
+		return GetPosition{}, err
 	}
 
-	getPositionHolder := GetPositionHolder{
-		x: float64(resp.value.x),
-		y: float64(resp.value.y),
-		z: float64(resp.value.z),
+	getPosition := toGetPositionResponse(value)
 
-		ox:    float64(resp.value.o_x),
-		oy:    float64(resp.value.o_y),
-		oz:    float64(resp.value.o_z),
-		theta: float64(resp.value.theta),
-
-		real: float64(resp.value.real),
-		imag: float64(resp.value.imag),
-		jmag: float64(resp.value.jmag),
-		kmag: float64(resp.value.kmag),
-
-		compReference: bstringToGoString(resp.value.component_reference),
+	status = C.viam_carto_get_position_response_destroy(&value)
+	if err := toError(status); err != nil {
+		return GetPosition{}, err
 	}
 
-	status = C.viam_carto_get_position_response_destroy(&resp.value)
-	if err := getErrorFromStatusCode(status); err != nil {
-		return GetPositionHolder{}, err
-	}
-
-	return getPositionHolder, nil
-}
-
-// GetPointCloudMapResponse is a struct to hold the c type viam_carto_get_point_cloud_map_response
-type GetPointCloudMapResponse struct {
-	value C.viam_carto_get_point_cloud_map_response
+	return getPosition, nil
 }
 
 // GetPointCloudMap is a wrapper for viam_carto_get_point_cloud_map
-func (vc *Carto) GetPointCloudMap(ctx context.Context) ([]byte, error) {
+func (vc *Carto) GetPointCloudMap() ([]byte, error) {
 	// TODO: determine whether or not return needs to be a pointer for performance reasons
-	resp := GetPointCloudMapResponse{value: C.viam_carto_get_point_cloud_map_response{}}
+	value := C.viam_carto_get_point_cloud_map_response{}
 
-	status := C.viam_carto_get_point_cloud_map(vc.value, &resp.value)
+	status := C.viam_carto_get_point_cloud_map(vc.value, &value)
 
-	if err := getErrorFromStatusCode(status); err != nil {
+	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	status = C.viam_carto_get_point_cloud_map_response_destroy(&resp.value)
-	if err := getErrorFromStatusCode(status); err != nil {
+	status = C.viam_carto_get_point_cloud_map_response_destroy(&value)
+	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	bytes := (*[]byte)(unsafe.Pointer(&resp.value.point_cloud_pcd))
-	return *bytes, nil
+	if value.point_cloud_pcd != nil {
+		return C.GoBytes(unsafe.Pointer(value.point_cloud_pcd.data), value.point_cloud_pcd.slen), nil
+	}
+	return nil, errors.New("nil pointcloud")
 }
 
 // GetInternalState is a wrapper for viam_carto_get_internal_state
-func (vc *Carto) GetInternalState(ctx context.Context) ([]byte, error) {
-	resp := GetInternalStateResponse{value: C.viam_carto_get_internal_state_response{}}
+func (vc *Carto) GetInternalState() ([]byte, error) {
+	value := C.viam_carto_get_internal_state_response{}
 
-	status := C.viam_carto_get_internal_state(vc.value, &resp.value)
+	status := C.viam_carto_get_internal_state(vc.value, &value)
 
-	if err := getErrorFromStatusCode(status); err != nil {
+	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	status = C.viam_carto_get_internal_state_response_destroy(&resp.value)
-	if err := getErrorFromStatusCode(status); err != nil {
+	status = C.viam_carto_get_internal_state_response_destroy(&value)
+	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	bytes := (*[]byte)(unsafe.Pointer(&resp.value.internal_state))
-	return *bytes, nil
+	if value.internal_state != nil {
+		return C.GoBytes(unsafe.Pointer(value.internal_state.data), value.internal_state.slen), nil
+	}
+	return nil, errors.New("nil internal state")
 }
 
+// this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
 func bStringToGoStringSlice(bstr *C.bstring, length int) []string {
 	bStrings := (*[1 << 28]C.bstring)(unsafe.Pointer(bstr))[:length:length]
 
 	goStrings := []string{}
 	for _, bString := range bStrings {
-		goStrings = append(goStrings, C.GoString(C.bstr2cstr(bString, 0)))
+		goStrings = append(goStrings, bstringToGoString(bString))
 	}
 	return goStrings
 }
 
-func bstringToGoString(bstr C.bstring) string {
-	return C.GoString(C.bstr2cstr(bstr, 0))
+// this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
+func getTestGetPositionResponse() C.viam_carto_get_position_response {
+	gpr := C.viam_carto_get_position_response{}
+
+	gpr.x = C.double(100)
+	gpr.y = C.double(200)
+	gpr.z = C.double(300)
+
+	gpr.o_x = C.double(400)
+	gpr.o_y = C.double(500)
+	gpr.o_z = C.double(600)
+
+	gpr.imag = C.double(700)
+	gpr.jmag = C.double(800)
+	gpr.kmag = C.double(900)
+
+	gpr.theta = C.double(1000)
+	gpr.real = C.double(1100)
+
+	gpr.component_reference = goStringToBstring("C++ component reference")
+
+	return gpr
 }
 
-func getLidarConfig(lidarConfig LidarConfig) C.viam_carto_LIDAR_CONFIG {
+func bstringToGoString(bstr C.bstring) string {
+	return C.GoStringN(C.bstr2cstr(bstr, 0), bstr.slen)
+}
+
+func goStringToBstring(goStr string) C.bstring {
+	return C.blk2bstr(unsafe.Pointer(C.CString(goStr)), C.int(len(goStr)))
+}
+
+func toLidarConfig(lidarConfig LidarConfig) (C.viam_carto_LIDAR_CONFIG, error) {
 	switch lidarConfig {
 	case twoD:
-		return C.VIAM_CARTO_TWO_D
+		return C.VIAM_CARTO_TWO_D, nil
 	case threeD:
-		return C.VIAM_CARTO_THREE_D
+		return C.VIAM_CARTO_THREE_D, nil
+	default:
+		return 0, errors.New("invalid lidar config value")
 	}
-	// Question: how should we represent an error case?
-	return 0
 }
 
 func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc := C.viam_carto_config{}
 
 	// create pointer to bstring which can represent a list of sensors
-	sz := len(cfg.sensors)
+	sz := len(cfg.Sensors)
 	pSensor := C.alloc_bstring_array(C.size_t(sz))
 	if pSensor == nil {
 		return C.viam_carto_config{}, errors.New("unable to allocate memory for sensor list")
 	}
 	sensorSlice := unsafe.Slice(pSensor, sz)
-	for i, sensor := range cfg.sensors {
-		sensorSlice[i] = C.bfromcstr(C.CString(sensor))
+	for i, sensor := range cfg.Sensors {
+		sensorSlice[i] = goStringToBstring(sensor)
+	}
+	lidarCfg, err := toLidarConfig(cfg.LidarConfig)
+	if err != nil {
+		return C.viam_carto_config{}, err
 	}
 
 	vcc.sensors = pSensor
 	vcc.sensors_len = C.int(sz)
-	vcc.map_rate_sec = C.int(cfg.mapRateSecond)
-	vcc.data_dir = C.bfromcstr(C.CString(cfg.dataDir))
-	vcc.component_reference = C.bfromcstr(C.CString(cfg.componentReference))
-	vcc.lidar_config = getLidarConfig(cfg.lidarConfig)
+	vcc.map_rate_sec = C.int(cfg.MapRateSecond)
+	vcc.data_dir = goStringToBstring(cfg.DataDir)
+	vcc.component_reference = goStringToBstring(cfg.ComponentReference)
+	vcc.lidar_config = lidarCfg
 
 	return vcc, nil
 }
 
-func getAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
+func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac := C.viam_carto_algo_config{}
 	vcac.optimize_on_start = C.bool(acfg.optimizeOnStart)
 	vcac.optimize_every_n_nodes = C.int(acfg.optimizeEveryNNodes)
@@ -373,44 +393,64 @@ func getAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	return vcac
 }
 
-// FreeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
-func FreeBstringArray(arr *C.bstring) {
-	C.free_bstring_array(arr)
+func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition {
+	return GetPosition{
+		X: float64(value.x),
+		Y: float64(value.y),
+		Z: float64(value.z),
+
+		Ox:    float64(value.o_x),
+		Oy:    float64(value.o_y),
+		Oz:    float64(value.o_z),
+		Theta: float64(value.theta),
+
+		Real: float64(value.real),
+		Imag: float64(value.imag),
+		Jmag: float64(value.jmag),
+		Kmag: float64(value.kmag),
+
+		ComponentReference: bstringToGoString(value.component_reference),
+	}
 }
 
-func getErrorFromStatusCode(status C.int) error {
+// freeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
+func freeBstringArray(arr *C.bstring, len C.int) {
+	C.free_bstring_array(arr, len)
+}
+
+func toError(status C.int) error {
 	switch int(status) {
 	case C.VIAM_CARTO_SUCCESS:
 		return nil
 	case C.VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK:
-		return errors.New("error: VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
+		return errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 	case C.VIAM_CARTO_VC_INVALID:
-		return errors.New("error: VIAM_CARTO_VC_INVALID")
+		return errors.New("VIAM_CARTO_VC_INVALID")
 	case C.VIAM_CARTO_OUT_OF_MEMORY:
-		return errors.New("error: VIAM_CARTO_OUT_OF_MEMORY")
+		return errors.New("VIAM_CARTO_OUT_OF_MEMORY")
 	case C.VIAM_CARTO_DESTRUCTOR_ERROR:
-		return errors.New("error: VIAM_CARTO_DESTRUCTOR_ERROR")
+		return errors.New("VIAM_CARTO_DESTRUCTOR_ERROR")
 	case C.VIAM_CARTO_LIB_PLATFORM_INVALID:
-		return errors.New("error: VIAM_CARTO_LIB_PLATFORM_INVALID")
+		return errors.New("VIAM_CARTO_LIB_PLATFORM_INVALID")
 	case C.VIAM_CARTO_LIB_INVALID:
-		return errors.New("error: VIAM_CARTO_LIB_INVALID")
+		return errors.New("VIAM_CARTO_LIB_INVALID")
 	case C.VIAM_CARTO_LIB_NOT_INITIALIZED:
-		return errors.New("error: VIAM_CARTO_LIB_NOT_INITIALIZED")
+		return errors.New("VIAM_CARTO_LIB_NOT_INITIALIZED")
 	case C.VIAM_CARTO_SENSORS_LIST_EMPTY:
-		return errors.New("error: VIAM_CARTO_SENSORS_LIST_EMPTY")
+		return errors.New("VIAM_CARTO_SENSORS_LIST_EMPTY")
 	case C.VIAM_CARTO_UNKNOWN_ERROR:
-		return errors.New("error: VIAM_CARTO_UNKNOWN_ERROR")
+		return errors.New("status code unclassified")
 	case C.VIAM_CARTO_DATA_DIR_NOT_PROVIDED:
-		return errors.New("error: VIAM_CARTO_DATA_DIR_NOT_PROVIDED ")
+		return errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED ")
 	case C.VIAM_CARTO_SLAM_MODE_INVALID:
-		return errors.New("error: VIAM_CARTO_SLAM_MODE_INVALID ")
+		return errors.New("VIAM_CARTO_SLAM_MODE_INVALID ")
 	case C.VIAM_CARTO_LIDAR_CONFIG_INVALID:
-		return errors.New("error: VIAM_CARTO_LIDAR_CONFIG_INVALID ")
+		return errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID ")
 	case C.VIAM_CARTO_MAP_RATE_SEC_INVALID:
-		return errors.New("error: VIAM_CARTO_MAP_RATE_SEC_INVALID ")
+		return errors.New("VIAM_CARTO_MAP_RATE_SEC_INVALID ")
 	case C.VIAM_CARTO_COMPONENT_REFERENCE_INVALID:
-		return errors.New("error: VIAM_CARTO_COMPONENT_REFERENCE_INVALID ")
+		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID ")
 	default:
-		return errors.New("error: unknown status code")
+		return errors.New("unknown status code")
 	}
 }

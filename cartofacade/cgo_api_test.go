@@ -1,7 +1,7 @@
 package cartofacade
 
 import (
-	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -10,15 +10,15 @@ import (
 
 func getTestConfig() CartoConfig {
 	return CartoConfig{
-		sensors:            []string{"rplidar", "imu"},
-		mapRateSecond:      5,
-		dataDir:            "data-dir",
-		componentReference: "component",
-		lidarConfig:        twoD,
+		Sensors:            []string{"rplidar", "imu"},
+		MapRateSecond:      5,
+		DataDir:            "temp",
+		ComponentReference: "component",
+		LidarConfig:        twoD,
 	}
 }
 
-func getAlgoTestConfig() CartoAlgoConfig {
+func getTestAlgoConfig() CartoAlgoConfig {
 	return CartoAlgoConfig{
 		optimizeOnStart:      false,
 		optimizeEveryNNodes:  0,
@@ -37,7 +37,7 @@ func getAlgoTestConfig() CartoAlgoConfig {
 }
 
 func TestGetConfig(t *testing.T) {
-	t.Run("config properly converte between c and go", func(t *testing.T) {
+	t.Run("config properly converted between C and go", func(t *testing.T) {
 		cfg := getTestConfig()
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
@@ -48,18 +48,41 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, vcc.sensors_len, test.ShouldEqual, 2)
 
 		dataDir := bstringToGoString(vcc.data_dir)
-		test.That(t, dataDir, test.ShouldResemble, "data-dir")
+		test.That(t, dataDir, test.ShouldResemble, "temp")
 
 		componentReference := bstringToGoString(vcc.component_reference)
 		test.That(t, componentReference, test.ShouldResemble, "component")
-		FreeBstringArray(vcc.sensors)
+		freeBstringArray(vcc.sensors, vcc.sensors_len)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, twoD)
 	})
 }
 
+func TestGetPositionResponse(t *testing.T) {
+	gpr := getTestGetPositionResponse()
+	t.Run("position response properly converted between C and go", func(t *testing.T) {
+		holder := toGetPositionResponse(gpr)
+		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
+
+		test.That(t, holder.X, test.ShouldAlmostEqual, 100, .001)
+		test.That(t, holder.Y, test.ShouldAlmostEqual, 200, .001)
+		test.That(t, holder.Z, test.ShouldAlmostEqual, 300, .001)
+
+		test.That(t, holder.Ox, test.ShouldAlmostEqual, 400, .001)
+		test.That(t, holder.Oy, test.ShouldAlmostEqual, 500, .001)
+		test.That(t, holder.Oz, test.ShouldAlmostEqual, 600, .001)
+
+		test.That(t, holder.Imag, test.ShouldAlmostEqual, 700, .001)
+		test.That(t, holder.Jmag, test.ShouldAlmostEqual, 800, .001)
+		test.That(t, holder.Kmag, test.ShouldAlmostEqual, 900, .001)
+
+		test.That(t, holder.Theta, test.ShouldAlmostEqual, 1000, .001)
+		test.That(t, holder.Real, test.ShouldAlmostEqual, 1100, .001)
+	})
+}
+
 func TestCGoAPI(t *testing.T) {
-	pvcl, err := NewCartoLib(1, 1)
+	pvcl, err := NewLib(1, 1)
 
 	t.Run("initialize viam_carto_lib", func(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
@@ -67,68 +90,71 @@ func TestCGoAPI(t *testing.T) {
 	})
 
 	cfg := getTestConfig()
-	algoCfg := getAlgoTestConfig()
-	vc, err := NewCarto(cfg, algoCfg, pvcl)
+	algoCfg := getTestAlgoConfig()
+	vc, err := New(cfg, algoCfg, pvcl)
 	t.Run("initialize viam_carto", func(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)
 	})
 
 	t.Run("test start", func(t *testing.T) {
-		err = vc.Start(context.Background())
+		err = vc.Start()
 		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run("test addSensorReading", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
-		err = vc.AddSensorReading(context.Background(), []byte("he0llo"), timestamp)
+		sr, err := vc.AddSensorReading([]byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeNil)
+		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
+		test.That(t, sr.sensor_reading_time_unix_micro, test.ShouldAlmostEqual, timestamp.UnixMicro(), .001)
+
 	})
 
 	t.Run("test getPosition", func(t *testing.T) {
-		holder, err := vc.GetPosition(context.Background())
+		holder, err := vc.GetPosition()
 
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, holder.compReference, test.ShouldEqual, "C++ component reference")
+		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
 
-		test.That(t, holder.x, test.ShouldAlmostEqual, 100, .001)
-		test.That(t, holder.y, test.ShouldAlmostEqual, 200, .001)
-		test.That(t, holder.z, test.ShouldAlmostEqual, 300, .001)
+		test.That(t, holder.X, test.ShouldAlmostEqual, 100, .001)
+		test.That(t, holder.Y, test.ShouldAlmostEqual, 200, .001)
+		test.That(t, holder.Z, test.ShouldAlmostEqual, 300, .001)
 
-		test.That(t, holder.ox, test.ShouldAlmostEqual, 400, .001)
-		test.That(t, holder.oy, test.ShouldAlmostEqual, 500, .001)
-		test.That(t, holder.oz, test.ShouldAlmostEqual, 600, .001)
+		test.That(t, holder.Ox, test.ShouldAlmostEqual, 400, .001)
+		test.That(t, holder.Oy, test.ShouldAlmostEqual, 500, .001)
+		test.That(t, holder.Oz, test.ShouldAlmostEqual, 600, .001)
 
-		test.That(t, holder.imag, test.ShouldAlmostEqual, 700, .001)
-		test.That(t, holder.jmag, test.ShouldAlmostEqual, 800, .001)
-		test.That(t, holder.kmag, test.ShouldAlmostEqual, 900, .001)
+		test.That(t, holder.Imag, test.ShouldAlmostEqual, 700, .001)
+		test.That(t, holder.Jmag, test.ShouldAlmostEqual, 800, .001)
+		test.That(t, holder.Kmag, test.ShouldAlmostEqual, 900, .001)
 
-		test.That(t, holder.theta, test.ShouldAlmostEqual, 1000, .001)
-		test.That(t, holder.real, test.ShouldAlmostEqual, 1100, .001)
+		test.That(t, holder.Theta, test.ShouldAlmostEqual, 1000, .001)
+		test.That(t, holder.Real, test.ShouldAlmostEqual, 1100, .001)
 	})
 
 	t.Run("test getPointCloudMap", func(t *testing.T) {
-		_, err = vc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeNil)
+		_, err = vc.GetPointCloudMap()
+		test.That(t, err, test.ShouldResemble, errors.New("nil pointcloud"))
 	})
 
 	t.Run("test getInternalState", func(t *testing.T) {
-		_, err = vc.GetInternalState(context.Background())
-		test.That(t, err, test.ShouldBeNil)
+		_, err = vc.GetInternalState()
+		test.That(t, err, test.ShouldResemble, errors.New("nil internal state"))
 	})
 
 	t.Run("test stop", func(t *testing.T) {
-		err = vc.Stop(context.Background())
+		err = vc.Stop()
 		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run("terminate viam_carto", func(t *testing.T) {
-		err = vc.TerminateCarto(context.Background())
+		err = vc.Terminate()
 		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run("terminate viam_carto_lib", func(t *testing.T) {
-		err = pvcl.TerminateCartoLib()
+		err = pvcl.Terminate()
 		test.That(t, err, test.ShouldBeNil)
 	})
 }
