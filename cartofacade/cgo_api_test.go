@@ -86,7 +86,7 @@ func TestToSensorReading(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
 		sr := toSensorReading([]byte("he0llo"), timestamp)
 		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
-		test.That(t, sr.sensor_reading_time_unix_micro, test.ShouldAlmostEqual, timestamp.UnixMicro(), .001)
+		test.That(t, sr.sensor_reading_time_unix_micro, test.ShouldEqual, timestamp.UnixMicro())
 	})
 }
 
