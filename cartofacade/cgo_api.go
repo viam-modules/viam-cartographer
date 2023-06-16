@@ -435,7 +435,7 @@ func toError(status C.int) error {
 	case C.VIAM_CARTO_SENSORS_LIST_EMPTY:
 		return errors.New("VIAM_CARTO_SENSORS_LIST_EMPTY")
 	case C.VIAM_CARTO_UNKNOWN_ERROR:
-		return errors.New("status code unclassified")
+		return errors.New("VIAM_CARTO_UNKNOWN_ERROR")
 	case C.VIAM_CARTO_DATA_DIR_NOT_PROVIDED:
 		return errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED ")
 	case C.VIAM_CARTO_SLAM_MODE_INVALID:
