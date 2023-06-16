@@ -447,6 +447,6 @@ func toError(status C.int) error {
 	case C.VIAM_CARTO_COMPONENT_REFERENCE_INVALID:
 		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID ")
 	default:
-		return errors.New("unknown status code")
+		return errors.New("status code unclassified")
 	}
 }
