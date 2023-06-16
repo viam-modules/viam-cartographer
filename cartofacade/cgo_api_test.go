@@ -71,20 +71,20 @@ func TestGetPositionResponse(t *testing.T) {
 		holder := toGetPositionResponse(gpr)
 		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
 
-		test.That(t, holder.X, test.ShouldAlmostEqual, 100, .001)
-		test.That(t, holder.Y, test.ShouldAlmostEqual, 200, .001)
-		test.That(t, holder.Z, test.ShouldAlmostEqual, 300, .001)
+		test.That(t, holder.X, test.ShouldEqual, 100)
+		test.That(t, holder.Y, test.ShouldEqual, 200)
+		test.That(t, holder.Z, test.ShouldEqual, 300)
 
-		test.That(t, holder.Ox, test.ShouldAlmostEqual, 400, .001)
-		test.That(t, holder.Oy, test.ShouldAlmostEqual, 500, .001)
-		test.That(t, holder.Oz, test.ShouldAlmostEqual, 600, .001)
+		test.That(t, holder.Ox, test.ShouldEqual, 400)
+		test.That(t, holder.Oy, test.ShouldEqual, 500)
+		test.That(t, holder.Oz, test.ShouldEqual, 600)
 
-		test.That(t, holder.Imag, test.ShouldAlmostEqual, 700, .001)
-		test.That(t, holder.Jmag, test.ShouldAlmostEqual, 800, .001)
-		test.That(t, holder.Kmag, test.ShouldAlmostEqual, 900, .001)
+		test.That(t, holder.Imag, test.ShouldEqual, 700)
+		test.That(t, holder.Jmag, test.ShouldEqual, 800)
+		test.That(t, holder.Kmag, test.ShouldEqual, 900)
 
-		test.That(t, holder.Theta, test.ShouldAlmostEqual, 1000, .001)
-		test.That(t, holder.Real, test.ShouldAlmostEqual, 1100, .001)
+		test.That(t, holder.Theta, test.ShouldEqual, 1000)
+		test.That(t, holder.Real, test.ShouldEqual, 1100)
 	})
 }
 
@@ -146,20 +146,21 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
 
-		test.That(t, holder.X, test.ShouldAlmostEqual, 100, .001)
-		test.That(t, holder.Y, test.ShouldAlmostEqual, 200, .001)
-		test.That(t, holder.Z, test.ShouldAlmostEqual, 300, .001)
+		test.That(t, holder.X, test.ShouldEqual, 100)
+		test.That(t, holder.X, test.ShouldEqual, 100)
+		test.That(t, holder.Y, test.ShouldEqual, 200)
+		test.That(t, holder.Z, test.ShouldEqual, 300)
 
-		test.That(t, holder.Ox, test.ShouldAlmostEqual, 400, .001)
-		test.That(t, holder.Oy, test.ShouldAlmostEqual, 500, .001)
-		test.That(t, holder.Oz, test.ShouldAlmostEqual, 600, .001)
+		test.That(t, holder.Ox, test.ShouldEqual, 400)
+		test.That(t, holder.Oy, test.ShouldEqual, 500)
+		test.That(t, holder.Oz, test.ShouldEqual, 600)
 
-		test.That(t, holder.Imag, test.ShouldAlmostEqual, 700, .001)
-		test.That(t, holder.Jmag, test.ShouldAlmostEqual, 800, .001)
-		test.That(t, holder.Kmag, test.ShouldAlmostEqual, 900, .001)
+		test.That(t, holder.Imag, test.ShouldEqual, 700)
+		test.That(t, holder.Jmag, test.ShouldEqual, 800)
+		test.That(t, holder.Kmag, test.ShouldEqual, 900)
 
-		test.That(t, holder.Theta, test.ShouldAlmostEqual, 1000, .001)
-		test.That(t, holder.Real, test.ShouldAlmostEqual, 1100, .001)
+		test.That(t, holder.Theta, test.ShouldEqual, 1000)
+		test.That(t, holder.Real, test.ShouldEqual, 1100)
 	})
 
 	t.Run("test getPointCloudMap", func(t *testing.T) {
