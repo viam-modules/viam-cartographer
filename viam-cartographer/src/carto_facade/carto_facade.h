@@ -371,7 +371,7 @@ class CartoFacade {
     // separate thread.
     void StopSaveInternalState();
 
-    // SaveInternalStateOnInterval saves maps with a filename that includes the
+    // SaveInternalStateOnInterval saves internal state with a filename that includes the
     // timestamp of the time when the map is saved.
     void SaveInternalStateOnInterval();
 
