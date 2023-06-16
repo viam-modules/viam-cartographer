@@ -81,6 +81,15 @@ func TestGetPositionResponse(t *testing.T) {
 	})
 }
 
+func TestToSensorReading(t *testing.T) {
+	t.Run("sensor reading properly converted between c and go", func(t *testing.T) {
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
+		sr := toSensorReading([]byte("he0llo"), timestamp)
+		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
+		test.That(t, sr.sensor_reading_time_unix_micro, test.ShouldAlmostEqual, timestamp.UnixMicro(), .001)
+	})
+}
+
 func TestCGoAPI(t *testing.T) {
 	pvcl, err := NewLib(1, 1)
 
@@ -104,10 +113,8 @@ func TestCGoAPI(t *testing.T) {
 
 	t.Run("test addSensorReading", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
-		sr, err := vc.AddSensorReading([]byte("he0llo"), timestamp)
+		err := vc.AddSensorReading([]byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
-		test.That(t, sr.sensor_reading_time_unix_micro, test.ShouldAlmostEqual, timestamp.UnixMicro(), .001)
 	})
 
 	t.Run("test getPosition", func(t *testing.T) {

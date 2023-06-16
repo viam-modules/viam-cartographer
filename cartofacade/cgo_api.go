@@ -12,17 +12,22 @@ package cartofacade
 	#include "../viam-cartographer/src/carto_facade/carto_facade.h"
 
 	viam_carto_lib* alloc_viam_carto_lib() { return (viam_carto_lib*) malloc(sizeof(viam_carto_lib)); }
-	void free_alloc_viam_carto_lib(viam_carto_lib* p) { free(p); }
+	void free_viam_carto_lib(viam_carto_lib* p) { free(p); }
 
 	viam_carto* alloc_viam_carto() { return (viam_carto*) malloc(sizeof(viam_carto)); }
-	void free_alloc_viam_carto(viam_carto* p) { free(p); }
+	void free_viam_carto(viam_carto* p) { free(p); }
 
 	bstring* alloc_bstring_array(size_t len) { return (bstring*) malloc(len * sizeof(bstring)); }
-	void free_bstring_array(bstring* p, int len) {
+	int free_bstring_array(bstring* p, int len) {
+		int result;
 		for (int i = 0; i < len; i++) {
-			bdestroy(p[i]);
+			result = bdestroy(p[i]);
+			if (result != BSTR_OK) {
+				return result;
+			};
 		}
 		free(p);
+		return BSTR_OK;
 	}
 */
 import "C"
@@ -41,11 +46,6 @@ type CartoLib struct {
 // Carto holds the c type viam_carto
 type Carto struct {
 	value *C.viam_carto
-}
-
-// getPointCloudMapResponse is a struct to hold the c type viam_carto_get_point_cloud_map_response
-type getPointCloudMapResponse struct {
-	value C.viam_carto_get_point_cloud_map_response
 }
 
 // GetPosition holds values returned from c to be processed later
@@ -101,23 +101,13 @@ type CartoAlgoConfig struct {
 	rotationWeight       float64
 }
 
-// sensorReading holds the c type viam_carto_sensor_reading
-type sensorReading struct {
-	value C.viam_carto_sensor_reading
-}
-
-// getInternalStateResponse holds the c type viam_carto_get_internal_state_response
-type getInternalStateResponse struct {
-	value C.viam_carto_get_internal_state_response
-}
-
 // NewLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
 func NewLib(miniloglevel, verbose int) (CartoLib, error) {
 	pVcl := C.alloc_viam_carto_lib()
 	if pVcl == nil {
 		return CartoLib{}, errors.New("unable to allocate memory for viam carto lib")
 	}
-	defer C.free_alloc_viam_carto_lib(pVcl)
+	defer C.free_viam_carto_lib(pVcl)
 
 	ppVcl := (**C.viam_carto_lib)(unsafe.Pointer(&pVcl))
 	/*
@@ -154,7 +144,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 	if pVc == nil {
 		return Carto{}, errors.New("unable to allocate memory for viam carto")
 	}
-	defer C.free_alloc_viam_carto(pVc)
+	defer C.free_viam_carto(pVc)
 
 	ppVc := (**C.viam_carto)(unsafe.Pointer(&pVc))
 
@@ -162,7 +152,6 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 	if err != nil {
 		return Carto{}, err
 	}
-	defer C.free_bstring_array(vcc.sensors, vcc.sensors_len)
 
 	vcac := toAlgoConfig(acfg)
 
@@ -171,6 +160,10 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 		return Carto{}, err
 	}
 
+	status = C.free_bstring_array(vcc.sensors, vcc.sensors_len)
+	if status != C.BSTR_OK {
+		return Carto{}, errors.New("unable to free memory for sensor list")
+	}
 	return Carto{value: (*ppVc)}, nil
 }
 
@@ -208,26 +201,21 @@ func (vc *Carto) Terminate() error {
 }
 
 // AddSensorReading is a wrapper for viam_carto_add_sensor_reading
-func (vc *Carto) AddSensorReading(readings []byte, timestamp time.Time) (C.viam_carto_sensor_reading, error) {
-	sr := C.viam_carto_sensor_reading{}
-	sr.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
+func (vc *Carto) AddSensorReading(readings []byte, timestamp time.Time) error {
+	value := toSensorReading(readings, timestamp)
 
-	sr.sensor_reading_time_unix_micro = C.ulonglong(timestamp.UnixMicro())
-
-	resp := sensorReading{value: sr}
-
-	status := C.viam_carto_add_sensor_reading(vc.value, &resp.value)
+	status := C.viam_carto_add_sensor_reading(vc.value, &value)
 
 	if err := toError(status); err != nil {
-		return C.viam_carto_sensor_reading{}, err
+		return err
 	}
 
-	status = C.viam_carto_add_sensor_reading_destroy(&resp.value)
+	status = C.viam_carto_add_sensor_reading_destroy(&value)
 	if err := toError(status); err != nil {
-		return C.viam_carto_sensor_reading{}, err
+		return err
 	}
 
-	return sr, nil
+	return nil
 }
 
 // GetPosition is a wrapper for viam_carto_get_position
@@ -411,6 +399,13 @@ func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition
 
 		ComponentReference: bstringToGoString(value.component_reference),
 	}
+}
+
+func toSensorReading(readings []byte, timestamp time.Time) C.viam_carto_sensor_reading {
+	sr := C.viam_carto_sensor_reading{}
+	sr.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
+	sr.sensor_reading_time_unix_micro = C.ulonglong(timestamp.UnixMicro())
+	return sr
 }
 
 // freeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
