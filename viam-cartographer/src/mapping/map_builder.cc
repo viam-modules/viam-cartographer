@@ -50,7 +50,8 @@ void MapBuilder::SetUp(std::string configuration_directory,
         cartographer::mapping::CreateTrajectoryBuilderOptions(
             trajectory_builder_parameters.get());
     
-    std::cout << "MATCHPRINT " << trajectory_builder_options_.mutable_trajectory_builder_2d_options()->use_online_correlative_scan_matching() << std::endl;
+    // std::cout << "MATCHPRINT " << trajectory_builder_options_.mutable_trajectory_builder_2d_options()->use_online_correlative_scan_matching() << std::endl;
+    LOG(INFO) << "MATCHPRINT " << trajectory_builder_options_.mutable_trajectory_builder_2d_options()->use_online_correlative_scan_matching();
 
     return;
 }
