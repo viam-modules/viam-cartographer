@@ -39,7 +39,8 @@ func getAlgoTestConfig() CartoAlgoConfig {
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converte between c and go", func(t *testing.T) {
 		cfg := getTestConfig()
-		vcc := getConfig(cfg)
+		vcc, err := getConfig(cfg)
+		test.That(t, err, test.ShouldBeNil)
 
 		sensors := bStringToGoStringSlice(vcc.sensors, int(vcc.sensors_len))
 		test.That(t, sensors[0], test.ShouldResemble, "rplidar")
