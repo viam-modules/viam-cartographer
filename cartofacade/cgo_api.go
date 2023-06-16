@@ -1,5 +1,6 @@
-//nolint:lll
 // Package cartofacade provides an api to call into c code
+//
+//nolint:lll
 package cartofacade
 
 /*
