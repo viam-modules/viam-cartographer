@@ -371,8 +371,8 @@ class CartoFacade {
     // separate thread.
     void StopSaveInternalState();
 
-    // SaveInternalStateOnInterval saves internal state with a filename that includes the
-    // timestamp of the time when the map is saved.
+    // SaveInternalStateOnInterval saves internal state with a filename that
+    // includes the timestamp of the time when the map is saved.
     void SaveInternalStateOnInterval();
 
     // ConvertSavedMapToStream converted the saved pbstream to the passed in
