@@ -591,7 +591,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop) {
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
-                                "some component refereance", sensors_vec);
+                                "some component reference", sensors_vec);
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
