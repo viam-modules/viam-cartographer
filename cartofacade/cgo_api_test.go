@@ -2,7 +2,6 @@ package cartofacade
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"testing"
 	"time"
@@ -11,7 +10,7 @@ import (
 )
 
 func getTestConfig() (CartoConfig, string, error) {
-	dir, err := ioutil.TempDir("", "slam-test")
+	dir, err := os.MkdirTemp("", "slam-test")
 	if err != nil {
 		return CartoConfig{}, "", err
 	}
