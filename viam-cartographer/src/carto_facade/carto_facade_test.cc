@@ -608,8 +608,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop) {
 
     // Confirm at least one map is persisted within the map_rate_sec
     VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
-    //TODO: This should busy wait until this condition happens & the tests passes or 
-    //or 2 seconds goes by & the test fails.
+    // TODO: This should busy wait until this condition happens & the tests
+    // passes or or 2 seconds goes by & the test fails.
     std::this_thread::sleep_for(cf->config.map_rate_sec +
                                 std::chrono::seconds(1));
     BOOST_TEST(fs::is_directory(cf->path_to_internal_state));

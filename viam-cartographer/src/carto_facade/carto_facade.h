@@ -363,11 +363,12 @@ class CartoFacade {
 
    private:
     // moved from namespace
-    // StartSaveInternalState starts the map saving process in a separate thread.
+    // StartSaveInternalState starts the map saving process in a separate
+    // thread.
     void StartSaveInternalState();
 
-    // StopSaveInternalState stops the map saving process that is running in a separate
-    // thread.
+    // StopSaveInternalState stops the map saving process that is running in a
+    // separate thread.
     void StopSaveInternalState();
 
     // SaveInternalStateOnInterval saves maps with a filename that includes the
