@@ -18,9 +18,9 @@ package cartofacade
 	void free_viam_carto(viam_carto* p) { free(p); }
 
 	bstring* alloc_bstring_array(size_t len) { return (bstring*) malloc(len * sizeof(bstring)); }
-	int free_bstring_array(bstring* p, int len) {
+	int free_bstring_array(bstring* p, size_t len) {
 		int result;
-		for (int i = 0; i < len; i++) {
+		for (size_t i = 0; i < len; i++) {
 			result = bdestroy(p[i]);
 			if (result != BSTR_OK) {
 				return result;
@@ -160,7 +160,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 		return Carto{}, err
 	}
 
-	status = C.free_bstring_array(vcc.sensors, vcc.sensors_len)
+	status = C.free_bstring_array(vcc.sensors, C.size_t(len(cfg.Sensors)))
 	if status != C.BSTR_OK {
 		return Carto{}, errors.New("unable to free memory for sensor list")
 	}
@@ -410,7 +410,8 @@ func toSensorReading(readings []byte, timestamp time.Time) C.viam_carto_sensor_r
 
 // freeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
 func freeBstringArray(arr *C.bstring, length C.int) {
-	C.free_bstring_array(arr, length)
+	lengthSizeT := C.size_t(length)
+	C.free_bstring_array(arr, lengthSizeT)
 }
 
 func toError(status C.int) error {
