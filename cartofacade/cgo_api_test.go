@@ -108,7 +108,6 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
 		test.That(t, sr.sensor_reading_time_unix_micro, test.ShouldAlmostEqual, timestamp.UnixMicro(), .001)
-
 	})
 
 	t.Run("test getPosition", func(t *testing.T) {

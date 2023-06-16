@@ -414,8 +414,8 @@ func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition
 }
 
 // freeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
-func freeBstringArray(arr *C.bstring, len C.int) {
-	C.free_bstring_array(arr, len)
+func freeBstringArray(arr *C.bstring, length C.int) {
+	C.free_bstring_array(arr, length)
 }
 
 func toError(status C.int) error {
