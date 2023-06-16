@@ -363,16 +363,16 @@ class CartoFacade {
 
    private:
     // moved from namespace
-    // StartSaveMap starts the map saving process in a separate thread.
-    void StartSaveMap();
+    // StartSaveInternalState starts the map saving process in a separate thread.
+    void StartSaveInternalState();
 
-    // StopSaveMap stops the map saving process that is running in a separate
+    // StopSaveInternalState stops the map saving process that is running in a separate
     // thread.
-    void StopSaveMap();
+    void StopSaveInternalState();
 
-    // SaveMapWithTimestamp saves maps with a filename that includes the
+    // SaveInternalStateOnInterval saves maps with a filename that includes the
     // timestamp of the time when the map is saved.
-    void SaveMapWithTimestamp();
+    void SaveInternalStateOnInterval();
 
     // ConvertSavedMapToStream converted the saved pbstream to the passed in
     // string and deletes the file.
@@ -418,7 +418,7 @@ class CartoFacade {
     std::shared_mutex optimization_shared_mutex;
 
     // std::atomic<bool> finished_processing_offline{false};
-    std::unique_ptr<std::thread> thread_save_map_with_timestamp;
+    std::unique_ptr<std::thread> thread_save_internal_state;
 
     std::mutex viam_response_mutex;
     // cartographer::transform::Rigid3d latest_global_pose =
