@@ -2,20 +2,27 @@ package cartofacade
 
 import (
 	"errors"
+	"io/ioutil"
+	"os"
 	"testing"
 	"time"
 
 	"go.viam.com/test"
 )
 
-func getTestConfig() CartoConfig {
+func getTestConfig() (CartoConfig, string, error) {
+	dir, err := ioutil.TempDir("", "slam-test")
+	if err != nil {
+		return CartoConfig{}, "", err
+	}
+
 	return CartoConfig{
 		Sensors:            []string{"rplidar", "imu"},
 		MapRateSecond:      5,
-		DataDir:            "temp",
+		DataDir:            dir,
 		ComponentReference: "component",
 		LidarConfig:        twoD,
-	}
+	}, dir, nil
 }
 
 func getBadTestConfig() CartoConfig {
@@ -45,7 +52,10 @@ func getTestAlgoConfig() CartoAlgoConfig {
 
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go", func(t *testing.T) {
-		cfg := getTestConfig()
+		cfg, dir, err := getTestConfig()
+		test.That(t, err, test.ShouldBeNil)
+		defer os.RemoveAll(dir)
+
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -55,7 +65,7 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, vcc.sensors_len, test.ShouldEqual, 2)
 
 		dataDir := bstringToGoString(vcc.data_dir)
-		test.That(t, dataDir, test.ShouldResemble, "temp")
+		test.That(t, dataDir, test.ShouldResemble, dir)
 
 		componentReference := bstringToGoString(vcc.component_reference)
 		test.That(t, componentReference, test.ShouldResemble, "component")
@@ -108,39 +118,40 @@ func TestBstringToByteSlice(t *testing.T) {
 func TestCGoAPI(t *testing.T) {
 	pvcl, err := NewLib(1, 1)
 
-	t.Run("initialize viam_carto_lib", func(t *testing.T) {
+	t.Run("test state machine", func(t *testing.T) {
+		// initialize viam_carto_lib
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
-	})
 
-	cfg := getBadTestConfig()
-	algoCfg := getTestAlgoConfig()
-	vc, err := New(cfg, algoCfg, pvcl)
-	t.Run("initialize viam_carto incorrectly", func(t *testing.T) {
+		cfg := getBadTestConfig()
+		algoCfg := getTestAlgoConfig()
+		vc, err := New(cfg, algoCfg, pvcl)
+
+		// initialize viam_carto incorrectly
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
 		test.That(t, vc, test.ShouldNotBeNil)
-	})
 
-	cfg = getTestConfig()
-	algoCfg = getTestAlgoConfig()
-	vc, err = New(cfg, algoCfg, pvcl)
-	t.Run("initialize viam_carto correctly", func(t *testing.T) {
+		cfg, dir, err := getTestConfig()
+		test.That(t, err, test.ShouldBeNil)
+		defer os.RemoveAll(dir)
+
+		algoCfg = getTestAlgoConfig()
+		vc, err = New(cfg, algoCfg, pvcl)
+
+		// initialize viam_carto correctly
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)
-	})
 
-	t.Run("test start", func(t *testing.T) {
+		// test start
 		err = vc.Start()
 		test.That(t, err, test.ShouldBeNil)
-	})
 
-	t.Run("test addSensorReading", func(t *testing.T) {
+		// test addSensorReading
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
-		err := vc.AddSensorReading([]byte("he0llo"), timestamp)
+		err = vc.AddSensorReading([]byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeNil)
-	})
 
-	t.Run("test getPosition", func(t *testing.T) {
+		// test getPosition
 		holder, err := vc.GetPosition()
 
 		test.That(t, err, test.ShouldBeNil)
@@ -161,29 +172,24 @@ func TestCGoAPI(t *testing.T) {
 
 		test.That(t, holder.Theta, test.ShouldEqual, 1000)
 		test.That(t, holder.Real, test.ShouldEqual, 1100)
-	})
 
-	t.Run("test getPointCloudMap", func(t *testing.T) {
+		// test getPointCloudMap
 		_, err = vc.GetPointCloudMap()
 		test.That(t, err, test.ShouldResemble, errors.New("nil pointcloud"))
-	})
 
-	t.Run("test getInternalState", func(t *testing.T) {
+		// test getInternalState
 		_, err = vc.GetInternalState()
 		test.That(t, err, test.ShouldResemble, errors.New("nil internal state"))
-	})
 
-	t.Run("test stop", func(t *testing.T) {
+		// test stop
 		err = vc.Stop()
 		test.That(t, err, test.ShouldBeNil)
-	})
 
-	t.Run("terminate viam_carto", func(t *testing.T) {
+		// terminate viam_carto
 		err = vc.Terminate()
 		test.That(t, err, test.ShouldBeNil)
-	})
 
-	t.Run("terminate viam_carto_lib", func(t *testing.T) {
+		// terminate viam_carto_lib
 		err = pvcl.Terminate()
 		test.That(t, err, test.ShouldBeNil)
 	})
