@@ -85,14 +85,10 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'make test'
 
-    - name: make install-lua-files
-      run: |
-        sudo -u testbot bash -lc 'make install-lua-files'
-
-    - name: Copy carto_grpc_server binary
+    - name: make install
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
+        sudo -u testbot bash -lc 'make install'
 
     - name: Run viam-cartographer cartographer integration tests
       if: matrix.platform == 'linux/amd64'

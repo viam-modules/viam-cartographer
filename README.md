@@ -84,15 +84,11 @@ These containers are set to persist between sessions via the `persistent` parame
 #### Setup, build, and run the binary
 
 ```bash
-# Setup the gRPC files
-make bufinstall && make buf 
-# Install dependencies
+# Install dependencies using brew (or apt-get)
 make setup
-# Build & install the binary
+# Build
 make build
-# Install lua files
-make install-lua-files
-# Install the cartographer-module binary
+# Install lua files and binaries to /usr/local
 make install
 # Run the binary
 cartographer-module

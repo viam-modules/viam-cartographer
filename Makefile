@@ -79,12 +79,12 @@ ifneq (, $(shell which brew))
 	brew update
 	brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc clang-format
 	brew link lua@5.3
-	brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl
+	brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl nlopt-static
 else ifneq (, $(shell which apt-get))
 	$(warning  "Installing cartographer external dependencies via APT.")
 	$(warning "Packages may be too old to work with this project.")
 	sudo apt-get update
-	sudo apt-get install -y cmake ninja-build libgmock-dev libboost-iostreams-dev liblua5.3-dev libcairo2-dev python3-sphinx \
+	sudo apt-get install -y cmake ninja-build libgmock-dev libboost-iostreams-dev liblua5.3-dev libcairo2-dev python3-sphinx libnlopt-dev \
 		libabsl-dev libceres-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc libpcl-dev libgrpc-dev libgrpc++-dev clang-format
 else
 	$(error "Unsupported system. Only apt and brew currently supported.")
@@ -126,7 +126,7 @@ install-lua-files:
 	sudo mkdir -p /usr/local/share/cartographer/lua_files/
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 
-install:
+install: install-lua-files
 	sudo rm -f /usr/local/bin/carto_grpc_server
 	sudo rm -f /usr/local/bin/cartographer-module
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
