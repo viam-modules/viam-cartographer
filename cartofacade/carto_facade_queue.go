@@ -71,12 +71,12 @@ func (w *WorkItem) DoWork(
 	case AddSensorReading:
 		reading, ok := w.inputs[Reading].([]byte)
 		if !ok {
-			return nil, errors.New("Could not cast inputted byte to byte slice")
+			return nil, errors.New("could not cast inputted byte to byte slice")
 		}
 
 		timestamp, ok := w.inputs[Timestamp].(time.Time)
 		if !ok {
-			return nil, errors.New("Could not cast inputted timestamp to times.Time")
+			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
 		return nil, q.Carto.AddSensorReading(reading, timestamp)
