@@ -3,11 +3,9 @@ TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
 GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
 GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
-SHELL := /bin/env bash
+SHELL := /usr/bin/env bash
 export PATH := $(TOOL_BIN):$(PATH)
 export GOBIN := $(TOOL_BIN)
-
-ARTIFACT="~/go/bin/artifact"
 
 ifneq (, $(shell which brew))
 	EXTRA_CMAKE_FLAGS := -DCMAKE_PREFIX_PATH=$(shell brew --prefix) -DQt5_DIR=$(shell brew --prefix qt5)/lib/cmake/Qt5
@@ -23,7 +21,13 @@ $(TOOL_BIN)/artifact:
 	 go install go.viam.com/utils/artifact/cmd/artifact
 
 bufinstall:
-	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
+ifneq (, $(shell which brew))
+	brew install grpc openssl
+else ifneq (, $(shell which apt-get))
+	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev
+else
+	$(error "Unsupported system. Only apt and brew currently supported.")
+endif
 
 $(TOOL_BIN)/buf:
 	go install github.com/bufbuild/buf/cmd/buf@v1.8.0
@@ -54,10 +58,12 @@ ensure-submodule-initialized:
 	cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch
 
 lint-setup-cpp:
-ifeq ("Darwin", "$(shell uname -s)")
+ifneq (, $(shell which brew))
 	brew install clang-format
-else
+else ifneq (, $(shell which apt-get))
 	sudo apt-get install -y clang-format
+else
+	$(error "Unsupported system. Only apt and brew currently supported.")
 endif
 
 lint-setup-go:
@@ -78,14 +84,27 @@ lint-cpp:
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
 lint-go:
-	go vet -vettool=combined ./...
+	go vet -vettool=$(TOOL_BIN)/combined ./...
 	GOGC=50 golangci-lint run -v --fix --config=./etc/golangci.yaml
 	actionlint
 
 lint: ensure-submodule-initialized lint-cpp lint-go
 
 setup: ensure-submodule-initialized artifact-pull
-	viam-cartographer/scripts/setup_cartographer.sh
+ifneq (, $(shell which brew))
+	brew update
+	brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc
+	brew link lua@5.3
+	brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl
+else ifneq (, $(shell which apt-get))
+	$(warning  "Installing cartographer external dependencies via APT.")
+	$(warning "Packages may be too old to work with this project.")
+	sudo apt-get update
+	sudo apt-get install -y cmake ninja-build libgmock-dev libboost-iostreams-dev liblua5.3-dev libcairo2-dev python3-sphinx \
+		libabsl-dev libceres-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc libpcl-dev
+else
+	$(error "Unsupported system. Only apt and brew currently supported.")
+endif
 
 build: ensure-submodule-initialized buf build-module
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
