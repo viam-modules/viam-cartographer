@@ -57,7 +57,7 @@ jobs:
 
     - name: apt update
       run: |
-        sudo apt update
+        apt-get update
 
     - name: Verify no uncommitted changes from make lint
       run: |
@@ -65,7 +65,7 @@ jobs:
         git add .
         chown -R testbot:testbot .
         sudo -u testbot bash -lc 'sudo apt-get install -y clang-format && make lint'
-        GEN_DIFF=$(git status -s)
+        GEN_DIFF=$(git status -s --ignore-submodules)
 
         if [ -n "$GEN_DIFF" ]; then
             echo '"make lint" resulted in changes not in git' 1>&2
