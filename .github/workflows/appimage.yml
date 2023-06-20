@@ -41,6 +41,10 @@ jobs:
         submodules: recursive
         path: viam-cartographer
 
+    - name: apt update
+      run: |
+        sudo apt update
+
     - name: make clean
       run: |
         chown -R testbot:testbot .
