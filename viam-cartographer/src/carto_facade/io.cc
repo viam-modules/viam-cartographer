@@ -1,15 +1,20 @@
 // This is an experimental integration of cartographer into RDK.
 #include "io.h"
 
+#include <pcl/PCLPointCloud2.h>
+#include <pcl/console/time.h>  // pcl::console::TicToc
 #include <pcl/io/pcd_io.h>
+#include <pcl/io/pcd_io.h>  // pcl::PCDReader
 #include <pcl/point_types.h>
 #include <stdio.h>
 
 #include <boost/filesystem.hpp>
+#include <exception>
 #include <fstream>  // std::ifstream
 #include <iomanip>
 #include <iostream>
-#include <string>
+#include <sstream>  // std::istringstream
+#include <utility>
 
 #include "glog/logging.h"
 
@@ -25,6 +30,111 @@ const std::string MakeFilenameWithTimestamp(std::string path_to_dir,
     std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
                   std::gmtime(&t));
     return path_to_dir + "/" + "map_data_" + timestamp + ".pbstream";
+}
+
+int readPCD(std::string pcd, pcl::PCLPointCloud2 &blob) {
+    pcl::PCDReader p;
+
+    int pcd_version;
+    Eigen::Vector4f origin;
+    Eigen::Quaternionf orientation;
+    pcl::console::TicToc tt;
+    tt.tic();
+
+    int data_type;
+    unsigned int data_idx;
+
+    std::istringstream pcd_stream(pcd);
+    int res = p.readHeader(pcd_stream, blob, origin, orientation, pcd_version,
+
+                           data_type, data_idx);
+    if (res != 0) {
+        LOG(ERROR) << "Failed to parse header";
+    } else {
+        switch (data_type) {
+            // ascii
+            case 0:
+                pcd_stream.seekg(data_idx);
+                res = p.readBodyASCII(pcd_stream, blob, pcd_version);
+                break;
+            // binary
+            case 1: {
+                // This block exists b/c otherwise
+                // map is counterintuitively visible
+                // to the rest of the case
+                // statement branches
+                std::size_t expected_size = data_idx + blob.data.size();
+                if (expected_size > pcd.length()) {
+                    LOG(ERROR) << "Corrupted PCD file. The file is smaller "
+                                  "than expected!";
+                    return -1;
+                }
+                const unsigned char *map =
+                    reinterpret_cast<const unsigned char *>(pcd.c_str());
+                res = p.readBodyBinary(map, blob, pcd_version, false, data_idx);
+            } break;
+            // binary compressed
+            case 2:
+
+                LOG(ERROR) << "compressed PCDs are not currently supported";
+                res = -1;
+                break;
+            default:
+                LOG(ERROR) << "PCD classified as an unsupported data type: "
+                           << data_type;
+                res = -1;
+        }
+    }
+
+    double total_time = tt.toc();
+    VLOG(1) << "[viam::carto_facade::io::readPCD] Loaded as a "
+            << (blob.is_dense ? "dense" : "non-dense") << "blob in "
+            << total_time << "ms with " << blob.width * blob.height
+            << "points. Available dimensions: "
+            << pcl::getFieldsList(blob).c_str();
+    return res;
+}
+
+std::tuple<bool, cartographer::sensor::TimedPointCloudData> ToSensorData(
+    std::string sensor_reading, long long sensor_reading_time_unix_micro) {
+    cartographer::sensor::TimedPointCloudData point_cloud;
+    cartographer::sensor::TimedPointCloud ranges;
+
+    pcl::PCLPointCloud2 blob;
+
+    try {
+        int err = readPCD(sensor_reading, blob);
+        if (err) {
+            return {false, point_cloud};
+        }
+    } catch (std::exception &e) {
+        LOG(ERROR) << "exception thrown during readPCD: " << e.what();
+        return {false, point_cloud};
+    }
+    LOG(INFO) << "readPCD succeeded";
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+        new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::fromPCLPointCloud2(blob, *cloud);
+
+    VLOG(1) << "Loaded " << cloud->width * cloud->height << " data points";
+
+    for (size_t i = 0; i < cloud->points.size(); ++i) {
+        cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point;
+        timed_rangefinder_point.position = Eigen::Vector3f(
+            cloud->points[i].x, cloud->points[i].y, cloud->points[i].z);
+        // TODO: Why are we doing this?
+        timed_rangefinder_point.time = 0 - i * 0.0001;
+
+        ranges.push_back(timed_rangefinder_point);
+    }
+
+    // research how to do this properly
+    point_cloud.time =
+        cartographer::common::FromUniversal(sensor_reading_time_unix_micro);
+    point_cloud.origin = Eigen::Vector3f::Zero();
+    point_cloud.ranges = ranges;
+
+    return {true, point_cloud};
 }
 
 cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
@@ -95,7 +205,7 @@ double ReadTimeFromTimestamp(std::string timestamp) {
         double sub_sec = 0;
         try {
             sub_sec = (double)std::stof(timestamp.substr(sub_sec_index), &sz);
-        } catch (std::exception& e) {
+        } catch (std::exception &e) {
             LOG(FATAL) << e.what();
             throw std::runtime_error(
                 "could not extract sub seconds from timestamp: " + timestamp);

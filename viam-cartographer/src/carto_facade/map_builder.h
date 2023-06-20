@@ -51,11 +51,11 @@ class MapBuilder {
     // SaveMapToStream converted the saved pbstream to a stream and deletes the
     // file.
     std::string ConvertSavedMapToStream(
-        const std::string filename_with_timestamp, std::string* buffer);
+        const std::string filename_with_timestamp, std::string *buffer);
 
     // TryFileClose attempts to close an opened ifstream, returning an error
     // string if it fails.
-    std::string TryFileClose(std::ifstream& file, std::string filename);
+    std::string TryFileClose(std::ifstream &file, std::string filename);
 
     void StartLidarTrajectoryBuilder();
 
@@ -72,7 +72,12 @@ class MapBuilder {
 
     // GetGlobalPose returns the local pose based on the provided a local pose.
     cartographer::transform::Rigid3d GetGlobalPose(
-        cartographer::transform::Rigid3d& local_pose);
+        cartographer::transform::Rigid3d &local_pose);
+
+    // AddSensorData adds sensor data to cartographer's internal state
+    // throws if adding sensor data fails.
+    // Currently assumes the sensor data is coming from the lidar
+    void AddSensorData(cartographer::sensor::TimedPointCloudData measurement);
 
     // GetLocalSlamResultCallback saves the local pose in the
     // local_slam_result_poses array.
@@ -108,7 +113,7 @@ class MapBuilder {
     double GetRotationWeight();
 
     std::unique_ptr<cartographer::mapping::MapBuilderInterface> map_builder_;
-    cartographer::mapping::TrajectoryBuilderInterface* trajectory_builder;
+    cartographer::mapping::TrajectoryBuilderInterface *trajectory_builder;
     int trajectory_id;
     cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
     cartographer::mapping::proto::TrajectoryBuilderOptions

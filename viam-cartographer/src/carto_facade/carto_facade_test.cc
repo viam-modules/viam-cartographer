@@ -500,6 +500,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     // AddSensorReading
     viam_carto_sensor_reading sr;
+    sr.sensor = bfromcstr("my sensor");
+    sr.sensor_reading = bfromcstr("some invalid reading");
+    sr.sensor_reading_time_unix_micro = 10000;
     BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
 
     BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
