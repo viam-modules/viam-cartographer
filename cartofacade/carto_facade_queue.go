@@ -2,6 +2,7 @@ package cartofacade
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -15,14 +16,20 @@ type WorkType int64
 const (
 	// Initialize can be used to represent the viam_carto_init call in c.
 	Initialize WorkType = iota
+	// Start can be used to represent the viam_carto_start call in c.
+	Start
+	// Stop can be used to represent the viam_carto_stop call in c.
+	Stop
+	// Terminate can be used to represent the viam_carto_terminate in c.
+	Terminate
+	// AddSensorReading can be used to represent the viam_carto_add_sensor_reading in c.
+	AddSensorReading
 	// Position can be used to represent the viam_carto_get_position call in c.
 	Position
 	// InternalState can be used to represent the viam_carto_get_internal_state call in c.
 	InternalState
 	// PointCloudMap can be used to represent the viam_carto_get_point_cloud_map in c.
 	PointCloudMap
-	// Terminate can be used to represent the viam_carto_terminate in c.
-	Terminate
 
 	// testType can be used to represent a test.
 	testType
@@ -32,10 +39,10 @@ const (
 type InputType int64
 
 const (
-	// Name represents the name input into c funcs.
-	Name InputType = iota
-	// Date represents the date input into c funcs.
-	Date
+	// Reading represents a lidar reading input into c funcs.
+	Reading InputType = iota
+	// Timestamp represents the timestamp input into c funcs.
+	Timestamp
 
 	// testInput represents a test input.
 	testInput
@@ -50,21 +57,35 @@ type WorkItem struct {
 
 // DoWork provides the logic to call the correct cgo functions with the correct input.
 func (w *WorkItem) DoWork(
-	ctx context.Context,
 	q *Queue,
 ) (interface{}, error) {
-	// TODO: logic for all grpc calls
 	switch w.workType {
 	case Initialize:
 		return New(q.CartoConfig, q.CartoAlgoConfig, *q.CartoLib)
+	case Start:
+		return nil, q.Carto.Start()
+	case Stop:
+		return nil, q.Carto.Stop()
+	case Terminate:
+		return q.Carto.Terminate(), nil
+	case AddSensorReading:
+		reading, ok := w.inputs[Reading].([]byte)
+		if !ok {
+			return nil, errors.New("Could not cast inputted byte to byte slice")
+		}
+
+		timestamp, ok := w.inputs[Timestamp].(time.Time)
+		if !ok {
+			return nil, errors.New("Could not cast inputted timestamp to times.Time")
+		}
+
+		return nil, q.Carto.AddSensorReading(reading, timestamp)
 	case Position:
 		return q.Carto.GetPosition()
 	case InternalState:
 		return q.Carto.GetInternalState()
 	case PointCloudMap:
 		return q.Carto.GetPointCloudMap()
-	case Terminate:
-		return q.Carto.Terminate(), nil
 	case testType:
 		return w.inputs[testInput], nil
 	}
@@ -93,7 +114,7 @@ func NewQueue(cartoLib *CartoLib, cartoCfg CartoConfig, cartoAlgoCfg CartoAlgoCo
 
 // HandleIncomingRequest puts incoming requests on the queue and consumes from queue.
 func (q *Queue) HandleIncomingRequest(ctx context.Context, workType WorkType, inputs map[InputType]interface{}) interface{} {
-	// TODO: determine good time for the timeout
+	// Question: What is reasonable timeout period?
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -128,7 +149,7 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 		for {
 			select {
 			case workToDo := <-q.WorkChannel:
-				result, err := workToDo.DoWork(ctx, q)
+				result, err := workToDo.DoWork(q)
 				if err == nil {
 					workToDo.Result <- result
 				} else {

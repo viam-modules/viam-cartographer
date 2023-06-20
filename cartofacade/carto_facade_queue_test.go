@@ -1,7 +1,6 @@
 package cartofacade
 
 import (
-	"context"
 	"testing"
 
 	"go.viam.com/test"
@@ -15,7 +14,7 @@ func TestCartoFacadeQueue(t *testing.T) {
 	}
 
 	t.Run("Test doWork with test work type", func(t *testing.T) {
-		result, err := workItem.DoWork(context.Background(), &Queue{})
+		result, err := workItem.DoWork(&Queue{})
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, result, test.ShouldResemble, 1)
 	})
