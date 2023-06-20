@@ -47,6 +47,7 @@ clean:
 
 clean-all:
 	git clean -fxd
+	cd viam-cartographer/cartographer && git checkout . && git clean -fxd
 
 ensure-submodule-initialized:
 	@if [ ! -d "viam-cartographer/cartographer/cartographer" ]; then \
@@ -55,7 +56,8 @@ ensure-submodule-initialized:
 	else \
 		echo "Submodule found successfully"; \
 	fi
-	cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch
+	grep -q viam-patched viam-cartographer/cartographer/CMakeLists.txt || \
+	(cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch)
 
 lint-setup-cpp:
 ifneq (, $(shell which brew))

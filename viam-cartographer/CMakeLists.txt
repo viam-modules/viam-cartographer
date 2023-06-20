@@ -70,8 +70,12 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   cartographer
   ${GRPCPP_LIBRARIES}
   ${PCL_LIBRARIES}
-  absl::log_internal_check_op # should be included from protobuf, but isn't
 )
+
+# should be included from protobuf, but isn't in newer versions, so workaround here
+if (TARGET absl::log_internal_check_op)
+  target_link_libraries(${PROJECT_NAME} PUBLIC absl::log_internal_check_op)
+endif()
 
 # executables
 add_executable(carto_grpc_server src/main.cc)
