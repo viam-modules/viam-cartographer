@@ -2,15 +2,21 @@
 #ifndef VIAM_CARTO_FACADE_H
 #define VIAM_CARTO_FACADE_H
 
+#ifdef __cplusplus
 #include <atomic>
 #include <chrono>
 #include <shared_mutex>
 #include <string>
 
-#include "bstrlib.h"
-#include "bstrwrap.h"
 #include "cartographer/io/submap_painter.h"
 #include "map_builder.h"
+#else
+#include <stdbool.h>
+#include <stdint.h>
+#endif
+
+#include "bstrlib.h"
+#include "bstrwrap.h"
 
 // #include "../io/draw_trajectories.h"
 // #include "../io/file_handler.h"
@@ -76,7 +82,7 @@ typedef struct viam_carto_sensor_reading {
     bstring sensor;
     // TODO: change to void* and a size
     bstring sensor_reading;
-    uint64_t sensor_reading_time_unix_micro;
+    unsigned long long sensor_reading_time_unix_micro;
 } viam_carto_sensor_reading;
 
 typedef enum viam_carto_LIDAR_CONFIG {
@@ -86,7 +92,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 
 // return codes
 #define VIAM_CARTO_SUCCESS 0
-#define VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK 1
+#define VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK 1
 #define VIAM_CARTO_VC_INVALID 2
 #define VIAM_CARTO_OUT_OF_MEMORY 3
 #define VIAM_CARTO_DESTRUCTOR_ERROR 4
@@ -188,7 +194,7 @@ extern int viam_carto_terminate(viam_carto **vc  //
 //
 // On error: Returns a non 0 error code
 //
-// An expected error is VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK(1)
+// An expected error is VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK(1)
 //
 // On success: Returns 0, adds lidar reading to cartographer's data model
 extern int viam_carto_add_sensor_reading(viam_carto *vc,                      //
