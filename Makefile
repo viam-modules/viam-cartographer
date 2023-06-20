@@ -50,14 +50,6 @@ ensure-submodule-initialized:
 	grep -q viam-patched viam-cartographer/cartographer/CMakeLists.txt || \
 	(cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch)
 
-lint-setup-go:
-	go install \
-		github.com/edaniels/golinters/cmd/combined \
-		github.com/golangci/golangci-lint/cmd/golangci-lint \
-		github.com/rhysd/actionlint/cmd/actionlint
-
-lint-setup: lint-setup-go
-
 lint-cpp:
 	find . -type f -not -path \
 		-and ! -path '*viam-cartographer/cartographer*' \
@@ -67,14 +59,22 @@ lint-cpp:
 		-and \( -iname '*.h' -o -iname '*.cpp' -o -iname '*.cc' \) \
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
-lint-go:
+lint-go: $(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint
 	go vet -vettool=$(TOOL_BIN)/combined ./...
 	GOGC=50 golangci-lint run -v --fix --config=./etc/golangci.yaml
 	actionlint
 
+$(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint:
+	go install \
+		github.com/edaniels/golinters/cmd/combined \
+		github.com/golangci/golangci-lint/cmd/golangci-lint \
+		github.com/rhysd/actionlint/cmd/actionlint
+
 lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: ensure-submodule-initialized artifact-pull
+setup: install-dependencies ensure-submodule-initialized artifact-pull
+
+install-dependencies:
 ifneq (, $(shell which brew))
 	brew update
 	brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc clang-format
@@ -93,15 +93,11 @@ endif
 build: ensure-submodule-initialized buf build-module
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
-build-debug: EXTRA_CMAKE_FLAGS+=" -DCMAKE_BUILD_TYPE=Debug"
+build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
 build-debug: build
 
 build-module:
 	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
-
-install-lua-files:
-	sudo mkdir -p /usr/local/share/cartographer/lua_files/
-	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 
 test-cpp:
 	viam-cartographer/build/unit_tests -p -l all
@@ -125,6 +121,10 @@ test-go:
 	go test -race ./...
 
 test: test-cpp test-go
+
+install-lua-files:
+	sudo mkdir -p /usr/local/share/cartographer/lua_files/
+	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 
 install:
 	sudo rm -f /usr/local/bin/carto_grpc_server

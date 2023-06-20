@@ -64,7 +64,7 @@ jobs:
         git init
         git add .
         chown -R testbot:testbot .
-        sudo -u testbot bash -lc 'make lint-setup lint'
+        sudo -u testbot bash -lc 'sudo apt-get install -y clang-format && make lint'
         GEN_DIFF=$(git status -s)
 
         if [ -n "$GEN_DIFF" ]; then
@@ -73,28 +73,21 @@ jobs:
             exit 1
         fi
 
-    - name: make bufinstall buf setup setup-cpp-full-mod
-      uses: nick-fields/retry@v2
-      with:
-        timeout_minutes: 5
-        max_attempts: 3
-        retry_on: timeout
-        shell: bash
-        command: |
-          chown -R testbot:testbot .
-          sudo -u testbot bash -lc 'make bufinstall buf setup setup-cpp-full-mod'
+    - name: make setup
+      run: |
+        sudo -u testbot bash -lc 'make setup'
 
     - name: make build
       run: |
         sudo -u testbot bash -lc 'make build'
 
-    - name: make install-lua-files
-      run: |
-        sudo -u testbot bash -lc 'make install-lua-files'
-
     - name: make test
       run: |
         sudo -u testbot bash -lc 'make test'
+
+    - name: make install-lua-files
+      run: |
+        sudo -u testbot bash -lc 'make install-lua-files'
 
     - name: Copy carto_grpc_server binary
       if: matrix.platform == 'linux/amd64'
@@ -104,12 +97,12 @@ jobs:
     - name: Run viam-cartographer cartographer integration tests
       if: matrix.platform == 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'sudo go test -v -race -run TestCartographerIntegration'
+        sudo -u testbot bash -lc 'go test -v -race -run TestCartographerIntegration'
 
-    - name: make test-cpp-full-mod-valgrind
+    - name: make setup-cpp-full-mod test-cpp-full-mod-valgrind
       # Currently we only run valgrind on arm64 as x86
       # doesn't valgrind clean due to what appears to be a bug in GLOG
       # https://github.com/viamrobotics/viam-cartographer/actions/runs/5156238014/jobs/9287413446
       if: matrix.platform != 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'make test-cpp-full-mod-valgrind'
+        sudo -u testbot bash -lc 'make setup-cpp-full-mod test-cpp-full-mod-valgrind'
