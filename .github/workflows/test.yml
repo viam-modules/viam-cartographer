@@ -82,7 +82,6 @@ jobs:
         sudo -u testbot bash -lc 'make build'
 
     - name: make install
-      if: matrix.platform == 'linux/amd64'
       run: |
         sudo -u testbot bash -lc 'make install'
 
