@@ -20,15 +20,6 @@ artifact-pull: $(TOOL_BIN)/artifact
 $(TOOL_BIN)/artifact:
 	 go install go.viam.com/utils/artifact/cmd/artifact
 
-bufinstall:
-ifneq (, $(shell which brew))
-	brew install grpc openssl
-else ifneq (, $(shell which apt-get))
-	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev
-else
-	$(error "Unsupported system. Only apt and brew currently supported.")
-endif
-
 $(TOOL_BIN)/buf:
 	go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 
@@ -59,22 +50,13 @@ ensure-submodule-initialized:
 	grep -q viam-patched viam-cartographer/cartographer/CMakeLists.txt || \
 	(cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch)
 
-lint-setup-cpp:
-ifneq (, $(shell which brew))
-	brew install clang-format
-else ifneq (, $(shell which apt-get))
-	sudo apt-get install -y clang-format
-else
-	$(error "Unsupported system. Only apt and brew currently supported.")
-endif
-
 lint-setup-go:
 	go install \
 		github.com/edaniels/golinters/cmd/combined \
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		github.com/rhysd/actionlint/cmd/actionlint
 
-lint-setup: lint-setup-cpp lint-setup-go
+lint-setup: lint-setup-go
 
 lint-cpp:
 	find . -type f -not -path \
@@ -95,7 +77,7 @@ lint: ensure-submodule-initialized lint-cpp lint-go
 setup: ensure-submodule-initialized artifact-pull
 ifneq (, $(shell which brew))
 	brew update
-	brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc
+	brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc clang-format
 	brew link lua@5.3
 	brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl
 else ifneq (, $(shell which apt-get))
@@ -103,7 +85,7 @@ else ifneq (, $(shell which apt-get))
 	$(warning "Packages may be too old to work with this project.")
 	sudo apt-get update
 	sudo apt-get install -y cmake ninja-build libgmock-dev libboost-iostreams-dev liblua5.3-dev libcairo2-dev python3-sphinx \
-		libabsl-dev libceres-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc libpcl-dev
+		libabsl-dev libceres-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc libpcl-dev libgrpc-dev libgrpc++-dev clang-format
 else
 	$(error "Unsupported system. Only apt and brew currently supported.")
 endif
