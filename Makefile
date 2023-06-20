@@ -1,9 +1,11 @@
 BUILD_CHANNEL?=local
-TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
-PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):$(HOME)/go/bin/:${PATH}"
-GIT_REVISION = $(shell git rev-parse HEAD | tr -d '\n')
-TAG_VERSION?=$(shell git tag --points-at | sort -Vr | head -n1)
-GO_BUILD_LDFLAGS = -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
+GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
+TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
+GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+SHELL := /bin/env bash
+export PATH := $(TOOL_BIN):$(PATH)
+export GOBIN := $(TOOL_BIN)
 
 ARTIFACT="~/go/bin/artifact"
 
@@ -14,22 +16,27 @@ endif
 
 default: build
 
-artifact-pull:
-	PATH=${PATH_WITH_TOOLS} artifact pull
+artifact-pull: $(TOOL_BIN)/artifact
+	artifact pull
+
+$(TOOL_BIN)/artifact:
+	 go install go.viam.com/utils/artifact/cmd/artifact
 
 bufinstall:
 	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
 
-grpc/bin/buf:
-	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
+$(TOOL_BIN)/buf:
+	go install github.com/bufbuild/buf/cmd/buf@v1.8.0
 
-grpc/bin/protoc-gen-grpc-cpp:
-	which grpc_cpp_plugin && ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
+$(TOOL_BIN)/protoc-gen-grpc-cpp:
+	mkdir -p "$(TOOL_BIN)"
+	which grpc_cpp_plugin && ln -sf `which grpc_cpp_plugin` $(TOOL_BIN)/protoc-gen-grpc-cpp
 
-buf: grpc/bin/buf grpc/bin/protoc-gen-grpc-cpp 
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
+buf: $(TOOL_BIN)/buf $(TOOL_BIN)/protoc-gen-grpc-cpp
+	echo ${PATH}
+	buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
+	buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
+	buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
 
 clean:
 	rm -rf grpc bin viam-cartographer/build
@@ -54,7 +61,7 @@ else
 endif
 
 lint-setup-go:
-	GOBIN=`pwd`/$(TOOL_BIN) go install \
+	go install \
 		github.com/edaniels/golinters/cmd/combined \
 		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		github.com/rhysd/actionlint/cmd/actionlint
@@ -71,15 +78,14 @@ lint-cpp:
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
 lint-go:
-	go vet -vettool=$(TOOL_BIN)/combined ./...
-	GOGC=50 $(TOOL_BIN)/golangci-lint run -v --fix --config=./etc/golangci.yaml
-	PATH=$(PATH_WITH_TOOLS) actionlint
+	go vet -vettool=combined ./...
+	GOGC=50 golangci-lint run -v --fix --config=./etc/golangci.yaml
+	actionlint
 
 lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: ensure-submodule-initialized
+setup: ensure-submodule-initialized artifact-pull
 	viam-cartographer/scripts/setup_cartographer.sh
-	@make artifact-pull
 
 build: ensure-submodule-initialized buf build-module
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
