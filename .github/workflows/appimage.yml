@@ -87,7 +87,7 @@ jobs:
       with:
         headers: "cache-control: no-cache"
         path: 'etc/packaging/appimages/deploy/'
-        destination: 'packages.viam.com/apps/slam-servers/'
+        destination: 'packages.viam.com/apps/slam-servers/SMURF/'
         glob: '*'
         parent: false
         gzip: false
