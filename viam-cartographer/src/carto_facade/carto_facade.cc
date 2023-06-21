@@ -1,14 +1,11 @@
 // This is an experimental integration of cartographer into RDK.
 #include "carto_facade.h"
 
-#include <unistd.h>
-
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
 
 #include "glog/logging.h"
-#include "io.h"
 #include "map_builder.h"
 #include "util.h"
 
@@ -160,6 +157,7 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     config = from_viam_carto_config(c);
     algo_config = ac;
     path_to_internal_state = config.data_dir + "/internal_state";
+    b_continue_session = true;
 };
 
 void setup_filesystem(std::string data_dir,
@@ -201,12 +199,11 @@ std::vector<std::string> list_sorted_files_in_directory(std::string directory) {
     return file_paths;
 }
 
-std::string get_latest_internal_state_filename(
-    std::string path_to_internal_state) {
+std::string get_latest_internal_state_filename(std::string path_to_map) {
     std::string latest_internal_state_filename;
 
     std::vector<std::string> internal_state_filename =
-        list_sorted_files_in_directory(path_to_internal_state);
+        list_sorted_files_in_directory(path_to_map);
     bool found_internal_state = false;
     for (int i = internal_state_filename.size() - 1; i >= 0; i--) {
         if (internal_state_filename.at(i).find(".pbstream") !=
@@ -232,7 +229,7 @@ void CartoFacade::IOInit() {
                       "subdirectory";
         throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
     }
-    // Setup file system for saving internal state
+    // Setup file system for saving map
     setup_filesystem(config.data_dir, path_to_internal_state);
     action_mode =
         determine_action_mode(path_to_internal_state, config.map_rate_sec);
@@ -280,8 +277,7 @@ void CartoFacade::IOInit() {
     // see https://viam.atlassian.net/browse/RSDK-3553
     if (action_mode == ActionMode::UPDATING ||
         action_mode == ActionMode::LOCALIZING) {
-        // Check if there is an apriori map (internal state) in the
-        // path_to_internal_state directory
+        // Check if there is an apriori map in the path_to_map directory
         std::string latest_internal_state_filename =
             get_latest_internal_state_filename(path_to_internal_state);
         VLOG(1) << "latest_internal_state_filename: "
@@ -296,13 +292,13 @@ void CartoFacade::IOInit() {
             std::unique_lock optimization_lock{optimization_shared_mutex,
                                                std::defer_lock};
             optimization_lock.lock();
-            // Load apriori map (internal state)
+            // Load apriori map
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.LoadMapFromFile(latest_internal_state_filename,
                                         load_frozen_trajectory,
                                         algo_config.optimize_on_start);
         } else {
-            // Load apriori map (internal state)
+            // Load apriori map
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             map_builder.LoadMapFromFile(latest_internal_state_filename,
                                         load_frozen_trajectory,
@@ -556,78 +552,9 @@ int CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
     return VIAM_CARTO_SUCCESS;
 };
 
-int CartoFacade::Start() {
-    started = true;
-    StartSaveInternalState();
-    return VIAM_CARTO_SUCCESS;
-};
+int CartoFacade::Start() { return VIAM_CARTO_SUCCESS; };
 
-void CartoFacade::StartSaveInternalState() {
-    if (config.map_rate_sec == std::chrono::seconds(0)) {
-        return;
-    }
-    thread_save_internal_state = std::make_unique<std::thread>(
-        [&]() { this->SaveInternalStateOnInterval(); });
-}
-
-void CartoFacade::StopSaveInternalState() {
-    started = false;
-    if (config.map_rate_sec == std::chrono::seconds(0)) {
-        return;
-    }
-    thread_save_internal_state->join();
-}
-
-void CartoFacade::SaveInternalStateOnInterval() {
-    auto check_for_shutdown_interval_usec =
-        std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
-    while (started) {
-        auto start = std::chrono::high_resolution_clock::now();
-        // Sleep for config.map_rate_sec duration, but check frequently for
-        // shutdown
-        while (started) {
-            std::chrono::duration<double, std::milli> time_elapsed_msec =
-                std::chrono::high_resolution_clock::now() - start;
-            if (time_elapsed_msec >= config.map_rate_sec) {
-                VLOG(1) << "time_elapsed_msec >= config.map_rate_sec";
-                break;
-            }
-            if (config.map_rate_sec - time_elapsed_msec >=
-                check_for_shutdown_interval_usec) {
-                VLOG(1) << "config.map_rate_sec - time_elapsed_msec >= "
-                           "check_for_shutdown_interval_usec";
-                std::this_thread::sleep_for(check_for_shutdown_interval_usec);
-            } else {
-                VLOG(1) << "else";
-                std::this_thread::sleep_for(config.map_rate_sec -
-                                            time_elapsed_msec);
-                break;
-            }
-        }
-
-        // Breakout without saving if the session has ended
-
-        if (!started) {
-            LOG(INFO) << "Saving final optimized internal state";
-        }
-        std::time_t t = std::time(nullptr);
-        const std::string filename_with_timestamp =
-            viam::carto_facade::io::MakeFilenameWithTimestamp(
-                path_to_internal_state, t);
-
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.SaveMapToFile(true, filename_with_timestamp);
-        if (!started) {
-            LOG(INFO) << "Finished saving final optimized internal state";
-            break;
-        }
-    }
-}
-
-int CartoFacade::Stop() {
-    StopSaveInternalState();
-    return VIAM_CARTO_SUCCESS;
-};
+int CartoFacade::Stop() { return VIAM_CARTO_SUCCESS; };
 
 int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
     return VIAM_CARTO_SUCCESS;
@@ -640,12 +567,11 @@ viam::carto_facade::ActionMode determine_action_mode(
     std::vector<std::string> internal_state_filenames =
         list_sorted_files_in_directory(path_to_internal_state);
 
-    // Check if there is a *.pbstream internal state in the
-    // path_to_internal_state directory
+    // Check if there is a *.pbstream map in the path_to_map directory
     for (auto filename : internal_state_filenames) {
         if (filename.find(".pbstream") != std::string::npos) {
-            // There is an apriori map (internal state) present, so we're
-            // running either in updating or localization mode.
+            // There is an apriori map present, so we're running either in
+            // updating or localization mode.
             if (map_rate_sec.count() == 0) {
                 // This log line is needed by rdk integration tests.
                 LOG(INFO) << "Running in localization only mode";
@@ -657,9 +583,8 @@ viam::carto_facade::ActionMode determine_action_mode(
         }
     }
     if (map_rate_sec.count() == 0) {
-        LOG(ERROR)
-            << "set to localization mode (map_rate_sec = 0) but "
-               "couldn't find apriori map (internal state) to localize on";
+        LOG(ERROR) << "set to localization mode (map_rate_sec = 0) but "
+                      "couldn't find apriori map to localize on";
         throw VIAM_CARTO_SLAM_MODE_INVALID;
     }
     // This log line is needed by rdk integration tests.
@@ -752,39 +677,9 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_start(viam_carto *vc) {
-    if (vc == nullptr) {
-        return VIAM_CARTO_VC_INVALID;
-    }
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-    try {
-        cf->Start();
-    } catch (int err) {
-        return err;
-    } catch (std::exception &e) {
-        LOG(ERROR) << e.what();
-        return VIAM_CARTO_UNKNOWN_ERROR;
-    }
-    return VIAM_CARTO_SUCCESS;
-};
+extern int viam_carto_start(viam_carto *vc) { return VIAM_CARTO_SUCCESS; };
 
-extern int viam_carto_stop(viam_carto *vc) {
-    if (vc == nullptr) {
-        return VIAM_CARTO_VC_INVALID;
-    }
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-    try {
-        cf->Stop();
-    } catch (int err) {
-        return err;
-    } catch (std::exception &e) {
-        LOG(ERROR) << e.what();
-        return VIAM_CARTO_UNKNOWN_ERROR;
-    }
-    return VIAM_CARTO_SUCCESS;
-};
+extern int viam_carto_stop(viam_carto *vc) { return VIAM_CARTO_SUCCESS; };
 
 extern int viam_carto_terminate(viam_carto **ppVC) {
     viam::carto_facade::CartoFacade *cf =
@@ -843,6 +738,3 @@ extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r) {
     return VIAM_CARTO_SUCCESS;
 };
-
-// This function should ONLY be used to unit test the carto facade queue.
-extern void viam_carto_sleep_for_test() { sleep(2); }
