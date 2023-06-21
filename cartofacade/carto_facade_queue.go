@@ -30,9 +30,6 @@ const (
 	InternalState
 	// PointCloudMap can be used to represent the viam_carto_get_point_cloud_map in c.
 	PointCloudMap
-
-	// testType can be used to represent a test, it should not be used outside of unit testing.
-	testType
 )
 
 // InputType defines the type being provided as input to the work.
@@ -83,11 +80,6 @@ func (w *WorkItem) DoWork(
 		return q.Carto.GetInternalState()
 	case PointCloudMap:
 		return q.Carto.GetPointCloudMap()
-
-	// this case is for testing use ONLY.
-	case testType:
-		sleepForTest()
-		return map[string]bool{"finished": true}, nil
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 }
