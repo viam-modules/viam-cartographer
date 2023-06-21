@@ -31,7 +31,7 @@ const (
 	// PointCloudMap can be used to represent the viam_carto_get_point_cloud_map in c.
 	PointCloudMap
 
-	// testType can be used to represent a test.
+	// testType can be used to represent a test, it should not be used outside of unit testing.
 	testType
 )
 
@@ -43,9 +43,6 @@ const (
 	Reading InputType = iota
 	// Timestamp represents the timestamp input into c funcs.
 	Timestamp
-
-	// testInput represents a test input.
-	testInput
 )
 
 // WorkItem defines one piece of work that can be put on the queue.
@@ -86,8 +83,11 @@ func (w *WorkItem) DoWork(
 		return q.Carto.GetInternalState()
 	case PointCloudMap:
 		return q.Carto.GetPointCloudMap()
+
+	// this case is for testing use ONLY.
 	case testType:
-		return w.inputs[testInput], nil
+		sleepForTest()
+		return map[string]bool{"finished": true}, nil
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 }
@@ -115,7 +115,7 @@ func NewQueue(cartoLib *CartoLib, cartoCfg CartoConfig, cartoAlgoCfg CartoAlgoCo
 // HandleIncomingRequest puts incoming requests on the queue and consumes from queue.
 func (q *Queue) HandleIncomingRequest(ctx context.Context, workType WorkType, inputs map[InputType]interface{}) interface{} {
 	// Question: What is reasonable timeout period?
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
 
 	work := WorkItem{
@@ -128,12 +128,8 @@ func (q *Queue) HandleIncomingRequest(ctx context.Context, workType WorkType, in
 	select {
 	case q.WorkChannel <- work:
 		// wait until result is put on result queue (and timeout if needed)
-		select {
-		case result := <-work.Result:
-			return result
-		case <-ctx.Done():
-			return nil
-		}
+		result := <-work.Result
+		return result
 	case <-ctx.Done():
 		return nil
 	}
@@ -148,6 +144,8 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 		defer activeBackgroundWorkers.Done()
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case workToDo := <-q.WorkChannel:
 				result, err := workToDo.DoWork(q)
 				if err == nil {
@@ -155,8 +153,6 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 				} else {
 					workToDo.Result <- err
 				}
-			case <-ctx.Done():
-				return
 			}
 		}
 	})

@@ -271,6 +271,8 @@ extern int viam_carto_get_internal_state(
 extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r);
 
+extern void viam_carto_sleep_for_test();
+
 #ifdef __cplusplus
 }
 #endif

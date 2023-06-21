@@ -33,19 +33,19 @@ func getBadTestConfig() CartoConfig {
 
 func getTestAlgoConfig() CartoAlgoConfig {
 	return CartoAlgoConfig{
-		optimizeOnStart:      false,
-		optimizeEveryNNodes:  0,
-		numRangeData:         0,
-		missingDataRayLength: 0.0,
-		maxRange:             0.0,
-		minRange:             0.0,
-		maxSubmapsToKeep:     0,
-		freshSubmapsCount:    0,
-		minCoveredArea:       0.0,
-		minAddedSubmapsCount: 0,
-		occupiedSpaceWeight:  0.0,
-		translationWeight:    0.0,
-		rotationWeight:       0.0,
+		OptimizeOnStart:      false,
+		OptimizeEveryNNodes:  0,
+		NumRangeData:         0,
+		MissingDataRayLength: 0.0,
+		MaxRange:             0.0,
+		MinRange:             0.0,
+		MaxSubmapsToKeep:     0,
+		FreshSubmapsCount:    0,
+		MinCoveredArea:       0.0,
+		MinAddedSubmapsCount: 0,
+		OccupiedSpaceWeight:  0.0,
+		TranslationWeight:    0.0,
+		RotationWeight:       0.0,
 	}
 }
 

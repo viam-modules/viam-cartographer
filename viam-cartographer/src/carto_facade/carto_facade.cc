@@ -1,6 +1,8 @@
 // This is an experimental integration of cartographer into RDK.
 #include "carto_facade.h"
 
+#include <unistd.h>
+
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -841,3 +843,6 @@ extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r) {
     return VIAM_CARTO_SUCCESS;
 };
+
+// This function should ONLY be used to unit test the carto facade queue.
+extern void viam_carto_sleep_for_test() { sleep(2); }
