@@ -28,7 +28,6 @@ $(TOOL_BIN)/protoc-gen-grpc-cpp:
 	which grpc_cpp_plugin && ln -sf `which grpc_cpp_plugin` $(TOOL_BIN)/protoc-gen-grpc-cpp
 
 buf: $(TOOL_BIN)/buf $(TOOL_BIN)/protoc-gen-grpc-cpp
-	echo ${PATH}
 	buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
 	buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
 	buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
