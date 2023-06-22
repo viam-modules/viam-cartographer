@@ -8,12 +8,16 @@
 #include <cstring>
 #include <exception>
 #include <filesystem>
+#include <shared_mutex>
+#include <string>
 
 #include "glog/logging.h"
+#include "test_helpers.h"
 
 namespace tt = boost::test_tools;
 namespace fs = std::filesystem;
 namespace bfs = boost::filesystem;
+namespace help = viam::carto_facade::test_helpers;
 
 namespace viam {
 namespace carto_facade {
@@ -498,16 +502,116 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
                VIAM_CARTO_SUCCESS);
 
-    // AddSensorReading
-    viam_carto_sensor_reading sr;
-    sr.sensor = bfromcstr("my sensor");
-    sr.sensor_reading = bfromcstr("some invalid reading");
-    sr.sensor_reading_time_unix_micro = 10000;
-    BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
+    std::vector<std::vector<double>> points = {
+        {-0.001000, 0.002000, 0.005000, 16711938},
+        {0.582000, 0.012000, 0.000000, 16711938},
+        {0.007000, 0.006000, 0.001000, 16711938}};
+    // unregistered sensor
+    {
+        viam_carto_sensor_reading sr;
+        // must be they first sensor in the sensor list
+        sr.sensor = bfromcstr("never heard of it sensor");
+        std::string pcd = help::binary_pcd(points);
+        sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.sensor_reading != nullptr);
+        sr.sensor_reading_time_unix_micro = 10000;
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
 
-    BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
-               VIAM_CARTO_SUCCESS);
+    // non first sensor
+    {
+        viam_carto_sensor_reading sr;
+        // must be they first sensor in the sensor list
+        sr.sensor = bfromcstr("sensor_2");
+        std::string pcd = help::binary_pcd(points);
+        sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.sensor_reading != nullptr);
+        sr.sensor_reading_time_unix_micro = 10000;
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
 
+    // empty sensor reading
+    {
+        viam_carto_sensor_reading sr;
+        // must be they first sensor in the sensor list
+        sr.sensor = bfromcstr("sensor_1");
+        std::string pcd = "empty lidar reading";
+        // passing 0 as the second parameter makes the bstring empty
+        sr.sensor_reading = blk2bstr(pcd.c_str(), 0);
+        BOOST_TEST(sr.sensor_reading != nullptr);
+        sr.sensor_reading_time_unix_micro = 10000;
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_SENSOR_READING_EMPTY);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // invalid reading
+    {
+        viam_carto_sensor_reading sr;
+        // must be they first sensor in the sensor list
+        sr.sensor = bfromcstr("sensor_1");
+        std::string pcd = "invalid lidar reading";
+        sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.sensor_reading != nullptr);
+        sr.sensor_reading_time_unix_micro = 10000;
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_SENSOR_READING_INVALID);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // unable to aquire lock
+    {
+        viam_carto_sensor_reading sr;
+        // must be they first sensor in the sensor list
+        sr.sensor = bfromcstr("sensor_1");
+        std::string pcd = help::binary_pcd(points);
+        sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.sensor_reading != nullptr);
+        sr.sensor_reading_time_unix_micro = 10000;
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        std::lock_guard<std::mutex> lk(cf->map_builder_mutex);
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // ascii
+    {
+        viam_carto_sensor_reading sr;
+        sr.sensor = bfromcstr("sensor_1");
+        std::string pcd = help::ascii_pcd(points);
+        sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.sensor_reading != nullptr);
+        sr.sensor_reading_time_unix_micro = 10000;
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_SUCCESS);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // binary
+    {
+        viam_carto_sensor_reading sr;
+        sr.sensor = bfromcstr("sensor_1");
+        std::string pcd = help::binary_pcd(points);
+        sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.sensor_reading != nullptr);
+        sr.sensor_reading_time_unix_micro = 10000;
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_SUCCESS);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
     // GetPointCloudMap
     viam_carto_get_point_cloud_map_response mr;
     BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) == VIAM_CARTO_SUCCESS);

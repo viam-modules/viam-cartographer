@@ -848,7 +848,23 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
 
 extern int viam_carto_add_sensor_reading_destroy(
     viam_carto_sensor_reading *sr) {
-    return VIAM_CARTO_SUCCESS;
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+    // destroy sensor_reading
+    rc = bdestroy(sr->sensor_reading);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    sr->sensor_reading = nullptr;
+
+    // destroy sensor
+    rc = bdestroy(sr->sensor);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    sr->sensor = nullptr;
+
+    return return_code;
 };
 
 extern int viam_carto_get_position(viam_carto *vc,

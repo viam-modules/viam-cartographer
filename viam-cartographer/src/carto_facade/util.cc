@@ -64,9 +64,11 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
                 // to the rest of the case
                 // statement branches
                 std::size_t expected_size = data_idx + blob.data.size();
-                if (expected_size > pcd.length()) {
+                std::size_t size = pcd.length();
+                if (expected_size > size) {
                     LOG(ERROR) << "Corrupted PCD file. The file is smaller "
-                                  "than expected!";
+                                  "than expected! Expected: "
+                               << expected_size << "actual: " << size;
                     return -1;
                 }
                 const unsigned char *map =
@@ -87,11 +89,13 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
     }
 
     double total_time = tt.toc();
-    VLOG(1) << "[viam::carto_facade::io::read_pcd] Loaded as a "
-            << (blob.is_dense ? "dense" : "non-dense") << "blob in "
-            << total_time << "ms with " << blob.width * blob.height
-            << "points. Available dimensions: "
-            << pcl::getFieldsList(blob).c_str();
+    if (res == 0) {
+        VLOG(1) << "[viam::carto_facade::io::read_pcd] Loaded as a "
+                << (blob.is_dense ? "dense" : "non-dense") << "blob in "
+                << total_time << "ms with " << blob.width * blob.height
+                << "points. Available dimensions: "
+                << pcl::getFieldsList(blob).c_str();
+    }
     return res;
 }
 
