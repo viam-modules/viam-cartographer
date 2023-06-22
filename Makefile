@@ -109,9 +109,6 @@ setup-cpp-full-mod:
 test-cpp-full-mod-valgrind: build-debug
 	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io -t CartoFacadeCPPAPI
 
-demo: build-debug
-	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io_demo 
-
 # Linux only
 test-cpp-full-mod-gdb: build-debug
 	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
