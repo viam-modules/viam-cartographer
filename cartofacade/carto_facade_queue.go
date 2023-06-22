@@ -42,7 +42,8 @@ const (
 	Timestamp
 )
 
-// WorkItem defines one piece of work that can be put on the queue.
+// WorkItem defines a request that can be put on the queue
+// and contains a channel to which the response will be written.
 type WorkItem struct {
 	Result   chan interface{}
 	workType WorkType
