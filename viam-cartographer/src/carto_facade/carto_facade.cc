@@ -637,10 +637,10 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         throw VIAM_CARTO_SENSOR_READING_EMPTY;
     }
 
-    long long sensor_reading_time_unix_micro =
-        sr->sensor_reading_time_unix_micro;
-    auto [success, measurement] = viam::carto_facade::io::ToSensorData(
-        sensor_reading, sensor_reading_time_unix_micro);
+    int64_t sensor_reading_time_unix_micro = sr->sensor_reading_time_unix_micro;
+    auto [success, measurement] =
+        viam::carto_facade::util::carto_sensor_reading(
+            sensor_reading, sensor_reading_time_unix_micro);
     if (!success) {
         throw VIAM_CARTO_SENSOR_READING_INVALID;
     }
@@ -663,7 +663,7 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         }
         return;
     } else {
-        throw VIAM_CARTO_UNABLE_TO_AQUIRE_LOCK;
+        throw VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK;
     }
 };
 

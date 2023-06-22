@@ -82,7 +82,7 @@ typedef struct viam_carto_sensor_reading {
     bstring sensor;
     // TODO: change to void* and a size
     bstring sensor_reading;
-    long long sensor_reading_time_unix_micro;
+    int64_t sensor_reading_time_unix_micro;
 } viam_carto_sensor_reading;
 
 typedef enum viam_carto_LIDAR_CONFIG {

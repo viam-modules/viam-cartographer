@@ -24,9 +24,6 @@ static const std::string time_format = "%Y-%m-%dT%H:%M:%S.0000Z";
 // millisecond resolution.
 const std::string MakeFilenameWithTimestamp(std::string path_to_dir,
                                             std::time_t t);
-std::tuple<bool, cartographer::sensor::TimedPointCloudData> ToSensorData(
-    std::string sensor_reading, long long sensor_reading_time_unix_micro);
-
 // TimedPointCloudDataFromPCDBuilder creates a TimedPointCloudData object
 // from a PCD file.
 cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
