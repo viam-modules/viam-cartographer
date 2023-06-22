@@ -42,9 +42,27 @@ const (
 	Timestamp
 )
 
+// ResultType defines the type being provided as input to the work.
+type ResultType int64
+
+const (
+	// ByteSlice represents the go type []Byte.
+	ByteSlice InputType = iota
+	// PositionResponse represents the custom struct defined for getPosition responses.
+	PositionResponse
+	// Error represents the go type error.
+	Error
+)
+
+// Result defines the result of one piece of work that can be put on the result channel.
+type Result struct {
+	result     interface{}
+	resultType ResultType
+}
+
 // WorkItem defines one piece of work that can be put on the queue.
 type WorkItem struct {
-	Result   chan interface{}
+	Result   chan Result
 	workType WorkType
 	inputs   map[InputType]interface{}
 }
@@ -140,11 +158,7 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 				return
 			case workToDo := <-q.WorkChannel:
 				result, err := workToDo.DoWork(q)
-				if err == nil {
-					workToDo.Result <- result
-				} else {
-					workToDo.Result <- err
-				}
+				workToDo.Result <- Result{result: result, err: err}
 			}
 		}
 	})
