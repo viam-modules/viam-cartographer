@@ -835,6 +835,11 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
     if (vc == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
+
+    if (sr == nullptr) {
+        return VIAM_CARTO_SENSOR_READING_INVALID;
+    }
+
     viam::carto_facade::CartoFacade *cf =
         static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     try {

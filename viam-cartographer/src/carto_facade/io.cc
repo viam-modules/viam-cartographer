@@ -1,7 +1,7 @@
 // This is an experimental integration of cartographer into RDK.
 #include "io.h"
 
-#include <pcl/io/pcd_io.h>     // pcl::PCDReader
+#include <pcl/io/pcd_io.h>  // pcl::PCDReader
 #include <stdio.h>
 
 #include <boost/filesystem.hpp>

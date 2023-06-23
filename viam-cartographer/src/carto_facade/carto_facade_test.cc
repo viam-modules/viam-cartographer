@@ -506,7 +506,18 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         {-0.001000, 0.002000, 0.005000, 16711938},
         {0.582000, 0.012000, 0.000000, 16711938},
         {0.007000, 0.006000, 0.001000, 16711938}};
-    // unregistered sensor
+    // vc nullptr
+    {
+        BOOST_TEST(viam_carto_add_sensor_reading(nullptr, nullptr) ==
+                   VIAM_CARTO_VC_INVALID);
+    }
+
+    // viam_carto_sensor_reading nullptr
+    {
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, nullptr) ==
+                   VIAM_CARTO_SENSOR_READING_INVALID);
+    }
+
     {
         viam_carto_sensor_reading sr;
         // must be they first sensor in the sensor list
