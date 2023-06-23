@@ -65,12 +65,6 @@ type Response struct {
 	ResultType ResultType
 }
 
-// QueueInterface defines one piece of work that can be put on the queue.
-type QueueInterface interface {
-	Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) Response
-	StartBackgroundWorker(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup)
-}
-
 // Queue represents a queue to consume work from and enforce one call into C at a time.
 type Queue struct {
 	WorkChannel     chan WorkItem
