@@ -63,9 +63,27 @@ std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
 std::string to_std_string(bstring b_str) {
     int len = blength(b_str);
     char *tmp = bstr2cstr(b_str, 0);
+    if (tmp == NULL) {
+        throw VIAM_CARTO_OUT_OF_MEMORY;
+    }
     std::string std_str(tmp, len);
     bcstrfree(tmp);
     return std_str;
+}
+
+bstring to_bstring(std::string str) {
+    bstring bstr = blk2bstr(str.c_str(), str.length());
+    if (bstr == NULL) {
+        throw VIAM_CARTO_OUT_OF_MEMORY;
+    }
+    return bstr;
+}
+
+void free_bstring(bstring bstr) {
+    if (bdestroy(bstr) != BSTR_OK) {
+        throw VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    bstr = nullptr;
 }
 
 void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
@@ -84,9 +102,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
     for (int i = 0; i < vcc.sensors_len; i++) {
         c.sensors.push_back(to_std_string(vcc.sensors[i]));
     }
-
     c.data_dir = to_std_string(vcc.data_dir);
-    c.component_reference = to_std_string(vcc.component_reference);
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.lidar_config = vcc.lidar_config;
     if (c.sensors.size() == 0) {
@@ -98,6 +114,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
     if (vcc.map_rate_sec < 0) {
         throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
     }
+    c.component_reference = c.sensors[0];
     if (c.component_reference.empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
     }
@@ -531,19 +548,30 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
 }
 
 int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
-    bstring cr = bfromcstr("C++ component reference");
-    r->x = 100;
-    r->y = 200;
-    r->z = 300;
-    r->o_x = 400;
-    r->o_y = 500;
-    r->o_z = 600;
-    r->imag = 700;
-    r->jmag = 800;
-    r->kmag = 900;
-    r->theta = 1000;
-    r->real = 1100;
-    r->component_reference = cr;
+    cartographer::transform::Rigid3d global_pose;
+    {
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        global_pose = latest_global_pose;
+    }
+
+    auto pos_vector = global_pose.translation();
+    auto pos_quat = global_pose.rotation();
+
+    r->x = pos_vector.x() * 1000;
+    r->y = pos_vector.y() * 1000;
+    r->z = pos_vector.z() * 1000;
+    r->real = pos_quat.w();
+    r->imag = pos_quat.x();
+    r->jmag = pos_quat.y();
+    r->kmag = pos_quat.z();
+    r->component_reference = to_bstring(config.component_reference);
+    // currently unset
+    r->o_x = 0;
+    r->o_y = 0;
+    r->o_z = 0;
+    r->theta = 0;
+    r->real = 0;
+
     return VIAM_CARTO_SUCCESS;
 };
 
@@ -629,9 +657,9 @@ int CartoFacade::Stop() {
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     std::string sensor = to_std_string(sr->sensor);
-    if (config.sensors[0] != sensor) {
+    if (config.component_reference != sensor) {
         VLOG(1) << "expected sensor: " << sensor << " to be "
-                << config.sensors[0];
+                << config.component_reference;
         throw VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST;
     }
     std::string sensor_reading = to_std_string(sr->sensor_reading);

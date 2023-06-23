@@ -135,7 +135,6 @@ typedef struct viam_carto_config {
     int sensors_len;
     int map_rate_sec;
     bstring data_dir;
-    bstring component_reference;
     viam_carto_LIDAR_CONFIG lidar_config;
 } viam_carto_config;
 
