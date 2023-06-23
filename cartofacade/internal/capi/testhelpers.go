@@ -4,7 +4,7 @@ import (
 	"os"
 )
 
-// GetTestConfig gets a sample config for testing purposes
+// GetTestConfig gets a sample config for testing purposes.
 func GetTestConfig() (CartoConfig, string, error) {
 	dir, err := os.MkdirTemp("", "slam-test")
 	if err != nil {
@@ -20,7 +20,7 @@ func GetTestConfig() (CartoConfig, string, error) {
 	}, dir, nil
 }
 
-// GetBadTestConfig gets a sample config for testing purposes that will cause a failure
+// GetBadTestConfig gets a sample config for testing purposes that will cause a failure.
 func GetBadTestConfig() CartoConfig {
 	return CartoConfig{
 		Sensors:     []string{"rplidar", "imu"},
@@ -28,7 +28,7 @@ func GetBadTestConfig() CartoConfig {
 	}
 }
 
-// GetTestAlgoConfig gets a sample algo config for testing purposes
+// GetTestAlgoConfig gets a sample algo config for testing purposes.
 func GetTestAlgoConfig() CartoAlgoConfig {
 	return CartoAlgoConfig{
 		optimizeOnStart:      false,

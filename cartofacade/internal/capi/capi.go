@@ -1,4 +1,4 @@
-// Package package capi provides an api to call into c code
+// Package capi provides an api to call into c code
 //
 //nolint:lll
 package capi
