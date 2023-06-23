@@ -1,12 +1,15 @@
 package cartofacade
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"testing"
 	"time"
 
+	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
+	"go.viam.com/utils/artifact"
 )
 
 func getTestConfig(sensor string) (CartoConfig, string, error) {
@@ -161,6 +164,31 @@ func TestCGoAPI(t *testing.T) {
 		err = vc.AddSensorReading("mysensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_INVALID")
+
+		// read PCD
+		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
+		test.That(t, err, test.ShouldBeNil)
+		buf := new(bytes.Buffer)
+		pc, err := pointcloud.ReadPCD(file)
+		test.That(t, err, test.ShouldBeNil)
+
+		// test invalid addSensorReading: valid reading binary
+		err = pointcloud.ToPCD(pc, buf, 1)
+		test.That(t, err, test.ShouldBeNil)
+		err = vc.AddSensorReading("mysensor", buf.Bytes(), timestamp)
+		test.That(t, err, test.ShouldBeNil)
+
+		// test invalid addSensorReading: valid reading ascii
+		err = pointcloud.ToPCD(pc, buf, 0)
+		test.That(t, err, test.ShouldBeNil)
+		err = vc.AddSensorReading("mysensor", buf.Bytes(), timestamp)
+		test.That(t, err, test.ShouldBeNil)
+
+		// confirm the pointcloud package still doesn't support binary compressed
+		// pointclouds. If it does, we need to implement:
+		err = pointcloud.ToPCD(pc, buf, 2)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
 
 		// test getPosition
 		holder, err := vc.GetPosition()
