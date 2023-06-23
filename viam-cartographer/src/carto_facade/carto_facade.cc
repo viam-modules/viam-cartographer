@@ -60,7 +60,7 @@ std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
     return os;
 }
 
-std::string std_string_from_bstring(bstring b_str) {
+std::string to_std_string(bstring b_str) {
     int len = blength(b_str);
     char *tmp = bstr2cstr(b_str, 0);
     std::string std_str(tmp, len);
@@ -82,11 +82,11 @@ void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
 config from_viam_carto_config(viam_carto_config vcc) {
     struct config c;
     for (int i = 0; i < vcc.sensors_len; i++) {
-        c.sensors.push_back(std_string_from_bstring(vcc.sensors[i]));
+        c.sensors.push_back(to_std_string(vcc.sensors[i]));
     }
 
-    c.data_dir = std_string_from_bstring(vcc.data_dir);
-    c.component_reference = std_string_from_bstring(vcc.component_reference);
+    c.data_dir = to_std_string(vcc.data_dir);
+    c.component_reference = to_std_string(vcc.component_reference);
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.lidar_config = vcc.lidar_config;
     if (c.sensors.size() == 0) {
@@ -627,8 +627,46 @@ int CartoFacade::Stop() {
     return VIAM_CARTO_SUCCESS;
 };
 
-int CartoFacade::AddSensorReading(viam_carto_sensor_reading *sr) {
-    return VIAM_CARTO_SUCCESS;
+void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
+    std::string sensor = to_std_string(sr->sensor);
+    if (config.sensors[0] != sensor) {
+        VLOG(1) << "expected sensor: " << sensor << " to be "
+                << config.sensors[0];
+        throw VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST;
+    }
+    std::string sensor_reading = to_std_string(sr->sensor_reading);
+    if (sensor_reading.length() == 0) {
+        throw VIAM_CARTO_SENSOR_READING_EMPTY;
+    }
+
+    int64_t sensor_reading_time_unix_micro = sr->sensor_reading_time_unix_micro;
+    auto [success, measurement] =
+        viam::carto_facade::util::carto_sensor_reading(
+            sensor_reading, sensor_reading_time_unix_micro);
+    if (!success) {
+        throw VIAM_CARTO_SENSOR_READING_INVALID;
+    }
+
+    cartographer::transform::Rigid3d tmp_global_pose;
+    bool update_latest_global_pose = false;
+
+    if (map_builder_mutex.try_lock()) {
+        map_builder.AddSensorData(measurement);
+        auto local_poses = map_builder.GetLocalSlamResultPoses();
+        if (local_poses.size() > 0) {
+            update_latest_global_pose = true;
+            VLOG(1) << "local_poses.size(): " << local_poses.size();
+            tmp_global_pose = map_builder.GetGlobalPose(local_poses.back());
+        }
+        map_builder_mutex.unlock();
+        if (update_latest_global_pose) {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
+        }
+        return;
+    } else {
+        throw VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK;
+    }
 };
 
 viam::carto_facade::ActionMode determine_action_mode(
@@ -794,12 +832,46 @@ extern int viam_carto_terminate(viam_carto **ppVC) {
 
 extern int viam_carto_add_sensor_reading(viam_carto *vc,
                                          const viam_carto_sensor_reading *sr) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (sr == nullptr) {
+        return VIAM_CARTO_SENSOR_READING_INVALID;
+    }
+
+    viam::carto_facade::CartoFacade *cf =
+        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+    try {
+        cf->AddSensorReading(sr);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
     return VIAM_CARTO_SUCCESS;
 };
 
 extern int viam_carto_add_sensor_reading_destroy(
     viam_carto_sensor_reading *sr) {
-    return VIAM_CARTO_SUCCESS;
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+    // destroy sensor_reading
+    rc = bdestroy(sr->sensor_reading);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    sr->sensor_reading = nullptr;
+
+    // destroy sensor
+    rc = bdestroy(sr->sensor);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    sr->sensor = nullptr;
+
+    return return_code;
 };
 
 extern int viam_carto_get_position(viam_carto *vc,

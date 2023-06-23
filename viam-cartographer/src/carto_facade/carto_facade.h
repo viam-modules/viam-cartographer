@@ -82,7 +82,7 @@ typedef struct viam_carto_sensor_reading {
     bstring sensor;
     // TODO: change to void* and a size
     bstring sensor_reading;
-    unsigned long long sensor_reading_time_unix_micro;
+    int64_t sensor_reading_time_unix_micro;
 } viam_carto_sensor_reading;
 
 typedef enum viam_carto_LIDAR_CONFIG {
@@ -110,6 +110,9 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE 16
 #define VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR 17
 #define VIAM_CARTO_MAP_CREATION_ERROR 18
+#define VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST 19
+#define VIAM_CARTO_SENSOR_READING_EMPTY 20
+#define VIAM_CARTO_SENSOR_READING_INVALID 21
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -341,7 +344,7 @@ class CartoFacade {
     // maximumGRPCByteChunkSize
     int GetInternalState(viam_carto_get_internal_state_response *r);
 
-    int AddSensorReading(viam_carto_sensor_reading *sr);
+    void AddSensorReading(const viam_carto_sensor_reading *sr);
 
     int Start();
 
@@ -428,9 +431,8 @@ class CartoFacade {
     std::unique_ptr<std::thread> thread_save_internal_state;
 
     std::mutex viam_response_mutex;
-    // cartographer::transform::Rigid3d latest_global_pose =
-    //     cartographer::transform::Rigid3d();
-
+    cartographer::transform::Rigid3d latest_global_pose =
+        cartographer::transform::Rigid3d();
     // The latest_pointcloud_map variable is used enable GetPointCloudMap to
     // send the most recent map out while cartographer works on creating an
     // optimized map. It is only updated right before the optimization is

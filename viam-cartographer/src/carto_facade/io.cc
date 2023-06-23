@@ -1,15 +1,13 @@
 // This is an experimental integration of cartographer into RDK.
 #include "io.h"
 
-#include <pcl/io/pcd_io.h>
-#include <pcl/point_types.h>
+#include <pcl/io/pcd_io.h>  // pcl::PCDReader
 #include <stdio.h>
 
 #include <boost/filesystem.hpp>
 #include <fstream>  // std::ifstream
 #include <iomanip>
 #include <iostream>
-#include <string>
 
 #include "glog/logging.h"
 
@@ -95,7 +93,7 @@ double ReadTimeFromTimestamp(std::string timestamp) {
         double sub_sec = 0;
         try {
             sub_sec = (double)std::stof(timestamp.substr(sub_sec_index), &sz);
-        } catch (std::exception& e) {
+        } catch (std::exception &e) {
             LOG(FATAL) << e.what();
             throw std::runtime_error(
                 "could not extract sub seconds from timestamp: " + timestamp);
