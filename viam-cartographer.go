@@ -205,6 +205,8 @@ type cartographerService struct {
 	slamProcessLogReader         io.ReadCloser
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
+
+	mapTimestamp time.Time
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -231,7 +233,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
-
+	cartoSvc.mapTimestamp = time.Now()
 	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
@@ -242,6 +244,23 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 	defer span.End()
 
 	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
+}
+
+// GetLatestMapInfo forwards the request for timestamp data to the slam library's gRPC service.
+// Once a response is received, it is converted into a time.Time object.
+func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
+	defer span.End()
+
+	req := &pb.GetLatestMapInfoRequest{Name: cartoSvc.Name().ShortName()}
+
+	resp, err := cartoSvc.clientAlgo.GetLatestMapInfo(ctx, req)
+	if err != nil {
+		return time.Time{}, errors.Wrap(err, "error getting latest map info")
+	}
+	latestMapTimestamp := resp.LastMapUpdate.AsTime()
+
+	return latestMapTimestamp, err
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
