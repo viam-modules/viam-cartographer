@@ -1,4 +1,4 @@
-package cartofacade
+package capi
 
 import (
 	"errors"
@@ -9,49 +9,9 @@ import (
 	"go.viam.com/test"
 )
 
-func getTestConfig() (CartoConfig, string, error) {
-	dir, err := os.MkdirTemp("", "slam-test")
-	if err != nil {
-		return CartoConfig{}, "", err
-	}
-
-	return CartoConfig{
-		Sensors:            []string{"rplidar", "imu"},
-		MapRateSecond:      5,
-		DataDir:            dir,
-		ComponentReference: "component",
-		LidarConfig:        twoD,
-	}, dir, nil
-}
-
-func getBadTestConfig() CartoConfig {
-	return CartoConfig{
-		Sensors:     []string{"rplidar", "imu"},
-		LidarConfig: twoD,
-	}
-}
-
-func getTestAlgoConfig() CartoAlgoConfig {
-	return CartoAlgoConfig{
-		optimizeOnStart:      false,
-		optimizeEveryNNodes:  0,
-		numRangeData:         0,
-		missingDataRayLength: 0.0,
-		maxRange:             0.0,
-		minRange:             0.0,
-		maxSubmapsToKeep:     0,
-		freshSubmapsCount:    0,
-		minCoveredArea:       0.0,
-		minAddedSubmapsCount: 0,
-		occupiedSpaceWeight:  0.0,
-		translationWeight:    0.0,
-		rotationWeight:       0.0,
-	}
-}
-
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go", func(t *testing.T) {
-		cfg, dir, err := getTestConfig()
+		cfg, dir, err := GetTestConfig()
 		test.That(t, err, test.ShouldBeNil)
 		defer os.RemoveAll(dir)
 
@@ -122,20 +82,20 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg := getBadTestConfig()
-		algoCfg := getTestAlgoConfig()
-		vc, err := New(cfg, algoCfg, pvcl)
+		cfg := GetBadTestConfig()
+		algoCfg := GetTestAlgoConfig()
+		vc, err := New(cfg, algoCfg, &pvcl)
 
 		// initialize viam_carto incorrectly
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
-		cfg, dir, err := getTestConfig()
+		cfg, dir, err := GetTestConfig()
 		test.That(t, err, test.ShouldBeNil)
 		defer os.RemoveAll(dir)
 
-		algoCfg = getTestAlgoConfig()
-		vc, err = New(cfg, algoCfg, pvcl)
+		algoCfg = GetTestAlgoConfig()
+		vc, err = New(cfg, algoCfg, &pvcl)
 
 		// initialize viam_carto correctly
 		test.That(t, err, test.ShouldBeNil)

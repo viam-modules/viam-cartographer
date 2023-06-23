@@ -21,6 +21,8 @@ type SLAMServiceClient struct {
 		v1.SLAMService_GetInternalStateClient, error)
 	DoCommandFunc func(ctx context.Context, in *commonv1.DoCommandRequest, opts ...grpc.CallOption) (
 		*commonv1.DoCommandResponse, error)
+
+	StartFunc func() error
 }
 
 // GetPosition calls the injected GetPositionFunc or the real version.
