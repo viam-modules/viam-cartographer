@@ -32,6 +32,12 @@ void write_int_to_buffer_in_bytes(std::string &buffer, int d) {
     }
 }
 
+// based on pcl::PCDReader::read
+// https://pointclouds.org/documentation/classpcl_1_1_p_c_d_reader.html#ac9451748db653fd0901a0c4b6b750552
+// Doesn't implemented binary_compressed yet
+// as RDK doesn't yet support that format of PCD.
+// Once it does, we should add support to this function.
+// https://viam.atlassian.net/browse/RSDK-3753
 int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
     pcl::PCDReader p;
 

@@ -186,6 +186,7 @@ func TestCGoAPI(t *testing.T) {
 
 		// confirm the pointcloud package still doesn't support binary compressed
 		// pointclouds. If it does, we need to implement:
+		// https://viam.atlassian.net/browse/RSDK-3753
 		err = pointcloud.ToPCD(pc, buf, 2)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
