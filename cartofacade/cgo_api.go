@@ -379,7 +379,7 @@ func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition
 func toSensorReading(readings []byte, timestamp time.Time) C.viam_carto_sensor_reading {
 	sr := C.viam_carto_sensor_reading{}
 	sr.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
-	sr.sensor_reading_time_unix_micro = C.ulonglong(timestamp.UnixMicro())
+	sr.sensor_reading_time_unix_micro = C.int64_t(timestamp.UnixMicro())
 	return sr
 }
 
