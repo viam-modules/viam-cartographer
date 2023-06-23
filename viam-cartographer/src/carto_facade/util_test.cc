@@ -109,8 +109,6 @@ BOOST_AUTO_TEST_CASE(carto_sensor_reading_too_many_points_binary_success) {
                cartographer::common::FromUniversal(16409988000001121));
 }
 
-// The lib we use will parse as many points as the header specifies
-// and ignore any others
 BOOST_AUTO_TEST_CASE(carto_sensor_reading_wrong_shape_ascii_failure) {
     std::vector<std::vector<double>> wrong_point_shape = {
         {0.007000, 0.006000, 0.001000},
