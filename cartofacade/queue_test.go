@@ -1,4 +1,4 @@
-package cartofacade
+package cartofacade_test
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	cartofacade "github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/cartofacade/inject"
 	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade/internal/capi"
 	"go.viam.com/test"
@@ -34,14 +35,13 @@ func TestRequest(t *testing.T) {
 			return nil
 		}
 
-		queue := NewQueue(&cartoLib, config, algoConfig)
+		queue := cartofacade.NewQueue(&cartoLib, config, algoConfig)
 		queue.Carto = &carto
 		queue.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
 
-		result, err := queue.Request(cancelCtx, Start, map[InputType]interface{}{}, 5*time.Second)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, result.result, test.ShouldBeNil)
-		test.That(t, result.resultType, test.ShouldEqual, Nil)
+		resp := queue.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		test.That(t, resp.ResultType, test.ShouldResemble, cartofacade.Nil)
+		test.That(t, resp.Result, test.ShouldBeNil)
 
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
@@ -62,13 +62,13 @@ func TestRequest(t *testing.T) {
 			return testErr
 		}
 
-		queue := NewQueue(&cartoLib, config, algoConfig)
+		queue := cartofacade.NewQueue(&cartoLib, config, algoConfig)
 		queue.Carto = &carto
 		queue.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
 
-		result, err := queue.Request(cancelCtx, Start, map[InputType]interface{}{}, 5*time.Second)
-		test.That(t, err, test.ShouldResemble, testErr)
-		test.That(t, result, test.ShouldResemble, Result{})
+		resp := queue.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		test.That(t, resp.ResultType, test.ShouldEqual, cartofacade.Error)
+		test.That(t, resp.Result.(error), test.ShouldResemble, testErr)
 
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
@@ -89,15 +89,16 @@ func TestRequest(t *testing.T) {
 			return testErr
 		}
 
-		queue := NewQueue(&cartoLib, config, algoConfig)
+		queue := cartofacade.NewQueue(&cartoLib, config, algoConfig)
 		queue.Carto = &carto
 		queue.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
 
-		result, err := queue.Request(cancelCtx, Start, map[InputType]interface{}{}, 5*time.Second)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to write request to cartofacade"))
-		test.That(t, result, test.ShouldResemble, Result{})
+		resp := queue.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		testErr = errors.New("timeout has occurred while trying to write request to cartofacade")
+		test.That(t, resp.ResultType, test.ShouldEqual, cartofacade.Error)
+		test.That(t, resp.Result.(error), test.ShouldResemble, testErr)
 
 	})
 

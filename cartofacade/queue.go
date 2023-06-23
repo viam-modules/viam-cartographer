@@ -59,10 +59,10 @@ const (
 	Error
 )
 
-// Result defines the result of one piece of work that can be put on the result channel.
-type Result struct {
-	result     interface{}
-	resultType ResultType
+// Response defines the result of one piece of work that can be put on the result channel.
+type Response struct {
+	Result     interface{}
+	ResultType ResultType
 }
 
 // Queue represents a queue to consume work from and enforce one call into C at a time.
@@ -81,7 +81,7 @@ type WorkItemInterface interface {
 
 // WorkItem defines one piece of work that can be put on the queue.
 type WorkItem struct {
-	Result   chan Result
+	Result   chan Response
 	workType WorkType
 	inputs   map[InputType]interface{}
 }
@@ -138,12 +138,12 @@ func (w *WorkItem) DoWork(
 }
 
 // Request puts incoming requests on the queue and consumes from queue.
-func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) (Result, error) {
+func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) Response {
 	ctx, cancel := context.WithTimeout(ctxParent, timeout)
 	defer cancel()
 
 	work := WorkItem{
-		Result:   make(chan Result),
+		Result:   make(chan Response),
 		workType: workType,
 		inputs:   inputs,
 	}
@@ -153,16 +153,15 @@ func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map
 	case q.WorkChannel <- work:
 		select {
 		case result := <-work.Result:
-			if result.resultType == Error {
-				return Result{}, result.result.(error)
-			}
-			return result, nil
+			return result
 		case <-ctx.Done():
 			fmt.Println("Request: ctx.Done()")
-			return Result{}, errors.New("timeout has occurred while trying to read request from cartofacade")
+			err := errors.New("timeout has occurred while trying to read request from cartofacade")
+			return Response{Result: err, ResultType: Error}
 		}
 	case <-ctx.Done():
-		return Result{}, errors.New("timeout has occurred while trying to write request to cartofacade")
+		err := errors.New("timeout has occurred while trying to write request to cartofacade")
+		return Response{Result: err, ResultType: Error}
 	}
 }
 
@@ -180,9 +179,9 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 			case workToDo := <-q.WorkChannel:
 				result, resultType, err := workToDo.DoWork(q)
 				if err != nil {
-					workToDo.Result <- Result{result: err, resultType: Error}
+					workToDo.Result <- Response{Result: err, ResultType: Error}
 				} else {
-					workToDo.Result <- Result{result: result, resultType: resultType}
+					workToDo.Result <- Response{Result: result, ResultType: resultType}
 				}
 			}
 		}
