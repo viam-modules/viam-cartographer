@@ -133,7 +133,7 @@ func (vcl *CartoLib) Terminate() error {
 }
 
 // New calls viam_carto_init and returns a pointer to a viam carto object.
-func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
+func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, error) {
 	var pVc *C.viam_carto
 
 	vcc, err := getConfig(cfg)
@@ -143,7 +143,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 
 	vcac := toAlgoConfig(acfg)
 
-	status := C.viam_carto_init(&pVc, vcl.value, vcc, vcac)
+	status := C.viam_carto_init(&pVc, vcl.(*CartoLib).value, vcc, vcac)
 	if err := toError(status); err != nil {
 		return Carto{}, err
 	}
