@@ -8,7 +8,6 @@ import (
 	"time"
 
 	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade/internal/capi"
-	goutils "go.viam.com/utils"
 )
 
 // WorkType defines the grpc call that is being made.
@@ -95,7 +94,6 @@ func NewQueue(cartoLib cgoApi.CartoLibInterface, cartoCfg cgoApi.CartoConfig, ca
 		CartoConfig:     cartoCfg,
 		CartoAlgoConfig: cartoAlgoCfg,
 	}
-
 }
 
 // DoWork provides the logic to call the correct cgo functions with the correct input.
@@ -143,7 +141,7 @@ func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map
 	defer cancel()
 
 	work := WorkItem{
-		Result:   make(chan Response),
+		Result:   make(chan Response, 1),
 		workType: workType,
 		inputs:   inputs,
 	}
@@ -155,7 +153,6 @@ func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map
 		case result := <-work.Result:
 			return result
 		case <-ctx.Done():
-			fmt.Println("Request: ctx.Done()")
 			err := errors.New("timeout has occurred while trying to read request from cartofacade")
 			return Response{Result: err, ResultType: Error}
 		}
@@ -169,7 +166,7 @@ func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map
 // onto the queue and consuming from the queue.
 func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
-	goutils.PanicCapturingGo(func() {
+	go func() {
 		defer activeBackgroundWorkers.Done()
 
 		for {
@@ -185,5 +182,5 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 				}
 			}
 		}
-	})
+	}()
 }

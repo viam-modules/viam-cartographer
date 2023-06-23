@@ -1,4 +1,4 @@
-// Package cartofacade provides an api to call into c code
+// Package package capi provides an api to call into c code
 //
 //nolint:lll
 package capi
@@ -38,6 +38,7 @@ type CartoLib struct {
 	value *C.viam_carto_lib
 }
 
+// CartoLibInterface describes the method signatures that CartoLib must implement
 type CartoLibInterface interface {
 	Terminate() error
 }
@@ -47,6 +48,7 @@ type Carto struct {
 	value *C.viam_carto
 }
 
+// CartoInterface describes the method signatures that Carto must implement
 type CartoInterface interface {
 	Start() error
 	Stop() error
