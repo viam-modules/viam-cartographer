@@ -105,7 +105,7 @@ func NewLib(miniloglevel, verbose int) (CartoLib, error) {
 		return CartoLib{}, err
 	}
 
-	vcl := CartoLib{value: (pVcl)}
+	vcl := CartoLib{value: pVcl}
 
 	return vcl, nil
 }
