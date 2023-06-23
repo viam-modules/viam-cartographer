@@ -139,7 +139,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 	if status != C.BSTR_OK {
 		return Carto{}, errors.New("unable to free memory for sensor list")
 	}
-	return Carto{value: (pVc)}, nil
+	return Carto{value: pVc}, nil
 }
 
 // Start is a wrapper for viam_carto_start
