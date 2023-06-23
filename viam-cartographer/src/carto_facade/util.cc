@@ -116,7 +116,7 @@ carto_sensor_reading(std::string sensor_reading,
         LOG(ERROR) << "exception thrown during read_pcd: " << e.what();
         return {false, point_cloud};
     }
-    LOG(INFO) << "read_pcd succeeded";
+    VLOG(1) << "read_pcd succeeded";
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZRGB>);
     pcl::fromPCLPointCloud2(blob, *cloud);
