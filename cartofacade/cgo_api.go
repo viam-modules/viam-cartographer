@@ -12,12 +12,6 @@ package cartofacade
 
 	#include "../viam-cartographer/src/carto_facade/carto_facade.h"
 
-	viam_carto_lib* alloc_viam_carto_lib() { return (viam_carto_lib*) malloc(sizeof(viam_carto_lib)); }
-	void free_viam_carto_lib(viam_carto_lib* p) { free(p); }
-
-	viam_carto* alloc_viam_carto() { return (viam_carto*) malloc(sizeof(viam_carto)); }
-	void free_viam_carto(viam_carto* p) { free(p); }
-
 	bstring* alloc_bstring_array(size_t len) { return (bstring*) malloc(len * sizeof(bstring)); }
 	int free_bstring_array(bstring* p, size_t len) {
 		int result;
@@ -104,28 +98,14 @@ type CartoAlgoConfig struct {
 
 // NewLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
 func NewLib(miniloglevel, verbose int) (CartoLib, error) {
-	pVcl := C.alloc_viam_carto_lib()
-	if pVcl == nil {
-		return CartoLib{}, errors.New("unable to allocate memory for viam carto lib")
-	}
-	defer C.free_viam_carto_lib(pVcl)
+	var pVcl *C.viam_carto_lib
 
-	ppVcl := (**C.viam_carto_lib)(unsafe.Pointer(&pVcl))
-	/*
-		Question: what is going on here? are we not getting correct amount of indirection?
-					fmt.Printf("%#v\n", pVcl) = &cartofacade._Ctype_struct_viam_carto_lib{minloglevel:0, verbose:0}
-					fmt.Println(&pVcl) = 0x14000128078
-					fmt.Println(goPtr) = 0x600001ee8000
-					// ppVcl := (**C.viam_carto_lib)(goPtr)
-					fmt.Println(ppVcl) = 0x600001ee8000
-	*/
-
-	status := C.viam_carto_lib_init(ppVcl, C.int(miniloglevel), C.int(verbose))
+	status := C.viam_carto_lib_init(&pVcl, C.int(miniloglevel), C.int(verbose))
 	if err := toError(status); err != nil {
 		return CartoLib{}, err
 	}
 
-	vcl := CartoLib{value: (*ppVcl)}
+	vcl := CartoLib{value: (pVcl)}
 
 	return vcl, nil
 }
@@ -141,13 +121,7 @@ func (vcl *CartoLib) Terminate() error {
 
 // New calls viam_carto_init and returns a pointer to a viam carto object.
 func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
-	pVc := C.alloc_viam_carto()
-	if pVc == nil {
-		return Carto{}, errors.New("unable to allocate memory for viam carto")
-	}
-	defer C.free_viam_carto(pVc)
-
-	ppVc := (**C.viam_carto)(unsafe.Pointer(&pVc))
+	var pVc *C.viam_carto
 
 	vcc, err := getConfig(cfg)
 	if err != nil {
@@ -156,7 +130,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 
 	vcac := toAlgoConfig(acfg)
 
-	status := C.viam_carto_init(ppVc, vcl.value, vcc, vcac)
+	status := C.viam_carto_init(&pVc, vcl.value, vcc, vcac)
 	if err := toError(status); err != nil {
 		return Carto{}, err
 	}
@@ -165,7 +139,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 	if status != C.BSTR_OK {
 		return Carto{}, errors.New("unable to free memory for sensor list")
 	}
-	return Carto{value: (*ppVc)}, nil
+	return Carto{value: (pVc)}, nil
 }
 
 // Start is a wrapper for viam_carto_start
