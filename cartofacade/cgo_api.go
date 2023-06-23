@@ -176,8 +176,8 @@ func (vc *Carto) Terminate() error {
 }
 
 // AddSensorReading is a wrapper for viam_carto_add_sensor_reading
-func (vc *Carto) AddSensorReading(readings []byte, timestamp time.Time) error {
-	value := toSensorReading(readings, timestamp)
+func (vc *Carto) AddSensorReading(sensor string, readings []byte, timestamp time.Time) error {
+	value := toSensorReading(sensor, readings, timestamp)
 
 	status := C.viam_carto_add_sensor_reading(vc.value, &value)
 
@@ -296,7 +296,9 @@ func bstringToGoString(bstr C.bstring) string {
 }
 
 func goStringToBstring(goStr string) C.bstring {
-	return C.blk2bstr(unsafe.Pointer(C.CString(goStr)), C.int(len(goStr)))
+	cstr := C.CString(goStr)
+	defer C.free(unsafe.Pointer(cstr))
+	return C.blk2bstr(unsafe.Pointer(cstr), C.int(len(goStr)))
 }
 
 func toLidarConfig(lidarConfig LidarConfig) (C.viam_carto_LIDAR_CONFIG, error) {
@@ -376,9 +378,14 @@ func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition
 	}
 }
 
-func toSensorReading(readings []byte, timestamp time.Time) C.viam_carto_sensor_reading {
+func toSensorReading(sensor string, readings []byte, timestamp time.Time) C.viam_carto_sensor_reading {
 	sr := C.viam_carto_sensor_reading{}
-	sr.sensor_reading = C.blk2bstr(unsafe.Pointer(&readings[0]), C.int(len(readings)))
+	sensorCStr := C.CString(sensor)
+	defer C.free(unsafe.Pointer(sensorCStr))
+	sr.sensor = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(sensor)))
+	readingsCBytes := C.CBytes(readings)
+	defer C.free(readingsCBytes)
+	sr.sensor_reading = C.blk2bstr(readingsCBytes, C.int(len(readings)))
 	sr.sensor_reading_time_unix_micro = C.int64_t(timestamp.UnixMicro())
 	return sr
 }
@@ -425,6 +432,20 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_MAP_RATE_SEC_INVALID")
 	case C.VIAM_CARTO_COMPONENT_REFERENCE_INVALID:
 		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID")
+	case C.VIAM_CARTO_LUA_CONFIG_NOT_FOUND:
+		return errors.New("VIAM_CARTO_LUA_CONFIG_NOT_FOUND")
+	case C.VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE:
+		return errors.New("VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE")
+	case C.VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR:
+		return errors.New("VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR")
+	case C.VIAM_CARTO_MAP_CREATION_ERROR:
+		return errors.New("VIAM_CARTO_MAP_CREATION_ERROR")
+	case C.VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST:
+		return errors.New("VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
+	case C.VIAM_CARTO_SENSOR_READING_EMPTY:
+		return errors.New("VIAM_CARTO_SENSOR_READING_EMPTY")
+	case C.VIAM_CARTO_SENSOR_READING_INVALID:
+		return errors.New("VIAM_CARTO_SENSOR_READING_INVALID")
 	default:
 		return errors.New("status code unclassified")
 	}

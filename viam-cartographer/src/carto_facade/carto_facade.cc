@@ -630,6 +630,8 @@ int CartoFacade::Stop() {
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     std::string sensor = to_std_string(sr->sensor);
     if (config.sensors[0] != sensor) {
+        VLOG(1) << "expected sensor: " << sensor << " to be "
+                << config.sensors[0];
         throw VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST;
     }
     std::string sensor_reading = to_std_string(sr->sensor_reading);
