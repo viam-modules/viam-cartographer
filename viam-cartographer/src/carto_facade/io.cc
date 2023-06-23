@@ -3,15 +3,12 @@
 
 #include <pcl/console/time.h>  // pcl::console::TicToc
 #include <pcl/io/pcd_io.h>     // pcl::PCDReader
-#include <pcl/point_types.h>
 #include <stdio.h>
 
 #include <boost/filesystem.hpp>
-#include <exception>
 #include <fstream>  // std::ifstream
 #include <iomanip>
 #include <iostream>
-#include <utility>
 
 #include "glog/logging.h"
 

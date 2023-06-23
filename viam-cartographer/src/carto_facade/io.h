@@ -9,7 +9,6 @@
 #include <ostream>
 #include <ratio>
 #include <string>
-#include <tuple>
 
 #include "cartographer/sensor/timed_point_cloud_data.h"
 
