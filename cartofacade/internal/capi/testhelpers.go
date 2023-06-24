@@ -5,14 +5,14 @@ import (
 )
 
 // GetTestConfig gets a sample config for testing purposes.
-func GetTestConfig() (CartoConfig, string, error) {
+func GetTestConfig(sensor string) (CartoConfig, string, error) {
 	dir, err := os.MkdirTemp("", "slam-test")
 	if err != nil {
 		return CartoConfig{}, "", err
 	}
 
 	return CartoConfig{
-		Sensors:            []string{"rplidar", "imu"},
+		Sensors:            []string{sensor, "imu"},
 		MapRateSecond:      5,
 		DataDir:            dir,
 		ComponentReference: "component",

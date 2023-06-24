@@ -106,6 +106,11 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     return ok;
 }
 
+void MapBuilder::AddSensorData(
+    cartographer::sensor::TimedPointCloudData measurement) {
+    trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
+}
+
 void MapBuilder::StartLidarTrajectoryBuilder() {
     VLOG(1) << "MapBuilder::StartLidarTrajectoryBuilder";
     trajectory_id = map_builder_->AddTrajectoryBuilder(

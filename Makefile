@@ -27,10 +27,16 @@ $(TOOL_BIN)/protoc-gen-grpc-cpp:
 	mkdir -p "$(TOOL_BIN)"
 	which grpc_cpp_plugin && ln -sf `which grpc_cpp_plugin` $(TOOL_BIN)/protoc-gen-grpc-cpp
 
-buf: $(TOOL_BIN)/buf $(TOOL_BIN)/protoc-gen-grpc-cpp
+grpc/buf: $(TOOL_BIN)/buf $(TOOL_BIN)/protoc-gen-grpc-cpp
 	buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
 	buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
 	buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
+	# Touch this file so that we don't regenerate the buf compiled C++ files
+	# every time we build
+	@touch grpc/buf
+
+grpc/buf_clean:
+	rm -rf grpc
 
 clean:
 	rm -rf grpc bin viam-cartographer/build
@@ -89,7 +95,7 @@ else
 	$(error "Unsupported system. Only apt and brew currently supported.")
 endif
 
-build: ensure-submodule-initialized buf build-module
+build: ensure-submodule-initialized grpc/buf build-module
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
 build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
