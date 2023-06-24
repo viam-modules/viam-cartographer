@@ -27,7 +27,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig()
+		config, _, err := cgoApi.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cgoApi.GetTestAlgoConfig()
@@ -52,7 +52,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig()
+		config, _, err := cgoApi.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cgoApi.GetTestAlgoConfig()
@@ -78,7 +78,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig()
+		config, _, err := cgoApi.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cgoApi.GetTestAlgoConfig()
@@ -104,7 +104,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig()
+		config, _, err := cgoApi.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cgoApi.GetTestAlgoConfig()

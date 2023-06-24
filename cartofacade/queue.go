@@ -36,8 +36,10 @@ const (
 type InputType int64
 
 const (
+	// Sensor represents a sensor name input into c funcs.
+	Sensor InputType = iota
 	// Reading represents a lidar reading input into c funcs.
-	Reading InputType = iota
+	Reading
 	// Timestamp represents the timestamp input into c funcs.
 	Timestamp
 )
@@ -111,6 +113,11 @@ func (w *WorkItem) DoWork(
 	case Terminate:
 		return nil, Nil, q.Carto.Terminate()
 	case AddSensorReading:
+		sensor, ok := w.inputs[Sensor].(string)
+		if !ok {
+			return nil, Nil, errors.New("could not cast inputted sensor name to string")
+		}
+
 		reading, ok := w.inputs[Reading].([]byte)
 		if !ok {
 			return nil, Nil, errors.New("could not cast inputted byte to byte slice")
@@ -121,7 +128,7 @@ func (w *WorkItem) DoWork(
 			return nil, Nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, Nil, q.Carto.AddSensorReading(reading, timestamp)
+		return nil, Nil, q.Carto.AddSensorReading(sensor, reading, timestamp)
 	case Position:
 		positionResponse, err := q.Carto.GetPosition()
 		return positionResponse, PositionResponse, err

@@ -27,7 +27,7 @@ type Carto struct {
 	StartFunc            func() error
 	StopFunc             func() error
 	TerminateFunc        func() error
-	AddSensorReadingFunc func([]byte, time.Time) error
+	AddSensorReadingFunc func(string, []byte, time.Time) error
 	GetPositionFunc      func() (cgoApi.GetPosition, error)
 	GetPointCloudMapFunc func() ([]byte, error)
 	GetInternalStateFunc func() ([]byte, error)
@@ -58,11 +58,11 @@ func (cf *Carto) Terminate() error {
 }
 
 // AddSensorReading calls the injected AddSensorReadingFunc or the real version.
-func (cf *Carto) AddSensorReading(readings []byte, time time.Time) error {
+func (cf *Carto) AddSensorReading(sensor string, readings []byte, time time.Time) error {
 	if cf.AddSensorReadingFunc == nil {
-		return cf.Carto.AddSensorReading(readings, time)
+		return cf.Carto.AddSensorReading(sensor, readings, time)
 	}
-	return cf.AddSensorReadingFunc(readings, time)
+	return cf.AddSensorReadingFunc(sensor, readings, time)
 }
 
 // GetPosition calls the injected GetPositionFunc or the real version.
