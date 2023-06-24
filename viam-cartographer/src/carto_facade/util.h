@@ -3,6 +3,9 @@
 #define VIAM_CARTO_FACADE_UTIL_H
 
 #include <string>
+#include <tuple>
+
+#include "cartographer/sensor/timed_point_cloud_data.h"
 
 namespace viam {
 namespace carto_facade {
@@ -41,6 +44,10 @@ std::string pcd_header(int mapSize, bool hasColor);
 void write_float_to_buffer_in_bytes(std::string &buffer, float f);
 
 void write_int_to_buffer_in_bytes(std::string &buffer, int d);
+
+std::tuple<bool, cartographer::sensor::TimedPointCloudData>
+carto_sensor_reading(std::string sensor_reading,
+                     int64_t sensor_reading_time_unix_micro);
 }  // namespace util
 }  // namespace carto_facade
 }  // namespace viam

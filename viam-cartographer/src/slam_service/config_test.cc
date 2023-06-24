@@ -220,7 +220,7 @@ BOOST_AUTO_TEST_CASE(ParseAndValidateConfigParams_valid_config) {
     BOOST_TEST(slamService.config_params == "{mode=2d}");
     BOOST_TEST(slamService.slam_mode == "2d");
     BOOST_TEST(slamService.optimize_every_n_nodes == 3);
-    BOOST_TEST(slamService.num_range_data == 100);
+    BOOST_TEST(slamService.num_range_data == 30);
     BOOST_TEST(slamService.missing_data_ray_length == 25.0, tolerance);
     BOOST_TEST(slamService.max_range == 25.0, tolerance);
     BOOST_TEST(slamService.min_range == 0.2, tolerance);

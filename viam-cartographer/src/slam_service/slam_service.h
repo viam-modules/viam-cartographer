@@ -149,7 +149,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     // MAP_BUILDER.pose_graph
     int optimize_every_n_nodes = 3;
     // TRAJECTORY_BUILDER.trajectory_builder_2d.submaps
-    int num_range_data = 100;
+    int num_range_data = 30;
     // TRAJECTORY_BUILDER.trajectory_builder_2d
     float missing_data_ray_length = 25.0;
     float max_range = 25.0;

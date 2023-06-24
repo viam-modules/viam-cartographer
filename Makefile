@@ -1,35 +1,49 @@
 BUILD_CHANNEL?=local
-TOOL_BIN = bin/gotools/$(shell uname -s)-$(shell uname -m)
-PATH_WITH_TOOLS="`pwd`/$(TOOL_BIN):$(HOME)/go/bin/:${PATH}"
-GIT_REVISION = $(shell git rev-parse HEAD | tr -d '\n')
-TAG_VERSION?=$(shell git tag --points-at | sort -Vr | head -n1)
-GO_BUILD_LDFLAGS = -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
+GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
+TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
+GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+SHELL := /usr/bin/env bash
+export PATH := $(TOOL_BIN):$(PATH)
+export GOBIN := $(TOOL_BIN)
 
-ARTIFACT="~/go/bin/artifact"
+ifneq (, $(shell which brew))
+	EXTRA_CMAKE_FLAGS := -DCMAKE_PREFIX_PATH=$(shell brew --prefix) -DQt5_DIR=$(shell brew --prefix qt5)/lib/cmake/Qt5
+	export PKG_CONFIG_PATH := $(shell brew --prefix openssl@3)/lib/pkgconfig
+endif
 
-artifact-pull:
-	PATH=${PATH_WITH_TOOLS} artifact pull
+default: build
 
-bufinstall:
-	sudo apt-get install -y protobuf-compiler-grpc libgrpc-dev libgrpc++-dev || brew install grpc openssl --quiet
+artifact-pull: $(TOOL_BIN)/artifact
+	artifact pull
 
-bufsetup:
-	GOBIN=`pwd`/grpc/bin go install github.com/bufbuild/buf/cmd/buf@v1.8.0
-	ln -sf `which grpc_cpp_plugin` grpc/bin/protoc-gen-grpc-cpp
+$(TOOL_BIN)/artifact:
+	 go install go.viam.com/utils/artifact/cmd/artifact
 
-buf: bufsetup
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
-	PATH="${PATH}:`pwd`/grpc/bin" buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
+$(TOOL_BIN)/buf:
+	go install github.com/bufbuild/buf/cmd/buf@v1.8.0
+
+$(TOOL_BIN)/protoc-gen-grpc-cpp:
+	mkdir -p "$(TOOL_BIN)"
+	which grpc_cpp_plugin && ln -sf `which grpc_cpp_plugin` $(TOOL_BIN)/protoc-gen-grpc-cpp
+
+grpc/buf: $(TOOL_BIN)/buf $(TOOL_BIN)/protoc-gen-grpc-cpp
+	buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
+	buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
+	buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
+	# Touch this file so that we don't regenerate the buf compiled C++ files
+	# every time we build
+	@touch grpc/buf
+
+grpc/buf_clean:
+	rm -rf grpc
 
 clean:
-	rm -rf grpc
-	rm -rf bin
-	rm -rf viam-cartographer/build
-	rm -rf viam-cartographer/cartographer/build
+	rm -rf grpc bin viam-cartographer/build
 
 clean-all:
 	git clean -fxd
+	cd viam-cartographer/cartographer && git checkout . && git clean -fxd
 
 ensure-submodule-initialized:
 	@if [ ! -d "viam-cartographer/cartographer/cartographer" ]; then \
@@ -38,21 +52,8 @@ ensure-submodule-initialized:
 	else \
 		echo "Submodule found successfully"; \
 	fi
-
-lint-setup-cpp:
-ifeq ("Darwin", "$(shell uname -s)")
-	brew install clang-format
-else
-	sudo apt-get install -y clang-format
-endif
-
-lint-setup-go:
-	GOBIN=`pwd`/$(TOOL_BIN) go install \
-		github.com/edaniels/golinters/cmd/combined \
-		github.com/golangci/golangci-lint/cmd/golangci-lint \
-		github.com/rhysd/actionlint/cmd/actionlint
-
-lint-setup: lint-setup-cpp lint-setup-go
+	grep -q viam-patched viam-cartographer/cartographer/CMakeLists.txt || \
+	(cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch)
 
 lint-cpp:
 	find . -type f -not -path \
@@ -63,41 +64,45 @@ lint-cpp:
 		-and \( -iname '*.h' -o -iname '*.cpp' -o -iname '*.cc' \) \
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
-lint-go:
+lint-go: $(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint
 	go vet -vettool=$(TOOL_BIN)/combined ./...
-	GOGC=50 $(TOOL_BIN)/golangci-lint run -v --fix --config=./etc/golangci.yaml
-	PATH=$(PATH_WITH_TOOLS) actionlint
+	GOGC=50 golangci-lint run -v --fix --config=./etc/golangci.yaml
+	actionlint
+
+$(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint:
+	go install \
+		github.com/edaniels/golinters/cmd/combined \
+		github.com/golangci/golangci-lint/cmd/golangci-lint \
+		github.com/rhysd/actionlint/cmd/actionlint
 
 lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: ensure-submodule-initialized
-ifeq ("Darwin", "$(shell uname -s)")
-	cd viam-cartographer/scripts && ./setup_cartographer_macos.sh
+setup: install-dependencies ensure-submodule-initialized artifact-pull
+
+install-dependencies:
+ifneq (, $(shell which brew))
+	brew update
+	brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc clang-format
+	brew link lua@5.3
+	brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl nlopt-static
+else ifneq (, $(shell which apt-get))
+	$(warning  "Installing cartographer external dependencies via APT.")
+	$(warning "Packages may be too old to work with this project.")
+	sudo apt-get update
+	sudo apt-get install -y cmake ninja-build libgmock-dev libboost-iostreams-dev liblua5.3-dev libcairo2-dev python3-sphinx libnlopt-dev \
+		libabsl-dev libceres-dev libprotobuf-dev protobuf-compiler protobuf-compiler-grpc libpcl-dev libgrpc-dev libgrpc++-dev clang-format
 else
-	cd viam-cartographer/scripts && ./setup_cartographer_linux.sh
-endif
-	@make artifact-pull
-	
-build: build-module
-ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
-	cd viam-cartographer && ./scripts/build_viam_cartographer.sh 
-else 
-	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer.sh
+	$(error "Unsupported system. Only apt and brew currently supported.")
 endif
 
-build-debug: build-module
-ifneq ($(wildcard viam-cartographer/cartographer/build/.),)
-	cd viam-cartographer && ./scripts/build_viam_cartographer_debug.sh 
-else 
-	cd viam-cartographer && ./scripts/build_cartographer.sh && ./scripts/build_viam_cartographer_debug.sh
-endif
+build: ensure-submodule-initialized grpc/buf build-module
+	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
+
+build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
+build-debug: build
 
 build-module:
 	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
-
-install-lua-files:
-	sudo mkdir -p /usr/local/share/cartographer/lua_files/
-	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 
 test-cpp:
 	viam-cartographer/build/unit_tests -p -l all
@@ -122,7 +127,11 @@ test-go:
 
 test: test-cpp test-go
 
-install:
+install-lua-files:
+	sudo mkdir -p /usr/local/share/cartographer/lua_files/
+	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
+
+install: install-lua-files
 	sudo rm -f /usr/local/bin/carto_grpc_server
 	sudo rm -f /usr/local/bin/cartographer-module
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
