@@ -21,6 +21,7 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/services/slam/grpchelper"
 	"go.viam.com/rdk/spatialmath"
+	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
 
@@ -105,7 +106,7 @@ func New(
 		return nil, err
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, _, err := vcConfig.GetOptionalParameters(
+	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
 		defaultDataRateMsec,
@@ -154,12 +155,16 @@ func New(
 	}()
 
 	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
-			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
-			return nil, errors.Wrap(err, "getting and saving data failed")
+		if modularizationV2Enabled {
+
+		} else {
+			if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
+				sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
+				return nil, errors.Wrap(err, "getting and saving data failed")
+			}
+			cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
+			logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 		}
-		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
-		logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 	}
 
 	if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
@@ -477,4 +482,37 @@ func (cartoSvc *cartographerService) StopSLAMProcess() error {
 		return errors.Wrap(err, "problem stopping slam process")
 	}
 	return nil
+}
+
+// SensorProcess polls the lidar to get the next sensor reading and adds it to the mapBuilder
+func (cartoSvc *cartographerService) SensorProcess(ctx context.Context, lidar lidar.Lidar) error {
+	// TODO: The tracing / telemetry should output aggregates & not be 1 log line per failure to acquire the lock as that would introduce performance issues.
+	for {
+		reading, err := lidar.GetData(ctx)
+		if err != nil {
+			return err
+		}
+
+		timeReq := time.Now()
+		ctx, md := contextutils.ContextWithMetadata(ctx)
+		timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+		if ok { // offline mode
+			timeReq, err := time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+			if err != nil {
+				return err
+			}
+			//TODO: what should timeout be here
+			resp := queue.Request(ctx, cartofacade.AddSensorReading, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+			// while put add sensor reading onto queue errors keep trying same reading onto queue
+			for resp.ResultType == cartofacade.Error {
+				logger.log("Unable to acquire the lock")
+				resp := queue.Request(ctx, cartofacade.AddSensorReading, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+			}
+		} else { //online mode
+			timeout := max(0, (cartoSvc.dataRateMs - msec AddSensorReading blocked)) //TODO: what is 
+			// set timeout for max(0, (data_rate_msec - msec AddSensorReading blocked))
+			// if put add sensor reading onto queue errors
+			// log
+		}
+	}
 }
