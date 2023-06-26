@@ -1,3 +1,4 @@
+// Package cartofacade contains the api to call into CGO
 package cartofacade
 
 import (
