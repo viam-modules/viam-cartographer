@@ -34,6 +34,9 @@ AppDir:
     include:
     - libboost-iostreams1.74.0:arm64
     - libboost-filesystem1.74.0:arm64
+    - libboost-system1.74.0:arm64
+    - libboost-regex1.74.0:arm64
+    - libboost-date-time1.74.0:arm64
     - libssl1.1:arm64
     - libgrpc++1:arm64
     - libgrpc10:arm64
@@ -47,10 +50,34 @@ AppDir:
     - libgflags2.2
     - liblua5.3-0:arm64
     - libcairo2:arm64
-    - libpcl-io1.11:arm64
-    - libpcl-common1.11:arm64
     - libjpeg62-turbo:arm64
     - libstdc++6:arm64
+    - libpcl-apps1.11:arm64
+    - libpcl-common1.11:arm64
+    - libpcl-features1.11:arm64
+    - libpcl-filters1.11:arm64
+    - libpcl-io1.11:arm64
+    - libpcl-kdtree1.11:arm64
+    - libpcl-keypoints1.11:arm64
+    - libpcl-ml1.11:arm64
+    - libpcl-octree1.11:arm64
+    - libpcl-outofcore1.11:arm64
+    - libpcl-people1.11:arm64
+    - libpcl-recognition1.11:arm64
+    - libpcl-registration1.11:arm64
+    - libpcl-sample-consensus1.11:arm64
+    - libpcl-search1.11:arm64
+    - libpcl-segmentation1.11:arm64
+    - libpcl-stereo1.11:arm64
+    - libpcl-surface1.11:arm64
+    - libpcl-tracking1.11:arm64
+    - libpcl-visualization1.11:arm64
+    - libx11-6:arm64
+    - libflann1.9:arm64
+    - libxcb1:arm64
+    - libglx0:arm64
+    - libgl1:arm64
+    - libglvnd0:arm64
 
   files:
     include: []
