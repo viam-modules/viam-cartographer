@@ -142,6 +142,8 @@ func New(
 		cancelFunc:            cancelFunc,
 		logger:                logger,
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
+		inLocalization:        mapRateSec == 0,
+		mapTimestamp:          time.Now(),
 	}
 
 	success := false
@@ -180,7 +182,6 @@ func New(
 // cartographerService is the structure of the slam service.
 type cartographerService struct {
 	resource.Named
-	resource.AlwaysRebuild
 	primarySensorName string
 	executableName    string
 	subAlgo           SubAlgo
@@ -206,7 +207,8 @@ type cartographerService struct {
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
 
-	mapTimestamp time.Time
+	inLocalization bool
+	mapTimestamp   time.Time
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -230,10 +232,14 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 
 // GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
+// If startup is in localization mode, the timestamp is NOT updated.
 func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
-	cartoSvc.mapTimestamp = time.Now()
+
+	if !cartoSvc.inLocalization {
+		cartoSvc.mapTimestamp = time.Now()
+	}
 	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
@@ -246,21 +252,12 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
-// GetLatestMapInfo forwards the request for timestamp data to the slam library's gRPC service.
-// Once a response is received, it is converted into a time.Time object.
-func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
+// GetLatestMapInfo returns the timestamp stored when GetPointCloudMap was last called.
+func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) time.Time {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
 	defer span.End()
 
-	req := &pb.GetLatestMapInfoRequest{Name: cartoSvc.Name().ShortName()}
-
-	resp, err := cartoSvc.clientAlgo.GetLatestMapInfo(ctx, req)
-	if err != nil {
-		return time.Time{}, errors.Wrap(err, "error getting latest map info")
-	}
-	latestMapTimestamp := resp.LastMapUpdate.AsTime()
-
-	return latestMapTimestamp, err
+	return cartoSvc.mapTimestamp
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
@@ -342,6 +339,13 @@ func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar
 	if c != nil {
 		c <- 1
 	}
+}
+
+// Reconfigure always returns a must rebuild error.
+// Reconfigure requires map update, so map timestamp is updated.
+func (cartoSvc *cartographerService) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
+	cartoSvc.mapTimestamp = time.Now()
+	return resource.NewMustRebuildError(conf.ResourceName())
 }
 
 func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
