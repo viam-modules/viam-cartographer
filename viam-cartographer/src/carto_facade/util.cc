@@ -64,59 +64,60 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
         LOG(ERROR) << "Failed to parse header";
         return res;
     } else if (blob.data.size() == 0) {
-        LOG(ERROR) << "Failed to parse header: header has no points";
+        LOG(ERROR) << "Failed to parse header: pcd has no points";
         return -1;
-    } else {
-        switch (data_type) {
-            // ascii
-            case 0:
-                VLOG(1) << "parsing as ascii";
-                pcd_stream.seekg(data_idx);
-                res = p.readBodyASCII(pcd_stream, blob, pcd_version);
-                break;
-            // binary
-            case 1: {
-                VLOG(1) << "parsing as binary";
-                // This block exists b/c otherwise
-                // map is counterintuitively visible
-                // to the rest of the case
-                // statement branches
-                std::size_t expected_size = data_idx + blob.data.size();
-                std::size_t size = pcd.length();
-                if (expected_size > size) {
-                    LOG(ERROR) << "Corrupted PCD file. The file is smaller "
-                                  "than expected! Expected: "
-                               << expected_size << "actual: " << size;
-                    return -1;
-                }
-                const unsigned char *map =
-                    reinterpret_cast<const unsigned char *>(pcd.c_str());
-                res = p.readBodyBinary(map, blob, pcd_version, false, data_idx);
-            } break;
-            // binary compressed
-            case 2:
-                VLOG(1) << "parsing as binary compressed";
-                LOG(ERROR) << "compressed PCDs are not currently supported";
-                res = -1;
-                break;
-            default:
-                LOG(ERROR) << "PCD classified as an unsupported data type: "
-                           << data_type;
-                res = -1;
-        }
-        if (res != 0) {
-            LOG(ERROR) << "Failed to parse PCD body";
-            return res;
-        } else {
-            double total_time = tt.toc();
-            VLOG(1) << "[viam::carto_facade::io::read_pcd] Loaded as a "
-                    << (blob.is_dense ? "dense" : "non-dense") << "blob in "
-                    << total_time << "ms with " << blob.width * blob.height
-                    << "points. Available dimensions: "
-                    << pcl::getFieldsList(blob).c_str();
-            return res;
-        }
     }
+    switch (data_type) {
+        // ascii
+        case 0:
+            VLOG(1) << "parsing as ascii";
+            pcd_stream.seekg(data_idx);
+            res = p.readBodyASCII(pcd_stream, blob, pcd_version);
+            if (res != 0) {
+                LOG(ERROR) << "Failed to parse ascii PCD body";
+                return res;
+            }
+            break;
+        // binary
+        case 1: {
+            VLOG(1) << "parsing as binary";
+            // This block exists b/c otherwise
+            // map is counterintuitively visible
+            // to the rest of the case
+            // statement branches
+            std::size_t expected_size = data_idx + blob.data.size();
+            std::size_t size = pcd.length();
+            if (expected_size > size) {
+                LOG(ERROR) << "Corrupted PCD file. The file is smaller "
+                              "than expected! Expected: "
+                           << expected_size << "actual: " << size;
+                return -1;
+            }
+            const unsigned char *map =
+                reinterpret_cast<const unsigned char *>(pcd.c_str());
+            res = p.readBodyBinary(map, blob, pcd_version, false, data_idx);
+            if (res != 0) {
+                LOG(ERROR) << "Failed to parse binary PCD body";
+                return res;
+            }
+        } break;
+        // binary compressed
+        case 2:
+            LOG(ERROR) << "compressed PCDs are not currently supported";
+            return -1;
+            break;
+        default:
+            LOG(ERROR) << "PCD classified as an unsupported data type: "
+                       << data_type;
+            return -1;
+    }
+    double total_time = tt.toc();
+    VLOG(1) << "[viam::carto_facade::io::read_pcd] Loaded as a "
+            << (blob.is_dense ? "dense" : "non-dense") << "blob in "
+            << total_time << "ms with " << blob.width * blob.height
+            << "points. Available dimensions: "
+            << pcl::getFieldsList(blob).c_str();
+    return res;
 }
 
 std::tuple<bool, cartographer::sensor::TimedPointCloudData>

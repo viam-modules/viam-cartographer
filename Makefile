@@ -98,8 +98,14 @@ endif
 build: ensure-submodule-initialized grpc/buf build-module
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
+# Ideally build-asan would be added build-debug, but can't yet 
+# as these options they fail on arm64 linux. This is b/c that 
+# platform currently uses gcc as opposed to clang & gcc doesn't
+# support using asan in this way (more work would be needed to get it to work there).
+# Ticket: https://viam.atlassian.net/browse/RSDK-3538 is the ticket to 
+# add full asan support
 build-asan: EXTRA_CMAKE_FLAGS += -DCMAKE_CXXFLAGS="-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope -O1" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
-build-asan: ASAN_OPTIONS="detect_leaks=1 detect_stack_use_after_return=true"
+build-asan: export ASAN_OPTIONS="detect_leaks=1 detect_stack_use_after_return=true"
 build-asan: build-debug
 
 build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
