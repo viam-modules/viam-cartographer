@@ -92,7 +92,9 @@ endif
 build: ensure-submodule-initialized buf build-module
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
-build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
+build-debug: ASAN_OPTIONS="detect_leaks=1 detect_stack_use_after_return=true"
+build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True -DCMAKE_CXXFLAGS="-fno-omit-frame-pointer -fsanitize=address -fsanitize-address-use-after-scope -O1" -DCMAKE_EXE_LINKER_FLAGS="-fsanitize=address"
+
 build-debug: build
 
 build-module:

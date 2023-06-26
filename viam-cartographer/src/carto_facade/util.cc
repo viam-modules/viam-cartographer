@@ -38,6 +38,12 @@ void write_int_to_buffer_in_bytes(std::string &buffer, int d) {
 // as RDK doesn't yet support that format of PCD.
 // Once it does, we should add support to this function.
 // https://viam.atlassian.net/browse/RSDK-3753
+// returns 0 on success
+// returns non zero on error
+// an empty or invalid pcd is considered an error
+// NOTE: The underlying pcl library does not distinguish
+// between an invalid & empty pcd on version 1.13 (which is the
+// version we get on mac as opposed to 1.11 which is what we get on linux).
 int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
     pcl::PCDReader p;
 
@@ -56,15 +62,21 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
                            data_type, data_idx);
     if (res != 0) {
         LOG(ERROR) << "Failed to parse header";
+        return res;
+    } else if (blob.data.size() == 0) {
+        LOG(ERROR) << "Failed to parse header: header has no points";
+        return -1;
     } else {
         switch (data_type) {
             // ascii
             case 0:
+                VLOG(1) << "parsing as ascii";
                 pcd_stream.seekg(data_idx);
                 res = p.readBodyASCII(pcd_stream, blob, pcd_version);
                 break;
             // binary
             case 1: {
+                VLOG(1) << "parsing as binary";
                 // This block exists b/c otherwise
                 // map is counterintuitively visible
                 // to the rest of the case
@@ -83,7 +95,7 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
             } break;
             // binary compressed
             case 2:
-
+                VLOG(1) << "parsing as binary compressed";
                 LOG(ERROR) << "compressed PCDs are not currently supported";
                 res = -1;
                 break;
@@ -92,17 +104,19 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
                            << data_type;
                 res = -1;
         }
+        if (res != 0) {
+            LOG(ERROR) << "Failed to parse PCD body";
+            return res;
+        } else {
+            double total_time = tt.toc();
+            VLOG(1) << "[viam::carto_facade::io::read_pcd] Loaded as a "
+                    << (blob.is_dense ? "dense" : "non-dense") << "blob in "
+                    << total_time << "ms with " << blob.width * blob.height
+                    << "points. Available dimensions: "
+                    << pcl::getFieldsList(blob).c_str();
+            return res;
+        }
     }
-
-    double total_time = tt.toc();
-    if (res == 0) {
-        VLOG(1) << "[viam::carto_facade::io::read_pcd] Loaded as a "
-                << (blob.is_dense ? "dense" : "non-dense") << "blob in "
-                << total_time << "ms with " << blob.width * blob.height
-                << "points. Available dimensions: "
-                << pcl::getFieldsList(blob).c_str();
-    }
-    return res;
 }
 
 std::tuple<bool, cartographer::sensor::TimedPointCloudData>
