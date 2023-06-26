@@ -31,6 +31,7 @@ jobs:
       uses: actions/checkout@v3
       with:
         submodules: recursive
+        path: viam-cartographer
       
     - name: Check out PR branch code
       if: github.event_name == 'pull_request_target'
@@ -38,6 +39,7 @@ jobs:
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         submodules: recursive
+        path: viam-cartographer
 
     - name: apt update
       run: |
@@ -46,20 +48,31 @@ jobs:
     - name: make clean
       run: |
         chown -R testbot:testbot .
-        sudo -u testbot bash -lc 'make clean'
+        sudo -u testbot bash -lc 'cd viam-cartographer && make clean'
         
-    - name: make setup
-      run: |
-        sudo -u testbot bash -lc 'make setup'
+    - name: make bufinstall buf setup
+      uses: nick-fields/retry@v2
+      with:
+        timeout_minutes: 5
+        max_attempts: 3
+        retry_on: timeout
+        shell: bash
+        command: |
+          chown -R testbot:testbot .
+          sudo -u testbot bash -lc 'cd viam-cartographer && make bufinstall buf setup'
 
     - name: make build
       run: |
-        sudo -u testbot bash -lc 'make build'
+        sudo -u testbot bash -lc 'cd viam-cartographer && make build'
+
+    - name: make install-lua-files
+      run: |
+        sudo -u testbot bash -lc 'cd viam-cartographer && make install-lua-files'
 
     - name: Build AppImage (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
       run: |
-        sudo -u testbot bash -lc 'make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
+        sudo -u testbot bash -lc 'cd viam-cartographer && make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
@@ -71,7 +84,7 @@ jobs:
       uses: google-github-actions/upload-cloud-storage@v0.10.4
       with:
         headers: "cache-control: no-cache"
-        path: 'etc/packaging/appimages/deploy/'
+        path: 'viam-cartographer/etc/packaging/appimages/deploy/'
         destination: 'packages.viam.com/apps/slam-servers/'
         glob: '*'
         parent: false
@@ -79,14 +92,14 @@ jobs:
 
     - name: Build AppImage (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-      run: sudo -u testbot bash -lc 'make appimage-ci'
+      run: sudo -u testbot bash -lc 'cd viam-cartographer && make appimage-ci'
 
     - name: Deploy Files (Latest)
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
       uses: google-github-actions/upload-cloud-storage@v0.10.4
       with:
         headers: "cache-control: no-cache"
-        path: 'etc/packaging/appimages/deploy/'
+        path: 'viam-cartographer/etc/packaging/appimages/deploy/'
         destination: 'packages.viam.com/apps/slam-servers/'
         glob: '*'
         parent: false
