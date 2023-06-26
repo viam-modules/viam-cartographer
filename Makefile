@@ -98,7 +98,7 @@ endif
 build: ensure-submodule-initialized grpc/buf build-module
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
-# Ideally build-asan would be added build-debug, but can't yet 
+# Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 
 # platform currently uses gcc as opposed to clang & gcc doesn't
 # support using asan in this way (more work would be needed to get it to work there).
