@@ -63,10 +63,13 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
     if (res != 0) {
         LOG(ERROR) << "Failed to parse header";
         return res;
-    } else if (blob.data.size() == 0) {
+    }
+
+    if (blob.data.size() == 0) {
         LOG(ERROR) << "Failed to parse header: pcd has no points";
         return -1;
     }
+
     switch (data_type) {
         // ascii
         case 0:
