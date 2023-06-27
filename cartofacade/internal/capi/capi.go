@@ -150,7 +150,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, e
 		return Carto{}, errors.New("Cannot cast provided library to a CartoLib.")
 	}
 
-	status := C.viam_carto_init(&pVc, vcl.(*CartoLib).value, vcc, vcac)
+	status := C.viam_carto_init(&pVc, cl.value, vcc, vcac)
 	if err := toError(status); err != nil {
 		return Carto{}, err
 	}
