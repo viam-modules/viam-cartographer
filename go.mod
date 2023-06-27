@@ -313,6 +313,3 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
-replace go.viam.com/api => /Users/patriciastrutz/api
-
-replace go.viam.com/rdk => /Users/patriciastrutz/rdk
