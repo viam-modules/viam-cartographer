@@ -154,7 +154,7 @@ func (cf *CartoFacade) Request(ctxParent context.Context, workType WorkType, inp
 			return nil, errors.New("timeout has occurred while trying to read request from cartofacade")
 		}
 	case <-ctx.Done():
-		return nil, errors.New("timeout has occurred while trying to write request to cartofacade. Did you start the background worker?")
+		return nil, errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?")
 	}
 }
 
