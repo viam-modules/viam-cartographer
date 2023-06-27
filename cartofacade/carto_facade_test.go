@@ -37,7 +37,7 @@ func TestRequest(t *testing.T) {
 		cf.Carto = &carto
 		cf.Start(cancelCtx, &activeBackgroundWorkers)
 
-		res, err := cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		res, err := cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, res, test.ShouldBeNil)
 
@@ -63,7 +63,7 @@ func TestRequest(t *testing.T) {
 		cf.Carto = &carto
 		cf.Start(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 
 		cancelFunc()
@@ -90,8 +90,8 @@ func TestRequest(t *testing.T) {
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
 
-		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
-		testErr = errors.New("timeout has occurred while trying to write request to cartofacade. Did you start the background worker?")
+		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
+		testErr = errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?")
 		test.That(t, err, test.ShouldResemble, testErr)
 	})
 
@@ -114,7 +114,7 @@ func TestRequest(t *testing.T) {
 		cf.Carto = &carto
 		cf.Start(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 10*time.Millisecond)
+		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 10*time.Millisecond)
 		testErr = errors.New("timeout has occurred while trying to read request from cartofacade")
 		test.That(t, err, test.ShouldResemble, testErr)
 

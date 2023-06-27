@@ -5,16 +5,16 @@ import (
 	cartofacade "github.com/viamrobotics/viam-cartographer/cartofacade"
 )
 
-// WorkItem represents a fake instance of cartofacade.
-type WorkItem struct {
-	cartofacade.WorkItem
+// Request represents a fake instance of cartofacade.
+type Request struct {
+	cartofacade.Request
 	DoWorkFunc func(cf *cartofacade.CartoFacade) (interface{}, error)
 }
 
 // DoWork calls the injected DoWorkFunc or the real version.
-func (w *WorkItem) DoWork(cf *cartofacade.CartoFacade) (interface{}, error) {
-	if w.DoWorkFunc == nil {
-		return w.WorkItem.DoWork(cf)
+func (r *Request) DoWork(cf *cartofacade.CartoFacade) (interface{}, error) {
+	if r.DoWorkFunc == nil {
+		return r.Request.DoWork(cf)
 	}
-	return w.DoWorkFunc(cf)
+	return r.DoWorkFunc(cf)
 }
