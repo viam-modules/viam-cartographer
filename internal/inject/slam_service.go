@@ -55,6 +55,7 @@ func (slamSvcClient *SLAMServiceClient) GetInternalState(ctx context.Context, in
 	return slamSvcClient.GetInternalStateFunc(ctx, in, opts...)
 }
 
+// GetLatestMapInfo calls the injected GetLatestMapInfo or the real version.
 func (slamSvcClient *SLAMServiceClient) GetLatestMapInfo(ctx context.Context, in *v1.GetLatestMapInfoRequest, opts ...grpc.CallOption) (
 	*v1.GetLatestMapInfoResponse, error,
 ) {

@@ -180,7 +180,6 @@ func TestNew(t *testing.T) {
 		test.That(t, timestamp1, test.ShouldNotEqual, timestamp2)
 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
 	})
-
 }
 
 func TestDataProcess(t *testing.T) {
