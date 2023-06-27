@@ -407,3 +407,7 @@ func testCartographerDir(t *testing.T, path string, expectedMaps int) {
 func TestCartographerIntegration2D(t *testing.T) {
 	integrationtestHelperCartographer(t, viamcartographer.Dim2d)
 }
+
+func testMapTimestamp(t *testing.T, svc slam.Service) {
+
+}

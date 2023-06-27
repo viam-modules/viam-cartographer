@@ -253,11 +253,11 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 }
 
 // GetLatestMapInfo returns the timestamp stored when GetPointCloudMap was last called.
-func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) time.Time {
+func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
 	defer span.End()
 
-	return cartoSvc.mapTimestamp
+	return cartoSvc.mapTimestamp, nil
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.

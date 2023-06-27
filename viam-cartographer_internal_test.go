@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
@@ -17,6 +18,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	inject "github.com/viamrobotics/viam-cartographer/internal/inject"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type pointCloudClientMock struct {
@@ -82,6 +85,15 @@ func makeGetPositionResponse(
 		Extra:              extra,
 	}
 	return resp, nil
+}
+
+func makeGetLatestMapInfoResponse(
+	last_map_update time.Time,
+) *v1.GetLatestMapInfoResponse {
+	resp := &v1.GetLatestMapInfoResponse{
+		LastMapUpdate: timestamppb.New(last_map_update),
+	}
+	return resp
 }
 
 func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orientation {

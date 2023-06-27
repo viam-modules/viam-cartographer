@@ -19,6 +19,8 @@ type SLAMServiceClient struct {
 		v1.SLAMService_GetPointCloudMapClient, error)
 	GetInternalStateFunc func(ctx context.Context, in *v1.GetInternalStateRequest, opts ...grpc.CallOption) (
 		v1.SLAMService_GetInternalStateClient, error)
+	GetLatestMapInfoFunc func(ctx context.Context, in *v1.GetLatestMapInfoRequest, opts ...grpc.CallOption) (
+		*v1.GetLatestMapInfoResponse, error)
 	DoCommandFunc func(ctx context.Context, in *commonv1.DoCommandRequest, opts ...grpc.CallOption) (
 		*commonv1.DoCommandResponse, error)
 }
@@ -51,6 +53,15 @@ func (slamSvcClient *SLAMServiceClient) GetInternalState(ctx context.Context, in
 		return nil, errors.New("no GetInternalState defined for injected SLAM service client")
 	}
 	return slamSvcClient.GetInternalStateFunc(ctx, in, opts...)
+}
+
+func (slamSvcClient *SLAMServiceClient) GetLatestMapInfo(ctx context.Context, in *v1.GetLatestMapInfoRequest, opts ...grpc.CallOption) (
+	*v1.GetLatestMapInfoResponse, error,
+) {
+	if slamSvcClient.GetLatestMapInfoFunc == nil {
+		return nil, errors.New("no GetLatestMapInfoFunc defined for injected SLAM service client")
+	}
+	return slamSvcClient.GetLatestMapInfoFunc(ctx, in, opts...)
 }
 
 // DoCommand calls the injected DoCommand or the real variant.

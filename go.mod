@@ -5,11 +5,11 @@ go 1.19
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
 	github.com/edaniels/golog v0.0.0-20230215213219-28954395e8d0
-	github.com/edaniels/gostream v0.0.0-20230517205025-47c60ee66229
 	github.com/golang/geo v0.0.0-20230421003525-6adc56603217
 	github.com/golangci/golangci-lint v1.51.2
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/actionlint v1.6.24
+	github.com/viamrobotics/gostream v0.0.0-20230609200515-c5d67c29ed25
 	go.opencensus.io v0.24.0
 	go.viam.com/api v0.1.134
 	go.viam.com/rdk v0.2.50
@@ -202,7 +202,7 @@ require (
 	github.com/pion/interceptor v0.1.17 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.8-0.20230502060824-17c664ea7d5c // indirect
-	github.com/pion/mediadevices v0.4.1-0.20230516182502-138499b52db1 // indirect
+	github.com/pion/mediadevices v0.4.1-0.20230605163757-e64f0d8697f9 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.10 // indirect
 	github.com/pion/rtp v1.7.13 // indirect
@@ -312,3 +312,7 @@ require (
 	mvdan.cc/unparam v0.0.0-20221223090309-7455f1af531d // indirect
 	nhooyr.io/websocket v1.8.7 // indirect
 )
+
+replace go.viam.com/api => /Users/patriciastrutz/api
+
+replace go.viam.com/rdk => /Users/patriciastrutz/rdk
