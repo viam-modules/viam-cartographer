@@ -11,25 +11,25 @@ import (
 	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade/internal/capi"
 )
 
-// WorkType defines the grpc call that is being made.
+// WorkType defines the carto C API call that is being made.
 type WorkType int64
 
 const (
-	// Initialize can be used to represent the viam_carto_init call in c.
+	// Initialize represents the viam_carto_init call in c.
 	Initialize WorkType = iota
-	// Start can be used to represent the viam_carto_start call in c.
+	// Start represents the viam_carto_start call in c.
 	Start
-	// Stop can be used to represent the viam_carto_stop call in c.
+	// Stop represents the viam_carto_stop call in c.
 	Stop
-	// Terminate can be used to represent the viam_carto_terminate in c.
+	// Terminate represents the viam_carto_terminate in c.
 	Terminate
-	// AddSensorReading can be used to represent the viam_carto_add_sensor_reading in c.
+	// AddSensorReading represents the viam_carto_add_sensor_reading in c.
 	AddSensorReading
-	// Position can be used to represent the viam_carto_get_position call in c.
+	// Position represents the viam_carto_get_position call in c.
 	Position
-	// InternalState can be used to represent the viam_carto_get_internal_state call in c.
+	// InternalState represents the viam_carto_get_internal_state call in c.
 	InternalState
-	// PointCloudMap can be used to represent the viam_carto_get_point_cloud_map in c.
+	// PointCloudMap represents the viam_carto_get_point_cloud_map in c.
 	PointCloudMap
 )
 
@@ -52,38 +52,41 @@ type Response struct {
 }
 
 /*
-	CartoFacade represents a queue to consume work from and enforce one call into C at a time.
-
-It exists to ensure that only one go routine is calling into the CGO api at a time to ensure the
+CartoFacade exists to ensure that only one go routine is calling into the CGO api at a time to ensure the
 go runtime doesn't spawn multiple OS threads, which would harm performance
 */
 type CartoFacade struct {
 	WorkChannel     chan WorkItem
-	CartoLib        *cgoApi.CartoLibInterface
+	CartoLib        cgoApi.CartoLibInterface
 	Carto           cgoApi.CartoInterface
 	CartoConfig     cgoApi.CartoConfig
 	CartoAlgoConfig cgoApi.CartoAlgoConfig
 }
 
-// WorkItemInterface defines one piece of work that can be put on the queue.
+// WorkItemInterface defines the functionality of a WorkItem.
 // It should not be used outside of this package but needs to be public for testing purposes
 type WorkItemInterface interface {
 	DoWork(q *CartoFacade) (interface{}, error)
 }
 
-// WorkItem defines one piece of work that can be put on the queue.
+// WorkItem defines all of the necessary pieces to call into the CGo API.
 type WorkItem struct {
 	Result   chan Response
 	workType WorkType
 	inputs   map[InputType]interface{}
 }
 
-// New instantiates the Cartofacade struct which holds the queue that limits calls into C.
-func New(cartoLib cgoApi.CartoLibInterface, cartoCfg cgoApi.CartoConfig, cartoAlgoCfg cgoApi.CartoAlgoConfig) CartoFacade {
+// CartoLibInterface describes the method signatures that CartoLib must implement
+type CartoLibInterface interface {
+	Terminate() error
+}
+
+// New instantiates the Cartofacade struct which limits calls into C.
+func New(cartoLib CartoLibInterface, cartoCfg cgoApi.CartoConfig, cartoAlgoCfg cgoApi.CartoAlgoConfig) CartoFacade {
 	return CartoFacade{
 		WorkChannel:     make(chan WorkItem),
 		Carto:           &cgoApi.Carto{},
-		CartoLib:        &cartoLib,
+		CartoLib:        cartoLib,
 		CartoConfig:     cartoCfg,
 		CartoAlgoConfig: cartoAlgoCfg,
 	}
@@ -96,7 +99,7 @@ func (w *WorkItem) DoWork(
 ) (interface{}, error) {
 	switch w.workType {
 	case Initialize:
-		return cgoApi.New(cf.CartoConfig, cf.CartoAlgoConfig, *cf.CartoLib)
+		return cgoApi.New(cf.CartoConfig, cf.CartoAlgoConfig, cf.CartoLib)
 	case Start:
 		return nil, cf.Carto.Start()
 	case Stop:
@@ -130,7 +133,7 @@ func (w *WorkItem) DoWork(
 	return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 }
 
-// Request puts incoming requests on the queue and consumes from queue.
+// Request wraps calls into C. This function requires the caller to know which WorkTypes requires casting to which response values.
 func (cf *CartoFacade) Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(ctxParent, timeout)
 	defer cancel()
@@ -141,7 +144,7 @@ func (cf *CartoFacade) Request(ctxParent context.Context, workType WorkType, inp
 		inputs:   inputs,
 	}
 
-	// wait until work can get put on the queue (and timeout if needed)
+	// wait until work can call into C (and timeout if needed)
 	select {
 	case cf.WorkChannel <- work:
 		select {
@@ -155,8 +158,7 @@ func (cf *CartoFacade) Request(ctxParent context.Context, workType WorkType, inp
 	}
 }
 
-// Start starts the background goroutine that is responsible for putting work
-// onto the queue and consuming from the queue.
+// Start starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
 func (cf *CartoFacade) Start(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
 	go func() {
