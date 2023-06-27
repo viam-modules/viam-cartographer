@@ -1,4 +1,4 @@
-package cartofacade_test
+package cartofacade
 
 import (
 	"context"
@@ -9,12 +9,10 @@ import (
 	"time"
 
 	"go.viam.com/test"
-
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
 )
 
 func TestRequest(t *testing.T) {
-	cartoLib := cartofacade.CartoLibMock{}
+	cartoLib := CartoLibMock{}
 	cartoLib.TerminateFunc = func() error {
 		return nil
 	}
@@ -23,21 +21,21 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := cartofacade.CartoMock{}
+		algoConfig := GetTestAlgoConfig()
+		carto := CartoMock{}
 		carto.StartFunc = func() error {
 			return nil
 		}
 
-		cf := cartofacade.New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
-		cf.Start(cancelCtx, &activeBackgroundWorkers)
+		cf := New(&cartoLib, config, algoConfig)
+		cf.carto = &carto
+		cf.start(cancelCtx, &activeBackgroundWorkers)
 
-		res, err := cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
+		res, err := cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, res, test.ShouldBeNil)
 
@@ -49,22 +47,22 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := cartofacade.CartoMock{}
+		algoConfig := GetTestAlgoConfig()
+		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
 			return testErr
 		}
 
-		cf := cartofacade.New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
-		cf.Start(cancelCtx, &activeBackgroundWorkers)
+		cf := New(&cartoLib, config, algoConfig)
+		cf.carto = &carto
+		cf.start(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
+		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 
 		cancelFunc()
@@ -75,25 +73,25 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := cartofacade.CartoMock{}
+		algoConfig := GetTestAlgoConfig()
+		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
 			return testErr
 		}
 
-		cf := cartofacade.New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
-		cf.Start(cancelCtx, &activeBackgroundWorkers)
+		cf := New(&cartoLib, config, algoConfig)
+		cf.carto = &carto
+		cf.start(cancelCtx, &activeBackgroundWorkers)
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
 
-		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
-		errMessage := "timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?"
+		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
+		errMessage := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
 		writeTimeoutErr := errors.New(errMessage)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, writeTimeoutErr)
@@ -103,23 +101,23 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := cartofacade.CartoMock{}
+		algoConfig := GetTestAlgoConfig()
+		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
 
-		cf := cartofacade.New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
-		cf.Start(cancelCtx, &activeBackgroundWorkers)
+		cf := New(&cartoLib, config, algoConfig)
+		cf.carto = &carto
+		cf.start(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 10*time.Millisecond)
+		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 10*time.Millisecond)
 		readTimeoutErr := errors.New("timeout has occurred while trying to read request from cartofacade")
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, readTimeoutErr)

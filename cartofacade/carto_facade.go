@@ -13,34 +13,34 @@ import (
 type RequestType int64
 
 const (
-	// Initialize represents the viam_carto_init call in c.
-	Initialize RequestType = iota
-	// Start represents the viam_carto_start call in c.
-	Start
-	// Stop represents the viam_carto_stop call in c.
-	Stop
-	// Terminate represents the viam_carto_terminate in c.
-	Terminate
-	// AddSensorReading represents the viam_carto_add_sensor_reading in c.
-	AddSensorReading
-	// Position represents the viam_carto_get_position call in c.
-	Position
-	// InternalState represents the viam_carto_get_internal_state call in c.
-	InternalState
-	// PointCloudMap represents the viam_carto_get_point_cloud_map in c.
-	PointCloudMap
+	// initialize represents the viam_carto_init call in c.
+	initialize RequestType = iota
+	// start represents the viam_carto_start call in c.
+	start
+	// stop represents the viam_carto_stop call in c.
+	stop
+	// terminate represents the viam_carto_terminate in c.
+	terminate
+	// addSensorReading represents the viam_carto_add_sensor_reading in c.
+	addSensorReading
+	// position represents the viam_carto_get_position call in c.
+	position
+	// internalState represents the viam_carto_get_internal_state call in c.
+	internalState
+	// pointCloudMap represents the viam_carto_get_point_cloud_map in c.
+	pointCloudMap
 )
 
 // RequestParamType defines the type being provided as input to the work.
 type RequestParamType int64
 
 const (
-	// Sensor represents a sensor name input into c funcs.
-	Sensor RequestParamType = iota
-	// Reading represents a lidar reading input into c funcs.
-	Reading
-	// Timestamp represents the timestamp input into c funcs.
-	Timestamp
+	// sensor represents a sensor name input into c funcs.
+	sensor RequestParamType = iota
+	// reading represents a lidar reading input into c funcs.
+	reading
+	// timestamp represents the timestamp input into c funcs.
+	timestamp
 )
 
 // Response defines the result of one piece of work that can be put on the result channel.
@@ -54,22 +54,22 @@ CartoFacade exists to ensure that only one go routine is calling into the CGO ap
 go runtime doesn't spawn multiple OS threads, which would harm performance.
 */
 type CartoFacade struct {
-	RequestChan     chan Request
-	CartoLib        CartoLibInterface
-	Carto           CartoInterface
-	CartoConfig     CartoConfig
-	CartoAlgoConfig CartoAlgoConfig
+	cartoLib        CartoLibInterface
+	carto           CartoInterface
+	cartoConfig     CartoConfig
+	cartoAlgoConfig CartoAlgoConfig
+	requestChan     chan Request
 }
 
 // RequestInterface defines the functionality of a WorkItem.
 // It should not be used outside of this package but needs to be public for testing purposes.
 type RequestInterface interface {
-	DoWork(q *CartoFacade) (interface{}, error)
+	doWork(q *CartoFacade) (interface{}, error)
 }
 
 // Request defines all of the necessary pieces to call into the CGo API.
 type Request struct {
-	ResponseChan  chan Response
+	responseChan  chan Response
 	requestType   RequestType
 	requestParams map[RequestParamType]interface{}
 }
@@ -77,57 +77,57 @@ type Request struct {
 // New instantiates the Cartofacade struct which limits calls into C.
 func New(cartoLib CartoLibInterface, cartoCfg CartoConfig, cartoAlgoCfg CartoAlgoConfig) CartoFacade {
 	return CartoFacade{
-		RequestChan:     make(chan Request),
-		Carto:           &Carto{},
-		CartoLib:        cartoLib,
-		CartoConfig:     cartoCfg,
-		CartoAlgoConfig: cartoAlgoCfg,
+		carto:           &Carto{},
+		cartoLib:        cartoLib,
+		cartoConfig:     cartoCfg,
+		cartoAlgoConfig: cartoAlgoCfg,
+		requestChan:     make(chan Request),
 	}
 }
 
 // DoWork provides the logic to call the correct cgo functions with the correct input.
 // It should not be called outside of this package but needs to be public for testing purposes.
-func (r *Request) DoWork(
+func (r *Request) doWork(
 	cf *CartoFacade,
 ) (interface{}, error) {
 	switch r.requestType {
-	case Initialize:
-		return NewCarto(cf.CartoConfig, cf.CartoAlgoConfig, cf.CartoLib)
-	case Start:
-		return nil, cf.Carto.start()
-	case Stop:
-		return nil, cf.Carto.stop()
-	case Terminate:
-		return nil, cf.Carto.terminate()
-	case AddSensorReading:
-		sensor, ok := r.requestParams[Sensor].(string)
+	case initialize:
+		return NewCarto(cf.cartoConfig, cf.cartoAlgoConfig, cf.cartoLib)
+	case start:
+		return nil, cf.carto.start()
+	case stop:
+		return nil, cf.carto.stop()
+	case terminate:
+		return nil, cf.carto.terminate()
+	case addSensorReading:
+		sensor, ok := r.requestParams[sensor].(string)
 		if !ok {
 			return nil, errors.New("could not cast inputted sensor name to string")
 		}
 
-		reading, ok := r.requestParams[Reading].([]byte)
+		reading, ok := r.requestParams[reading].([]byte)
 		if !ok {
 			return nil, errors.New("could not cast inputted byte to byte slice")
 		}
 
-		timestamp, ok := r.requestParams[Timestamp].(time.Time)
+		timestamp, ok := r.requestParams[timestamp].(time.Time)
 		if !ok {
 			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, cf.Carto.addSensorReading(sensor, reading, timestamp)
-	case Position:
-		return cf.Carto.getPosition()
-	case InternalState:
-		return cf.Carto.getInternalState()
-	case PointCloudMap:
-		return cf.Carto.getPointCloudMap()
+		return nil, cf.carto.addSensorReading(sensor, reading, timestamp)
+	case position:
+		return cf.carto.getPosition()
+	case internalState:
+		return cf.carto.getInternalState()
+	case pointCloudMap:
+		return cf.carto.getPointCloudMap()
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", r.requestType)
 }
 
-// Request wraps calls into C. This function requires the caller to know which RequestTypes requires casting to which response values.
-func (cf *CartoFacade) Request(
+// request wraps calls into C. This function requires the caller to know which RequestTypes requires casting to which response values.
+func (cf *CartoFacade) request(
 	ctxParent context.Context,
 	requestType RequestType,
 	inputs map[RequestParamType]interface{},
@@ -137,27 +137,27 @@ func (cf *CartoFacade) Request(
 	defer cancel()
 
 	req := Request{
-		ResponseChan:  make(chan Response, 1),
+		responseChan:  make(chan Response, 1),
 		requestType:   requestType,
 		requestParams: inputs,
 	}
 
 	// wait until work can call into C (and timeout if needed)
 	select {
-	case cf.RequestChan <- req:
+	case cf.requestChan <- req:
 		select {
-		case response := <-req.ResponseChan:
+		case response := <-req.responseChan:
 			return response.result, response.err
 		case <-ctx.Done():
 			return nil, errors.New("timeout has occurred while trying to read request from cartofacade")
 		}
 	case <-ctx.Done():
-		return nil, errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?")
+		return nil, errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?")
 	}
 }
 
-// Start starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
-func (cf *CartoFacade) Start(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
+// start starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
+func (cf *CartoFacade) start(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
 	go func() {
 		defer activeBackgroundWorkers.Done()
@@ -166,9 +166,9 @@ func (cf *CartoFacade) Start(ctx context.Context, activeBackgroundWorkers *sync.
 			select {
 			case <-ctx.Done():
 				return
-			case workToDo := <-cf.RequestChan:
-				result, err := workToDo.DoWork(cf)
-				workToDo.ResponseChan <- Response{result: result, err: err}
+			case workToDo := <-cf.requestChan:
+				result, err := workToDo.doWork(cf)
+				workToDo.responseChan <- Response{result: result, err: err}
 			}
 		}
 	}()
