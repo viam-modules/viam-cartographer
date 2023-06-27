@@ -45,26 +45,10 @@ const (
 	Timestamp
 )
 
-// ResultType defines the type being provided as input to the work.
-type ResultType int64
-
-const (
-	// ByteSlice represents the go type []Byte.
-	ByteSlice ResultType = iota
-	// PositionResponse represents the custom struct defined for getPosition responses.
-	PositionResponse
-	// CartoType represents the custom struct defined for Carto structs.
-	CartoType
-	// Nil represents the go type nil.
-	Nil
-	// Error represents the go type error.
-	Error
-)
-
 // Response defines the result of one piece of work that can be put on the result channel.
 type Response struct {
-	Result     interface{}
-	ResultType ResultType
+	result interface{}
+	err    error
 }
 
 // Queue represents a queue to consume work from and enforce one call into C at a time.
@@ -78,7 +62,7 @@ type Queue struct {
 
 // WorkItemInterface defines one piece of work that can be put on the queue.
 type WorkItemInterface interface {
-	DoWork(q *Queue) (interface{}, ResultType, error)
+	DoWork(q *Queue) (interface{}, error)
 }
 
 // WorkItem defines one piece of work that can be put on the queue.
@@ -102,49 +86,49 @@ func NewQueue(cartoLib cgoApi.CartoLibInterface, cartoCfg cgoApi.CartoConfig, ca
 // DoWork provides the logic to call the correct cgo functions with the correct input.
 func (w *WorkItem) DoWork(
 	q *Queue,
-) (interface{}, ResultType, error) {
+) (interface{}, error) {
 	switch w.workType {
 	case Initialize:
 		carto, err := cgoApi.New(q.CartoConfig, q.CartoAlgoConfig, *q.CartoLib)
-		return carto, CartoType, err
+		return carto, err
 	case Start:
-		return nil, Nil, q.Carto.Start()
+		return nil, q.Carto.Start()
 	case Stop:
-		return nil, Nil, q.Carto.Stop()
+		return nil, q.Carto.Stop()
 	case Terminate:
-		return nil, Nil, q.Carto.Terminate()
+		return nil, q.Carto.Terminate()
 	case AddSensorReading:
 		sensor, ok := w.inputs[Sensor].(string)
 		if !ok {
-			return nil, Nil, errors.New("could not cast inputted sensor name to string")
+			return nil, errors.New("could not cast inputted sensor name to string")
 		}
 
 		reading, ok := w.inputs[Reading].([]byte)
 		if !ok {
-			return nil, Nil, errors.New("could not cast inputted byte to byte slice")
+			return nil, errors.New("could not cast inputted byte to byte slice")
 		}
 
 		timestamp, ok := w.inputs[Timestamp].(time.Time)
 		if !ok {
-			return nil, Nil, errors.New("could not cast inputted timestamp to times.Time")
+			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, Nil, q.Carto.AddSensorReading(sensor, reading, timestamp)
+		return nil, q.Carto.AddSensorReading(sensor, reading, timestamp)
 	case Position:
 		positionResponse, err := q.Carto.GetPosition()
-		return positionResponse, PositionResponse, err
+		return positionResponse, err
 	case InternalState:
 		internalState, err := q.Carto.GetInternalState()
-		return internalState, ByteSlice, err
+		return internalState, err
 	case PointCloudMap:
 		pointCloudMap, err := q.Carto.GetPointCloudMap()
-		return pointCloudMap, ByteSlice, err
+		return pointCloudMap, err
 	}
-	return nil, Nil, fmt.Errorf("no worktype found for: %v", w.workType)
+	return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 }
 
 // Request puts incoming requests on the queue and consumes from queue.
-func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) Response {
+func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(ctxParent, timeout)
 	defer cancel()
 
@@ -158,15 +142,13 @@ func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map
 	select {
 	case q.WorkChannel <- work:
 		select {
-		case result := <-work.Result:
-			return result
+		case response := <-work.Result:
+			return response.result, response.err
 		case <-ctx.Done():
-			err := errors.New("timeout has occurred while trying to read request from cartofacade")
-			return Response{Result: err, ResultType: Error}
+			return nil, errors.New("timeout has occurred while trying to read request from cartofacade")
 		}
 	case <-ctx.Done():
-		err := errors.New("timeout has occurred while trying to write request to cartofacade. Did you start the background worker?")
-		return Response{Result: err, ResultType: Error}
+		return nil, errors.New("timeout has occurred while trying to write request to cartofacade. Did you start the background worker?")
 	}
 }
 
@@ -182,11 +164,11 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 			case <-ctx.Done():
 				return
 			case workToDo := <-q.WorkChannel:
-				result, resultType, err := workToDo.DoWork(q)
+				result, err := workToDo.DoWork(q)
 				if err != nil {
-					workToDo.Result <- Response{Result: err, ResultType: Error}
+					workToDo.Result <- Response{result: result, err: err}
 				} else {
-					workToDo.Result <- Response{Result: result, ResultType: resultType}
+					workToDo.Result <- Response{result: result, err: err}
 				}
 			}
 		}
