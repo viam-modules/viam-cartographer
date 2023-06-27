@@ -3,6 +3,7 @@ package cartofacade_test
 import (
 	"context"
 	"errors"
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -23,7 +24,8 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
@@ -48,7 +50,8 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
@@ -73,7 +76,8 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
@@ -90,15 +94,17 @@ func TestRequest(t *testing.T) {
 		activeBackgroundWorkers.Wait()
 
 		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
-		testErr = errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?")
-		test.That(t, err, test.ShouldResemble, testErr)
+		writeTimeoutErr := errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?")
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err, test.ShouldResemble, writeTimeoutErr)
 	})
 
 	t.Run("test requesting with when the work function takes longer than the timeout", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cartofacade.GetTestConfig("mysensor")
+		config, dir, err := cartofacade.GetTestConfig("mysensor")
+		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
@@ -114,7 +120,8 @@ func TestRequest(t *testing.T) {
 		cf.Start(cancelCtx, &activeBackgroundWorkers)
 
 		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 10*time.Millisecond)
-		readTimeoutErr = errors.New("timeout has occurred while trying to read request from cartofacade")
+		readTimeoutErr := errors.New("timeout has occurred while trying to read request from cartofacade")
+		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, readTimeoutErr)
 
 		cancelFunc()

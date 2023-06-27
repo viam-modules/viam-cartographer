@@ -15,8 +15,8 @@ import (
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go", func(t *testing.T) {
 		cfg, dir, err := GetTestConfig("mysensor")
-		test.That(t, err, test.ShouldBeNil)
 		defer os.RemoveAll(dir)
+		test.That(t, err, test.ShouldBeNil)
 
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
