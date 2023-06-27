@@ -56,7 +56,7 @@ CartoFacade exists to ensure that only one go routine is calling into the CGO ap
 go runtime doesn't spawn multiple OS threads, which would harm performance
 */
 type CartoFacade struct {
-	WorkChannel     chan WorkItem
+	RequestChan     chan WorkItem
 	CartoLib        cgoApi.CartoLibInterface
 	Carto           cgoApi.CartoInterface
 	CartoConfig     cgoApi.CartoConfig
