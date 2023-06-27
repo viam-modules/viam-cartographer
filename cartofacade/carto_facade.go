@@ -51,7 +51,12 @@ type Response struct {
 	err    error
 }
 
-// CartoFacade represents a queue to consume work from and enforce one call into C at a time.
+/*
+	CartoFacade represents a queue to consume work from and enforce one call into C at a time.
+
+It exists to ensure that only one go routine is calling into the CGO api at a time to ensure the
+go runtime doesn't spawn multiple OS threads, which would harm performance
+*/
 type CartoFacade struct {
 	WorkChannel     chan WorkItem
 	CartoLib        *cgoApi.CartoLibInterface
@@ -61,6 +66,7 @@ type CartoFacade struct {
 }
 
 // WorkItemInterface defines one piece of work that can be put on the queue.
+// It should not be used outside of this package but needs to be public for testing purposes
 type WorkItemInterface interface {
 	DoWork(q *CartoFacade) (interface{}, error)
 }
@@ -84,13 +90,13 @@ func New(cartoLib cgoApi.CartoLibInterface, cartoCfg cgoApi.CartoConfig, cartoAl
 }
 
 // DoWork provides the logic to call the correct cgo functions with the correct input.
+// It should not be called outside of this package but needs to be public for testing purposes
 func (w *WorkItem) DoWork(
 	cf *CartoFacade,
 ) (interface{}, error) {
 	switch w.workType {
 	case Initialize:
-		carto, err := cgoApi.New(cf.CartoConfig, cf.CartoAlgoConfig, *cf.CartoLib)
-		return carto, err
+		return cgoApi.New(cf.CartoConfig, cf.CartoAlgoConfig, *cf.CartoLib)
 	case Start:
 		return nil, cf.Carto.Start()
 	case Stop:
@@ -115,14 +121,11 @@ func (w *WorkItem) DoWork(
 
 		return nil, cf.Carto.AddSensorReading(sensor, reading, timestamp)
 	case Position:
-		positionResponse, err := cf.Carto.GetPosition()
-		return positionResponse, err
+		return cf.Carto.GetPosition()
 	case InternalState:
-		internalState, err := cf.Carto.GetInternalState()
-		return internalState, err
+		return cf.Carto.GetInternalState()
 	case PointCloudMap:
-		pointCloudMap, err := cf.Carto.GetPointCloudMap()
-		return pointCloudMap, err
+		return cf.Carto.GetPointCloudMap()
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 }
@@ -152,9 +155,9 @@ func (cf *CartoFacade) Request(ctxParent context.Context, workType WorkType, inp
 	}
 }
 
-// StartBackgroundWorker starts the background goroutine that is responsible for putting work
+// Start starts the background goroutine that is responsible for putting work
 // onto the queue and consuming from the queue.
-func (cf *CartoFacade) StartBackgroundWorker(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
+func (cf *CartoFacade) Start(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
 	go func() {
 		defer activeBackgroundWorkers.Done()

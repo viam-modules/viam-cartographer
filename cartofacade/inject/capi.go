@@ -1,4 +1,4 @@
-// Package inject is used to mock a cartofacade.
+// Package inject is used to mock the CGo API.
 package inject
 
 import (

@@ -134,7 +134,7 @@ func (vcl *CartoLib) Terminate() error {
 	return nil
 }
 
-// New calls viam_carto_init and returns a pointer to a viam carto object.
+// New calls viam_carto_init and returns a pointer to a viam carto object. vcl is only an interface to facilitate testing & that the only type vcl it is actually expected to have is a CartoLib
 func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, error) {
 	var pVc *C.viam_carto
 
@@ -144,6 +144,11 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, e
 	}
 
 	vcac := toAlgoConfig(acfg)
+
+	vcl, ok := vcl.(*CartoLib)
+	if !ok {
+		return Carto{}, errors.New("Cannot case provided library to a CartoLib.")
+	}
 
 	status := C.viam_carto_init(&pVc, vcl.(*CartoLib).value, vcc, vcac)
 	if err := toError(status); err != nil {
