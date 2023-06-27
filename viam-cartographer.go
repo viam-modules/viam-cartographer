@@ -254,7 +254,7 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 
 // GetLatestMapInfo returns the timestamp stored when GetPointCloudMap was last called.
 func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) time.Time {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
+	_, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
 	defer span.End()
 
 	return cartoSvc.mapTimestamp
