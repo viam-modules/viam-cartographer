@@ -6,7 +6,7 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    branches: [ 'main' ]
+    branches: [ 'RSDK-3591_UpdateWorkflows' ]
     paths-ignore:
       - 'README.md'
 
@@ -19,7 +19,7 @@ jobs:
     uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
 
   appimage:
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@RSDK-3591_UpdateWorkflows
     needs: test
     with:
       release_type: 'latest'
