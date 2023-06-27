@@ -1,8 +1,16 @@
-name: Build AppImage SLAM Server
+name: Build AppImage Cartographer
 
 on:
   workflow_dispatch:
+    inputs:
+      release_type:
+        required: true
+        type: string
   workflow_call:
+    inputs:
+      release_type:
+        required: true
+        type: string
     secrets:
       GCP_CREDENTIALS:
         required: true
@@ -26,7 +34,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-    - name: Check out main code
+    - name: Check out code
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
       uses: actions/checkout@v3
       with:
@@ -43,7 +51,7 @@ jobs:
       run: |
         sudo apt update
 
-    - name: make clean
+    - name: Clean and Fix Permissions
       run: |
         chown -R testbot:testbot .
         sudo -u testbot bash -lc 'make clean'
@@ -52,37 +60,29 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'make setup'
 
-    - name: make build
-      run: |
-        sudo -u testbot bash -lc 'make build'
-
-    - name: Build AppImage (PR)
-      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
-      run: |
-        sudo -u testbot bash -lc 'make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
-
     - name: Authorize GCP Upload
       uses: google-github-actions/auth@v1
       with:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
-        
-    - name: Deploy Files (PR)
+
+    - name: Build and Package (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
-      uses: google-github-actions/upload-cloud-storage@v0.10.4
-      with:
-        headers: "cache-control: no-cache"
-        path: 'etc/packaging/appimages/deploy/'
-        destination: 'packages.viam.com/apps/slam-servers/'
-        glob: '*'
-        parent: false
-        gzip: false
+      run: |
+        sudo -u testbot bash -lc 'make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
-    - name: Build AppImage (Latest)
-      if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
-      run: sudo -u testbot bash -lc 'make appimage-ci'
+    - name: Build and Package (Latest)
+      if: inputs.release_type == 'latest'
+      run: |
+        apt-get -y install swig 
+        sudo -Hu testbot bash -lc 'make BUILD_CHANNEL="latest" appimage'
 
-    - name: Deploy Files (Latest)
-      if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+    - name: Build and Package (Tagged)
+      if: inputs.release_type == 'stable' || inputs.release_type == 'rc'
+      run: |
+        apt-get -y install swig 
+        sudo -Hu testbot bash -lc 'make RELEASE_TYPE="${{ inputs.release_type }}" BUILD_CHANNEL="${{ github.ref_name }}" appimage'
+
+    - name: Deploy Files
       uses: google-github-actions/upload-cloud-storage@v0.10.4
       with:
         headers: "cache-control: no-cache"
