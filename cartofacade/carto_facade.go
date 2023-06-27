@@ -73,7 +73,7 @@ type WorkItemInterface interface {
 type Request struct {
 	ResponseChan   chan Response
 	requestType RequestType
-	inputs   map[InputType]interface{}
+	request_params   map[RequestParamType]interface{}
 }
 
 // CartoLibInterface describes the method signatures that CartoLib must implement
