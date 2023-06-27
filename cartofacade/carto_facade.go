@@ -12,7 +12,7 @@ import (
 )
 
 // WorkType defines the carto C API call that is being made.
-type WorkType int64
+type RequestType int64
 
 const (
 	// Initialize represents the viam_carto_init call in c.
