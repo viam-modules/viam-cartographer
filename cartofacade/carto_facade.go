@@ -34,7 +34,7 @@ const (
 )
 
 // InputType defines the type being provided as input to the work.
-type InputType int64
+type RequestParamType int64
 
 const (
 	// Sensor represents a sensor name input into c funcs.
