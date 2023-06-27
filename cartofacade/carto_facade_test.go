@@ -33,11 +33,11 @@ func TestRequest(t *testing.T) {
 			return nil
 		}
 
-		queue := cartofacade.NewQueue(&cartoLib, config, algoConfig)
-		queue.Carto = &carto
-		queue.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
+		cf := cartofacade.New(&cartoLib, config, algoConfig)
+		cf.Carto = &carto
+		cf.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
 
-		res, err := queue.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		res, err := cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, res, test.ShouldBeNil)
 
@@ -59,11 +59,11 @@ func TestRequest(t *testing.T) {
 			return testErr
 		}
 
-		queue := cartofacade.NewQueue(&cartoLib, config, algoConfig)
-		queue.Carto = &carto
-		queue.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
+		cf := cartofacade.New(&cartoLib, config, algoConfig)
+		cf.Carto = &carto
+		cf.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = queue.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 
 		cancelFunc()
@@ -84,13 +84,13 @@ func TestRequest(t *testing.T) {
 			return testErr
 		}
 
-		queue := cartofacade.NewQueue(&cartoLib, config, algoConfig)
-		queue.Carto = &carto
-		queue.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
+		cf := cartofacade.New(&cartoLib, config, algoConfig)
+		cf.Carto = &carto
+		cf.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
 
-		_, err = queue.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
+		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 5*time.Second)
 		testErr = errors.New("timeout has occurred while trying to write request to cartofacade. Did you start the background worker?")
 		test.That(t, err, test.ShouldResemble, testErr)
 	})
@@ -110,11 +110,11 @@ func TestRequest(t *testing.T) {
 			return nil
 		}
 
-		queue := cartofacade.NewQueue(&cartoLib, config, algoConfig)
-		queue.Carto = &carto
-		queue.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
+		cf := cartofacade.New(&cartoLib, config, algoConfig)
+		cf.Carto = &carto
+		cf.StartBackgroundWorker(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = queue.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 10*time.Millisecond)
+		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.InputType]interface{}{}, 10*time.Millisecond)
 		testErr = errors.New("timeout has occurred while trying to read request from cartofacade")
 		test.That(t, err, test.ShouldResemble, testErr)
 

@@ -51,8 +51,8 @@ type Response struct {
 	err    error
 }
 
-// Queue represents a queue to consume work from and enforce one call into C at a time.
-type Queue struct {
+// CartoFacade represents a queue to consume work from and enforce one call into C at a time.
+type CartoFacade struct {
 	WorkChannel     chan WorkItem
 	CartoLib        *cgoApi.CartoLibInterface
 	Carto           cgoApi.CartoInterface
@@ -62,7 +62,7 @@ type Queue struct {
 
 // WorkItemInterface defines one piece of work that can be put on the queue.
 type WorkItemInterface interface {
-	DoWork(q *Queue) (interface{}, error)
+	DoWork(q *CartoFacade) (interface{}, error)
 }
 
 // WorkItem defines one piece of work that can be put on the queue.
@@ -72,9 +72,9 @@ type WorkItem struct {
 	inputs   map[InputType]interface{}
 }
 
-// NewQueue instantiates the Queue struct.
-func NewQueue(cartoLib cgoApi.CartoLibInterface, cartoCfg cgoApi.CartoConfig, cartoAlgoCfg cgoApi.CartoAlgoConfig) Queue {
-	return Queue{
+// New instantiates the Cartofacade struct which holds the queue that limits calls into C.
+func New(cartoLib cgoApi.CartoLibInterface, cartoCfg cgoApi.CartoConfig, cartoAlgoCfg cgoApi.CartoAlgoConfig) CartoFacade {
+	return CartoFacade{
 		WorkChannel:     make(chan WorkItem),
 		Carto:           &cgoApi.Carto{},
 		CartoLib:        &cartoLib,
@@ -85,18 +85,18 @@ func NewQueue(cartoLib cgoApi.CartoLibInterface, cartoCfg cgoApi.CartoConfig, ca
 
 // DoWork provides the logic to call the correct cgo functions with the correct input.
 func (w *WorkItem) DoWork(
-	q *Queue,
+	cf *CartoFacade,
 ) (interface{}, error) {
 	switch w.workType {
 	case Initialize:
-		carto, err := cgoApi.New(q.CartoConfig, q.CartoAlgoConfig, *q.CartoLib)
+		carto, err := cgoApi.New(cf.CartoConfig, cf.CartoAlgoConfig, *cf.CartoLib)
 		return carto, err
 	case Start:
-		return nil, q.Carto.Start()
+		return nil, cf.Carto.Start()
 	case Stop:
-		return nil, q.Carto.Stop()
+		return nil, cf.Carto.Stop()
 	case Terminate:
-		return nil, q.Carto.Terminate()
+		return nil, cf.Carto.Terminate()
 	case AddSensorReading:
 		sensor, ok := w.inputs[Sensor].(string)
 		if !ok {
@@ -113,22 +113,22 @@ func (w *WorkItem) DoWork(
 			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, q.Carto.AddSensorReading(sensor, reading, timestamp)
+		return nil, cf.Carto.AddSensorReading(sensor, reading, timestamp)
 	case Position:
-		positionResponse, err := q.Carto.GetPosition()
+		positionResponse, err := cf.Carto.GetPosition()
 		return positionResponse, err
 	case InternalState:
-		internalState, err := q.Carto.GetInternalState()
+		internalState, err := cf.Carto.GetInternalState()
 		return internalState, err
 	case PointCloudMap:
-		pointCloudMap, err := q.Carto.GetPointCloudMap()
+		pointCloudMap, err := cf.Carto.GetPointCloudMap()
 		return pointCloudMap, err
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", w.workType)
 }
 
 // Request puts incoming requests on the queue and consumes from queue.
-func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) (interface{}, error) {
+func (cf *CartoFacade) Request(ctxParent context.Context, workType WorkType, inputs map[InputType]interface{}, timeout time.Duration) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(ctxParent, timeout)
 	defer cancel()
 
@@ -140,7 +140,7 @@ func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map
 
 	// wait until work can get put on the queue (and timeout if needed)
 	select {
-	case q.WorkChannel <- work:
+	case cf.WorkChannel <- work:
 		select {
 		case response := <-work.Result:
 			return response.result, response.err
@@ -154,7 +154,7 @@ func (q *Queue) Request(ctxParent context.Context, workType WorkType, inputs map
 
 // StartBackgroundWorker starts the background goroutine that is responsible for putting work
 // onto the queue and consuming from the queue.
-func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
+func (cf *CartoFacade) StartBackgroundWorker(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
 	go func() {
 		defer activeBackgroundWorkers.Done()
@@ -163,8 +163,8 @@ func (q *Queue) StartBackgroundWorker(ctx context.Context, activeBackgroundWorke
 			select {
 			case <-ctx.Done():
 				return
-			case workToDo := <-q.WorkChannel:
-				result, err := workToDo.DoWork(q)
+			case workToDo := <-cf.WorkChannel:
+				result, err := workToDo.DoWork(cf)
 				if err != nil {
 					workToDo.Result <- Response{result: result, err: err}
 				} else {
