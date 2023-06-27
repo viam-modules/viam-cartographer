@@ -11,11 +11,10 @@ import (
 	"go.viam.com/test"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/cartofacade/inject"
 )
 
 func TestRequest(t *testing.T) {
-	cartoLib := inject.CartoLib{}
+	cartoLib := cartofacade.CartoLibMock{}
 	cartoLib.TerminateFunc = func() error {
 		return nil
 	}
@@ -29,7 +28,7 @@ func TestRequest(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := inject.Carto{}
+		carto := cartofacade.CartoMock{}
 		carto.StartFunc = func() error {
 			return nil
 		}
@@ -55,7 +54,7 @@ func TestRequest(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := inject.Carto{}
+		carto := cartofacade.CartoMock{}
 
 		carto.StartFunc = func() error {
 			return testErr
@@ -81,7 +80,7 @@ func TestRequest(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := inject.Carto{}
+		carto := cartofacade.CartoMock{}
 
 		carto.StartFunc = func() error {
 			return testErr
@@ -109,7 +108,7 @@ func TestRequest(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		algoConfig := cartofacade.GetTestAlgoConfig()
-		carto := inject.Carto{}
+		carto := cartofacade.CartoMock{}
 
 		carto.StartFunc = func() error {
 			time.Sleep(50 * time.Millisecond)

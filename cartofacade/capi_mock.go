@@ -1,20 +1,18 @@
 // Package inject is used to mock the CGo API.
-package inject
+package cartofacade
 
 import (
 	"time"
-
-	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade"
 )
 
 // CartoLib represents a fake instance of cartofacade.
-type CartoLib struct {
-	cgoApi.CartoLib
+type CartoLibMock struct {
+	CartoLib
 	TerminateFunc func() error
 }
 
 // Terminate calls the injected TerminateFunc or the real version.
-func (cf *CartoLib) Terminate() error {
+func (cf *CartoLibMock) Terminate() error {
 	if cf.TerminateFunc == nil {
 		return cf.CartoLib.Terminate()
 	}
@@ -22,19 +20,19 @@ func (cf *CartoLib) Terminate() error {
 }
 
 // Carto represents a fake instance of cartofacade.
-type Carto struct {
-	cgoApi.Carto
+type CartoMock struct {
+	Carto
 	StartFunc            func() error
 	StopFunc             func() error
 	TerminateFunc        func() error
 	AddSensorReadingFunc func(string, []byte, time.Time) error
-	GetPositionFunc      func() (cgoApi.GetPosition, error)
+	GetPositionFunc      func() (GetPosition, error)
 	GetPointCloudMapFunc func() ([]byte, error)
 	GetInternalStateFunc func() ([]byte, error)
 }
 
 // Start calls the injected StartFunc or the real version.
-func (cf *Carto) Start() error {
+func (cf *CartoMock) Start() error {
 	if cf.StartFunc == nil {
 		return cf.Carto.Start()
 	}
@@ -42,7 +40,7 @@ func (cf *Carto) Start() error {
 }
 
 // Stop calls the injected StopFunc or the real version.
-func (cf *Carto) Stop() error {
+func (cf *CartoMock) Stop() error {
 	if cf.StopFunc == nil {
 		return cf.Carto.Stop()
 	}
@@ -50,7 +48,7 @@ func (cf *Carto) Stop() error {
 }
 
 // Terminate calls the injected TerminateFunc or the real version.
-func (cf *Carto) Terminate() error {
+func (cf *CartoMock) Terminate() error {
 	if cf.TerminateFunc == nil {
 		return cf.Carto.Terminate()
 	}
@@ -58,7 +56,7 @@ func (cf *Carto) Terminate() error {
 }
 
 // AddSensorReading calls the injected AddSensorReadingFunc or the real version.
-func (cf *Carto) AddSensorReading(sensor string, readings []byte, time time.Time) error {
+func (cf *CartoMock) AddSensorReading(sensor string, readings []byte, time time.Time) error {
 	if cf.AddSensorReadingFunc == nil {
 		return cf.Carto.AddSensorReading(sensor, readings, time)
 	}
@@ -66,7 +64,7 @@ func (cf *Carto) AddSensorReading(sensor string, readings []byte, time time.Time
 }
 
 // GetPosition calls the injected GetPositionFunc or the real version.
-func (cf *Carto) GetPosition() (cgoApi.GetPosition, error) {
+func (cf *CartoMock) GetPosition() (GetPosition, error) {
 	if cf.GetPositionFunc == nil {
 		return cf.Carto.GetPosition()
 	}
@@ -74,7 +72,7 @@ func (cf *Carto) GetPosition() (cgoApi.GetPosition, error) {
 }
 
 // GetPointCloudMap calls the injected GetPointCloudMap or the real version.
-func (cf *Carto) GetPointCloudMap() ([]byte, error) {
+func (cf *CartoMock) GetPointCloudMap() ([]byte, error) {
 	if cf.GetPointCloudMapFunc == nil {
 		return cf.Carto.GetPointCloudMap()
 	}
@@ -82,7 +80,7 @@ func (cf *Carto) GetPointCloudMap() ([]byte, error) {
 }
 
 // GetInternalState calls the injected GetInternalState or the real version.
-func (cf *Carto) GetInternalState() ([]byte, error) {
+func (cf *CartoMock) GetInternalState() ([]byte, error) {
 	if cf.GetInternalStateFunc == nil {
 		return cf.Carto.GetInternalState()
 	}
