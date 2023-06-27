@@ -9,9 +9,8 @@ import (
 
 	"go.viam.com/test"
 
-	cartofacade "github.com/viamrobotics/viam-cartographer/cartofacade"
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/cartofacade/inject"
-	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade/internal/capi"
 )
 
 func TestRequest(t *testing.T) {
@@ -24,10 +23,10 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig("mysensor")
+		config, _, err := cartofacade.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cgoApi.GetTestAlgoConfig()
+		algoConfig := cartofacade.GetTestAlgoConfig()
 		carto := inject.Carto{}
 		carto.StartFunc = func() error {
 			return nil
@@ -49,10 +48,10 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig("mysensor")
+		config, _, err := cartofacade.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cgoApi.GetTestAlgoConfig()
+		algoConfig := cartofacade.GetTestAlgoConfig()
 		carto := inject.Carto{}
 
 		carto.StartFunc = func() error {
@@ -74,10 +73,10 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig("mysensor")
+		config, _, err := cartofacade.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cgoApi.GetTestAlgoConfig()
+		algoConfig := cartofacade.GetTestAlgoConfig()
 		carto := inject.Carto{}
 
 		carto.StartFunc = func() error {
@@ -99,10 +98,10 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, _, err := cgoApi.GetTestConfig("mysensor")
+		config, _, err := cartofacade.GetTestConfig("mysensor")
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := cgoApi.GetTestAlgoConfig()
+		algoConfig := cartofacade.GetTestAlgoConfig()
 		carto := inject.Carto{}
 
 		carto.StartFunc = func() error {

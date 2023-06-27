@@ -4,7 +4,7 @@ package inject
 import (
 	"time"
 
-	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade/internal/capi"
+	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade"
 )
 
 // CartoLib represents a fake instance of cartofacade.

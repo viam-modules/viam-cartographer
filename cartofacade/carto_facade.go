@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"sync"
 	"time"
-
-	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade/internal/capi"
 )
 
 // RequestType defines the carto C API call that is being made.
@@ -57,10 +55,10 @@ go runtime doesn't spawn multiple OS threads, which would harm performance
 */
 type CartoFacade struct {
 	RequestChan     chan Request
-	CartoLib        cgoApi.CartoLibInterface
-	Carto           cgoApi.CartoInterface
-	CartoConfig     cgoApi.CartoConfig
-	CartoAlgoConfig cgoApi.CartoAlgoConfig
+	CartoLib        CartoLibInterface
+	Carto           CartoInterface
+	CartoConfig     CartoConfig
+	CartoAlgoConfig CartoAlgoConfig
 }
 
 // WorkItemInterface defines the functionality of a WorkItem.
@@ -76,16 +74,11 @@ type Request struct {
 	requestParams map[RequestParamType]interface{}
 }
 
-// CartoLibInterface describes the method signatures that CartoLib must implement
-type CartoLibInterface interface {
-	Terminate() error
-}
-
 // New instantiates the Cartofacade struct which limits calls into C.
-func New(cartoLib CartoLibInterface, cartoCfg cgoApi.CartoConfig, cartoAlgoCfg cgoApi.CartoAlgoConfig) CartoFacade {
+func New(cartoLib CartoLibInterface, cartoCfg CartoConfig, cartoAlgoCfg CartoAlgoConfig) CartoFacade {
 	return CartoFacade{
 		RequestChan:     make(chan Request),
-		Carto:           &cgoApi.Carto{},
+		Carto:           &Carto{},
 		CartoLib:        cartoLib,
 		CartoConfig:     cartoCfg,
 		CartoAlgoConfig: cartoAlgoCfg,
@@ -99,7 +92,7 @@ func (r *Request) DoWork(
 ) (interface{}, error) {
 	switch r.requestType {
 	case Initialize:
-		return cgoApi.New(cf.CartoConfig, cf.CartoAlgoConfig, cf.CartoLib)
+		return NewCarto(cf.CartoConfig, cf.CartoAlgoConfig, cf.CartoLib)
 	case Start:
 		return nil, cf.Carto.Start()
 	case Stop:

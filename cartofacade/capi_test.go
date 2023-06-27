@@ -1,4 +1,4 @@
-package capi
+package cartofacade
 
 import (
 	"bytes"
@@ -88,7 +88,7 @@ func TestCGoAPI(t *testing.T) {
 
 		cfg := GetBadTestConfig()
 		algoCfg := GetTestAlgoConfig()
-		vc, err := New(cfg, algoCfg, &pvcl)
+		vc, err := NewCarto(cfg, algoCfg, &pvcl)
 
 		// initialize viam_carto incorrectly
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
@@ -99,7 +99,7 @@ func TestCGoAPI(t *testing.T) {
 		defer os.RemoveAll(dir)
 
 		algoCfg = GetTestAlgoConfig()
-		vc, err = New(cfg, algoCfg, &pvcl)
+		vc, err = NewCarto(cfg, algoCfg, &pvcl)
 
 		// initialize viam_carto correctly
 		test.That(t, err, test.ShouldBeNil)
