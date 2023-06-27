@@ -95,8 +95,8 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, vc, test.ShouldNotBeNil)
 
 		cfg, dir, err := GetTestConfig("mysensor")
-		test.That(t, err, test.ShouldBeNil)
 		defer os.RemoveAll(dir)
+		test.That(t, err, test.ShouldBeNil)
 
 		algoCfg = GetTestAlgoConfig()
 		vc, err = NewCarto(cfg, algoCfg, &pvcl)
