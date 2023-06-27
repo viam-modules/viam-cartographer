@@ -7,7 +7,7 @@ concurrency:
 
 on:
   pull_request_target:
-    branches: [ 'main' ]
+    branches: [ 'RSDK-3591_UpdateWorkflows' ]
     types: [ 'labeled' ]
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
@@ -28,9 +28,13 @@ jobs:
       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
       !contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') &&
       contains(github.event.pull_request.labels.*.name, 'appimage') && needs.test.result == 'success'
+<<<<<<< HEAD
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     with:
       release_type: 'pr'
+=======
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@RSDK-3591_UpdateWorkflows
+>>>>>>> 17a8142 (workflow add)
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
@@ -38,8 +42,12 @@ jobs:
     if: |
        always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
        contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+<<<<<<< HEAD
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     with:
       release_type: 'pr'
+=======
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@RSDK-3591_UpdateWorkflows
+>>>>>>> 17a8142 (workflow add)
     secrets:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
