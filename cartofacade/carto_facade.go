@@ -70,7 +70,7 @@ type WorkItemInterface interface {
 }
 
 // WorkItem defines all of the necessary pieces to call into the CGo API.
-type WorkItem struct {
+type Request struct {
 	Result   chan Response
 	workType WorkType
 	inputs   map[InputType]interface{}
