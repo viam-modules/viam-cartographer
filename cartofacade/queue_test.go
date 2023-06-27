@@ -14,9 +14,6 @@ import (
 	cgoApi "github.com/viamrobotics/viam-cartographer/cartofacade/internal/capi"
 )
 
-func TestDoWork(t *testing.T) {
-}
-
 func TestRequest(t *testing.T) {
 	cartoLib := inject.CartoLib{}
 	cartoLib.TerminateFunc = func() error {
