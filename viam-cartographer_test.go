@@ -111,7 +111,7 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	t.Run("Failed creation of cartographer slam service with invalid sensor "+
+	t.Run("Failed creating cartographer slam service with invalid sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
 		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"invalid_sensor"},
