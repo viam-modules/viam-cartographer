@@ -114,8 +114,8 @@ func TestRequest(t *testing.T) {
 		cf.Start(cancelCtx, &activeBackgroundWorkers)
 
 		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 10*time.Millisecond)
-		testErr = errors.New("timeout has occurred while trying to read request from cartofacade")
-		test.That(t, err, test.ShouldResemble, testErr)
+		readTimeoutErr = errors.New("timeout has occurred while trying to read request from cartofacade")
+		test.That(t, err, test.ShouldResemble, readTimeoutErr)
 
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
