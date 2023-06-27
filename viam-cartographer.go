@@ -142,7 +142,7 @@ func New(
 		cancelFunc:            cancelFunc,
 		logger:                logger,
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
-		inLocalization:        mapRateSec == 0,
+		localizationMode:      mapRateSec == 0,
 		mapTimestamp:          time.Now(),
 	}
 
@@ -207,8 +207,8 @@ type cartographerService struct {
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
 
-	inLocalization bool
-	mapTimestamp   time.Time
+	localizationMode bool
+	mapTimestamp     time.Time
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -230,14 +230,14 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	return vcUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
 }
 
-// GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+// GetPointCloudMap creates a request, **recording the time**, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
 // If startup is in localization mode, the timestamp is NOT updated.
 func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
 
-	if !cartoSvc.inLocalization {
+	if !cartoSvc.localizationMode {
 		cartoSvc.mapTimestamp = time.Now()
 	}
 	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
@@ -341,8 +341,8 @@ func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar
 	}
 }
 
-// Reconfigure always returns a must rebuild error.
-// Reconfigure requires map update, so map timestamp is updated.
+// Reconfigure always returns a must rebuild error and requires a map update, so the
+// map timestamp is updated.
 func (cartoSvc *cartographerService) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
 	cartoSvc.mapTimestamp = time.Now()
 	return resource.NewMustRebuildError(conf.ResourceName())
