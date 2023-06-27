@@ -145,7 +145,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, e
 
 	vcac := toAlgoConfig(acfg)
 
-	vcl, ok := vcl.(*CartoLib)
+	cl, ok := vcl.(*CartoLib)
 	if !ok {
 		return Carto{}, errors.New("Cannot cast provided library to a CartoLib.")
 	}
