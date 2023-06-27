@@ -170,11 +170,7 @@ func (cf *CartoFacade) Start(ctx context.Context, activeBackgroundWorkers *sync.
 				return
 			case workToDo := <-cf.WorkChannel:
 				result, err := workToDo.DoWork(cf)
-				if err != nil {
-					workToDo.Result <- Response{result: result, err: err}
-				} else {
-					workToDo.Result <- Response{result: result, err: err}
-				}
+				workToDo.ResponseChan <- Response{result: result, err: err}
 			}
 		}
 	}()
