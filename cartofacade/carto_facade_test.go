@@ -94,7 +94,8 @@ func TestRequest(t *testing.T) {
 		activeBackgroundWorkers.Wait()
 
 		_, err = cf.Request(cancelCtx, cartofacade.Start, map[cartofacade.RequestParamType]interface{}{}, 5*time.Second)
-		writeTimeoutErr := errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?")
+		errMessage := "timeout has occurred while trying to write request to cartofacade. Did you forget to call cartoFacade.Start()?"
+		writeTimeoutErr := errors.New(errMessage)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, writeTimeoutErr)
 	})

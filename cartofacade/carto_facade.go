@@ -51,7 +51,7 @@ type Response struct {
 
 /*
 CartoFacade exists to ensure that only one go routine is calling into the CGO api at a time to ensure the
-go runtime doesn't spawn multiple OS threads, which would harm performance
+go runtime doesn't spawn multiple OS threads, which would harm performance.
 */
 type CartoFacade struct {
 	RequestChan     chan Request
@@ -61,13 +61,13 @@ type CartoFacade struct {
 	CartoAlgoConfig CartoAlgoConfig
 }
 
-// WorkItemInterface defines the functionality of a WorkItem.
-// It should not be used outside of this package but needs to be public for testing purposes
-type WorkItemInterface interface {
+// RequestInterface defines the functionality of a WorkItem.
+// It should not be used outside of this package but needs to be public for testing purposes.
+type RequestInterface interface {
 	DoWork(q *CartoFacade) (interface{}, error)
 }
 
-// WorkItem defines all of the necessary pieces to call into the CGo API.
+// Request defines all of the necessary pieces to call into the CGo API.
 type Request struct {
 	ResponseChan  chan Response
 	requestType   RequestType
@@ -86,7 +86,7 @@ func New(cartoLib CartoLibInterface, cartoCfg CartoConfig, cartoAlgoCfg CartoAlg
 }
 
 // DoWork provides the logic to call the correct cgo functions with the correct input.
-// It should not be called outside of this package but needs to be public for testing purposes
+// It should not be called outside of this package but needs to be public for testing purposes.
 func (r *Request) DoWork(
 	cf *CartoFacade,
 ) (interface{}, error) {
@@ -127,7 +127,12 @@ func (r *Request) DoWork(
 }
 
 // Request wraps calls into C. This function requires the caller to know which RequestTypes requires casting to which response values.
-func (cf *CartoFacade) Request(ctxParent context.Context, requestType RequestType, inputs map[RequestParamType]interface{}, timeout time.Duration) (interface{}, error) {
+func (cf *CartoFacade) Request(
+	ctxParent context.Context,
+	requestType RequestType,
+	inputs map[RequestParamType]interface{},
+	timeout time.Duration,
+) (interface{}, error) {
 	ctx, cancel := context.WithTimeout(ctxParent, timeout)
 	defer cancel()
 

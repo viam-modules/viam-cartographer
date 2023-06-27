@@ -1,3 +1,5 @@
+// Package cartofacade contains the api to call into CGO
+//
 //nolint:lll
 package cartofacade
 
@@ -145,7 +147,7 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 
 	cl, ok := vcl.(*CartoLib)
 	if !ok {
-		return Carto{}, errors.New("Cannot cast provided library to a CartoLib.")
+		return Carto{}, errors.New("cannot cast provided library to a CartoLib")
 	}
 
 	status := C.viam_carto_init(&pVc, cl.value, vcc, vcac)
