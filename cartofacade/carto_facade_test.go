@@ -27,17 +27,17 @@ func TestRequest(t *testing.T) {
 
 		algoConfig := GetTestAlgoConfig()
 		carto := CartoMock{}
-		carto.StartFunc = func() error {
-			return nil
+		carto.GetPositionFunc = func() (GetPosition, error) {
+			return GetPosition{}, nil
 		}
 
 		cf := New(&cartoLib, config, algoConfig)
 		cf.carto = &carto
 		cf.start(cancelCtx, &activeBackgroundWorkers)
 
-		res, err := cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
+		res, err := cf.request(cancelCtx, position, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, res, test.ShouldBeNil)
+		test.That(t, res, test.ShouldNotBeNil)
 
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
