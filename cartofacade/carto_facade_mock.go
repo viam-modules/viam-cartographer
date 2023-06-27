@@ -1,7 +1,7 @@
-// Package inject is used to mock a cartofacade.
+// Package cartofacade is used to mock a cartofacade.
 package cartofacade
 
-// Request represents a fake instance of cartofacade.
+// RequestMock represents a fake instance of cartofacade.
 type RequestMock struct {
 	Request
 	DoWorkFunc func(cf *CartoFacade) (interface{}, error)

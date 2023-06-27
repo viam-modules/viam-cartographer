@@ -50,13 +50,13 @@ type Carto struct {
 
 // CartoInterface describes the method signatures that Carto must implement
 type CartoInterface interface {
-	Start() error
-	Stop() error
-	Terminate() error
-	AddSensorReading(string, []byte, time.Time) error
-	GetPosition() (GetPosition, error)
-	GetPointCloudMap() ([]byte, error)
-	GetInternalState() ([]byte, error)
+	start() error
+	stop() error
+	terminate() error
+	addSensorReading(string, []byte, time.Time) error
+	getPosition() (GetPosition, error)
+	getPointCloudMap() ([]byte, error)
+	getInternalState() ([]byte, error)
 }
 
 // GetPosition holds values returned from c to be processed later
@@ -163,7 +163,7 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 }
 
 // Start is a wrapper for viam_carto_start
-func (vc *Carto) Start() error {
+func (vc *Carto) start() error {
 	status := C.viam_carto_start(vc.value)
 
 	if err := toError(status); err != nil {
@@ -174,7 +174,7 @@ func (vc *Carto) Start() error {
 }
 
 // Stop is a wrapper for viam_carto_stop
-func (vc *Carto) Stop() error {
+func (vc *Carto) stop() error {
 	status := C.viam_carto_stop(vc.value)
 
 	if err := toError(status); err != nil {
@@ -185,7 +185,7 @@ func (vc *Carto) Stop() error {
 }
 
 // Terminate calls viam_carto_terminate to clean up memory for viam carto
-func (vc *Carto) Terminate() error {
+func (vc *Carto) terminate() error {
 	status := C.viam_carto_terminate(&vc.value)
 
 	if err := toError(status); err != nil {
@@ -196,7 +196,7 @@ func (vc *Carto) Terminate() error {
 }
 
 // AddSensorReading is a wrapper for viam_carto_add_sensor_reading
-func (vc *Carto) AddSensorReading(sensor string, readings []byte, timestamp time.Time) error {
+func (vc *Carto) addSensorReading(sensor string, readings []byte, timestamp time.Time) error {
 	value := toSensorReading(sensor, readings, timestamp)
 
 	status := C.viam_carto_add_sensor_reading(vc.value, &value)
@@ -214,7 +214,7 @@ func (vc *Carto) AddSensorReading(sensor string, readings []byte, timestamp time
 }
 
 // GetPosition is a wrapper for viam_carto_get_position
-func (vc *Carto) GetPosition() (GetPosition, error) {
+func (vc *Carto) getPosition() (GetPosition, error) {
 	value := C.viam_carto_get_position_response{}
 
 	status := C.viam_carto_get_position(vc.value, &value)
@@ -234,7 +234,7 @@ func (vc *Carto) GetPosition() (GetPosition, error) {
 }
 
 // GetPointCloudMap is a wrapper for viam_carto_get_point_cloud_map
-func (vc *Carto) GetPointCloudMap() ([]byte, error) {
+func (vc *Carto) getPointCloudMap() ([]byte, error) {
 	// TODO: determine whether or not return needs to be a pointer for performance reasons
 	value := C.viam_carto_get_point_cloud_map_response{}
 
@@ -256,7 +256,7 @@ func (vc *Carto) GetPointCloudMap() ([]byte, error) {
 }
 
 // GetInternalState is a wrapper for viam_carto_get_internal_state
-func (vc *Carto) GetInternalState() ([]byte, error) {
+func (vc *Carto) getInternalState() ([]byte, error) {
 	value := C.viam_carto_get_internal_state_response{}
 
 	status := C.viam_carto_get_internal_state(vc.value, &value)

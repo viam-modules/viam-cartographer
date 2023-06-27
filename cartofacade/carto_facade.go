@@ -94,11 +94,11 @@ func (r *Request) DoWork(
 	case Initialize:
 		return NewCarto(cf.CartoConfig, cf.CartoAlgoConfig, cf.CartoLib)
 	case Start:
-		return nil, cf.Carto.Start()
+		return nil, cf.Carto.start()
 	case Stop:
-		return nil, cf.Carto.Stop()
+		return nil, cf.Carto.stop()
 	case Terminate:
-		return nil, cf.Carto.Terminate()
+		return nil, cf.Carto.terminate()
 	case AddSensorReading:
 		sensor, ok := r.requestParams[Sensor].(string)
 		if !ok {
@@ -115,13 +115,13 @@ func (r *Request) DoWork(
 			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, cf.Carto.AddSensorReading(sensor, reading, timestamp)
+		return nil, cf.Carto.addSensorReading(sensor, reading, timestamp)
 	case Position:
-		return cf.Carto.GetPosition()
+		return cf.Carto.getPosition()
 	case InternalState:
-		return cf.Carto.GetInternalState()
+		return cf.Carto.getInternalState()
 	case PointCloudMap:
-		return cf.Carto.GetPointCloudMap()
+		return cf.Carto.getPointCloudMap()
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", r.requestType)
 }
