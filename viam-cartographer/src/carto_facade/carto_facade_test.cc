@@ -734,21 +734,16 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         viam_carto_get_point_cloud_map_response mr;
         BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
                    VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
-                   VIAM_CARTO_SUCCESS);
         pcl::PCLPointCloud2 blob;
-        VLOG(1) << "before cloud";
         pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
             new pcl::PointCloud<pcl::PointXYZRGB>);
-        VLOG(1) << "after cloud";
         auto s = to_std_string(mr.point_cloud_pcd);
-        VLOG(1) << "s.length(): " << s.length() << " s: " << s;
         BOOST_TEST(viam::carto_facade::util::read_pcd(s, blob) == 0);
         pcl::fromPCLPointCloud2(blob, *cloud);
         BOOST_TEST(cloud != nullptr);
-        BOOST_TEST(cloud->width == 0);
-        BOOST_TEST(cloud->height == 0);
-        BOOST_TEST(cloud->height == 0);
+        BOOST_TEST(cloud->points.size() == 1044);
+        BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
+                   VIAM_CARTO_SUCCESS);
     }
 
     // GetInternalState
