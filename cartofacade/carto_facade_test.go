@@ -195,7 +195,7 @@ func TestStart(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 1"))
 
 		carto.StartFunc = func() error {
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
 		cartoFacade.carto = &carto
@@ -246,7 +246,7 @@ func TestStop(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 2"))
 
 		carto.StopFunc = func() error {
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
 		cartoFacade.carto = &carto
@@ -297,7 +297,7 @@ func TestTerminate(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 3"))
 
 		carto.TerminateFunc = func() error {
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
 		cartoFacade.carto = &carto
@@ -359,7 +359,7 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 4"))
 
 		carto.AddSensorReadingFunc = func(name string, reading []byte, timestamp time.Time) error {
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
 		cartoFacade.carto = &carto
@@ -414,7 +414,7 @@ func TestGetPosition(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
 
 		carto.GetPositionFunc = func() (GetPosition, error) {
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			return GetPosition{}, nil
 		}
 		cartoFacade.carto = &carto
@@ -467,7 +467,7 @@ func TestGetInternalState(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 6"))
 
 		carto.GetInternalStateFunc = func() ([]byte, error) {
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
 		cartoFacade.carto = &carto
@@ -520,7 +520,7 @@ func TestGetPointCloudMap(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 7"))
 
 		carto.GetPointCloudMapFunc = func() ([]byte, error) {
-			time.Sleep(1 * time.Second)
+			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
 		cartoFacade.carto = &carto
