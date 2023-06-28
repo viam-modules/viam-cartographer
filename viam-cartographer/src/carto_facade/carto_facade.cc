@@ -949,14 +949,7 @@ extern int viam_carto_get_point_cloud_map(
 
 extern int viam_carto_get_point_cloud_map_response_destroy(
     viam_carto_get_point_cloud_map_response *r) {
-    int return_code = VIAM_CARTO_SUCCESS;
-    int rc = BSTR_OK;
-    rc = bdestroy(r->point_cloud_pcd);
-    if (rc != BSTR_OK) {
-        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
-    }
-    r->point_cloud_pcd = nullptr;
-    return return_code;
+    return VIAM_CARTO_SUCCESS;
 };
 
 extern int viam_carto_get_internal_state(
