@@ -402,3 +402,7 @@ func setupTestGRPCServer(tb testing.TB) (*grpc.Server, int) {
 
 	return grpcServer, listener.Addr().(*net.TCPAddr).Port
 }
+
+func TestSensorProcess(t *testing.T) {
+
+}
