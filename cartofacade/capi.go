@@ -59,7 +59,7 @@ type CartoInterface interface {
 	getInternalState() ([]byte, error)
 }
 
-// PositionInfo holds values returned from c to be processed later
+// GetPosition holds values returned from c to be processed later
 type GetPosition struct {
 	X float64
 	Y float64
