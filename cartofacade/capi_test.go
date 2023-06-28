@@ -138,13 +138,13 @@ func TestCGoAPI(t *testing.T) {
 		pc, err := pointcloud.ReadPCD(file)
 		test.That(t, err, test.ShouldBeNil)
 
-		// test invalid addSensorReading: valid reading binary
+		// test valid addSensorReading: valid reading binary
 		err = pointcloud.ToPCD(pc, buf, 1)
 		test.That(t, err, test.ShouldBeNil)
 		err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeNil)
 
-		// test invalid addSensorReading: valid reading ascii
+		// test valid addSensorReading: valid reading ascii
 		err = pointcloud.ToPCD(pc, buf, 0)
 		test.That(t, err, test.ShouldBeNil)
 		err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)

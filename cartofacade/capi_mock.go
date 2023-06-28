@@ -26,7 +26,7 @@ type CartoMock struct {
 	StopFunc             func() error
 	TerminateFunc        func() error
 	AddSensorReadingFunc func(string, []byte, time.Time) error
-	GetPositionFunc      func() (GetPosition, error)
+	GetPositionFunc      func() (PositionInfo, error)
 	GetPointCloudMapFunc func() ([]byte, error)
 	GetInternalStateFunc func() ([]byte, error)
 }
@@ -64,7 +64,7 @@ func (cf *CartoMock) addSensorReading(sensor string, readings []byte, time time.
 }
 
 // GetPosition calls the injected GetPositionFunc or the real version.
-func (cf *CartoMock) getPosition() (GetPosition, error) {
+func (cf *CartoMock) getPosition() (PositionInfo, error) {
 	if cf.GetPositionFunc == nil {
 		return cf.Carto.getPosition()
 	}
