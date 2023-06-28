@@ -86,7 +86,6 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfgBad := GetBadTestConfig()
 		cfg, dir, err := GetTestConfig("mysensor")
 		defer os.RemoveAll(dir)
 
