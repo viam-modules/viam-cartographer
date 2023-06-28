@@ -1,6 +1,5 @@
 #include "util.h"
 
-#include <pcl/PCLPointCloud2.h>
 #include <pcl/console/time.h>  // pcl::console::TicToc
 #include <pcl/io/pcd_io.h>     // pcl::PCDReader
 #include <pcl/point_types.h>

@@ -41,6 +41,14 @@ std::string to_std_string(bstring b_str) {
     return std_str;
 }
 
+bstring to_bstring(std::string str) {
+    bstring bstr = blk2bstr(str.c_str(), str.length());
+    if (bstr == NULL) {
+        throw VIAM_CARTO_OUT_OF_MEMORY;
+    }
+    return bstr;
+}
+
 // Convert the scale of a specified color channel from the given UCHAR
 // range of 0 - 255 to an inverse probability range of 100 - 0.
 int calculate_probability_from_color_channels(ColorARGB pixel_color) {
@@ -554,8 +562,38 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     r->component_reference = bstrcpy(config.component_reference);
 };
 
-void CartoFacade::GetPointCloudMap(
-    viam_carto_get_point_cloud_map_response *r){};
+void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
+    std::string pointcloud_map;
+    // Write or grab the latest pointcloud map in form of a string
+    std::shared_lock optimization_lock{optimization_shared_mutex,
+                                       std::defer_lock};
+    if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
+        // We are able to lock the optimization_shared_mutex, which means
+        // that the optimization is not ongoing and we can grab the newest
+        // map
+        GetLatestSampledPointCloudMapString(pointcloud_map);
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        latest_pointcloud_map = pointcloud_map;
+    } else {
+        // Either we are in localization mode or we couldn't lock the mutex
+        // which means the optimization process locked it and we need to use
+        // the backed up latest map
+        if (action_mode == ActionMode::LOCALIZING) {
+            LOG(INFO) << "In localization mode, using cached pointcloud map";
+        } else {
+            LOG(INFO)
+                << "Optimization is occuring, using cached pointcloud map";
+        }
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        pointcloud_map = latest_pointcloud_map;
+    }
+
+    if (pointcloud_map.empty()) {
+        LOG(ERROR) << "map pointcloud does not have points yet";
+        throw VIAM_CARTO_POINTCLOUD_MAP_EMPTY;
+    }
+    r->point_cloud_pcd = to_bstring(pointcloud_map);
+};
 
 void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r){};
 
@@ -933,6 +971,13 @@ extern int viam_carto_get_position_response_destroy(
 
 extern int viam_carto_get_point_cloud_map(
     viam_carto *vc, viam_carto_get_point_cloud_map_response *r) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+    }
     try {
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
@@ -949,7 +994,17 @@ extern int viam_carto_get_point_cloud_map(
 
 extern int viam_carto_get_point_cloud_map_response_destroy(
     viam_carto_get_point_cloud_map_response *r) {
-    return VIAM_CARTO_SUCCESS;
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+    }
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+    rc = bdestroy(r->point_cloud_pcd);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    r->point_cloud_pcd = nullptr;
+    return return_code;
 };
 
 extern int viam_carto_get_internal_state(

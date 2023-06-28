@@ -1,5 +1,9 @@
 #include "carto_facade.h"
 
+#include <pcl/conversions.h>  //pcl::fromPCLPointCloud2
+#include <pcl/point_cloud.h>  // pcl::PointCloud
+#include <pcl/point_types.h>  // pcl::PointXYZRGB
+
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/test/unit_test.hpp>
@@ -14,6 +18,7 @@
 #include "bstrlib.h"
 #include "glog/logging.h"
 #include "test_helpers.h"
+#include "util.h"
 
 namespace tt = boost::test_tools;
 namespace fs = std::filesystem;
@@ -597,6 +602,20 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
+    // GetPointCloudMap before successful sensor readings
+    {
+        BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(nullptr) ==
+                   VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID);
+        BOOST_TEST(viam_carto_get_point_cloud_map(nullptr, nullptr) ==
+                   VIAM_CARTO_VC_INVALID);
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, nullptr) ==
+                   VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID);
+
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_POINTCLOUD_MAP_EMPTY);
+    }
+
     // GetPosition unchanged from failed AddSensorReading requests
     {
         viam_carto_get_position_response pr;
@@ -710,12 +729,27 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // GetPointCloudMap
-    viam_carto_get_point_cloud_map_response mr;
-    BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) == VIAM_CARTO_SUCCESS);
-
-    BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
-               VIAM_CARTO_SUCCESS);
+    // GetPointCloudMap after successful sensor readings
+    {
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_SUCCESS);
+        BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
+                   VIAM_CARTO_SUCCESS);
+        pcl::PCLPointCloud2 blob;
+        VLOG(1) << "before cloud";
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+            new pcl::PointCloud<pcl::PointXYZRGB>);
+        VLOG(1) << "after cloud";
+        auto s = to_std_string(mr.point_cloud_pcd);
+        VLOG(1) << "s.length(): " << s.length() << " s: " << s;
+        BOOST_TEST(viam::carto_facade::util::read_pcd(s, blob) == 0);
+        pcl::fromPCLPointCloud2(blob, *cloud);
+        BOOST_TEST(cloud != nullptr);
+        BOOST_TEST(cloud->width == 0);
+        BOOST_TEST(cloud->height == 0);
+        BOOST_TEST(cloud->height == 0);
+    }
 
     // GetInternalState
     viam_carto_get_internal_state_response isr;
