@@ -84,16 +84,16 @@ func (cf *CartoFacade) AddSensorReading(
 }
 
 // GetPosition calls into the cartofacade C code.
-func (cf *CartoFacade) GetPosition(ctx context.Context, timeout time.Duration) (PositionInfo, error) {
+func (cf *CartoFacade) GetPosition(ctx context.Context, timeout time.Duration) (GetPosition, error) {
 	requestParams := map[RequestParamType]interface{}{}
 	untyped, err := cf.request(ctx, position, requestParams, timeout)
 	if err != nil {
-		return PositionInfo{}, err
+		return GetPosition{}, err
 	}
 
-	pos, ok := untyped.(PositionInfo)
+	pos, ok := untyped.(GetPosition)
 	if !ok {
-		return PositionInfo{}, errors.New("unable to cast response from cartofacade to a position info struct")
+		return GetPosition{}, errors.New("unable to cast response from cartofacade to a position info struct")
 	}
 
 	return pos, nil

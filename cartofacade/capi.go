@@ -54,13 +54,13 @@ type CartoInterface interface {
 	stop() error
 	terminate() error
 	addSensorReading(string, []byte, time.Time) error
-	getPosition() (PositionInfo, error)
+	getPosition() (GetPosition, error)
 	getPointCloudMap() ([]byte, error)
 	getInternalState() ([]byte, error)
 }
 
 // PositionInfo holds values returned from c to be processed later
-type PositionInfo struct {
+type GetPosition struct {
 	X float64
 	Y float64
 	Z float64
@@ -214,20 +214,20 @@ func (vc *Carto) addSensorReading(sensor string, readings []byte, timestamp time
 }
 
 // GetPosition is a wrapper for viam_carto_get_position
-func (vc *Carto) getPosition() (PositionInfo, error) {
+func (vc *Carto) getPosition() (GetPosition, error) {
 	value := C.viam_carto_get_position_response{}
 
 	status := C.viam_carto_get_position(vc.value, &value)
 
 	if err := toError(status); err != nil {
-		return PositionInfo{}, err
+		return GetPosition{}, err
 	}
 
 	getPosition := toGetPositionResponse(value)
 
 	status = C.viam_carto_get_position_response_destroy(&value)
 	if err := toError(status); err != nil {
-		return PositionInfo{}, err
+		return GetPosition{}, err
 	}
 
 	return getPosition, nil
@@ -378,8 +378,8 @@ func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	return vcac
 }
 
-func toGetPositionResponse(value C.viam_carto_get_position_response) PositionInfo {
-	return PositionInfo{
+func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition {
+	return GetPosition{
 		X: float64(value.x),
 		Y: float64(value.y),
 		Z: float64(value.z),

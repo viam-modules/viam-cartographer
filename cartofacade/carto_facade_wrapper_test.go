@@ -263,8 +263,8 @@ func TestGetPosition(t *testing.T) {
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
-	carto.GetPositionFunc = func() (PositionInfo, error) {
-		pos := PositionInfo{X: 1, Y: 2, Z: 3}
+	carto.GetPositionFunc = func() (GetPosition, error) {
+		pos := GetPosition{X: 1, Y: 2, Z: 3}
 		return pos, nil
 	}
 	cartoFacade.carto = &carto
@@ -278,8 +278,8 @@ func TestGetPosition(t *testing.T) {
 		test.That(t, pos.Y, test.ShouldEqual, 2)
 		test.That(t, pos.Z, test.ShouldEqual, 3)
 
-		carto.GetPositionFunc = func() (PositionInfo, error) {
-			return PositionInfo{}, errors.New("test error 5")
+		carto.GetPositionFunc = func() (GetPosition, error) {
+			return GetPosition{}, errors.New("test error 5")
 		}
 		cartoFacade.carto = &carto
 
@@ -288,9 +288,9 @@ func TestGetPosition(t *testing.T) {
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
 
-		carto.GetPositionFunc = func() (PositionInfo, error) {
+		carto.GetPositionFunc = func() (GetPosition, error) {
 			time.Sleep(1 * time.Second)
-			return PositionInfo{}, nil
+			return GetPosition{}, nil
 		}
 		cartoFacade.carto = &carto
 
