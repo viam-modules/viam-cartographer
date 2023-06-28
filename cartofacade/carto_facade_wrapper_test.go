@@ -74,13 +74,13 @@ func TestStart(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 1"))
 
 		carto.StartFunc = func() error {
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			return nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		err = cartoFacade.Start(cancelCtx, 1*time.Microsecond)
+		err = cartoFacade.Start(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
 	})
@@ -124,13 +124,13 @@ func TestStop(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 2"))
 
 		carto.StopFunc = func() error {
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			return nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		err = cartoFacade.Stop(cancelCtx, 1*time.Microsecond)
+		err = cartoFacade.Stop(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
 	})
@@ -174,13 +174,13 @@ func TestTerminate(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 3"))
 
 		carto.TerminateFunc = func() error {
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			return nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		err = cartoFacade.Terminate(cancelCtx, 1*time.Microsecond)
+		err = cartoFacade.Terminate(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
 	})
@@ -235,13 +235,13 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 4"))
 
 		carto.AddSensorReadingFunc = func(name string, reading []byte, timestamp time.Time) error {
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			return nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		err = cartoFacade.AddSensorReading(cancelCtx, 1*time.Microsecond, "mysensor", buf.Bytes(), timestamp)
+		err = cartoFacade.AddSensorReading(cancelCtx, 1*time.Millisecond, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
 	})
@@ -289,13 +289,13 @@ func TestGetPosition(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
 
 		carto.GetPositionFunc = func() (PositionInfo, error) {
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			return PositionInfo{}, nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		_, err = cartoFacade.GetPosition(cancelCtx, 1*time.Microsecond)
+		_, err = cartoFacade.GetPosition(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
 	})
@@ -341,13 +341,13 @@ func TestGetInternalState(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 6"))
 
 		carto.GetInternalStateFunc = func() ([]byte, error) {
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			return []byte{}, nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		_, err = cartoFacade.GetInternalState(cancelCtx, 1*time.Microsecond)
+		_, err = cartoFacade.GetInternalState(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
 	})
@@ -393,13 +393,13 @@ func TestGetPointCloudMap(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("test error 7"))
 
 		carto.GetPointCloudMapFunc = func() ([]byte, error) {
-			time.Sleep(1 * time.Millisecond)
+			time.Sleep(1 * time.Second)
 			return []byte{}, nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 1*time.Microsecond)
+		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
 	})
