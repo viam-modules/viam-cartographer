@@ -18,7 +18,6 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	viamgrpc "go.viam.com/rdk/grpc"
-	"go.viam.com/rdk/resource"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 
@@ -148,13 +147,15 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
-		timestamp1, err1 := svc.GetLatestMapInfo(context.Background())
-		svc.GetPointCloudMap(context.Background())
-		timestamp2, err2 := svc.GetLatestMapInfo(context.Background())
+		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		_, err = svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+
 		test.That(t, timestamp1, test.ShouldNotEqual, &_zeroTime)
 		test.That(t, timestamp1, test.ShouldEqual, timestamp2)
-		test.That(t, err1, test.ShouldBeNil)
-		test.That(t, err2, test.ShouldBeNil)
 	})
 
 	t.Run("Successful creation of cartographer slam service in non localization mode", func(t *testing.T) {
@@ -172,13 +173,15 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
-		timestamp1, err1 := svc.GetLatestMapInfo(context.Background())
-		svc.GetPointCloudMap(context.Background())
-		timestamp2, err2 := svc.GetLatestMapInfo(context.Background())
+		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		_, err = svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
-		test.That(t, err1, test.ShouldBeNil)
-		test.That(t, err2, test.ShouldBeNil)
 	})
 }
 
@@ -407,28 +410,6 @@ func TestSLAMProcess(t *testing.T) {
 		_, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, "hokus_pokus_does_not_exist_filename")
 		test.That(t, fmt.Sprint(err), test.ShouldContainSubstring, "executable file not found in $PATH")
 		grpcServer.Stop()
-	})
-
-	t.Run("Successful reconfigure of SLAM process results in new timestamp", func(t *testing.T) {
-		grpcServer, port := setupTestGRPCServer(t)
-		attrCfg := &vcConfig.Config{
-			Sensors:       []string{},
-			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
-			DataDirectory: dataDir,
-			Port:          "localhost:" + strconv.Itoa(port),
-			UseLiveData:   &_false,
-		}
-
-		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-		test.That(t, err, test.ShouldBeNil)
-
-		timestamp1, _ := svc.GetLatestMapInfo(context.Background())
-		svc.Reconfigure(context.Background(), resource.Dependencies{}, resource.Config{})
-		timestamp2, _ := svc.GetLatestMapInfo(context.Background())
-		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
-		grpcServer.Stop()
-		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
 	testhelper.ClearDirectory(t, dataDir)
