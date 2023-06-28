@@ -554,11 +554,10 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     r->component_reference = bstrcpy(config.component_reference);
 };
 
-void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
-};
+void CartoFacade::GetPointCloudMap(
+    viam_carto_get_point_cloud_map_response *r){};
 
-void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
-};
+void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r){};
 
 void CartoFacade::Start() {
     started = true;
@@ -627,9 +626,7 @@ void CartoFacade::SaveInternalStateOnInterval() {
     }
 }
 
-void CartoFacade::Stop() {
-    StopSaveInternalState();
-};
+void CartoFacade::Stop() { StopSaveInternalState(); };
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     if (biseq(config.component_reference, sr->sensor) == false) {
@@ -822,8 +819,8 @@ extern int viam_carto_stop(viam_carto *vc) {
     }
 
     try {
-      viam::carto_facade::CartoFacade *cf =
-          static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->Stop();
     } catch (int err) {
         return err;
@@ -860,8 +857,8 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
     }
 
     try {
-      viam::carto_facade::CartoFacade *cf =
-          static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->AddSensorReading(sr);
     } catch (int err) {
         return err;

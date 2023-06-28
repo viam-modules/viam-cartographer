@@ -481,9 +481,12 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
 
     // GetPosition
-    BOOST_TEST(viam_carto_get_position(nullptr, nullptr) == VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_get_position(vc, nullptr) == VIAM_CARTO_GET_POSITION_RESPONSE_INVALID);
-    BOOST_TEST(viam_carto_get_position_response_destroy(nullptr) == VIAM_CARTO_GET_POSITION_RESPONSE_INVALID);
+    BOOST_TEST(viam_carto_get_position(nullptr, nullptr) ==
+               VIAM_CARTO_VC_INVALID);
+    BOOST_TEST(viam_carto_get_position(vc, nullptr) ==
+               VIAM_CARTO_GET_POSITION_RESPONSE_INVALID);
+    BOOST_TEST(viam_carto_get_position_response_destroy(nullptr) ==
+               VIAM_CARTO_GET_POSITION_RESPONSE_INVALID);
     {
         viam_carto_get_position_response pr;
         // Test get position before any data is provided
