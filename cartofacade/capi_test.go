@@ -12,51 +12,11 @@ import (
 	"go.viam.com/utils/artifact"
 )
 
-func getTestConfig(sensor string) (CartoConfig, string, error) {
-	dir, err := os.MkdirTemp("", "slam-test")
-	if err != nil {
-		return CartoConfig{}, "", err
-	}
-
-	return CartoConfig{
-		Sensors:            []string{sensor, "imu"},
-		MapRateSecond:      5,
-		DataDir:            dir,
-		ComponentReference: "component",
-		LidarConfig:        twoD,
-	}, dir, nil
-}
-
-func getBadTestConfig() CartoConfig {
-	return CartoConfig{
-		Sensors:     []string{"rplidar", "imu"},
-		LidarConfig: twoD,
-	}
-}
-
-func getTestAlgoConfig() CartoAlgoConfig {
-	return CartoAlgoConfig{
-		optimizeOnStart:      false,
-		optimizeEveryNNodes:  0,
-		numRangeData:         0,
-		missingDataRayLength: 0.0,
-		maxRange:             0.0,
-		minRange:             0.0,
-		maxSubmapsToKeep:     0,
-		freshSubmapsCount:    0,
-		minCoveredArea:       0.0,
-		minAddedSubmapsCount: 0,
-		occupiedSpaceWeight:  0.0,
-		translationWeight:    0.0,
-		rotationWeight:       0.0,
-	}
-}
-
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go", func(t *testing.T) {
-		cfg, dir, err := getTestConfig("mysensor")
-		test.That(t, err, test.ShouldBeNil)
+		cfg, dir, err := GetTestConfig("mysensor")
 		defer os.RemoveAll(dir)
+		test.That(t, err, test.ShouldBeNil)
 
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
@@ -102,7 +62,7 @@ func TestGetPositionResponse(t *testing.T) {
 
 func TestToSensorReading(t *testing.T) {
 	t.Run("sensor reading properly converted between c and go", func(t *testing.T) {
-		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 		sr := toSensorReading("mysensor", []byte("he0llo"), timestamp)
 		test.That(t, bstringToGoString(sr.sensor), test.ShouldResemble, "mysensor")
 		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
@@ -126,42 +86,48 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg := getBadTestConfig()
-		algoCfg := getTestAlgoConfig()
-		vc, err := New(cfg, algoCfg, pvcl)
+		cfg, dir, err := GetTestConfig("mysensor")
+		defer os.RemoveAll(dir)
 
+		test.That(t, err, test.ShouldBeNil)
+
+		algoCfg := GetTestAlgoConfig()
+		vc, err := NewCarto(cfg, algoCfg, &CartoLibMock{})
+
+		// initialize viam_carto with an invalid library incorrectly
+		test.That(t, err, test.ShouldResemble, errors.New("cannot cast provided library to a CartoLib"))
+		test.That(t, vc, test.ShouldNotBeNil)
+
+		cfgBad := GetBadTestConfig()
+		vc, err = NewCarto(cfgBad, algoCfg, &pvcl)
 		// initialize viam_carto incorrectly
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
-		cfg, dir, err := getTestConfig("mysensor")
-		test.That(t, err, test.ShouldBeNil)
-		defer os.RemoveAll(dir)
-
-		algoCfg = getTestAlgoConfig()
-		vc, err = New(cfg, algoCfg, pvcl)
+		algoCfg = GetTestAlgoConfig()
+		vc, err = NewCarto(cfg, algoCfg, &pvcl)
 
 		// initialize viam_carto correctly
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)
 
 		// test start
-		err = vc.Start()
+		err = vc.start()
 		test.That(t, err, test.ShouldBeNil)
 
 		// test invalid addSensorReading: not in sensor list
-		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
-		err = vc.AddSensorReading("not my sensor", []byte("he0llo"), timestamp)
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+		err = vc.addSensorReading("not my sensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
 
 		// test invalid addSensorReading: empty reading
-		err = vc.AddSensorReading("mysensor", []byte(""), timestamp)
+		err = vc.addSensorReading("mysensor", []byte(""), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_EMPTY")
 
 		// test invalid addSensorReading: invalid reading
-		err = vc.AddSensorReading("mysensor", []byte("he0llo"), timestamp)
+		err = vc.addSensorReading("mysensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_INVALID")
 
@@ -172,16 +138,16 @@ func TestCGoAPI(t *testing.T) {
 		pc, err := pointcloud.ReadPCD(file)
 		test.That(t, err, test.ShouldBeNil)
 
-		// test invalid addSensorReading: valid reading binary
+		// test valid addSensorReading: valid reading binary
 		err = pointcloud.ToPCD(pc, buf, 1)
 		test.That(t, err, test.ShouldBeNil)
-		err = vc.AddSensorReading("mysensor", buf.Bytes(), timestamp)
+		err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeNil)
 
-		// test invalid addSensorReading: valid reading ascii
+		// test valid addSensorReading: valid reading ascii
 		err = pointcloud.ToPCD(pc, buf, 0)
 		test.That(t, err, test.ShouldBeNil)
-		err = vc.AddSensorReading("mysensor", buf.Bytes(), timestamp)
+		err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeNil)
 
 		// confirm the pointcloud package still doesn't support binary compressed
@@ -192,7 +158,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
 
 		// test getPosition
-		holder, err := vc.GetPosition()
+		holder, err := vc.getPosition()
 
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
@@ -214,19 +180,19 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, holder.Real, test.ShouldEqual, 1100)
 
 		// test getPointCloudMap
-		_, err = vc.GetPointCloudMap()
+		_, err = vc.getPointCloudMap()
 		test.That(t, err, test.ShouldResemble, errors.New("nil pointcloud"))
 
 		// test getInternalState
-		_, err = vc.GetInternalState()
+		_, err = vc.getInternalState()
 		test.That(t, err, test.ShouldResemble, errors.New("nil internal state"))
 
 		// test stop
-		err = vc.Stop()
+		err = vc.stop()
 		test.That(t, err, test.ShouldBeNil)
 
 		// terminate viam_carto
-		err = vc.Terminate()
+		err = vc.terminate()
 		test.That(t, err, test.ShouldBeNil)
 
 		// terminate viam_carto_lib

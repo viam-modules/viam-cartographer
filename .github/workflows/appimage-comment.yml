@@ -30,6 +30,6 @@ jobs:
           recreate: true
           message: |
             AppImages ready!
-            <https://storage.googleapis.com//packages.viam.com/apps/slam-servers/cartographer-module-pr-${{ env.PR_NUMBER }}-aarch64.AppImage>
-            <https://storage.googleapis.com//packages.viam.com/apps/slam-servers/cartographer-module-pr-${{ env.PR_NUMBER }}-x86_64.AppImage>
+            <https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-pr-${{ env.PR_NUMBER }}-aarch64.AppImage>
+            <https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-pr-${{ env.PR_NUMBER }}-x86_64.AppImage>
 
