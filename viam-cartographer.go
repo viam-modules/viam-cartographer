@@ -143,7 +143,7 @@ func New(
 		logger:                logger,
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
 		localizationMode:      mapRateSec == 0,
-		mapTimestamp:          time.Now(),
+		mapTimestamp:          time.Now().UTC(),
 	}
 
 	success := false
@@ -182,6 +182,7 @@ func New(
 // cartographerService is the structure of the slam service.
 type cartographerService struct {
 	resource.Named
+	resource.AlwaysRebuild
 	primarySensorName string
 	executableName    string
 	subAlgo           SubAlgo
@@ -238,7 +239,7 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func
 	defer span.End()
 
 	if !cartoSvc.localizationMode {
-		cartoSvc.mapTimestamp = time.Now()
+		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
 	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
@@ -252,7 +253,8 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
-// GetLatestMapInfo returns the timestamp stored when GetPointCloudMap was last called.
+// GetLatestMapInfo returns the timestamp  associated with the latest call to GetPointCloudMap,
+// unless you are localizing; in which case the timestamp returned is the timestamp of the session.
 func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
 	defer span.End()
@@ -339,13 +341,6 @@ func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar
 	if c != nil {
 		c <- 1
 	}
-}
-
-// Reconfigure always returns a must rebuild error and requires a map update, so the
-// map timestamp is updated.
-func (cartoSvc *cartographerService) Reconfigure(ctx context.Context, deps resource.Dependencies, conf resource.Config) error {
-	cartoSvc.mapTimestamp = time.Now()
-	return resource.NewMustRebuildError(conf.ResourceName())
 }
 
 func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {

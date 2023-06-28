@@ -36,8 +36,6 @@ var (
 	testMapRateSec = 200
 	_true          = true
 	_false         = false
-	timestamp1     = time.Time{}
-	timestamp2     = time.Time{}
 	_zeroInt       = 0
 	_zeroTime      = time.Time{}
 )
@@ -150,11 +148,13 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
-		timestamp1, _ = svc.GetLatestMapInfo(context.Background())
+		timestamp1, err1 := svc.GetLatestMapInfo(context.Background())
 		svc.GetPointCloudMap(context.Background())
-		timestamp2, _ = svc.GetLatestMapInfo(context.Background())
+		timestamp2, err2 := svc.GetLatestMapInfo(context.Background())
 		test.That(t, timestamp1, test.ShouldNotEqual, &_zeroTime)
 		test.That(t, timestamp1, test.ShouldEqual, timestamp2)
+		test.That(t, err1, test.ShouldBeNil)
+		test.That(t, err2, test.ShouldBeNil)
 	})
 
 	t.Run("Successful creation of cartographer slam service in non localization mode", func(t *testing.T) {
@@ -172,13 +172,13 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
-		timestamp1, _ = svc.GetLatestMapInfo(context.Background())
+		timestamp1, err1 := svc.GetLatestMapInfo(context.Background())
 		svc.GetPointCloudMap(context.Background())
-		timestamp2, _ = svc.GetLatestMapInfo(context.Background())
-		test.That(t, timestamp1, test.ShouldNotEqual, &_zeroTime)
-		test.That(t, timestamp2, test.ShouldNotEqual, &_zeroTime)
-		test.That(t, timestamp1, test.ShouldNotEqual, timestamp2)
+		timestamp2, err2 := svc.GetLatestMapInfo(context.Background())
+		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
+		test.That(t, err1, test.ShouldBeNil)
+		test.That(t, err2, test.ShouldBeNil)
 	})
 }
 
@@ -422,12 +422,10 @@ func TestSLAMProcess(t *testing.T) {
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
-		timestamp1, _ = svc.GetLatestMapInfo(context.Background())
+		timestamp1, _ := svc.GetLatestMapInfo(context.Background())
 		svc.Reconfigure(context.Background(), resource.Dependencies{}, resource.Config{})
-		timestamp2, _ = svc.GetLatestMapInfo(context.Background())
-		test.That(t, timestamp1, test.ShouldNotEqual, &_zeroTime)
-		test.That(t, timestamp2, test.ShouldNotEqual, &_zeroTime)
-		test.That(t, timestamp1, test.ShouldNotEqual, timestamp2)
+		timestamp2, _ := svc.GetLatestMapInfo(context.Background())
+		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
 		grpcServer.Stop()
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
