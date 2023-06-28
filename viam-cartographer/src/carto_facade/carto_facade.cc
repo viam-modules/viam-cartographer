@@ -30,6 +30,17 @@ bool check_if_empty_pixel(ColorARGB pixel_color) {
     return (pixel_color.G == 0);
 }
 
+std::string to_std_string(bstring b_str) {
+    int len = blength(b_str);
+    char *tmp = bstr2cstr(b_str, 0);
+    if (tmp == NULL) {
+        throw VIAM_CARTO_OUT_OF_MEMORY;
+    }
+    std::string std_str(tmp, len);
+    bcstrfree(tmp);
+    return std_str;
+}
+
 // Convert the scale of a specified color channel from the given UCHAR
 // range of 0 - 255 to an inverse probability range of 100 - 0.
 int calculate_probability_from_color_channels(ColorARGB pixel_color) {
@@ -60,32 +71,6 @@ std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
     return os;
 }
 
-std::string to_std_string(bstring b_str) {
-    int len = blength(b_str);
-    char *tmp = bstr2cstr(b_str, 0);
-    if (tmp == NULL) {
-        throw VIAM_CARTO_OUT_OF_MEMORY;
-    }
-    std::string std_str(tmp, len);
-    bcstrfree(tmp);
-    return std_str;
-}
-
-bstring to_bstring(std::string str) {
-    bstring bstr = blk2bstr(str.c_str(), str.length());
-    if (bstr == NULL) {
-        throw VIAM_CARTO_OUT_OF_MEMORY;
-    }
-    return bstr;
-}
-
-void free_bstring(bstring bstr) {
-    if (bdestroy(bstr) != BSTR_OK) {
-        throw VIAM_CARTO_DESTRUCTOR_ERROR;
-    }
-    bstr = nullptr;
-}
-
 void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
     switch (lidar_config) {
         case VIAM_CARTO_TWO_D:
@@ -114,11 +99,11 @@ config from_viam_carto_config(viam_carto_config vcc) {
     if (vcc.map_rate_sec < 0) {
         throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
     }
-    c.component_reference = c.sensors[0];
-    if (c.component_reference.empty()) {
+    if (c.sensors[0].empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
     }
     validate_lidar_config(c.lidar_config);
+    c.component_reference = bstrcpy(vcc.sensors[0]);
 
     return c;
 };
@@ -176,6 +161,8 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     algo_config = ac;
     path_to_internal_state = config.data_dir + "/internal_state";
 };
+
+CartoFacade::~CartoFacade() { bdestroy(config.component_reference); }
 
 void setup_filesystem(std::string data_dir,
                       std::string path_to_internal_state) {
@@ -564,7 +551,7 @@ int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     r->imag = pos_quat.x();
     r->jmag = pos_quat.y();
     r->kmag = pos_quat.z();
-    r->component_reference = to_bstring(config.component_reference);
+    r->component_reference = bstrcpy(config.component_reference);
     // currently unset
     r->o_x = 0;
     r->o_y = 0;
@@ -656,9 +643,8 @@ int CartoFacade::Stop() {
 };
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
-    std::string sensor = to_std_string(sr->sensor);
-    if (config.component_reference != sensor) {
-        VLOG(1) << "expected sensor: " << sensor << " to be "
+    if (biseq(config.component_reference, sr->sensor) == false) {
+        VLOG(1) << "expected sensor: " << to_std_string(sr->sensor) << " to be "
                 << config.component_reference;
         throw VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST;
     }
@@ -681,9 +667,9 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     if (map_builder_mutex.try_lock()) {
         map_builder.AddSensorData(measurement);
         auto local_poses = map_builder.GetLocalSlamResultPoses();
+        VLOG(1) << "local_poses.size(): " << local_poses.size();
         if (local_poses.size() > 0) {
             update_latest_global_pose = true;
-            VLOG(1) << "local_poses.size(): " << local_poses.size();
             tmp_global_pose = map_builder.GetGlobalPose(local_poses.back());
         }
         map_builder_mutex.unlock();

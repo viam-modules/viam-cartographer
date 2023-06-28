@@ -282,6 +282,7 @@ extern int viam_carto_get_internal_state_response_destroy(
 #ifdef __cplusplus
 namespace viam {
 namespace carto_facade {
+std::string to_std_string(bstring b_str);
 enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
 std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode);
 static const int checkForShutdownIntervalMicroseconds = 1e5;
@@ -295,7 +296,7 @@ typedef struct config {
     std::vector<std::string> sensors;
     std::chrono::seconds map_rate_sec;
     std::string data_dir;
-    std::string component_reference;
+    bstring component_reference;
     viam_carto_LIDAR_CONFIG lidar_config;
 } config;
 
@@ -316,6 +317,7 @@ class CartoFacade {
    public:
     CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
                 const viam_carto_algo_config ac);
+    ~CartoFacade();
 
     // IOInit:
     // 1. detects if the data_dir has a deprecated format & throws if it does
