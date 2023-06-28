@@ -1,3 +1,4 @@
+//nolint:dupl
 package cartofacade
 
 import (
@@ -132,6 +133,7 @@ func TestRequest(t *testing.T) {
 	err := cartoLib.Terminate()
 	test.That(t, err, test.ShouldBeNil)
 }
+
 func TestInitialize(t *testing.T) {
 	lib, err := NewLib(1, 1)
 	test.That(t, err, test.ShouldBeNil)
