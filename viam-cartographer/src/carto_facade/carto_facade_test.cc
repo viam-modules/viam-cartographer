@@ -86,6 +86,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_lib_init_terminate) {
     viam_carto_lib *lib;
     BOOST_TEST(FLAGS_logtostderr == 0);
     BOOST_TEST(viam_carto_lib_init(nullptr, 0, 0) == VIAM_CARTO_LIB_INVALID);
+    BOOST_TEST(viam_carto_lib_terminate(nullptr) == VIAM_CARTO_LIB_INVALID);
+    viam_carto_lib *invalidlib = nullptr;
+    BOOST_TEST(viam_carto_lib_terminate(&invalidlib) == VIAM_CARTO_LIB_INVALID);
 
     BOOST_TEST(FLAGS_logtostderr == 0);
     BOOST_TEST(FLAGS_v == 0);
@@ -182,6 +185,12 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
                VIAM_CARTO_VC_INVALID);
     BOOST_TEST(viam_carto_init(&vc, nullptr, vcc, ac) ==
                VIAM_CARTO_LIB_INVALID);
+
+    // invalid invalid terminate
+    BOOST_TEST(viam_carto_terminate(nullptr) == VIAM_CARTO_VC_INVALID);
+    viam_carto *invalidvc = nullptr;
+    BOOST_TEST(viam_carto_terminate(&invalidvc) == VIAM_CARTO_VC_INVALID);
+
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
 
@@ -468,10 +477,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
 
-    // // Start
+    // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
 
-    // // GetPosition
+    // GetPosition
+    BOOST_TEST(viam_carto_get_position(nullptr, nullptr) == VIAM_CARTO_VC_INVALID);
+    BOOST_TEST(viam_carto_get_position(vc, nullptr) == VIAM_CARTO_GET_POSITION_RESPONSE_INVALID);
+    BOOST_TEST(viam_carto_get_position_response_destroy(nullptr) == VIAM_CARTO_GET_POSITION_RESPONSE_INVALID);
     {
         viam_carto_get_position_response pr;
         // Test get position before any data is provided
@@ -505,6 +517,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(viam_carto_add_sensor_reading(vc, nullptr) ==
                    VIAM_CARTO_SENSOR_READING_INVALID);
     }
+    BOOST_TEST(viam_carto_add_sensor_reading_destroy(nullptr) ==
+               VIAM_CARTO_SENSOR_READING_INVALID);
 
     {
         viam_carto_sensor_reading sr;

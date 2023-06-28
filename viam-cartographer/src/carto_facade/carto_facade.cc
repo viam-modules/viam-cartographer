@@ -534,7 +534,7 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
     return;
 }
 
-int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
+void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
@@ -552,21 +552,17 @@ int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     r->jmag = pos_quat.y();
     r->kmag = pos_quat.z();
     r->component_reference = bstrcpy(config.component_reference);
-
-    return VIAM_CARTO_SUCCESS;
 };
 
-int CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
-    return VIAM_CARTO_SUCCESS;
-};
-int CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
-    return VIAM_CARTO_SUCCESS;
+void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
 };
 
-int CartoFacade::Start() {
+void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
+};
+
+void CartoFacade::Start() {
     started = true;
     StartSaveInternalState();
-    return VIAM_CARTO_SUCCESS;
 };
 
 void CartoFacade::StartSaveInternalState() {
@@ -631,9 +627,8 @@ void CartoFacade::SaveInternalStateOnInterval() {
     }
 }
 
-int CartoFacade::Stop() {
+void CartoFacade::Stop() {
     StopSaveInternalState();
-    return VIAM_CARTO_SUCCESS;
 };
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
@@ -739,6 +734,14 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
 };
 
 extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
+    if (ppVCL == nullptr) {
+        return VIAM_CARTO_LIB_INVALID;
+    }
+
+    if (*ppVCL == nullptr) {
+        return VIAM_CARTO_LIB_INVALID;
+    }
+
     FLAGS_logtostderr = 0;
     FLAGS_minloglevel = 0;
     FLAGS_v = 0;
@@ -800,9 +803,9 @@ extern int viam_carto_start(viam_carto *vc) {
     if (vc == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->Start();
     } catch (int err) {
         return err;
@@ -817,9 +820,10 @@ extern int viam_carto_stop(viam_carto *vc) {
     if (vc == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+
     try {
+      viam::carto_facade::CartoFacade *cf =
+          static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->Stop();
     } catch (int err) {
         return err;
@@ -831,6 +835,13 @@ extern int viam_carto_stop(viam_carto *vc) {
 };
 
 extern int viam_carto_terminate(viam_carto **ppVC) {
+    if (ppVC == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (*ppVC == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
     viam::carto_facade::CartoFacade *cf =
         static_cast<viam::carto_facade::CartoFacade *>((*ppVC)->carto_obj);
     delete cf;
@@ -848,9 +859,9 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
         return VIAM_CARTO_SENSOR_READING_INVALID;
     }
 
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     try {
+      viam::carto_facade::CartoFacade *cf =
+          static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->AddSensorReading(sr);
     } catch (int err) {
         return err;
@@ -863,6 +874,9 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
 
 extern int viam_carto_add_sensor_reading_destroy(
     viam_carto_sensor_reading *sr) {
+    if (sr == nullptr) {
+        return VIAM_CARTO_SENSOR_READING_INVALID;
+    }
     int return_code = VIAM_CARTO_SUCCESS;
     int rc = BSTR_OK;
     // destroy sensor_reading
@@ -884,14 +898,32 @@ extern int viam_carto_add_sensor_reading_destroy(
 
 extern int viam_carto_get_position(viam_carto *vc,
                                    viam_carto_get_position_response *r) {
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
-    cf->GetPosition(r);
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_POSITION_RESPONSE_INVALID;
+    }
+
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
+        cf->GetPosition(r);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
     return VIAM_CARTO_SUCCESS;
 };
 
 extern int viam_carto_get_position_response_destroy(
     viam_carto_get_position_response *r) {
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_POSITION_RESPONSE_INVALID;
+    }
     int return_code = VIAM_CARTO_SUCCESS;
     int rc = BSTR_OK;
     rc = bdestroy(r->component_reference);
@@ -904,12 +936,30 @@ extern int viam_carto_get_position_response_destroy(
 
 extern int viam_carto_get_point_cloud_map(
     viam_carto *vc, viam_carto_get_point_cloud_map_response *r) {
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
+        cf->GetPointCloudMap(r);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+
     return VIAM_CARTO_SUCCESS;
 };
 
 extern int viam_carto_get_point_cloud_map_response_destroy(
     viam_carto_get_point_cloud_map_response *r) {
-    return VIAM_CARTO_SUCCESS;
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+    rc = bdestroy(r->point_cloud_pcd);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    r->point_cloud_pcd = nullptr;
+    return return_code;
 };
 
 extern int viam_carto_get_internal_state(
