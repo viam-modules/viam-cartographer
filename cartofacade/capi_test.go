@@ -62,7 +62,7 @@ func TestGetPositionResponse(t *testing.T) {
 
 func TestToSensorReading(t *testing.T) {
 	t.Run("sensor reading properly converted between c and go", func(t *testing.T) {
-		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 		sr := toSensorReading("mysensor", []byte("he0llo"), timestamp)
 		test.That(t, bstringToGoString(sr.sensor), test.ShouldResemble, "mysensor")
 		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
@@ -116,7 +116,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		// test invalid addSensorReading: not in sensor list
-		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 		err = vc.addSensorReading("not my sensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
