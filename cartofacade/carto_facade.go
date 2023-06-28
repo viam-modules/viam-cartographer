@@ -178,8 +178,8 @@ func (cf *CartoFacade) start(ctx context.Context, activeBackgroundWorkers *sync.
 func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) error {
 	cf.start(ctx, activeBackgroundWorkers)
 
-	requestParams := map[RequestParamType]interface{}{}
-	untyped, err := cf.request(ctx, initialize, requestParams, timeout)
+	emptyRequestParams := map[RequestParamType]interface{}{}
+	untyped, err := cf.request(ctx, initialize, emptyRequestParams, timeout)
 	if err != nil {
 		return err
 	}
@@ -196,8 +196,8 @@ func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, ac
 
 // Start calls into the cartofacade C code.
 func (cf *CartoFacade) Start(ctx context.Context, timeout time.Duration) error {
-	requestParams := map[RequestParamType]interface{}{}
-	_, err := cf.request(ctx, start, requestParams, timeout)
+	emptyRequestParams := map[RequestParamType]interface{}{}
+	_, err := cf.request(ctx, start, emptyRequestParams, timeout)
 	if err != nil {
 		return err
 	}
@@ -207,8 +207,8 @@ func (cf *CartoFacade) Start(ctx context.Context, timeout time.Duration) error {
 
 // Stop calls into the cartofacade C code.
 func (cf *CartoFacade) Stop(ctx context.Context, timeout time.Duration) error {
-	requestParams := map[RequestParamType]interface{}{}
-	_, err := cf.request(ctx, stop, requestParams, timeout)
+	emptyRequestParams := map[RequestParamType]interface{}{}
+	_, err := cf.request(ctx, stop, emptyRequestParams, timeout)
 	if err != nil {
 		return err
 	}
@@ -218,8 +218,8 @@ func (cf *CartoFacade) Stop(ctx context.Context, timeout time.Duration) error {
 
 // Terminate calls into the cartofacade C code.
 func (cf *CartoFacade) Terminate(ctx context.Context, timeout time.Duration) error {
-	requestParams := map[RequestParamType]interface{}{}
-	_, err := cf.request(ctx, terminate, requestParams, timeout)
+	emptyRequestParams := map[RequestParamType]interface{}{}
+	_, err := cf.request(ctx, terminate, emptyRequestParams, timeout)
 	if err != nil {
 		return err
 	}
@@ -251,8 +251,8 @@ func (cf *CartoFacade) AddSensorReading(
 
 // GetPosition calls into the cartofacade C code.
 func (cf *CartoFacade) GetPosition(ctx context.Context, timeout time.Duration) (GetPosition, error) {
-	requestParams := map[RequestParamType]interface{}{}
-	untyped, err := cf.request(ctx, position, requestParams, timeout)
+	emptyRequestParams := map[RequestParamType]interface{}{}
+	untyped, err := cf.request(ctx, position, emptyRequestParams, timeout)
 	if err != nil {
 		return GetPosition{}, err
 	}
@@ -267,8 +267,8 @@ func (cf *CartoFacade) GetPosition(ctx context.Context, timeout time.Duration) (
 
 // GetInternalState calls into the cartofacade C code.
 func (cf *CartoFacade) GetInternalState(ctx context.Context, timeout time.Duration) ([]byte, error) {
-	requestParams := map[RequestParamType]interface{}{}
-	untyped, err := cf.request(ctx, internalState, requestParams, timeout)
+	emptyRequestParams := map[RequestParamType]interface{}{}
+	untyped, err := cf.request(ctx, internalState, emptyRequestParams, timeout)
 	if err != nil {
 		return []byte{}, err
 	}
@@ -283,8 +283,8 @@ func (cf *CartoFacade) GetInternalState(ctx context.Context, timeout time.Durati
 
 // GetPointCloudMap calls into the cartofacade C code.
 func (cf *CartoFacade) GetPointCloudMap(ctx context.Context, timeout time.Duration) ([]byte, error) {
-	requestParams := map[RequestParamType]interface{}{}
-	untyped, err := cf.request(ctx, pointCloudMap, requestParams, timeout)
+	emptyRequestParams := map[RequestParamType]interface{}{}
+	untyped, err := cf.request(ctx, pointCloudMap, emptyRequestParams, timeout)
 	if err != nil {
 		return []byte{}, err
 	}
