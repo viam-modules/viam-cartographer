@@ -18,7 +18,7 @@ jobs:
 
   appimage:
   # remove
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@RSDK-3591_UpdateWorkflows
+    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     needs: test
     with:
       release_type: 'stable'
