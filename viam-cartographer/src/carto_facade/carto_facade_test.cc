@@ -580,13 +580,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     // unable to aquire lock
     {
-        viam_carto_sensor_reading sr;
-        // must be they first sensor in the sensor list
-        sr.sensor = bfromcstr("sensor_1");
-        std::string pcd = help::binary_pcd(points);
-        sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
-        BOOST_TEST(sr.sensor_reading != nullptr);
-        sr.sensor_reading_time_unix_micro = 1687900042085694;
+        viam_carto_sensor_reading sr = new_test_sensor_reading(
+            "sensor_1", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1687900053773475);
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         std::lock_guard<std::mutex> lk(cf->map_builder_mutex);
