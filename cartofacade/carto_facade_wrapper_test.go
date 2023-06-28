@@ -1,3 +1,4 @@
+//nolint:dupl
 package cartofacade
 
 import (
@@ -330,14 +331,14 @@ func TestGetInternalState(t *testing.T) {
 		test.That(t, internalState, test.ShouldResemble, []byte("hello!"))
 
 		carto.GetInternalStateFunc = func() ([]byte, error) {
-			return []byte{}, errors.New("test error 5")
+			return []byte{}, errors.New("test error 6")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetInternalState(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
+		test.That(t, err, test.ShouldResemble, errors.New("test error 6"))
 
 		carto.GetInternalStateFunc = func() ([]byte, error) {
 			time.Sleep(1 * time.Millisecond)
@@ -382,14 +383,14 @@ func TestGetPointCloudMap(t *testing.T) {
 		test.That(t, internalState, test.ShouldResemble, []byte("hello!"))
 
 		carto.GetPointCloudMapFunc = func() ([]byte, error) {
-			return []byte{}, errors.New("test error 5")
+			return []byte{}, errors.New("test error 7")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
+		test.That(t, err, test.ShouldResemble, errors.New("test error 7"))
 
 		carto.GetPointCloudMapFunc = func() ([]byte, error) {
 			time.Sleep(1 * time.Millisecond)

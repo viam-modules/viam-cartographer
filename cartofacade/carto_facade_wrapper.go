@@ -1,3 +1,4 @@
+// Package cartofacade contains the api to call into CGO
 package cartofacade
 
 import (
@@ -7,6 +8,7 @@ import (
 	"time"
 )
 
+// Initialize calls into the cartofacade C code.
 func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) error {
 	cf.start(ctx, activeBackgroundWorkers)
 
@@ -18,7 +20,7 @@ func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, ac
 
 	carto, ok := untyped.(Carto)
 	if !ok {
-		return errors.New("Unable to cast response from cartofacade to a carto struct")
+		return errors.New("unable to cast response from cartofacade to a carto struct")
 	}
 
 	cf.carto = &carto
@@ -26,6 +28,7 @@ func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, ac
 	return nil
 }
 
+// Start calls into the cartofacade C code.
 func (cf *CartoFacade) Start(ctx context.Context, timeout time.Duration) error {
 	requestParams := map[RequestParamType]interface{}{}
 	_, err := cf.request(ctx, start, requestParams, timeout)
@@ -36,6 +39,7 @@ func (cf *CartoFacade) Start(ctx context.Context, timeout time.Duration) error {
 	return nil
 }
 
+// Stop calls into the cartofacade C code.
 func (cf *CartoFacade) Stop(ctx context.Context, timeout time.Duration) error {
 	requestParams := map[RequestParamType]interface{}{}
 	_, err := cf.request(ctx, stop, requestParams, timeout)
@@ -46,6 +50,7 @@ func (cf *CartoFacade) Stop(ctx context.Context, timeout time.Duration) error {
 	return nil
 }
 
+// Terminate calls into the cartofacade C code.
 func (cf *CartoFacade) Terminate(ctx context.Context, timeout time.Duration) error {
 	requestParams := map[RequestParamType]interface{}{}
 	_, err := cf.request(ctx, terminate, requestParams, timeout)
@@ -56,7 +61,14 @@ func (cf *CartoFacade) Terminate(ctx context.Context, timeout time.Duration) err
 	return nil
 }
 
-func (cf *CartoFacade) AddSensorReading(ctx context.Context, timeout time.Duration, sensorName string, currentReading []byte, readingTimestamp time.Time) error {
+// AddSensorReading calls into the cartofacade C code.
+func (cf *CartoFacade) AddSensorReading(
+	ctx context.Context,
+	timeout time.Duration,
+	sensorName string,
+	currentReading []byte,
+	readingTimestamp time.Time,
+) error {
 	requestParams := map[RequestParamType]interface{}{
 		sensor:    sensorName,
 		reading:   currentReading,
@@ -71,6 +83,7 @@ func (cf *CartoFacade) AddSensorReading(ctx context.Context, timeout time.Durati
 	return nil
 }
 
+// GetPosition calls into the cartofacade C code.
 func (cf *CartoFacade) GetPosition(ctx context.Context, timeout time.Duration) (PositionInfo, error) {
 	requestParams := map[RequestParamType]interface{}{}
 	untyped, err := cf.request(ctx, position, requestParams, timeout)
@@ -80,12 +93,13 @@ func (cf *CartoFacade) GetPosition(ctx context.Context, timeout time.Duration) (
 
 	pos, ok := untyped.(PositionInfo)
 	if !ok {
-		return PositionInfo{}, errors.New("Unable to cast response from cartofacade to a position info struct")
+		return PositionInfo{}, errors.New("unable to cast response from cartofacade to a position info struct")
 	}
 
 	return pos, nil
 }
 
+// GetInternalState calls into the cartofacade C code.
 func (cf *CartoFacade) GetInternalState(ctx context.Context, timeout time.Duration) ([]byte, error) {
 	requestParams := map[RequestParamType]interface{}{}
 	untyped, err := cf.request(ctx, internalState, requestParams, timeout)
@@ -95,12 +109,13 @@ func (cf *CartoFacade) GetInternalState(ctx context.Context, timeout time.Durati
 
 	internalState, ok := untyped.([]byte)
 	if !ok {
-		return []byte{}, errors.New("Unable to cast response from cartofacade to a byte slice")
+		return []byte{}, errors.New("unable to cast response from cartofacade to a byte slice")
 	}
 
 	return internalState, nil
 }
 
+// GetPointCloudMap calls into the cartofacade C code.
 func (cf *CartoFacade) GetPointCloudMap(ctx context.Context, timeout time.Duration) ([]byte, error) {
 	requestParams := map[RequestParamType]interface{}{}
 	untyped, err := cf.request(ctx, pointCloudMap, requestParams, timeout)
@@ -110,7 +125,7 @@ func (cf *CartoFacade) GetPointCloudMap(ctx context.Context, timeout time.Durati
 
 	pointCloud, ok := untyped.([]byte)
 	if !ok {
-		return []byte{}, errors.New("Unable to cast response from cartofacade to a byte slice")
+		return []byte{}, errors.New("unable to cast response from cartofacade to a byte slice")
 	}
 
 	return pointCloud, nil
