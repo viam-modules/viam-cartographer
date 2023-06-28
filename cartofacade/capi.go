@@ -1,4 +1,4 @@
-// Package cartofacade provides an api to call into c code
+// Package cartofacade contains the api to call into CGO
 //
 //nolint:lll
 package cartofacade
@@ -38,9 +38,25 @@ type CartoLib struct {
 	value *C.viam_carto_lib
 }
 
+// CartoLibInterface describes the method signatures that CartoLib must implement
+type CartoLibInterface interface {
+	Terminate() error
+}
+
 // Carto holds the c type viam_carto
 type Carto struct {
 	value *C.viam_carto
+}
+
+// CartoInterface describes the method signatures that Carto must implement
+type CartoInterface interface {
+	start() error
+	stop() error
+	terminate() error
+	addSensorReading(string, []byte, time.Time) error
+	getPosition() (GetPosition, error)
+	getPointCloudMap() ([]byte, error)
+	getInternalState() ([]byte, error)
 }
 
 // GetPosition holds values returned from c to be processed later
@@ -48,11 +64,6 @@ type GetPosition struct {
 	X float64
 	Y float64
 	Z float64
-
-	Ox    float64
-	Oy    float64
-	Oz    float64
-	Theta float64
 
 	Real float64
 	Imag float64
@@ -99,7 +110,6 @@ type CartoAlgoConfig struct {
 // NewLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
 func NewLib(miniloglevel, verbose int) (CartoLib, error) {
 	var pVcl *C.viam_carto_lib
-
 	status := C.viam_carto_lib_init(&pVcl, C.int(miniloglevel), C.int(verbose))
 	if err := toError(status); err != nil {
 		return CartoLib{}, err
@@ -119,8 +129,8 @@ func (vcl *CartoLib) Terminate() error {
 	return nil
 }
 
-// New calls viam_carto_init and returns a pointer to a viam carto object.
-func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
+// NewCarto calls viam_carto_init and returns a pointer to a viam carto object. vcl is only an interface to facilitate testing & that the only type vcl it is actually expected to have is a CartoLib
+func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, error) {
 	var pVc *C.viam_carto
 
 	vcc, err := getConfig(cfg)
@@ -130,7 +140,12 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 
 	vcac := toAlgoConfig(acfg)
 
-	status := C.viam_carto_init(&pVc, vcl.value, vcc, vcac)
+	cl, ok := vcl.(*CartoLib)
+	if !ok {
+		return Carto{}, errors.New("cannot cast provided library to a CartoLib")
+	}
+
+	status := C.viam_carto_init(&pVc, cl.value, vcc, vcac)
 	if err := toError(status); err != nil {
 		return Carto{}, err
 	}
@@ -143,7 +158,7 @@ func New(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLib) (Carto, error) {
 }
 
 // Start is a wrapper for viam_carto_start
-func (vc *Carto) Start() error {
+func (vc *Carto) start() error {
 	status := C.viam_carto_start(vc.value)
 
 	if err := toError(status); err != nil {
@@ -154,7 +169,7 @@ func (vc *Carto) Start() error {
 }
 
 // Stop is a wrapper for viam_carto_stop
-func (vc *Carto) Stop() error {
+func (vc *Carto) stop() error {
 	status := C.viam_carto_stop(vc.value)
 
 	if err := toError(status); err != nil {
@@ -165,7 +180,7 @@ func (vc *Carto) Stop() error {
 }
 
 // Terminate calls viam_carto_terminate to clean up memory for viam carto
-func (vc *Carto) Terminate() error {
+func (vc *Carto) terminate() error {
 	status := C.viam_carto_terminate(&vc.value)
 
 	if err := toError(status); err != nil {
@@ -176,7 +191,7 @@ func (vc *Carto) Terminate() error {
 }
 
 // AddSensorReading is a wrapper for viam_carto_add_sensor_reading
-func (vc *Carto) AddSensorReading(sensor string, readings []byte, timestamp time.Time) error {
+func (vc *Carto) addSensorReading(sensor string, readings []byte, timestamp time.Time) error {
 	value := toSensorReading(sensor, readings, timestamp)
 
 	status := C.viam_carto_add_sensor_reading(vc.value, &value)
@@ -194,7 +209,7 @@ func (vc *Carto) AddSensorReading(sensor string, readings []byte, timestamp time
 }
 
 // GetPosition is a wrapper for viam_carto_get_position
-func (vc *Carto) GetPosition() (GetPosition, error) {
+func (vc *Carto) getPosition() (GetPosition, error) {
 	value := C.viam_carto_get_position_response{}
 
 	status := C.viam_carto_get_position(vc.value, &value)
@@ -214,7 +229,7 @@ func (vc *Carto) GetPosition() (GetPosition, error) {
 }
 
 // GetPointCloudMap is a wrapper for viam_carto_get_point_cloud_map
-func (vc *Carto) GetPointCloudMap() ([]byte, error) {
+func (vc *Carto) getPointCloudMap() ([]byte, error) {
 	// TODO: determine whether or not return needs to be a pointer for performance reasons
 	value := C.viam_carto_get_point_cloud_map_response{}
 
@@ -236,7 +251,7 @@ func (vc *Carto) GetPointCloudMap() ([]byte, error) {
 }
 
 // GetInternalState is a wrapper for viam_carto_get_internal_state
-func (vc *Carto) GetInternalState() ([]byte, error) {
+func (vc *Carto) getInternalState() ([]byte, error) {
 	value := C.viam_carto_get_internal_state_response{}
 
 	status := C.viam_carto_get_internal_state(vc.value, &value)
@@ -275,15 +290,10 @@ func getTestGetPositionResponse() C.viam_carto_get_position_response {
 	gpr.y = C.double(200)
 	gpr.z = C.double(300)
 
-	gpr.o_x = C.double(400)
-	gpr.o_y = C.double(500)
-	gpr.o_z = C.double(600)
-
 	gpr.imag = C.double(700)
 	gpr.jmag = C.double(800)
 	gpr.kmag = C.double(900)
 
-	gpr.theta = C.double(1000)
 	gpr.real = C.double(1100)
 
 	gpr.component_reference = goStringToBstring("C++ component reference")
@@ -334,7 +344,6 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc.sensors_len = C.int(sz)
 	vcc.map_rate_sec = C.int(cfg.MapRateSecond)
 	vcc.data_dir = goStringToBstring(cfg.DataDir)
-	vcc.component_reference = goStringToBstring(cfg.ComponentReference)
 	vcc.lidar_config = lidarCfg
 
 	return vcc, nil
@@ -363,11 +372,6 @@ func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition
 		X: float64(value.x),
 		Y: float64(value.y),
 		Z: float64(value.z),
-
-		Ox:    float64(value.o_x),
-		Oy:    float64(value.o_y),
-		Oz:    float64(value.o_z),
-		Theta: float64(value.theta),
 
 		Real: float64(value.real),
 		Imag: float64(value.imag),

@@ -7,6 +7,13 @@
 namespace viam {
 namespace carto_facade {
 namespace test_helpers {
+std::string read_file(std::string file_path) {
+    std::ifstream t(file_path);
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+    return buffer.str();
+}
+
 void timed_pcd_contains(cartographer::sensor::TimedPointCloudData timed_pcd,
                         std::vector<std::vector<double>> points) {
     auto tolerance = boost::test_tools::tolerance(0.00001);
