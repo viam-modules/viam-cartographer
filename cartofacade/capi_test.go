@@ -29,8 +29,6 @@ func TestGetConfig(t *testing.T) {
 		dataDir := bstringToGoString(vcc.data_dir)
 		test.That(t, dataDir, test.ShouldResemble, dir)
 
-		componentReference := bstringToGoString(vcc.component_reference)
-		test.That(t, componentReference, test.ShouldResemble, "component")
 		freeBstringArray(vcc.sensors, vcc.sensors_len)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, twoD)
@@ -161,23 +159,23 @@ func TestCGoAPI(t *testing.T) {
 		holder, err := vc.getPosition()
 
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
+		test.That(t, holder.ComponentReference, test.ShouldEqual, "mysensor")
 
-		test.That(t, holder.X, test.ShouldEqual, 100)
-		test.That(t, holder.X, test.ShouldEqual, 100)
-		test.That(t, holder.Y, test.ShouldEqual, 200)
-		test.That(t, holder.Z, test.ShouldEqual, 300)
+		test.That(t, holder.X, test.ShouldEqual, 0)
+		test.That(t, holder.X, test.ShouldEqual, 0)
+		test.That(t, holder.Y, test.ShouldEqual, 0)
+		test.That(t, holder.Z, test.ShouldEqual, 0)
 
-		test.That(t, holder.Ox, test.ShouldEqual, 400)
-		test.That(t, holder.Oy, test.ShouldEqual, 500)
-		test.That(t, holder.Oz, test.ShouldEqual, 600)
+		test.That(t, holder.Ox, test.ShouldEqual, 0)
+		test.That(t, holder.Oy, test.ShouldEqual, 0)
+		test.That(t, holder.Oz, test.ShouldEqual, 0)
 
-		test.That(t, holder.Imag, test.ShouldEqual, 700)
-		test.That(t, holder.Jmag, test.ShouldEqual, 800)
-		test.That(t, holder.Kmag, test.ShouldEqual, 900)
+		test.That(t, holder.Imag, test.ShouldEqual, 0)
+		test.That(t, holder.Jmag, test.ShouldEqual, 0)
+		test.That(t, holder.Kmag, test.ShouldEqual, 0)
 
-		test.That(t, holder.Theta, test.ShouldEqual, 1000)
-		test.That(t, holder.Real, test.ShouldEqual, 1100)
+		test.That(t, holder.Theta, test.ShouldEqual, 0)
+		test.That(t, holder.Real, test.ShouldEqual, 0)
 
 		// test getPointCloudMap
 		_, err = vc.getPointCloudMap()

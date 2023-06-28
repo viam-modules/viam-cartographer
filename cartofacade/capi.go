@@ -354,7 +354,6 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc.sensors_len = C.int(sz)
 	vcc.map_rate_sec = C.int(cfg.MapRateSecond)
 	vcc.data_dir = goStringToBstring(cfg.DataDir)
-	vcc.component_reference = goStringToBstring(cfg.ComponentReference)
 	vcc.lidar_config = lidarCfg
 
 	return vcc, nil
