@@ -88,6 +88,8 @@ func TestCGoAPI(t *testing.T) {
 
 		cfgBad := GetBadTestConfig()
 		cfg, dir, err := GetTestConfig("mysensor")
+		test.That(t, err, test.ShouldBeNil)
+
 		algoCfg := GetTestAlgoConfig()
 		vc, err := NewCarto(cfg, algoCfg, &CartoLibMock{})
 
