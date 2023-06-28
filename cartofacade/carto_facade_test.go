@@ -27,8 +27,8 @@ func TestRequest(t *testing.T) {
 
 		algoConfig := GetTestAlgoConfig()
 		carto := CartoMock{}
-		carto.GetPositionFunc = func() (PositionInfo, error) {
-			return PositionInfo{}, nil
+		carto.GetPositionFunc = func() (GetPosition, error) {
+			return GetPosition{}, nil
 		}
 
 		cf := New(&cartoLib, config, algoConfig)
