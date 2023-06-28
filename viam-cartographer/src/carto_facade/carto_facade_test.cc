@@ -622,8 +622,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     {
         viam_carto_get_position_response pr;
-        // Test get position before any data is provided
-        // it should be all zeroed out
         BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
         BOOST_TEST(pr.x == 0);
         BOOST_TEST(pr.y == 0);
@@ -652,8 +650,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     {
         viam_carto_get_position_response pr;
-        // Test get position before any data is provided
-        // it should be all zeroed out
         BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
         BOOST_TEST(pr.x == 0);
         BOOST_TEST(pr.y == 0);
@@ -683,8 +679,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     // GetPosition changed from binary AddSensorReading request
     {
         viam_carto_get_position_response pr;
-        // Test get position before any data is provided
-        // it should be all zeroed out
         BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
         BOOST_TEST(pr.x == -1.4367625864016951, tol);
         BOOST_TEST(pr.y == -1.5307342301548705, tol);
