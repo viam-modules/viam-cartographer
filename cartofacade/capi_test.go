@@ -88,6 +88,8 @@ func TestCGoAPI(t *testing.T) {
 
 		cfgBad := GetBadTestConfig()
 		cfg, dir, err := GetTestConfig("mysensor")
+		defer os.RemoveAll(dir)
+
 		test.That(t, err, test.ShouldBeNil)
 
 		algoCfg := GetTestAlgoConfig()
@@ -101,9 +103,6 @@ func TestCGoAPI(t *testing.T) {
 		// initialize viam_carto incorrectly
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
 		test.That(t, vc, test.ShouldNotBeNil)
-
-		defer os.RemoveAll(dir)
-		test.That(t, err, test.ShouldBeNil)
 
 		algoCfg = GetTestAlgoConfig()
 		vc, err = NewCarto(cfg, algoCfg, &pvcl)
