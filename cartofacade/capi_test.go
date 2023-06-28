@@ -165,7 +165,7 @@ func TestCGoAPI(t *testing.T) {
 
 		// test getPointCloudMap
 		_, err = vc.getPointCloudMap()
-		test.That(t, err, test.ShouldResemble, errors.New("nil pointcloud"))
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
 		// test getInternalState
 		_, err = vc.getInternalState()
