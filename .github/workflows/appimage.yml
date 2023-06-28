@@ -51,7 +51,7 @@ jobs:
       run: |
         sudo apt update
 
-    - name: Clean and Fix Permissions
+    - name: make clean
       run: |
         chown -R testbot:testbot .
         sudo -u testbot bash -lc 'make clean'
