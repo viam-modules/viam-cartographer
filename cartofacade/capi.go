@@ -65,11 +65,6 @@ type GetPosition struct {
 	Y float64
 	Z float64
 
-	Ox    float64
-	Oy    float64
-	Oz    float64
-	Theta float64
-
 	Real float64
 	Imag float64
 	Jmag float64
@@ -295,15 +290,10 @@ func getTestGetPositionResponse() C.viam_carto_get_position_response {
 	gpr.y = C.double(200)
 	gpr.z = C.double(300)
 
-	gpr.o_x = C.double(400)
-	gpr.o_y = C.double(500)
-	gpr.o_z = C.double(600)
-
 	gpr.imag = C.double(700)
 	gpr.jmag = C.double(800)
 	gpr.kmag = C.double(900)
 
-	gpr.theta = C.double(1000)
 	gpr.real = C.double(1100)
 
 	gpr.component_reference = goStringToBstring("C++ component reference")
@@ -382,11 +372,6 @@ func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition
 		X: float64(value.x),
 		Y: float64(value.y),
 		Z: float64(value.z),
-
-		Ox:    float64(value.o_x),
-		Oy:    float64(value.o_y),
-		Oz:    float64(value.o_z),
-		Theta: float64(value.theta),
 
 		Real: float64(value.real),
 		Imag: float64(value.imag),

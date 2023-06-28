@@ -552,12 +552,6 @@ int CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     r->jmag = pos_quat.y();
     r->kmag = pos_quat.z();
     r->component_reference = bstrcpy(config.component_reference);
-    // currently unset
-    r->o_x = 0;
-    r->o_y = 0;
-    r->o_z = 0;
-    r->theta = 0;
-    r->real = 0;
 
     return VIAM_CARTO_SUCCESS;
 };

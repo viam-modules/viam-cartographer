@@ -50,14 +50,6 @@ typedef struct viam_carto_get_position_response {
     double y;
     // millimeters from the origin
     double z;
-    // z component of a vector defining axis of rotation
-    double o_x;
-    // x component of a vector defining axis of rotation
-    double o_y;
-    // y component of a vector defining axis of rotation
-    double o_z;
-    // degrees
-    double theta;
 
     // Quaternian information
     double real;

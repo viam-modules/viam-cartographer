@@ -488,14 +488,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(pr.x == 0);
         BOOST_TEST(pr.y == 0);
         BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.o_x == 0);
-        BOOST_TEST(pr.o_y == 0);
-        BOOST_TEST(pr.o_z == 0);
         BOOST_TEST(pr.imag == 0);
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.theta == 0);
-        BOOST_TEST(pr.real == 0);
+        BOOST_TEST(pr.real == 1);
         BOOST_TEST(to_std_string(pr.component_reference) == "sensor_1");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
@@ -601,14 +597,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(pr.x == 0);
         BOOST_TEST(pr.y == 0);
         BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.o_x == 0);
-        BOOST_TEST(pr.o_y == 0);
-        BOOST_TEST(pr.o_z == 0);
         BOOST_TEST(pr.imag == 0);
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.theta == 0);
-        BOOST_TEST(pr.real == 0);
+        BOOST_TEST(pr.real == 1);
         BOOST_TEST(to_std_string(pr.component_reference) == "sensor_1");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
@@ -644,14 +636,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(pr.x == 0);
         BOOST_TEST(pr.y == 0);
         BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.o_x == 0);
-        BOOST_TEST(pr.o_y == 0);
-        BOOST_TEST(pr.o_z == 0);
         BOOST_TEST(pr.imag == 0);
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.theta == 0);
-        BOOST_TEST(pr.real == 0);
+        BOOST_TEST(pr.real == 1);
         BOOST_TEST(to_std_string(pr.component_reference) == "sensor_1");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
@@ -678,14 +666,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(pr.x == 0);
         BOOST_TEST(pr.y == 0);
         BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.o_x == 0);
-        BOOST_TEST(pr.o_y == 0);
-        BOOST_TEST(pr.o_z == 0);
         BOOST_TEST(pr.imag == 0);
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.theta == 0);
-        BOOST_TEST(pr.real == 0);
+        BOOST_TEST(pr.real == 1);
         BOOST_TEST(to_std_string(pr.component_reference) == "sensor_1");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
@@ -713,14 +697,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(pr.x == -1.4367625864016951, tt::tolerance(0.001));
         BOOST_TEST(pr.y == -1.5307342301548705, tt::tolerance(0.001));
         BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.o_x == 0);
-        BOOST_TEST(pr.o_y == 0);
-        BOOST_TEST(pr.o_z == 0);
         BOOST_TEST(pr.imag == 0);
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag == 0.01372519815822075, tt::tolerance(0.001));
-        BOOST_TEST(pr.theta == 0);
-        BOOST_TEST(pr.real == 0);
+        BOOST_TEST(pr.real == 0.9999058050314128, tt::tolerance(0.001));
         BOOST_TEST(to_std_string(pr.component_reference) == "sensor_1");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
