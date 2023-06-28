@@ -86,15 +86,20 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg := GetBadTestConfig()
+		cfgBad := GetBadTestConfig()
+		cfg, dir, err := GetTestConfig("mysensor")
 		algoCfg := GetTestAlgoConfig()
-		vc, err := NewCarto(cfg, algoCfg, &pvcl)
+		vc, err := NewCarto(cfg, algoCfg, &CartoLibMock{})
 
+		// initialize viam_carto with an invalid library incorrectly
+		test.That(t, err, test.ShouldResemble, errors.New("cannot cast provided library to a CartoLib"))
+		test.That(t, vc, test.ShouldNotBeNil)
+
+		vc, err = NewCarto(cfgBad, algoCfg, &pvcl)
 		// initialize viam_carto incorrectly
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
-		cfg, dir, err := GetTestConfig("mysensor")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
