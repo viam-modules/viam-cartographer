@@ -333,7 +333,7 @@ func TestAddSensorReading(t *testing.T) {
 	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
 
 	t.Run("testing AddSensorReading", func(t *testing.T) {
-		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.Local)
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
 		// read PCD
 		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
