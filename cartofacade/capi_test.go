@@ -98,6 +98,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("cannot cast provided library to a CartoLib"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
+		cfgBad := GetBadTestConfig()
 		vc, err = NewCarto(cfgBad, algoCfg, &pvcl)
 		// initialize viam_carto incorrectly
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
