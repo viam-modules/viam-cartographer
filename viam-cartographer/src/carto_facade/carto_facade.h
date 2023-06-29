@@ -50,14 +50,6 @@ typedef struct viam_carto_get_position_response {
     double y;
     // millimeters from the origin
     double z;
-    // z component of a vector defining axis of rotation
-    double o_x;
-    // x component of a vector defining axis of rotation
-    double o_y;
-    // y component of a vector defining axis of rotation
-    double o_z;
-    // degrees
-    double theta;
 
     // Quaternian information
     double real;
@@ -113,6 +105,8 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST 19
 #define VIAM_CARTO_SENSOR_READING_EMPTY 20
 #define VIAM_CARTO_SENSOR_READING_INVALID 21
+#define VIAM_CARTO_GET_POSITION_RESPONSE_INVALID 22
+#define VIAM_CARTO_POINTCLOUD_MAP_EMPTY 23
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -135,7 +129,6 @@ typedef struct viam_carto_config {
     int sensors_len;
     int map_rate_sec;
     bstring data_dir;
-    bstring component_reference;
     viam_carto_LIDAR_CONFIG lidar_config;
 } viam_carto_config;
 
@@ -283,6 +276,7 @@ extern int viam_carto_get_internal_state_response_destroy(
 #ifdef __cplusplus
 namespace viam {
 namespace carto_facade {
+std::string to_std_string(bstring b_str);
 enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
 std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode);
 static const int checkForShutdownIntervalMicroseconds = 1e5;
@@ -296,7 +290,7 @@ typedef struct config {
     std::vector<std::string> sensors;
     std::chrono::seconds map_rate_sec;
     std::string data_dir;
-    std::string component_reference;
+    bstring component_reference;
     viam_carto_LIDAR_CONFIG lidar_config;
 } config;
 
@@ -317,6 +311,7 @@ class CartoFacade {
    public:
     CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
                 const viam_carto_algo_config ac);
+    ~CartoFacade();
 
     // IOInit:
     // 1. detects if the data_dir has a deprecated format & throws if it does
@@ -332,23 +327,23 @@ class CartoFacade {
     // GetPosition returns the relative pose of the robot w.r.t the "origin"
     // of the map, which is the starting point from where the map was initially
     // created along with a component reference.
-    int GetPosition(viam_carto_get_position_response *r);
+    void GetPosition(viam_carto_get_position_response *r);
 
     // GetPointCloudMap returns a stream of the current sampled pointcloud
     // derived from the painted map, using probability estimates in chunks with
     // a max size of maximumGRPCByteChunkSize
-    int GetPointCloudMap(viam_carto_get_point_cloud_map_response *r);
+    void GetPointCloudMap(viam_carto_get_point_cloud_map_response *r);
 
     // GetInternalState returns a stream of the current internal state of the
     // map which is a pbstream for cartographer in chunks of size
     // maximumGRPCByteChunkSize
-    int GetInternalState(viam_carto_get_internal_state_response *r);
+    void GetInternalState(viam_carto_get_internal_state_response *r);
 
     void AddSensorReading(const viam_carto_sensor_reading *sr);
 
-    int Start();
+    void Start();
 
-    int Stop();
+    void Stop();
 
     // non api methods
     void CacheLatestMap();

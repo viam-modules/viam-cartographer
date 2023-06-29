@@ -70,7 +70,7 @@ func ValidateGetAndSaveData(
 	var err error
 	var path string
 	paths := make([]string, 0, 1)
-	startTime := time.Now()
+	startTime := time.Now().UTC()
 
 	for {
 		path, err = GetAndSaveData(ctx, dataDirectory, lidar, logger)
@@ -119,7 +119,7 @@ func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar
 
 	// If the server provided timestamps correlated with the point cloud, extract the time
 	// requested from the metadata and use that instead of the current time.
-	timeReq := time.Now()
+	timeReq := time.Now().UTC()
 	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 	if ok {
 		timeReq, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
