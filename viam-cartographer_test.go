@@ -146,16 +146,18 @@ func TestNew(t *testing.T) {
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
-		grpcServer.Stop()
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		_, err = svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-
-		test.That(t, timestamp1, test.ShouldNotEqual, &_zeroTime)
+		fmt.Println(timestamp1.After(_zeroTime))
+		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
+
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
 	t.Run("Successful creation of cartographer slam service in non localization mode", func(t *testing.T) {
@@ -172,7 +174,6 @@ func TestNew(t *testing.T) {
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
-		grpcServer.Stop()
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		_, err = svc.GetPointCloudMap(context.Background())
@@ -182,7 +183,11 @@ func TestNew(t *testing.T) {
 
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
+
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
+
 }
 
 func TestDataProcess(t *testing.T) {
