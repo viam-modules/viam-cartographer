@@ -12,9 +12,7 @@ on:
     inputs:
       release_type:
         required: true
-        description: Release version for this appimage (latest/rc/stable)
         type: string
-        default: latest
     secrets:
       GCP_CREDENTIALS:
         required: true
