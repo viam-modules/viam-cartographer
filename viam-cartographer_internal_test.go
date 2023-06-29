@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"testing"
+	"time"
 
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
@@ -16,6 +17,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
+	cartofacade "github.com/viamrobotics/viam-cartographer/cartofacade"
 	inject "github.com/viamrobotics/viam-cartographer/internal/inject"
 )
 
@@ -396,4 +398,59 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 			test.That(t, callback, test.ShouldBeNil)
 		})
 	})
+}
+
+func TestAddSensorReadingOffline(t *testing.T) {
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc.dataRateMs = 200
+	cf := cartofacade.CartoFacadeMock{}
+	buf := bytes.NewBuffer([]byte("12345"))
+	cf.AddSensorReadingFunc = func(ctx context.Context, timeout time.Duration, sensorName string, currentReading []byte, readingTimestamp time.Time) error {
+		return nil
+	}
+	svc.cartofacade = &cf
+
+	// When addSensorReading returns successfully
+	err := svc.addSensorReadingOffline(context.Background(), time.Now(), buf, 10*time.Second)
+	test.That(t, err, test.ShouldBeNil)
+
+	cf.AddSensorReadingFunc = func(ctx context.Context, timeout time.Duration, sensorName string, currentReading []byte, readingTimestamp time.Time) error {
+		return errors.New("cant acquire lock")
+	}
+	svc.cartofacade = &cf
+
+	// When addSensorReading is erroring and the context is cancelled
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+	cancelFunc()
+	err = svc.addSensorReadingOffline(cancelCtx, time.Now(), buf, 10*time.Second)
+	test.That(t, err, test.ShouldBeNil)
+}
+
+func TestAddSensorReadingOnline(t *testing.T) {
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc.dataRateMs = 200
+	cf := cartofacade.CartoFacadeMock{}
+	buf := bytes.NewBuffer([]byte("12345"))
+	cf.AddSensorReadingFunc = func(ctx context.Context, timeout time.Duration, sensorName string, currentReading []byte, readingTimestamp time.Time) error {
+		time.Sleep(1 * time.Second)
+		return nil
+	}
+	svc.cartofacade = &cf
+
+	// When addSensorReading blocks for longer than the data rate
+	timeToSleep := svc.addSensorReadingOnline(context.Background(), time.Now(), buf, 10*time.Second)
+	test.That(t, timeToSleep, test.ShouldEqual, 0)
+
+	cf.AddSensorReadingFunc = func(ctx context.Context, timeout time.Duration, sensorName string, currentReading []byte, readingTimestamp time.Time) error {
+		return nil
+	}
+	svc.cartofacade = &cf
+
+	// When addSensorReading does not block for longer than the data rate
+	timeToSleep = svc.addSensorReadingOnline(context.Background(), time.Now(), buf, 10*time.Second)
+	test.That(t, timeToSleep, test.ShouldNotEqual, 0)
+}
+
+func TestSensorProcess(t *testing.T) {
+
 }
