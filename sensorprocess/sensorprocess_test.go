@@ -8,11 +8,12 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
+	"go.viam.com/rdk/utils/contextutils"
+	"go.viam.com/test"
+
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	"go.viam.com/rdk/utils/contextutils"
-	"go.viam.com/test"
 )
 
 func TestAddSensorReadingReplaySensor(t *testing.T) {
@@ -29,7 +30,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 		return nil
 	}
 	// When addSensorReading returns successfully, no infinite loop
-	params := SensorProcessParams{
+	params := Params{
 		Ctx:               context.Background(),
 		Logger:            logger,
 		Cartofacade:       &cf,
@@ -77,7 +78,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 			firstReading = currentReading
 		}
 		if counter < 4 {
-			counter += 1
+			counter++
 			return errors.New("cant acquire lock")
 		}
 		lastReading = currentReading
@@ -106,7 +107,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 	}
 
 	// When addSensorReading blocks for longer than the data rate
-	params := SensorProcessParams{
+	params := Params{
 		Ctx:               context.Background(),
 		Logger:            logger,
 		Cartofacade:       &cf,
@@ -144,15 +145,15 @@ func TestAddSensorReading(t *testing.T) {
 	sensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 	test.That(t, err, test.ShouldBeNil)
 
-	addSensorReadingFromReplaySensor := func(params SensorProcessParams) {
-		return
+	addSensorReadingFromReplaySensor := func(params Params) {
 	}
-	addSensorReadingLiveReadings := func(params SensorProcessParams) int {
+
+	addSensorReadingFromLiveReadings := func(params Params) int {
 		return 100
 	}
 	cf := cartofacade.Mock{}
 
-	params := SensorProcessParams{
+	params := Params{
 		Ctx:               context.Background(),
 		Logger:            logger,
 		Cartofacade:       &cf,
@@ -164,7 +165,9 @@ func TestAddSensorReading(t *testing.T) {
 	}
 
 	// Live lidar
-	err = AddSensorReading(params, addSensorReadingFromReplaySensor, addSensorReadingLiveReadings)
+	params.addSensorReadingFromReplaySensor = addSensorReadingFromReplaySensor
+	params.addSensorReadingFromLiveReadings = addSensorReadingFromLiveReadings
+	err = AddSensorReading(params)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Replay sensor with valid time
@@ -176,7 +179,9 @@ func TestAddSensorReading(t *testing.T) {
 	params.Ctx = ctx
 	params.Lidar = replaySensor
 	params.PrimarySensorName = "replay_sensor"
-	err = AddSensorReading(params, addSensorReadingFromReplaySensor, addSensorReadingLiveReadings)
+	params.addSensorReadingFromReplaySensor = addSensorReadingFromReplaySensor
+	params.addSensorReadingFromLiveReadings = addSensorReadingFromLiveReadings
+	err = AddSensorReading(params)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Replay sensor with invalid time
@@ -184,11 +189,12 @@ func TestAddSensorReading(t *testing.T) {
 	replaySensor, err = lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 	test.That(t, err, test.ShouldBeNil)
 
+	ctx, _ = contextutils.ContextWithMetadata(context.Background())
 	params.Ctx = ctx
 	params.Lidar = replaySensor
 	params.PrimarySensorName = "invalid_replay_sensor"
-	ctx, _ = contextutils.ContextWithMetadata(context.Background())
-	err = AddSensorReading(params, addSensorReadingFromReplaySensor, addSensorReadingLiveReadings)
+	params.addSensorReadingFromReplaySensor = addSensorReadingFromReplaySensor
+	params.addSensorReadingFromLiveReadings = addSensorReadingFromLiveReadings
+	err = AddSensorReading(params)
 	test.That(t, err, test.ShouldBeError)
-
 }

@@ -45,7 +45,7 @@ const (
 	testDialMaxTimeoutSec              = 1
 	// TestTime can be used to test specific timestamps provided by a replay sensor.
 	TestTime = "2006-01-02T15:04:05.9999Z"
-	// BadTime can be used to represent something that should cause an error while parsing it as a time
+	// BadTime can be used to represent something that should cause an error while parsing it as a time.
 	BadTime = "NOT A TIME"
 )
 

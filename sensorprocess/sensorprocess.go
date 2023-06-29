@@ -1,3 +1,4 @@
+// Package sensorprocess contains the logic to add lidar or replay sensor readings to cartographer's mapbuilder
 package sensorprocess
 
 import (
@@ -7,13 +8,15 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/utils/contextutils"
+
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
-type SensorProcessParams struct {
+// Params holds params needed throughout the process of adding a sensor reading to the mapbuilder.
+type Params struct {
 	Ctx               context.Context
 	Cartofacade       cartofacade.Interface
 	Lidar             lidar.Lidar
@@ -22,19 +25,17 @@ type SensorProcessParams struct {
 	Timeout           time.Duration
 	Logger            golog.Logger
 
-	timeReq time.Time
-	buf     *bytes.Buffer
+	timeReq                          time.Time
+	buf                              *bytes.Buffer
+	addSensorReadingFromReplaySensor func(Params)
+	addSensorReadingFromLiveReadings func(Params) int
 }
 
 // SensorProcess polls the lidar to get the next sensor reading and adds it to the mapBuilder.
 func SensorProcess(
-	ctx context.Context,
-	lidar lidar.Lidar,
-	timeout time.Duration,
+	params Params,
 	addSensorReading func(
-		ctx context.Context,
-		lidar lidar.Lidar,
-		timeout time.Duration,
+		params Params,
 	),
 ) {
 	/*
@@ -43,19 +44,17 @@ func SensorProcess(
 	*/
 	for {
 		select {
-		case <-ctx.Done():
+		case <-params.Ctx.Done():
 			return
 		default:
-			addSensorReading(ctx, lidar, timeout)
+			addSensorReading(params)
 		}
 	}
 }
 
-//nolint:unused
+// AddSensorReading adds a lidar reading to the mapbuilder.
 func AddSensorReading(
-	params SensorProcessParams,
-	addSensorReadingFromReplaySensor func(SensorProcessParams),
-	addSensorReadingFromLiveReadings func(SensorProcessParams) int,
+	params Params,
 ) error {
 	reading, err := params.Lidar.GetData(params.Ctx)
 	if err != nil {
@@ -80,17 +79,18 @@ func AddSensorReading(
 			return err
 		}
 		params.timeReq = timeReq
-		addSensorReadingFromReplaySensor(params)
+		params.addSensorReadingFromReplaySensor(params)
 	} else {
 		params.timeReq = timeReq
-		timeToSleep := addSensorReadingFromLiveReadings(params)
+		timeToSleep := params.addSensorReadingFromLiveReadings(params)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
 
 	return nil
 }
 
-func AddSensorReadingFromReplaySensor(params SensorProcessParams) {
+// AddSensorReadingFromReplaySensor adds a reading from a replay sensor to the map builder.
+func AddSensorReadingFromReplaySensor(params Params) {
 	err := params.Cartofacade.AddSensorReading(params.Ctx, params.Timeout, params.PrimarySensorName, params.buf.Bytes(), params.timeReq)
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode
@@ -107,7 +107,8 @@ func AddSensorReadingFromReplaySensor(params SensorProcessParams) {
 	}
 }
 
-func AddSensorReadingFromLiveReadings(params SensorProcessParams) int {
+// AddSensorReadingFromLiveReadings adds a reading from a live lidar to the map builder.
+func AddSensorReadingFromLiveReadings(params Params) int {
 	startTime := time.Now()
 	err := params.Cartofacade.AddSensorReading(params.Ctx, params.Timeout, params.PrimarySensorName, params.buf.Bytes(), params.timeReq)
 	if err != nil {

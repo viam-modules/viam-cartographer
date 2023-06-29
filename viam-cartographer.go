@@ -24,7 +24,6 @@ import (
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
 
-	cartofacade "github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
@@ -206,8 +205,6 @@ type cartographerService struct {
 	slamProcessLogReader         io.ReadCloser
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
-
-	cartofacade cartofacade.Interface
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
