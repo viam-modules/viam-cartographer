@@ -129,7 +129,7 @@ test-cpp-full-mod-valgrind: build-debug
 test-cpp-full-mod-gdb: build-debug
 	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
 
-test-cpp-full-mod: build-debug
+test-cpp-full-mod: build
 	viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
 
 test-go:

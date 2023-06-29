@@ -9,6 +9,23 @@
 #include "io.h"
 #include "map_builder.h"
 #include "util.h"
+#include <openssl/sha.h>
+
+std::string sha256(const std::string str){
+  unsigned char hash[SHA256_DIGEST_LENGTH];
+
+  SHA256_CTX sha256;
+  SHA256_Init(&sha256);
+  SHA256_Update(&sha256, str.c_str(), str.size());
+  SHA256_Final(hash, &sha256);
+
+  std::stringstream ss;
+
+  for(int i = 0; i < SHA256_DIGEST_LENGTH; i++){
+    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>( hash[i] );
+  }
+  return ss.str();
+}
 
 namespace viam {
 namespace carto_facade {
@@ -678,6 +695,10 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     }
 
     int64_t sensor_reading_time_unix_micro = sr->sensor_reading_time_unix_micro;
+    VLOG(1) << "sensor_reading_time_unix_micro: "
+            << sensor_reading_time_unix_micro
+            << "sensor_reading_sha: "
+            << sha256(sensor_reading);
     auto [success, measurement] =
         viam::carto_facade::util::carto_sensor_reading(
             sensor_reading, sensor_reading_time_unix_micro);
@@ -895,6 +916,8 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
     }
 
     try {
+        VLOG(1) << "sr->sensor_reading_time_unix_micro: "
+                << sr->sensor_reading_time_unix_micro;
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->AddSensorReading(sr);

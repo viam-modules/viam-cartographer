@@ -157,6 +157,11 @@ carto_sensor_reading(std::string sensor_reading,
     }
 
     // research how to do this properly
+    // IDK why the cartographer::common::FromUniversal(123) part is required but
+    // that is how it was done prior to full mod & how it is done in the
+    // cartographer tests
+    // http://docs.ros.org/en/melodic/api/cartographer/html/mapping_2internal_2testing_2test__helpers_8cc_source.html
+    // We are just using milliseconds rather than for the diff
     point_cloud.time =
         cartographer::common::FromUniversal(sensor_reading_time_unix_micro);
     point_cloud.origin = Eigen::Vector3f::Zero();

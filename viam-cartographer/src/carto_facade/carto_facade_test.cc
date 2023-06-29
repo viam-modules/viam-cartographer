@@ -649,7 +649,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         VLOG(1) << "viam_carto_add_sensor_reading 1";
         viam_carto_sensor_reading sr = new_test_sensor_reading(
             "sensor_1", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
-            1687900053773475);
+            1629037851000000);
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
@@ -677,7 +677,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         VLOG(1) << "viam_carto_add_sensor_reading 2";
         viam_carto_sensor_reading sr = new_test_sensor_reading(
             "sensor_1", ".artifact/data/viam-cartographer/mock_lidar/1.pcd",
-            1687900060871613);
+            1629037853000000);
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
@@ -705,7 +705,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         VLOG(1) << "viam_carto_add_sensor_reading 3";
         viam_carto_sensor_reading sr = new_test_sensor_reading(
             "sensor_1", ".artifact/data/viam-cartographer/mock_lidar/2.pcd",
-            1687900067969751);
+            1629037855000000);
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==

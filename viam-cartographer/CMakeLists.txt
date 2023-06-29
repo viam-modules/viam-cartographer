@@ -28,6 +28,9 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(GRPCPP REQUIRED grpc++)
 
 find_package(absl REQUIRED)
+
+find_package(OpenSSL REQUIRED)
+
 add_definitions(-DABSL_LEGACY_THREAD_ANNOTATIONS)
 
 find_package(PCL REQUIRED)
@@ -70,6 +73,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   cartographer
   ${GRPCPP_LIBRARIES}
   ${PCL_LIBRARIES}
+  crypto
 )
 
 # executables
