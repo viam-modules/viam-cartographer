@@ -1,7 +1,6 @@
 #include "test_helpers.h"
-
 #include <boost/test/unit_test.hpp>
-
+#include <fstream>
 #include "util.h"
 
 namespace viam {
