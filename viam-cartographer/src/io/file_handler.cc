@@ -102,7 +102,7 @@ double ReadTimeFromTimestamp(std::string timestamp) {
         throw std::runtime_error(
             "timestamp cannot be parsed into a std::tm object: " + timestamp);
     }
-    double timestamp_time = (double)std::mktime(&dt);
+    double timestamp_time = (double)timegm(&dt);
     if (timestamp_time == -1) {
         throw std::runtime_error(
             "timestamp cannot be represented as a std::time_t object: " +
