@@ -25,8 +25,10 @@ type Params struct {
 	Timeout           time.Duration
 	Logger            golog.Logger
 
-	timeReq                          time.Time
-	buf                              *bytes.Buffer
+	timeReq time.Time
+	buf     *bytes.Buffer
+	logChan chan time.Time
+
 	addSensorReadingFromReplaySensor func(Params)
 	addSensorReadingFromLiveReadings func(Params) int
 }
@@ -42,6 +44,9 @@ func SensorProcess(
 		TODO: The tracing / telemetry should output aggregates & not be 1 log line per
 		failure to acquire the lock as that would introduce performance issues.
 	*/
+	params.logChan = make(chan time.Time, 1)
+	startBackgroundLoggingAggregator(params.Ctx, params.Logger, params.logChan)
+
 	for {
 		select {
 		case <-params.Ctx.Done():
@@ -101,8 +106,8 @@ func AddSensorReadingFromReplaySensor(params Params) {
 		case <-params.Ctx.Done():
 			return
 		default:
-			params.Logger.Warnf("Unable to acquire the lock for reading from %v. Trying again", params.timeReq)
 			err = params.Cartofacade.AddSensorReading(params.Ctx, params.Timeout, params.PrimarySensorName, params.buf.Bytes(), params.timeReq)
+			params.logChan <- params.timeReq
 		}
 	}
 }
@@ -112,8 +117,36 @@ func AddSensorReadingFromLiveReadings(params Params) int {
 	startTime := time.Now()
 	err := params.Cartofacade.AddSensorReading(params.Ctx, params.Timeout, params.PrimarySensorName, params.buf.Bytes(), params.timeReq)
 	if err != nil {
-		params.Logger.Warnf("Unable to acquire the lock. Not processing reading from %v", params.timeReq)
+		params.logChan <- params.timeReq
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(params.DataRateMs-timeElapsedMs)))
+}
+
+func startBackgroundLoggingAggregator(ctx context.Context, logger golog.Logger, logChan chan time.Time) {
+	ticker := time.NewTicker(5 * time.Second)
+	logData := make(map[time.Time]int)
+
+	// While the sensor process is running log aggregate failures every 5 seconds.
+	for {
+		select {
+		case t := <-logChan:
+			_, ok := logData[t]
+			if !ok {
+				logData[t] = 1
+			}
+			logData[t]++
+		case <-ticker.C:
+			logInfo(logData, logger)
+			logData = make(map[time.Time]int)
+		case <-ctx.Done():
+			return
+		}
+	}
+}
+
+func logInfo(logData map[time.Time]int, logger golog.Logger) {
+	for k, v := range logData {
+		logger.Warnf("failed to log reading from %v %v time(s)", k, v)
+	}
 }
