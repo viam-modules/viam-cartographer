@@ -9,6 +9,8 @@
 namespace viam {
 namespace carto_facade {
 namespace test_helpers {
+std::string read_file(std::string file_path);
+
 void timed_pcd_contains(cartographer::sensor::TimedPointCloudData timed_pcd,
                         std::vector<std::vector<double>> points);
 
