@@ -1,9 +1,9 @@
 #include "test_helpers.h"
 
 #include <boost/test/unit_test.hpp>
+#include <fstream>
 
 #include "util.h"
-#include <fstream>
 
 namespace viam {
 namespace carto_facade {
