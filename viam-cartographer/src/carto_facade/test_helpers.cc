@@ -3,6 +3,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "util.h"
+#include <fstream>
 
 namespace viam {
 namespace carto_facade {
