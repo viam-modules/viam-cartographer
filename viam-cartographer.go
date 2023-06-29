@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -490,52 +491,71 @@ func (cartoSvc *cartographerService) StopSLAMProcess() error {
 }
 
 // SensorProcess polls the lidar to get the next sensor reading and adds it to the mapBuilder
-func (cartoSvc *cartographerService) SensorProcess(ctx context.Context, lidar lidar.Lidar) error {
+func (cartoSvc *cartographerService) SensorProcess(ctx context.Context, lidar lidar.Lidar, addSensorProcess func(ctx context.Context, lidar lidar.Lidar)) error {
 	// TODO: The tracing / telemetry should output aggregates & not be 1 log line per failure to acquire the lock as that would introduce performance issues.
 	for {
 		select {
 		case <-ctx.Done():
 			break
 		default:
-			reading, err := lidar.GetData(ctx)
-			if err != nil {
-				return err
-			}
-
-			buf := new(bytes.Buffer)
-			err = pointcloud.ToPCD(reading, buf, 0)
-			if err != nil {
-				return err
-			}
-
-			timeReq := time.Now()
-			ctx, md := contextutils.ContextWithMetadata(ctx)
-			timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-
-			// offline mode
-			if ok {
-				timeReq, err := time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-				if err != nil {
-					return err
-				}
-				//TODO: what should timeout be here
-				timeout := 5 * time.Second
-				err = cartoSvc.cartofacade.AddSensorReading(ctx, timeout, cartoSvc.primarySensorName, buf.Bytes(), timeReq)
-				/* while add sensor reading fails keep trying to add the same reading - in offline mode
-				we want to process each reading so if we cannot acquire lock try again */
-				for err != nil {
-					cartoSvc.logger.Warnf("Unable to acquire the lock for reading from %v. Trying again", timeReq)
-					err = cartoSvc.cartofacade.AddSensorReading(ctx, timeout, cartoSvc.primarySensorName, buf.Bytes(), timeReq)
-				}
-				//online mode
-			} else {
-				// timeout := max(0, (cartoSvc.dataRateMs - msec AddSensorReading blocked)) //TODO: what is this?
-				timeout := 5 * time.Second
-				err := cartoSvc.cartofacade.AddSensorReading(ctx, timeout, cartoSvc.primarySensorName, buf.Bytes(), timeReq)
-				if err != nil {
-					cartoSvc.logger.Warnf("Unable to acquire the lock. Not processing reading from %v", timeReq)
-				}
-			}
+			addSensorProcess(ctx, lidar)
 		}
 	}
+}
+
+func (cartoSvc *cartographerService) addSensorProcess(ctx context.Context, lidar lidar.Lidar, timeout time.Duration) error {
+	reading, err := lidar.GetData(ctx)
+	if err != nil {
+		return err
+	}
+
+	buf := new(bytes.Buffer)
+	err = pointcloud.ToPCD(reading, buf, 0)
+	if err != nil {
+		return err
+	}
+
+	timeReq := time.Now()
+	ctx, md := contextutils.ContextWithMetadata(ctx)
+	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+
+	// TODO: understamd sufficient condition to see if online/offline mode
+	if ok {
+		err := cartoSvc.addSensorReadingOffline(ctx, lidar, timeReq, buf, timeout, timeRequestedMetadata)
+		if err != nil {
+			return err
+		}
+	} else {
+		timeToSleep := cartoSvc.addSensorReadingOnline(ctx, lidar, timeReq, buf, timeout)
+		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+	}
+
+	return nil
+}
+
+func (cartoSvc *cartographerService) addSensorReadingOffline(ctx context.Context, lidar lidar.Lidar, timeReq time.Time, buf *bytes.Buffer, timeout time.Duration, timeRequestedMetadata []string) error {
+	timeReq, err := time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+	if err != nil {
+		return err
+	}
+	err = cartoSvc.cartofacade.AddSensorReading(ctx, timeout, cartoSvc.primarySensorName, buf.Bytes(), timeReq)
+	/*
+		while add sensor reading fails, keep trying to add the same reading - in offline mode
+		we want to process each reading so if we cannot acquire the lock we should try again
+	*/
+	for err != nil {
+		cartoSvc.logger.Warnf("Unable to acquire the lock for reading from %v. Trying again", timeReq)
+		err = cartoSvc.cartofacade.AddSensorReading(ctx, timeout, cartoSvc.primarySensorName, buf.Bytes(), timeReq)
+	}
+	return nil
+}
+
+func (cartoSvc *cartographerService) addSensorReadingOnline(ctx context.Context, lidar lidar.Lidar, timeReq time.Time, buf *bytes.Buffer, timeout time.Duration) int {
+	startTime := time.Now()
+	err := cartoSvc.cartofacade.AddSensorReading(ctx, timeout, cartoSvc.primarySensorName, buf.Bytes(), timeReq)
+	if err != nil {
+		cartoSvc.logger.Warnf("Unable to acquire the lock. Not processing reading from %v", timeReq)
+	}
+	timeElapsed := time.Now().Sub(startTime)
+	return int(math.Max(0, float64(cartoSvc.dataRateMs-int(timeElapsed.Milliseconds()))))
 }

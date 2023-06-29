@@ -20,6 +20,7 @@ import (
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
@@ -403,6 +404,26 @@ func setupTestGRPCServer(tb testing.TB) (*grpc.Server, int) {
 	return grpcServer, listener.Addr().(*net.TCPAddr).Port
 }
 
-func TestSensorProcess(t *testing.T) {
+func TestAddSensorReadingOnline(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
+	defer testhelper.ClearDirectory(t, dataDir)
 
+	grpcServer, port := setupTestGRPCServer(t)
+	attrCfg := &vcConfig.Config{
+		Sensors:       []string{"good_lidar"},
+		ConfigParams:  map[string]string{"mode": "2d"},
+		DataDirectory: dataDir,
+		DataRateMsec:  200,
+		Port:          "localhost:" + strconv.Itoa(port),
+		UseLiveData:   &_true,
+	}
+
+	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+	test.That(t, err, test.ShouldBeNil)
+
+	svc.cartofacade = cartofacade.CartoFacadeMock{}
+
+	grpcServer.Stop()
+	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 }
