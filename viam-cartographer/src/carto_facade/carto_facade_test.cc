@@ -470,7 +470,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     fs::path tmp_dir =
         fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
+        viam_carto_config_setup(60, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
                                 sensors_vec);
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
