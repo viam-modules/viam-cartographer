@@ -2,9 +2,7 @@ package cartofacade
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"errors"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -19,18 +17,15 @@ const tol = 0.001
 func testAddSensorReading(t *testing.T, vc Carto, sensor, pcdPath string, timestamp time.Time, pcdType pointcloud.PCDType) {
 	file, err := os.Open(artifact.MustPath(pcdPath))
 	test.That(t, err, test.ShouldBeNil)
-	fileRead, err := os.ReadFile(artifact.MustPath(pcdPath))
 
 	test.That(t, err, test.ShouldBeNil)
 	buf := new(bytes.Buffer)
 	pc, err := pointcloud.ReadPCD(file)
 	test.That(t, err, test.ShouldBeNil)
 
-	err = pointcloud.ToPCD(pc, buf, pointcloud.PCDAscii)
+	err = pointcloud.ToPCD(pc, buf, pcdType)
 	test.That(t, err, test.ShouldBeNil)
 
-	fmt.Printf("pcd sha256: %x\n", sha256.Sum256(buf.Bytes()))
-	fmt.Printf("pcd file sha256: %x\n", sha256.Sum256(fileRead))
 	err = vc.addSensorReading(sensor, buf.Bytes(), timestamp)
 	test.That(t, err, test.ShouldBeNil)
 }
@@ -148,7 +143,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_INVALID")
 
 		// 1. test valid addSensorReading: valid reading binary
-		fmt.Println("sensor reading 1")
+		t.Log("sensor reading 1")
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
 
@@ -174,7 +169,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
 		// 2. test valid addSensorReading: valid reading ascii
-		fmt.Println("sensor reading 2")
+		t.Log("sensor reading 2")
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDAscii)
 
@@ -215,7 +210,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
 
 		// third sensor reading populates the pointcloud map & position
-		fmt.Println("sensor reading 3")
+		t.Log("sensor reading 3")
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDAscii)
 

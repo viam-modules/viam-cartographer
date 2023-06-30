@@ -94,10 +94,10 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'go test -v -race -run TestCartographerIntegration'
 
-    - name: make setup-cpp-full-mod test-cpp-full-mod-valgrind
+    - name: make setup-cpp-full-mod test-cpp-full-mod-asan
       # Currently we only run valgrind on arm64 as x86
       # doesn't valgrind clean due to what appears to be a bug in GLOG
       # https://github.com/viamrobotics/viam-cartographer/actions/runs/5156238014/jobs/9287413446
       if: matrix.platform != 'linux/amd64'
       run: |
-        sudo -u testbot bash -lc 'make setup-cpp-full-mod test-cpp-full-mod-valgrind'
+        sudo -u testbot bash -lc 'make setup-cpp-full-mod test-cpp-full-mod-asan'
