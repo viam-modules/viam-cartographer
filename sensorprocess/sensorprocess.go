@@ -25,10 +25,10 @@ type Params struct {
 	Timeout           time.Duration
 	Logger            golog.Logger
 	LogFreq           time.Duration
-	Failures          map[time.Time]int
 
-	timeReq time.Time
-	buf     *bytes.Buffer
+	failures map[time.Time]int
+	timeReq  time.Time
+	buf      *bytes.Buffer
 
 	addSensorReadingFromReplaySensor func(Params)
 	addSensorReadingFromLiveReadings func(Params) int
@@ -41,7 +41,7 @@ func SensorProcess(
 		params Params,
 	),
 ) {
-	params.Failures = make(map[time.Time]int)
+	params.failures = make(map[time.Time]int)
 	startBackgroundLogAggregator(params, logAggregatedInfo)
 
 	for {
@@ -130,8 +130,8 @@ func startBackgroundLogAggregator(
 	for {
 		select {
 		case <-ticker.C:
-			logFunc(params.Failures, params.Logger)
-			params.Failures = make(map[time.Time]int)
+			logFunc(params.failures, params.Logger)
+			params.failures = make(map[time.Time]int)
 		case <-params.Ctx.Done():
 			return
 		}
@@ -139,12 +139,12 @@ func startBackgroundLogAggregator(
 }
 
 func incrementLogCount(params Params, t time.Time) {
-	_, ok := params.Failures[t]
+	_, ok := params.failures[t]
 	if !ok {
-		params.Failures[t] = 1
+		params.failures[t] = 1
 		return
 	}
-	params.Failures[t]++
+	params.failures[t]++
 }
 
 func logAggregatedInfo(logData map[time.Time]int, logger golog.Logger) {

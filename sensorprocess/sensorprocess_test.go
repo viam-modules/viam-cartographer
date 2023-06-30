@@ -37,9 +37,9 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 		PrimarySensorName: "good_lidar",
 		DataRateMs:        200,
 		timeReq:           time.Now(),
-		buf:               buf,
 		Timeout:           10 * time.Second,
-		Failures:          make(map[time.Time]int),
+		buf:               buf,
+		failures:          make(map[time.Time]int),
 	}
 	AddSensorReadingFromReplaySensor(params)
 
@@ -208,7 +208,7 @@ func TestStartBackgroundLogAggregator(t *testing.T) {
 		timeReq:    time.Now(),
 		Timeout:    10 * time.Second,
 		LogFreq:    10 * time.Millisecond,
-		Failures:   make(map[time.Time]int),
+		failures:   make(map[time.Time]int),
 	}
 
 	counter := 1
@@ -224,15 +224,15 @@ func TestStartBackgroundLogAggregator(t *testing.T) {
 
 func TestIncrementLogCount(t *testing.T) {
 	params := Params{
-		Failures: make(map[time.Time]int),
+		failures: make(map[time.Time]int),
 	}
 
 	// when the time stamp isn't present in the map
 	timestamp := time.Now()
 	incrementLogCount(params, timestamp)
-	test.That(t, params.Failures[timestamp], test.ShouldEqual, 1)
+	test.That(t, params.failures[timestamp], test.ShouldEqual, 1)
 
 	// when the time stamp is already present in the map
 	incrementLogCount(params, timestamp)
-	test.That(t, params.Failures[timestamp], test.ShouldEqual, 2)
+	test.That(t, params.failures[timestamp], test.ShouldEqual, 2)
 }
