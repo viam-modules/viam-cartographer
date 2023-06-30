@@ -95,8 +95,13 @@ else
 	$(error "Unsupported system. Only apt and brew currently supported.")
 endif
 
-build: ensure-submodule-initialized grpc/buf build-module
+build: bin/cartographer-module
+
+viam-cartographer/build/carto_grpc_server: ensure-submodule-initialized grpc/buf
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
+
+bin/cartographer-module: viam-cartographer/build/carto_grpc_server
+	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 
@@ -110,9 +115,6 @@ build-asan: build-debug
 
 build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
 build-debug: build
-
-build-module:
-	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
 test-cpp:
 	viam-cartographer/build/unit_tests -p -l all
@@ -147,14 +149,4 @@ install: install-lua-files
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
 
-appimage: build
-	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe cartographer-module-`uname -m`.yml
-	mkdir -p etc/packaging/appimages/deploy/
-	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
-	chmod 755 etc/packaging/appimages/deploy/*.AppImage
-
-appimage-ci: build
-	cd etc/packaging/appimages && ./package_release_module.sh
-	mkdir -p etc/packaging/appimages/deploy/
-	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
-	chmod 755 etc/packaging/appimages/deploy/*.AppImage
+include *.make
