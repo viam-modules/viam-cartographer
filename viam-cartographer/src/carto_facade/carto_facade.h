@@ -108,6 +108,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_GET_POSITION_RESPONSE_INVALID 22
 #define VIAM_CARTO_POINTCLOUD_MAP_EMPTY 23
 #define VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID 24
+#define VIAM_CARTO_LIB_ALREADY_INITIALIZED 25
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;

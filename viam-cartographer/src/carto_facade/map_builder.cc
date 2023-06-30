@@ -13,7 +13,7 @@
 #include "cartographer/mapping/trajectory_builder_interface.h"
 #include "glog/logging.h"
 #include "io.h"
-# include "map_builder.h"
+#include "map_builder.h"
 
 namespace viam {
 namespace carto_facade {

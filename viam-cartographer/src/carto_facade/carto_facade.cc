@@ -1,6 +1,8 @@
 // This is an experimental integration of cartographer into RDK.
 #include "carto_facade.h"
 
+#include <openssl/sha.h>
+
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -9,22 +11,22 @@
 #include "io.h"
 #include "map_builder.h"
 #include "util.h"
-#include <openssl/sha.h>
 
-std::string sha256(const std::string str){
-  unsigned char hash[SHA256_DIGEST_LENGTH];
+std::string sha256(const std::string str) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
 
-  SHA256_CTX sha256;
-  SHA256_Init(&sha256);
-  SHA256_Update(&sha256, str.c_str(), str.size());
-  SHA256_Final(hash, &sha256);
+    SHA256_CTX sha256;
+    SHA256_Init(&sha256);
+    SHA256_Update(&sha256, str.c_str(), str.size());
+    SHA256_Final(hash, &sha256);
 
-  std::stringstream ss;
+    std::stringstream ss;
 
-  for(int i = 0; i < SHA256_DIGEST_LENGTH; i++){
-    ss << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>( hash[i] );
-  }
-  return ss.str();
+    for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
+        ss << std::hex << std::setw(2) << std::setfill('0')
+           << static_cast<int>(hash[i]);
+    }
+    return ss.str();
 }
 
 namespace viam {
@@ -475,6 +477,7 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         if (e.what() == viam::carto_facade::errorNoSubmaps) {
+            VLOG(1) << "Error creating pcd map: " << e.what();
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
         } else {
@@ -563,6 +566,7 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
+        VLOG(1) << "latest_global_pose: " << latest_global_pose;
         global_pose = latest_global_pose;
     }
 
@@ -589,6 +593,7 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
         // that the optimization is not ongoing and we can grab the newest
         // map
         GetLatestSampledPointCloudMapString(pointcloud_map);
+        VLOG(1) << "after GetLatestSampledPointCloudMapString()";
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         latest_pointcloud_map = pointcloud_map;
     } else {
@@ -609,7 +614,10 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
         LOG(ERROR) << "map pointcloud does not have points yet";
         throw VIAM_CARTO_POINTCLOUD_MAP_EMPTY;
     }
+    VLOG(1) << "writing r->point_cloud_pcd. pointcloud_map.length(): "
+            << pointcloud_map.length();
     r->point_cloud_pcd = to_bstring(pointcloud_map);
+    VLOG(1) << "r->point_cloud_pcd.length(): " << blength(r->point_cloud_pcd);
 };
 
 void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r){};
@@ -697,8 +705,7 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     int64_t sensor_reading_time_unix_micro = sr->sensor_reading_time_unix_micro;
     VLOG(1) << "sensor_reading_time_unix_micro: "
             << sensor_reading_time_unix_micro
-            << "sensor_reading_sha: "
-            << sha256(sensor_reading);
+            << "sensor_reading_sha: " << sha256(sensor_reading);
     auto [success, measurement] =
         viam::carto_facade::util::carto_sensor_reading(
             sensor_reading, sensor_reading_time_unix_micro);
@@ -713,14 +720,32 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         map_builder.AddSensorData(measurement);
         auto local_poses = map_builder.GetLocalSlamResultPoses();
         VLOG(1) << "local_poses.size(): " << local_poses.size();
+        // NOTE: The first time local_poses.size() goes positive will
+        // be the second time that map_builder.AddSensorData() succeeds.
+        // At that time the pose will still be zeroed out.
+        // In the future we may want to allow callers of
+        // CartoFacade::GetPosition to be able to distinguish between the states
+        // of:
+        // 1. Cartographer has not yet computed a map nor position as not enough
+        // successful sensor readings have been provided yet.
+        // 2. Cartographer has been initialized but still believes
+        // that the robot is at the origin of the map.
+        // In order to distinguish between these two states we would need to
+        // return an error to the caller of viam_cartographer_get_position if
+        // latest_global_pose has never been set within
+        // CartoFacade::AddSensorReading.
         if (local_poses.size() > 0) {
             update_latest_global_pose = true;
             tmp_global_pose = map_builder.GetGlobalPose(local_poses.back());
+            VLOG(1) << "updating tmp_global_pose tmp_global_pose: "
+                    << tmp_global_pose;
         }
         map_builder_mutex.unlock();
         if (update_latest_global_pose) {
+            VLOG(1) << "updating latest_global_pose";
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
+            VLOG(1) << "latest_global_pose: " << latest_global_pose;
         }
         return;
     } else {
@@ -776,6 +801,9 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
     viam_carto_lib *vcl = (viam_carto_lib *)malloc(sizeof(viam_carto_lib));
     if (vcl == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
+    }
+    if (google::IsGoogleLoggingInitialized()) {
+        return VIAM_CARTO_LIB_ALREADY_INITIALIZED;
     }
     google::InitGoogleLogging("cartographer");
     FLAGS_logtostderr = 1;
