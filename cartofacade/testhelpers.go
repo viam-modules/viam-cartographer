@@ -16,7 +16,7 @@ func GetTestConfig(sensor string) (CartoConfig, string, error) {
 		MapRateSecond:      5,
 		DataDir:            dir,
 		ComponentReference: "component",
-		LidarConfig:        twoD,
+		LidarConfig:        TwoD,
 	}, dir, nil
 }
 
@@ -24,7 +24,7 @@ func GetTestConfig(sensor string) (CartoConfig, string, error) {
 func GetBadTestConfig() CartoConfig {
 	return CartoConfig{
 		Sensors:     []string{"rplidar", "imu"},
-		LidarConfig: twoD,
+		LidarConfig: TwoD,
 	}
 }
 

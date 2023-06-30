@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+var Lib CartoLib
 var emptyRequestParams = map[RequestParamType]interface{}{}
 
 // Initialize calls into the cartofacade C code.

@@ -77,7 +77,7 @@ type GetPosition struct {
 type LidarConfig int64
 
 const (
-	twoD LidarConfig = iota
+	TwoD LidarConfig = iota
 	threeD
 )
 
@@ -313,7 +313,7 @@ func goStringToBstring(goStr string) C.bstring {
 
 func toLidarConfig(lidarConfig LidarConfig) (C.viam_carto_LIDAR_CONFIG, error) {
 	switch lidarConfig {
-	case twoD:
+	case TwoD:
 		return C.VIAM_CARTO_TWO_D, nil
 	case threeD:
 		return C.VIAM_CARTO_THREE_D, nil

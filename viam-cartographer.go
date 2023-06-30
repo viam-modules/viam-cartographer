@@ -24,6 +24,7 @@ import (
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
 
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
@@ -43,6 +44,7 @@ const (
 	defaultSensorValidationIntervalSec   = 1
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
+	Timeout                              = 5 * time.Second // I think this is the last place we can bubble this up, thoughts on what the actual value should be?
 )
 
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
@@ -105,7 +107,7 @@ func New(
 		return nil, err
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, _, err := vcConfig.GetOptionalParameters(
+	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
 		defaultDataRateMsec,
@@ -127,21 +129,22 @@ func New(
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
-		Named:                 c.ResourceName().AsNamed(),
-		primarySensorName:     lidar.Name,
-		executableName:        executableName,
-		subAlgo:               subAlgo,
-		slamProcess:           pexec.NewProcessManager(logger),
-		configParams:          svcConfig.ConfigParams,
-		dataDirectory:         svcConfig.DataDirectory,
-		useLiveData:           useLiveData,
-		deleteProcessedData:   deleteProcessedData,
-		port:                  port,
-		dataRateMs:            dataRateMsec,
-		mapRateSec:            mapRateSec,
-		cancelFunc:            cancelFunc,
-		logger:                logger,
-		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
+		Named:                   c.ResourceName().AsNamed(),
+		primarySensorName:       lidar.Name,
+		executableName:          executableName,
+		subAlgo:                 subAlgo,
+		slamProcess:             pexec.NewProcessManager(logger),
+		configParams:            svcConfig.ConfigParams,
+		dataDirectory:           svcConfig.DataDirectory,
+		useLiveData:             useLiveData,
+		deleteProcessedData:     deleteProcessedData,
+		port:                    port,
+		dataRateMs:              dataRateMsec,
+		mapRateSec:              mapRateSec,
+		cancelFunc:              cancelFunc,
+		logger:                  logger,
+		bufferSLAMProcessLogs:   bufferSLAMProcessLogs,
+		modularizationV2Enabled: modularizationV2Enabled,
 	}
 
 	success := false
@@ -153,28 +156,57 @@ func New(
 		}
 	}()
 
-	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
-			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
-			return nil, errors.Wrap(err, "getting and saving data failed")
+	if modularizationV2Enabled {
+		// Initialize the library
+		// TODO: get these correctlty
+		loglevel := 1
+		verbosity := 1
+		cartofacade.Lib, err = cartofacade.NewLib(loglevel, verbosity)
+		if err != nil {
+			return nil, err
 		}
-		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
-		logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
-	}
 
-	if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
-		return nil, errors.Wrap(err, "error with slam service slam process")
-	}
+		// Get the config
+		cartoCfg := cartofacade.CartoConfig{
+			Sensors:            svcConfig.Sensors,
+			MapRateSecond:      dataRateMsec * 1000,
+			DataDir:            svcConfig.DataDirectory,
+			ComponentReference: svcConfig.Sensors[0], // Can this be removed?
+			LidarConfig:        cartofacade.TwoD,     // Should this come from somewhere or is hardcoded ok for now?
+		}
 
-	client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, dialMaxTimeoutSec, logger)
-	if err != nil {
-		return nil, errors.Wrap(err, "error with initial grpc client to slam algorithm")
-	}
-	cartoSvc.clientAlgo = client
-	cartoSvc.clientAlgoClose = clientClose
+		// Get the algo config
+		cartoAlgoCfg := cartofacade.CartoAlgoConfig{} // Where are algo config params being set
 
-	success = true
-	return cartoSvc, nil
+		// Initialize cartofacade
+		cf := cartofacade.New(&cartofacade.Lib, cartoCfg, cartoAlgoCfg)
+		cf.Initialize(ctx, Timeout, &cartoSvc.activeBackgroundWorkers)
+
+		return cartoSvc, nil
+	} else {
+		if cartoSvc.primarySensorName != "" {
+			if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
+				sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
+				return nil, errors.Wrap(err, "getting and saving data failed")
+			}
+			cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
+			logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
+		}
+
+		if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
+			return nil, errors.Wrap(err, "error with slam service slam process")
+		}
+
+		client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, dialMaxTimeoutSec, logger)
+		if err != nil {
+			return nil, errors.Wrap(err, "error with initial grpc client to slam algorithm")
+		}
+		cartoSvc.clientAlgo = client
+		cartoSvc.clientAlgoClose = clientClose
+
+		success = true
+		return cartoSvc, nil
+	}
 }
 
 // cartographerService is the structure of the slam service.
@@ -192,6 +224,9 @@ type cartographerService struct {
 	dataDirectory       string
 	deleteProcessedData bool
 	useLiveData         bool
+
+	modularizationV2Enabled bool
+	cartofacade             cartofacade.CartoFacade
 
 	port       string
 	dataRateMs int
@@ -337,20 +372,35 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		}
 	}()
 	cartoSvc.cancelFunc()
-	if cartoSvc.bufferSLAMProcessLogs {
-		if cartoSvc.slamProcessLogReader != nil {
-			if err := cartoSvc.slamProcessLogReader.Close(); err != nil {
-				return errors.Wrap(err, "error occurred during closeout of slam log reader")
+
+	if cartoSvc.modularizationV2Enabled {
+		// terminate cartofacade
+		err := cartoSvc.cartofacade.Terminate(ctx, Timeout)
+		if err != nil {
+			return errors.Wrap(err, "error occurred during closeout of cartofacade")
+		}
+		// terminate cartofacade lib
+		err = cartofacade.Lib.Terminate()
+		if err != nil {
+			return errors.Wrap(err, "error occurred during closeout of cartofacade")
+		}
+
+	} else {
+		if cartoSvc.bufferSLAMProcessLogs {
+			if cartoSvc.slamProcessLogReader != nil {
+				if err := cartoSvc.slamProcessLogReader.Close(); err != nil {
+					return errors.Wrap(err, "error occurred during closeout of slam log reader")
+				}
+			}
+			if cartoSvc.slamProcessLogWriter != nil {
+				if err := cartoSvc.slamProcessLogWriter.Close(); err != nil {
+					return errors.Wrap(err, "error occurred during closeout of slam log writer")
+				}
 			}
 		}
-		if cartoSvc.slamProcessLogWriter != nil {
-			if err := cartoSvc.slamProcessLogWriter.Close(); err != nil {
-				return errors.Wrap(err, "error occurred during closeout of slam log writer")
-			}
+		if err := cartoSvc.StopSLAMProcess(); err != nil {
+			return errors.Wrap(err, "error occurred during closeout of process")
 		}
-	}
-	if err := cartoSvc.StopSLAMProcess(); err != nil {
-		return errors.Wrap(err, "error occurred during closeout of process")
 	}
 	cartoSvc.activeBackgroundWorkers.Wait()
 	return nil
