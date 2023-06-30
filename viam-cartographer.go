@@ -44,7 +44,7 @@ const (
 	defaultSensorValidationIntervalSec   = 1
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
-	Timeout                              = 5 * time.Second // I think this is the last place we can bubble this up, thoughts on what the actual value should be?
+	Timeout                              = 5 * time.Second
 )
 
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
