@@ -171,12 +171,12 @@ func New(
 			Sensors:            svcConfig.Sensors,
 			MapRateSecond:      dataRateMsec * 1000,
 			DataDir:            svcConfig.DataDirectory,
-			ComponentReference: svcConfig.Sensors[0], // Can this be removed?
-			LidarConfig:        cartofacade.TwoD,     // Should this come from somewhere or is hardcoded ok for now?
+			ComponentReference: svcConfig.Sensors[0],
+			LidarConfig:        cartofacade.TwoD,
 		}
 
 		// Get the algo config
-		cartoAlgoCfg := cartofacade.CartoAlgoConfig{} // Where are algo config params being set
+		cartoAlgoCfg := cartofacade.CartoAlgoConfig{}
 
 		// Initialize cartofacade
 		cf := cartofacade.New(&cartofacade.Lib, cartoCfg, cartoAlgoCfg)
