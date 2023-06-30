@@ -39,7 +39,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 		timeReq:           time.Now(),
 		buf:               buf,
 		Timeout:           10 * time.Second,
-		LogFailures:       make(map[time.Time]int),
+		Failures:          make(map[time.Time]int),
 	}
 	AddSensorReadingFromReplaySensor(params)
 
@@ -203,12 +203,12 @@ func TestAddSensorReading(t *testing.T) {
 func TestStartBackgroundLogAggregator(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	params := Params{
-		Ctx:         cancelCtx,
-		DataRateMs:  200,
-		timeReq:     time.Now(),
-		Timeout:     10 * time.Second,
-		LogFreq:     10 * time.Millisecond,
-		LogFailures: make(map[time.Time]int),
+		Ctx:        cancelCtx,
+		DataRateMs: 200,
+		timeReq:    time.Now(),
+		Timeout:    10 * time.Second,
+		LogFreq:    10 * time.Millisecond,
+		Failures:   make(map[time.Time]int),
 	}
 
 	counter := 1
@@ -224,15 +224,15 @@ func TestStartBackgroundLogAggregator(t *testing.T) {
 
 func TestIncrementLogCount(t *testing.T) {
 	params := Params{
-		LogFailures: make(map[time.Time]int),
+		Failures: make(map[time.Time]int),
 	}
 
 	// when the time stamp isn't present in the map
 	timestamp := time.Now()
 	incrementLogCount(params, timestamp)
-	test.That(t, params.LogFailures[timestamp], test.ShouldEqual, 1)
+	test.That(t, params.Failures[timestamp], test.ShouldEqual, 1)
 
 	// when the time stamp is already present in the map
 	incrementLogCount(params, timestamp)
-	test.That(t, params.LogFailures[timestamp], test.ShouldEqual, 2)
+	test.That(t, params.Failures[timestamp], test.ShouldEqual, 2)
 }
