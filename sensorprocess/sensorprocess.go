@@ -24,10 +24,11 @@ type Params struct {
 	DataRateMs        int
 	Timeout           time.Duration
 	Logger            golog.Logger
+	LogFreq           time.Duration
+	LogFailures       map[time.Time]int
 
 	timeReq time.Time
 	buf     *bytes.Buffer
-	logChan chan time.Time
 
 	addSensorReadingFromReplaySensor func(Params)
 	addSensorReadingFromLiveReadings func(Params) int
@@ -40,12 +41,8 @@ func SensorProcess(
 		params Params,
 	),
 ) {
-	/*
-		TODO: The tracing / telemetry should output aggregates & not be 1 log line per
-		failure to acquire the lock as that would introduce performance issues.
-	*/
-	params.logChan = make(chan time.Time, 1)
-	startBackgroundLoggingAggregator(params.Ctx, params.Logger, params.logChan)
+	params.LogFailures = make(map[time.Time]int)
+	startBackgroundLogAggregator(params, logAggregatedInfo)
 
 	for {
 		select {
@@ -107,7 +104,7 @@ func AddSensorReadingFromReplaySensor(params Params) {
 			return
 		default:
 			err = params.Cartofacade.AddSensorReading(params.Ctx, params.Timeout, params.PrimarySensorName, params.buf.Bytes(), params.timeReq)
-			params.logChan <- params.timeReq
+			incrementLogCount(params, params.timeReq)
 		}
 	}
 }
@@ -117,35 +114,40 @@ func AddSensorReadingFromLiveReadings(params Params) int {
 	startTime := time.Now()
 	err := params.Cartofacade.AddSensorReading(params.Ctx, params.Timeout, params.PrimarySensorName, params.buf.Bytes(), params.timeReq)
 	if err != nil {
-		params.logChan <- params.timeReq
+		incrementLogCount(params, params.timeReq)
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(params.DataRateMs-timeElapsedMs)))
 }
 
-func startBackgroundLoggingAggregator(ctx context.Context, logger golog.Logger, logChan chan time.Time) {
-	ticker := time.NewTicker(5 * time.Second)
-	logData := make(map[time.Time]int)
+func startBackgroundLogAggregator(
+	params Params,
+	logFunc func(logData map[time.Time]int, logger golog.Logger),
+) {
+	ticker := time.NewTicker(params.LogFreq)
 
 	// While the sensor process is running log aggregate failures every 5 seconds.
 	for {
 		select {
-		case t := <-logChan:
-			_, ok := logData[t]
-			if !ok {
-				logData[t] = 1
-			}
-			logData[t]++
 		case <-ticker.C:
-			logInfo(logData, logger)
-			logData = make(map[time.Time]int)
-		case <-ctx.Done():
+			logFunc(params.LogFailures, params.Logger)
+			params.LogFailures = make(map[time.Time]int)
+		case <-params.Ctx.Done():
 			return
 		}
 	}
 }
 
-func logInfo(logData map[time.Time]int, logger golog.Logger) {
+func incrementLogCount(params Params, t time.Time) {
+	_, ok := params.LogFailures[t]
+	if !ok {
+		params.LogFailures[t] = 1
+		return
+	}
+	params.LogFailures[t]++
+}
+
+func logAggregatedInfo(logData map[time.Time]int, logger golog.Logger) {
 	for k, v := range logData {
 		logger.Warnf("failed to log reading from %v %v time(s)", k, v)
 	}
