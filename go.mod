@@ -14,7 +14,7 @@ require (
 	go.viam.com/api v0.1.134
 	go.viam.com/rdk v0.2.50
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.36
+	go.viam.com/utils v0.1.37
 	google.golang.org/grpc v1.56.0
 	google.golang.org/protobuf v1.30.0
 )
@@ -313,6 +313,3 @@ require (
 	nhooyr.io/websocket v1.8.7 // indirect
 )
 
-replace go.viam.com/api => /Users/patriciastrutz/Development/api
-
-replace go.viam.com/rdk => /Users/patriciastrutz/Development/rdk
