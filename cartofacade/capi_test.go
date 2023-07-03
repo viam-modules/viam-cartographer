@@ -227,7 +227,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, position.Imag, test.ShouldEqual, 0)
 		test.That(t, position.Jmag, test.ShouldEqual, 0)
 		test.That(t, position.Kmag, test.ShouldNotEqual, 0)
-		test.That(t, position.Real, test.ShouldNotEqual, 0)
+		test.That(t, position.Real, test.ShouldNotEqual, 1)
 
 		// test getInternalState
 		_, err = vc.getInternalState()

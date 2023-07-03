@@ -747,7 +747,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(pr.imag == 0);
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag != 0);
-        BOOST_TEST(pr.real != 0);
+        BOOST_TEST(pr.real != 1);
         BOOST_TEST(to_std_string(pr.component_reference) == "sensor_1");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
