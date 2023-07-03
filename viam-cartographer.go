@@ -231,7 +231,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	return vcUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
 }
 
-// GetPointCloudMap creates a request, **recording the time**, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+// GetPointCloudMap creates a request, recording the time, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
 // If startup is in localization mode, the timestamp is NOT updated.
 func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
