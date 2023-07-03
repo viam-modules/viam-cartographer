@@ -7,10 +7,24 @@ import (
 	"testing"
 	"time"
 
+	"crypto/sha256"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 )
+
+func testPointCloudsDiffer(t *testing.T, pc1, pc2 pointcloud.PointCloud) {
+	b1 := new(bytes.Buffer)
+	err := pointcloud.ToPCD(pc1, b1, pointcloud.PCDAscii)
+	test.That(t, err, test.ShouldBeNil)
+
+	b2 := new(bytes.Buffer)
+	err = pointcloud.ToPCD(pc2, b2, pointcloud.PCDAscii)
+	test.That(t, err, test.ShouldBeNil)
+	t.Logf("b1: %x, b2: %x", sha256.Sum256(b1.Bytes()), sha256.Sum256(b2.Bytes()))
+
+	test.That(t, b1.Bytes(), test.ShouldNotResemble, b2.Bytes())
+}
 
 func positionIsZero(t *testing.T, position GetPosition) {
 	test.That(t, position.X, test.ShouldEqual, 0)
@@ -29,27 +43,27 @@ func positionIsZero(t *testing.T, position GetPosition) {
 func confirmBinaryCompressedUnsupported(t *testing.T) {
 	file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
 	test.That(t, err, test.ShouldBeNil)
-	buf := new(bytes.Buffer)
 	pc, err := pointcloud.ReadPCD(file)
 	test.That(t, err, test.ShouldBeNil)
 
+	buf := new(bytes.Buffer)
 	err = pointcloud.ToPCD(pc, buf, pointcloud.PCDCompressed)
 	test.That(t, err, test.ShouldBeError)
 	test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
 }
 
-func testAddSensorReading(t *testing.T, vc Carto, sensor, pcdPath string, timestamp time.Time, pcdType pointcloud.PCDType) {
+func testAddSensorReading(t *testing.T, vc Carto, pcdPath string, timestamp time.Time, pcdType pointcloud.PCDType) {
 	file, err := os.Open(artifact.MustPath(pcdPath))
 	test.That(t, err, test.ShouldBeNil)
 
-	buf := new(bytes.Buffer)
 	pc, err := pointcloud.ReadPCD(file)
 	test.That(t, err, test.ShouldBeNil)
 
+	buf := new(bytes.Buffer)
 	err = pointcloud.ToPCD(pc, buf, pcdType)
 	test.That(t, err, test.ShouldBeNil)
 
-	err = vc.addSensorReading(sensor, buf.Bytes(), timestamp)
+	err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)
 	test.That(t, err, test.ShouldBeNil)
 }
 
@@ -147,6 +161,25 @@ func TestCGoAPI(t *testing.T) {
 		err = vc.start()
 		test.That(t, err, test.ShouldBeNil)
 
+		// test getPosition before sensor data is added
+		position, err := vc.getPosition()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, position.ComponentReference, test.ShouldEqual, "mysensor")
+		positionIsZero(t, position)
+
+		// test getPointCloudMap before sensor data is added
+		pcd, err := vc.getPointCloudMap()
+		test.That(t, pcd, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
+
+		// test getInternalState before sensor data is added
+		internalState, err := vc.getInternalState()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
+		lastInternalState := internalState
+
 		// test invalid addSensorReading: not in sensor list
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 		err = vc.addSensorReading("not my sensor", []byte("he0llo"), timestamp)
@@ -179,24 +212,31 @@ func TestCGoAPI(t *testing.T) {
 		// 1. test valid addSensorReading: valid reading ascii
 		t.Log("sensor reading 1")
 		timestamp = timestamp.Add(time.Second * 2)
-		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
+		testAddSensorReading(t, vc, "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
 
 		// test getPosition zeroed if not enough sensor data has been provided
-		position, err := vc.getPosition()
+		position, err = vc.getPosition()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mysensor")
 		positionIsZero(t, position)
 
 		// test getPointCloudMap returns error if not enough sensor data has been provided
-		pcd, err := vc.getPointCloudMap()
+		pcd, err = vc.getPointCloudMap()
 		test.That(t, pcd, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
+		// test getInternalState always returns non empty results
+		internalState, err = vc.getInternalState()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
+		lastInternalState = internalState
+
 		// 2. test valid addSensorReading: valid reading binary
 		t.Log("sensor reading 2")
 		timestamp = timestamp.Add(time.Second * 2)
-		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDBinary)
+		testAddSensorReading(t, vc, "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDBinary)
 
 		// test getPosition zeroed
 		position, err = vc.getPosition()
@@ -211,11 +251,19 @@ func TestCGoAPI(t *testing.T) {
 		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
+		lastPc := pc
+
+		// test getInternalState always returns different non empty results than first call
+		internalState, err = vc.getInternalState()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
+		lastInternalState = internalState
 
 		// third sensor reading populates the pointcloud map and the position
 		t.Log("sensor reading 3")
 		timestamp = timestamp.Add(time.Second * 2)
-		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
+		testAddSensorReading(t, vc, "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
 
 		// test getPosition, is no longer zeroed
 		position, err = vc.getPosition()
@@ -229,9 +277,20 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, position.Kmag, test.ShouldNotEqual, 0)
 		test.That(t, position.Real, test.ShouldNotEqual, 1)
 
-		// test getInternalState
-		_, err = vc.getInternalState()
-		test.That(t, err, test.ShouldResemble, errors.New("nil internal state"))
+		// test getPointCloudMap returns different result than first second call
+		pcd, err = vc.getPointCloudMap()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pcd, test.ShouldNotBeNil)
+		pc, err = pointcloud.ReadPCD(bytes.NewReader(pcd))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
+		testPointCloudsDiffer(t, pc, lastPc)
+
+		// test getInternalState always returns different non empty results than second call
+		internalState, err = vc.getInternalState()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
 
 		// test stop
 		err = vc.stop()
