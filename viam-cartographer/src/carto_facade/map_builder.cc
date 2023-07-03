@@ -5,7 +5,6 @@
 
 #include "cartographer/common/configuration_file_resolver.h"
 #include "cartographer/common/lua_parameter_dictionary.h"
-#include "cartographer/common/time.h"
 #include "cartographer/io/proto_stream.h"
 #include "cartographer/mapping/2d/grid_2d.h"
 #include "cartographer/mapping/internal/local_slam_result_data.h"
@@ -109,17 +108,6 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
 
 void MapBuilder::AddSensorData(
     cartographer::sensor::TimedPointCloudData measurement) {
-    VLOG(1) << "AddSensorData: measurement.time: " << measurement.time
-            << "cartographer::common::ToUniversal: "
-            << cartographer::common::ToUniversal(measurement.time);
-    VLOG(1) << measurement.ranges[0].position[0] << " "
-            << measurement.ranges[0].position[1] << " "
-            << measurement.ranges[0].position[2];
-    /* for (size_t i = 0; i < measurement.ranges.size(); i++) { */
-    /*   VLOG(1) << measurement.ranges[i].position[0] << " " <<
-     * measurement.ranges[i].position[1] << " " <<
-     * measurement.ranges[i].position[2]; */
-    /* } */
     trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
 }
 

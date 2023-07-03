@@ -2,7 +2,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-#include <sstream>  // std::istringstream
 namespace viam {
 namespace utils {
 

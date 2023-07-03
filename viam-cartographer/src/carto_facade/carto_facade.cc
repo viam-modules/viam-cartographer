@@ -458,7 +458,6 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
                 GetLatestPaintedMapSlices());
     } catch (std::exception &e) {
         if (e.what() == viam::carto_facade::errorNoSubmaps) {
-            VLOG(1) << "Error creating pcd map: " << e.what();
             LOG(INFO) << "Error creating pcd map: " << e.what();
             return;
         } else {
@@ -547,7 +546,6 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
-        VLOG(1) << "latest_global_pose: " << latest_global_pose;
         global_pose = latest_global_pose;
     }
 
@@ -574,7 +572,6 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
         // that the optimization is not ongoing and we can grab the newest
         // map
         GetLatestSampledPointCloudMapString(pointcloud_map);
-        VLOG(1) << "after GetLatestSampledPointCloudMapString()";
         std::lock_guard<std::mutex> lk(viam_response_mutex);
         latest_pointcloud_map = pointcloud_map;
     } else {
@@ -595,10 +592,7 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
         LOG(ERROR) << "map pointcloud does not have points yet";
         throw VIAM_CARTO_POINTCLOUD_MAP_EMPTY;
     }
-    VLOG(1) << "writing r->point_cloud_pcd. pointcloud_map.length(): "
-            << pointcloud_map.length();
     r->point_cloud_pcd = to_bstring(pointcloud_map);
-    VLOG(1) << "r->point_cloud_pcd.length(): " << blength(r->point_cloud_pcd);
 };
 
 void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r){};
@@ -715,15 +709,11 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         if (local_poses.size() > 0) {
             update_latest_global_pose = true;
             tmp_global_pose = map_builder.GetGlobalPose(local_poses.back());
-            VLOG(1) << "updating tmp_global_pose tmp_global_pose: "
-                    << tmp_global_pose;
         }
         map_builder_mutex.unlock();
         if (update_latest_global_pose) {
-            VLOG(1) << "updating latest_global_pose";
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
-            VLOG(1) << "latest_global_pose: " << latest_global_pose;
         }
         return;
     } else {
@@ -779,9 +769,6 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
     viam_carto_lib *vcl = (viam_carto_lib *)malloc(sizeof(viam_carto_lib));
     if (vcl == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
-    }
-    if (google::IsGoogleLoggingInitialized()) {
-        return VIAM_CARTO_LIB_ALREADY_INITIALIZED;
     }
     google::InitGoogleLogging("cartographer");
     FLAGS_logtostderr = 1;
@@ -922,8 +909,6 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
     }
 
     try {
-        VLOG(1) << "sr->sensor_reading_time_unix_micro: "
-                << sr->sensor_reading_time_unix_micro;
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->AddSensorReading(sr);

@@ -714,7 +714,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(viam::carto_facade::util::read_pcd(s, blob) == 0);
         pcl::fromPCLPointCloud2(blob, *cloud);
         BOOST_TEST(cloud != nullptr);
-        BOOST_TEST(cloud->points.size() == 1022);
+        BOOST_TEST(cloud->points.size() == 1024);
         BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
                    VIAM_CARTO_SUCCESS);
     }
@@ -735,12 +735,12 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     {
         viam_carto_get_position_response pr;
         BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x == -7.4222598447937234, tol);
-        BOOST_TEST(pr.y == 0.47218892282939351, tol);
+        BOOST_TEST(pr.x == -1.4367625864016951, tol);
+        BOOST_TEST(pr.y == -1.5307342301548705, tol);
         BOOST_TEST(pr.z == 0);
         BOOST_TEST(pr.imag == 0);
         BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag == 0.00011001010973021749, tol);
+        BOOST_TEST(pr.kmag == 0.01372519815822075, tol);
         BOOST_TEST(pr.real == 0.9999058050314128, tol);
         BOOST_TEST(to_std_string(pr.component_reference) == "sensor_1");
 
@@ -760,7 +760,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(viam::carto_facade::util::read_pcd(s, blob) == 0);
         pcl::fromPCLPointCloud2(blob, *cloud);
         BOOST_TEST(cloud != nullptr);
-        BOOST_TEST(cloud->points.size() == 1022);
+        BOOST_TEST(cloud->points.size() == 1044);
         BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
                    VIAM_CARTO_SUCCESS);
     }

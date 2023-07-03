@@ -28,7 +28,6 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(GRPCPP REQUIRED grpc++)
 
 find_package(absl REQUIRED)
-
 add_definitions(-DABSL_LEGACY_THREAD_ANNOTATIONS)
 
 find_package(PCL REQUIRED)
