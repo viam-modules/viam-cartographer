@@ -2,6 +2,8 @@
 #ifndef VIAM_CARTO_FACADE_UTIL_H
 #define VIAM_CARTO_FACADE_UTIL_H
 
+#include <pcl/PCLPointCloud2.h>
+
 #include <string>
 #include <tuple>
 
@@ -48,6 +50,7 @@ void write_int_to_buffer_in_bytes(std::string &buffer, int d);
 std::tuple<bool, cartographer::sensor::TimedPointCloudData>
 carto_sensor_reading(std::string sensor_reading,
                      int64_t sensor_reading_time_unix_micro);
+int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob);
 }  // namespace util
 }  // namespace carto_facade
 }  // namespace viam

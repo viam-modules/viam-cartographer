@@ -239,15 +239,14 @@ func (vc *Carto) getPointCloudMap() ([]byte, error) {
 		return nil, err
 	}
 
+	pcd := bstringToByteSlice(value.point_cloud_pcd)
+
 	status = C.viam_carto_get_point_cloud_map_response_destroy(&value)
 	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	if value.point_cloud_pcd != nil {
-		return bstringToByteSlice(value.point_cloud_pcd), nil
-	}
-	return nil, errors.New("nil pointcloud")
+	return pcd, nil
 }
 
 // GetInternalState is a wrapper for viam_carto_get_internal_state
@@ -450,6 +449,12 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_SENSOR_READING_EMPTY")
 	case C.VIAM_CARTO_SENSOR_READING_INVALID:
 		return errors.New("VIAM_CARTO_SENSOR_READING_INVALID")
+	case C.VIAM_CARTO_GET_POSITION_RESPONSE_INVALID:
+		return errors.New("VIAM_CARTO_GET_POSITION_RESPONSE_INVALID")
+	case C.VIAM_CARTO_POINTCLOUD_MAP_EMPTY:
+		return errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY")
+	case C.VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID:
+		return errors.New("VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID")
 	default:
 		return errors.New("status code unclassified")
 	}

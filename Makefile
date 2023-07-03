@@ -122,6 +122,9 @@ setup-cpp-full-mod:
 	sudo apt install -y valgrind gdb
 
 # Linux only
+test-cpp-full-mod-asan: build-asan
+	viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io -t CartoFacadeCPPAPI
+
 test-cpp-full-mod-valgrind: build-debug
 	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io -t CartoFacadeCPPAPI
 

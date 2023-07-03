@@ -1,6 +1,5 @@
 #include "util.h"
 
-#include <pcl/PCLPointCloud2.h>
 #include <pcl/console/time.h>  // pcl::console::TicToc
 #include <pcl/io/pcd_io.h>     // pcl::PCDReader
 #include <pcl/point_types.h>
@@ -157,7 +156,6 @@ carto_sensor_reading(std::string sensor_reading,
         ranges.push_back(timed_rangefinder_point);
     }
 
-    // research how to do this properly
     point_cloud.time =
         cartographer::common::FromUniversal(sensor_reading_time_unix_micro);
     point_cloud.origin = Eigen::Vector3f::Zero();

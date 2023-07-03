@@ -12,6 +12,47 @@ import (
 	"go.viam.com/utils/artifact"
 )
 
+func positionIsZero(t *testing.T, position GetPosition) {
+	test.That(t, position.X, test.ShouldEqual, 0)
+	test.That(t, position.Y, test.ShouldEqual, 0)
+	test.That(t, position.Z, test.ShouldEqual, 0)
+
+	test.That(t, position.Imag, test.ShouldEqual, 0)
+	test.That(t, position.Jmag, test.ShouldEqual, 0)
+	test.That(t, position.Kmag, test.ShouldEqual, 0)
+	test.That(t, position.Real, test.ShouldEqual, 1)
+}
+
+// confirm the pointcloud package still doesn't support binary compressed
+// pointclouds. If it does, we need to implement:
+// https://viam.atlassian.net/browse/RSDK-3753
+func confirmBinaryCompressedUnsupported(t *testing.T) {
+	file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
+	test.That(t, err, test.ShouldBeNil)
+	buf := new(bytes.Buffer)
+	pc, err := pointcloud.ReadPCD(file)
+	test.That(t, err, test.ShouldBeNil)
+
+	err = pointcloud.ToPCD(pc, buf, pointcloud.PCDCompressed)
+	test.That(t, err, test.ShouldBeError)
+	test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
+}
+
+func testAddSensorReading(t *testing.T, vc Carto, sensor, pcdPath string, timestamp time.Time, pcdType pointcloud.PCDType) {
+	file, err := os.Open(artifact.MustPath(pcdPath))
+	test.That(t, err, test.ShouldBeNil)
+
+	buf := new(bytes.Buffer)
+	pc, err := pointcloud.ReadPCD(file)
+	test.That(t, err, test.ShouldBeNil)
+
+	err = pointcloud.ToPCD(pc, buf, pcdType)
+	test.That(t, err, test.ShouldBeNil)
+
+	err = vc.addSensorReading(sensor, buf.Bytes(), timestamp)
+	test.That(t, err, test.ShouldBeNil)
+}
+
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go", func(t *testing.T) {
 		cfg, dir, err := GetTestConfig("mysensor")
@@ -113,59 +154,80 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
 
 		// test invalid addSensorReading: empty reading
+		timestamp = timestamp.Add(time.Second * 2)
 		err = vc.addSensorReading("mysensor", []byte(""), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_EMPTY")
 
 		// test invalid addSensorReading: invalid reading
+		timestamp = timestamp.Add(time.Second * 2)
 		err = vc.addSensorReading("mysensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_INVALID")
 
-		// read PCD
-		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
-		test.That(t, err, test.ShouldBeNil)
-		buf := new(bytes.Buffer)
-		pc, err := pointcloud.ReadPCD(file)
-		test.That(t, err, test.ShouldBeNil)
+		confirmBinaryCompressedUnsupported(t)
 
-		// test valid addSensorReading: valid reading binary
-		err = pointcloud.ToPCD(pc, buf, 1)
-		test.That(t, err, test.ShouldBeNil)
-		err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)
-		test.That(t, err, test.ShouldBeNil)
+		// NOTE: This test is very carefully created in order to not hit
+		// cases where cartographer won't update the map for whatever reason.
+		// For example, if you change the time increments from 2 seconds to 1
+		// second, the map doesn't update (at least not after 10 lidar readings).
+		// It is not clear why cartographer has this behavior.
+		// Cartographer does not provide any feedback regarding
+		// why or when it does / does not update the map.
+		// As a result, these tests show best case behavior.
 
-		// test valid addSensorReading: valid reading ascii
-		err = pointcloud.ToPCD(pc, buf, 0)
-		test.That(t, err, test.ShouldBeNil)
-		err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)
-		test.That(t, err, test.ShouldBeNil)
+		// 1. test valid addSensorReading: valid reading ascii
+		t.Log("sensor reading 1")
+		timestamp = timestamp.Add(time.Second * 2)
+		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
 
-		// confirm the pointcloud package still doesn't support binary compressed
-		// pointclouds. If it does, we need to implement:
-		// https://viam.atlassian.net/browse/RSDK-3753
-		err = pointcloud.ToPCD(pc, buf, 2)
+		// test getPosition zeroed if not enough sensor data has been provided
+		position, err := vc.getPosition()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, position.ComponentReference, test.ShouldEqual, "mysensor")
+		positionIsZero(t, position)
+
+		// test getPointCloudMap returns error if not enough sensor data has been provided
+		pcd, err := vc.getPointCloudMap()
+		test.That(t, pcd, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
-		// test getPosition
-		holder, err := vc.getPosition()
+		// 2. test valid addSensorReading: valid reading binary
+		t.Log("sensor reading 2")
+		timestamp = timestamp.Add(time.Second * 2)
+		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDBinary)
 
+		// test getPosition zeroed
+		position, err = vc.getPosition()
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, holder.ComponentReference, test.ShouldEqual, "mysensor")
+		test.That(t, position.ComponentReference, test.ShouldEqual, "mysensor")
+		positionIsZero(t, position)
 
-		test.That(t, holder.X, test.ShouldEqual, 0)
-		test.That(t, holder.Y, test.ShouldEqual, 0)
-		test.That(t, holder.Z, test.ShouldEqual, 0)
+		// test getPointCloudMap now returns a non empty result
+		pcd, err = vc.getPointCloudMap()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pcd, test.ShouldNotBeNil)
+		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
-		test.That(t, holder.Imag, test.ShouldEqual, 0)
-		test.That(t, holder.Jmag, test.ShouldEqual, 0)
-		test.That(t, holder.Kmag, test.ShouldEqual, 0)
-		test.That(t, holder.Real, test.ShouldEqual, 1)
+		// third sensor reading populates the pointcloud map and the position
+		t.Log("sensor reading 3")
+		timestamp = timestamp.Add(time.Second * 2)
+		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
 
-		// test getPointCloudMap
-		_, err = vc.getPointCloudMap()
-		test.That(t, err, test.ShouldResemble, errors.New("nil pointcloud"))
+		// test getPosition, is no longer zeroed
+		position, err = vc.getPosition()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, position.ComponentReference, test.ShouldEqual, "mysensor")
+		test.That(t, position.X, test.ShouldNotEqual, 0)
+		test.That(t, position.Y, test.ShouldNotEqual, 0)
+		test.That(t, position.Z, test.ShouldEqual, 0)
+		test.That(t, position.Imag, test.ShouldEqual, 0)
+		test.That(t, position.Jmag, test.ShouldEqual, 0)
+		test.That(t, position.Kmag, test.ShouldNotEqual, 0)
+		test.That(t, position.Real, test.ShouldNotEqual, 1)
 
 		// test getInternalState
 		_, err = vc.getInternalState()
