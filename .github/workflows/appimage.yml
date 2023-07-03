@@ -1,18 +1,8 @@
-name: Build AppImage Cartographer
+name: Build AppImage SLAM Server
 
 on:
   workflow_dispatch:
-    inputs:
-      release_type:
-        required: true
-        description: Release version for this appimage (latest/rc/stable)
-        type: string
-        default: latest
   workflow_call:
-    inputs:
-      release_type:
-        required: true
-        type: string
     secrets:
       GCP_CREDENTIALS:
         required: true
@@ -36,7 +26,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-    - name: Check out code
+    - name: Check out main code
       if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
       uses: actions/checkout@v3
       with:
@@ -62,27 +52,37 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'make setup'
 
-    - name: Authorize GCP Upload
-      uses: google-github-actions/auth@v1
-      with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+    - name: make build
+      run: |
+        sudo -u testbot bash -lc 'make build'
 
-    - name: Build and Package (PR)
+    - name: Build AppImage (PR)
       if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
       run: |
         sudo -u testbot bash -lc 'make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
-    - name: Build and Package (Latest)
-      if: inputs.release_type == 'latest'
-      run: |
-        sudo -Hu testbot bash -lc 'make BUILD_CHANNEL="latest" appimage'
+    - name: Authorize GCP Upload
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+        
+    - name: Deploy Files (PR)
+      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+      uses: google-github-actions/upload-cloud-storage@v0.10.4
+      with:
+        headers: "cache-control: no-cache"
+        path: 'etc/packaging/appimages/deploy/'
+        destination: 'packages.viam.com/apps/slam-servers/'
+        glob: '*'
+        parent: false
+        gzip: false
 
-    - name: Build and Package (Tagged)
-      if: inputs.release_type == 'stable' || inputs.release_type == 'rc'
-      run: |
-        sudo -Hu testbot bash -lc 'make RELEASE_TYPE="${{ inputs.release_type }}" BUILD_CHANNEL="${{ github.ref_name }}" appimage'
+    - name: Build AppImage (Latest)
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+      run: sudo -u testbot bash -lc 'make appimage-ci'
 
-    - name: Deploy Files
+    - name: Deploy Files (Latest)
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
       uses: google-github-actions/upload-cloud-storage@v0.10.4
       with:
         headers: "cache-control: no-cache"
