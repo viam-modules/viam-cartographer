@@ -672,6 +672,12 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
+    {
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_POINTCLOUD_MAP_EMPTY);
+    }
+
     // second sensor reading
     {
         VLOG(1) << "viam_carto_add_sensor_reading 2";
