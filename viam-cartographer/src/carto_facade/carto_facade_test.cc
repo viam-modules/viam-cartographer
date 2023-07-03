@@ -1,8 +1,8 @@
 #include "carto_facade.h"
 
-#include <pcl/conversions.h>  //pcl::fromPCLPointCloud2
-#include <pcl/point_cloud.h>  // pcl::PointCloud
-#include <pcl/point_types.h>  // pcl::PointXYZRGB
+#include <pcl/conversions.h>  // for pcl::fromPCLPointCloud2
+#include <pcl/point_cloud.h>  // for pcl::PointCloud
+#include <pcl/point_types.h>  // for pcl::PointXYZRGB
 
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>

@@ -167,11 +167,11 @@ func TestCGoAPI(t *testing.T) {
 
 		confirmBinaryCompressedUnsupported(t)
 
-		// NOTE: This test is very carfully created in order to not hit
+		// NOTE: This test is very carefully created in order to not hit
 		// cases where cartographer won't update the map for whatever reason.
 		// For example, if you change the time increments from 2 seconds to 1
 		// second, the map doesn't update (at least not after 10 lidar readings).
-		// I'm not sure why cartotgrapher has this behavior.
+		// It is not clear why cartographer has this behavior.
 		// Cartographer does not provide any feedback regarding
 		// why or when it does / does not update the map.
 		// As a result, these tests show best case behavior.
@@ -212,7 +212,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
-		// third sensor reading populates the pointcloud map and the  position
+		// third sensor reading populates the pointcloud map and the position
 		t.Log("sensor reading 3")
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddSensorReading(t, vc, "mysensor", "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)

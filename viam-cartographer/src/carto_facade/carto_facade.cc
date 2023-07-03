@@ -695,17 +695,6 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         // NOTE: The first time local_poses.size() goes positive will
         // be the second time that map_builder.AddSensorData() succeeds.
         // At that time the pose will still be zeroed out.
-        // In the future we may want to allow callers of
-        // CartoFacade::GetPosition to be able to distinguish between the states
-        // of:
-        // 1. Cartographer has not yet computed a map nor position as not enough
-        // successful sensor readings have been provided yet.
-        // 2. Cartographer has been initialized but still believes
-        // that the robot is at the origin of the map.
-        // In order to distinguish between these two states we would need to
-        // return an error to the caller of viam_cartographer_get_position if
-        // latest_global_pose has never been set within
-        // CartoFacade::AddSensorReading.
         if (local_poses.size() > 0) {
             update_latest_global_pose = true;
             tmp_global_pose = map_builder.GetGlobalPose(local_poses.back());
