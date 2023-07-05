@@ -265,8 +265,10 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, position.Real, test.ShouldNotEqual, 1)
 
 		// test getPointCloudMap returns non 0 response
-		// on aarm64 linux this always returns a different response
-		// but on aar64 osx it returns the same map for some reason
+		// on arm64 linux this returns a different response
+		// than the last call to getPointCloudMap()
+		// on arm64 osx it returns the same map as
+		// the last call to getPointCloudMap()
 		// https://viam.atlassian.net/browse/RSDK-3866
 		pcd, err = vc.getPointCloudMap()
 		test.That(t, err, test.ShouldBeNil)

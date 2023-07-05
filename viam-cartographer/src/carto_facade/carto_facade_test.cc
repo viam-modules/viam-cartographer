@@ -617,8 +617,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     }
 
     // GetInternalState
-    // Every call to AddSensorReading after the first one (for some
-    // unknown reason) should be persisted in the the internal state.
     int last_internal_state_response_size = 0;
     {
         BOOST_TEST(viam_carto_get_internal_state_response_destroy(nullptr) ==
@@ -704,8 +702,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         viam_carto_get_internal_state_response isr;
         BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
                    VIAM_CARTO_SUCCESS);
-        // special case: apparently the first call to AddSensorReading doesn't
-        // change the internal state, but subsequent calls do.
+        // special case: the first call to AddSensorReading don't
+        // change the internal state but subsequent calls do.
         BOOST_TEST(blength(isr.internal_state) ==
                    last_internal_state_response_size);
         last_internal_state_response_size = blength(isr.internal_state);
@@ -804,8 +802,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         viam_carto_get_internal_state_response isr;
         BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
                    VIAM_CARTO_SUCCESS);
-        // on aarm64 linux this is strictly greater than
-        // on aarm64 mac for some reason it is equal to
+        // on arm64 linux this is strictly greater than
+        // on arm64 mac for some reason it is equal to
         // https://viam.atlassian.net/browse/RSDK-3866
         BOOST_TEST(blength(isr.internal_state) >=
                    last_internal_state_response_size);
