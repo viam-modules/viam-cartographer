@@ -198,6 +198,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
+    // can't terminate a carto instance that has already been terminated
+    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_VC_INVALID);
 
     viam_carto_config_teardown(vcc_no_sensors);
     viam_carto_config_teardown(vcc_empty_data_dir);
@@ -211,6 +213,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     fs::remove_all(tmp_dir);
 
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
+    // can't terminate a lib that has already been terminated
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_LIB_INVALID);
 }
 
 BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
@@ -492,6 +496,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
     }
 
     {
@@ -519,6 +525,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
     // start not allowed if already started
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE);
+
+    // can't terminate a carto instance which is still started
+    BOOST_TEST(viam_carto_terminate(&vc) ==
+               VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE);
 
     // GetPosition
     BOOST_TEST(viam_carto_get_position(nullptr, nullptr) ==
@@ -862,6 +872,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
     }
 
     {

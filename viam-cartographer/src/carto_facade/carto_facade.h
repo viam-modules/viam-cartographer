@@ -108,6 +108,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_NOT_IN_INITIALIZED_STATE 29
 #define VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE 30
 #define VIAM_CARTO_NOT_IN_STARTED_STATE 31
+#define VIAM_CARTO_NOT_IN_TERMINATABLE_STATE 32
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;

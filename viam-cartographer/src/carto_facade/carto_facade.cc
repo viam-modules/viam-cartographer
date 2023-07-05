@@ -309,7 +309,7 @@ void CartoFacade::IOInit() {
     }
 
     // TODO: google cartographer will termiante the program if
-    // the internal carto facade state is invalid
+    // the internal state is invalid
     // see https://viam.atlassian.net/browse/RSDK-3553
     if (action_mode == ActionMode::UPDATING ||
         action_mode == ActionMode::LOCALIZING) {
@@ -968,8 +968,17 @@ extern int viam_carto_terminate(viam_carto **ppVC) {
     }
     viam::carto_facade::CartoFacade *cf =
         static_cast<viam::carto_facade::CartoFacade *>((*ppVC)->carto_obj);
+    if (cf->state != viam::carto_facade::CartoFacadeState::INITIALIZED &&
+        cf->state != viam::carto_facade::CartoFacadeState::IO_INITIALIZED) {
+        LOG(ERROR) << "carto facade is in state: " << cf->state << " expected "
+                   << viam::carto_facade::CartoFacadeState::INITIALIZED
+                   << " or "
+                   << viam::carto_facade::CartoFacadeState::IO_INITIALIZED;
+        return VIAM_CARTO_NOT_IN_TERMINATABLE_STATE;
+    }
     delete cf;
     free((viam_carto *)*ppVC);
+    *ppVC = nullptr;
     return VIAM_CARTO_SUCCESS;
 };
 
