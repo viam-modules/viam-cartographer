@@ -10,6 +10,43 @@
 namespace viam {
 namespace carto_facade {
 namespace util {
+std::string try_file_close(std::ifstream &tempFile, std::string filename) {
+    tempFile.close();
+    if (tempFile.bad()) {
+        return (" Failed to close ifstream object " + filename);
+    }
+    return "";
+}
+
+void read_and_delete_file(std::string filename, std::string *buffer) {
+    std::stringstream error_forwarded;
+
+    std::ifstream tempFile(filename);
+    if (tempFile.bad()) {
+        error_forwarded << "Failed to open " << filename
+                        << " as ifstream object.";
+        error_forwarded << try_file_close(tempFile, filename);
+        throw std::runtime_error(error_forwarded.str());
+    }
+
+    std::stringstream bufferStream;
+    if (bufferStream << tempFile.rdbuf()) {
+        *buffer = bufferStream.str();
+    } else {
+        error_forwarded << "Failed to get data from " << filename
+                        << " to buffer stream.";
+        error_forwarded << try_file_close(tempFile, filename);
+        throw std::runtime_error(error_forwarded.str());
+    }
+
+    error_forwarded << try_file_close(tempFile, filename);
+
+    if (std::remove(filename.c_str()) != 0) {
+        error_forwarded << "Failed to delete " << filename;
+        throw std::runtime_error(error_forwarded.str());
+    }
+}
+
 std::string pcd_header(int mapSize, bool hasColor) {
     if (hasColor)
         return str(boost::format(HEADERTEMPLATECOLOR) % mapSize % mapSize);

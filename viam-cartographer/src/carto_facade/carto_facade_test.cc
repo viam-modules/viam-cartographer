@@ -616,6 +616,26 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_POINTCLOUD_MAP_EMPTY);
     }
 
+    // GetInternalState
+    int last_internal_state_response_size = 0;
+    {
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(nullptr) ==
+                   VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID);
+        BOOST_TEST(viam_carto_get_internal_state(nullptr, nullptr) ==
+                   VIAM_CARTO_VC_INVALID);
+        BOOST_TEST(viam_carto_get_internal_state(vc, nullptr) ==
+                   VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID);
+
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_SUCCESS);
+        BOOST_TEST(blength(isr.internal_state) >
+                   last_internal_state_response_size);
+        last_internal_state_response_size = blength(isr.internal_state);
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
     // GetPosition unchanged from failed AddSensorReading requests
     {
         viam_carto_get_position_response pr;
@@ -678,6 +698,19 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_POINTCLOUD_MAP_EMPTY);
     }
 
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_SUCCESS);
+        // special case: the first call to AddSensorReading doesn't
+        // change the internal state but subsequent calls do.
+        BOOST_TEST(blength(isr.internal_state) ==
+                   last_internal_state_response_size);
+        last_internal_state_response_size = blength(isr.internal_state);
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
     // second sensor reading
     {
         VLOG(1) << "viam_carto_add_sensor_reading 2";
@@ -725,6 +758,17 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_SUCCESS);
+        BOOST_TEST(blength(isr.internal_state) >
+                   last_internal_state_response_size);
+        last_internal_state_response_size = blength(isr.internal_state);
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
     // third sensor reading
     {
         VLOG(1) << "viam_carto_add_sensor_reading 3";
@@ -754,12 +798,19 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // GetInternalState
-    viam_carto_get_internal_state_response isr;
-    BOOST_TEST(viam_carto_get_internal_state(vc, &isr) == VIAM_CARTO_SUCCESS);
-
-    BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
-               VIAM_CARTO_SUCCESS);
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_SUCCESS);
+        // on arm64 linux this is strictly greater than
+        // on arm64 mac for some reason it is equal to
+        // https://viam.atlassian.net/browse/RSDK-3866
+        BOOST_TEST(blength(isr.internal_state) >=
+                   last_internal_state_response_size);
+        last_internal_state_response_size = blength(isr.internal_state);
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
 
     // Stop
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);

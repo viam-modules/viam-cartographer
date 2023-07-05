@@ -259,15 +259,14 @@ func (vc *Carto) getInternalState() ([]byte, error) {
 		return nil, err
 	}
 
+	interalState := bstringToByteSlice(value.internal_state)
+
 	status = C.viam_carto_get_internal_state_response_destroy(&value)
 	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	if value.internal_state != nil {
-		return bstringToByteSlice(value.internal_state), nil
-	}
-	return nil, errors.New("nil internal state")
+	return interalState, nil
 }
 
 // this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files

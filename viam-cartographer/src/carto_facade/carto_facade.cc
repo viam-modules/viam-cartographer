@@ -4,6 +4,9 @@
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+#include <boost/uuid/uuid.hpp>             // uuid class
+#include <boost/uuid/uuid_generators.hpp>  // generators
+#include <boost/uuid/uuid_io.hpp>
 
 #include "glog/logging.h"
 #include "io.h"
@@ -595,7 +598,36 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
     r->point_cloud_pcd = to_bstring(pointcloud_map);
 };
 
-void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r){};
+// TODO: This function is unnecessarily prone to IO errors
+// due to going through the file system  in order to read
+// the internal state.
+// This is the ticket to remove that failure mode:
+// https://viam.atlassian.net/browse/RSDK-3878
+void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    std::string filename = path_to_internal_state + "/" +
+                           "temp_internal_state_" +
+                           boost::uuids::to_string(uuid) + ".pbstream";
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        bool ok = map_builder.SaveMapToFile(true, filename);
+        if (!ok) {
+            LOG(ERROR) << "Failed to save the internal state as a pbstream.";
+            throw VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR;
+        }
+    }
+
+    std::string internal_state;
+    try {
+        viam::carto_facade::util::read_and_delete_file(filename,
+                                                       &internal_state);
+    } catch (std::exception &e) {
+        LOG(ERROR) << "Failed to read and/or delete internal state file: "
+                   << e.what();
+        throw VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR;
+    }
+    r->internal_state = to_bstring(internal_state);
+};
 
 void CartoFacade::Start() {
     started = true;
@@ -1012,10 +1044,38 @@ extern int viam_carto_get_point_cloud_map_response_destroy(
 
 extern int viam_carto_get_internal_state(
     viam_carto *vc, viam_carto_get_internal_state_response *r) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+    }
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
+        cf->GetInternalState(r);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+
     return VIAM_CARTO_SUCCESS;
 };
 
 extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r) {
-    return VIAM_CARTO_SUCCESS;
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+    }
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+    rc = bdestroy(r->internal_state);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    r->internal_state = nullptr;
+    return return_code;
 };
