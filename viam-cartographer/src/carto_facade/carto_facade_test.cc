@@ -198,6 +198,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
+    // can't terminate a carto instance that has already been terminated
+    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_VC_INVALID);
 
     viam_carto_config_teardown(vcc_no_sensors);
     viam_carto_config_teardown(vcc_empty_data_dir);
@@ -211,6 +213,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     fs::remove_all(tmp_dir);
 
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
+    // can't terminate a lib that has already been terminated
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_LIB_INVALID);
 }
 
 BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
@@ -444,7 +448,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     auto path_to_internal_state = tmp_dir / fs::path("internal_state");
 
     BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
-    BOOST_TEST((cf->started) == false);
+    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
     BOOST_TEST((cf->config.sensors) == sensors_vec);
     BOOST_TEST((cf->config.map_rate_sec).count() == 1);
     BOOST_TEST((cf->config.data_dir) == tmp_dir.string());
@@ -482,8 +486,49 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
 
+    // behavior of methods before start
+    // AddSensorReading
+    {
+        viam_carto_sensor_reading sr = new_test_sensor_reading(
+            "sensor_1", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    {
+        // GetPosition
+        viam_carto_get_position_response pr;
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    //  GetPointCloudMap
+    {
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    // GetInternalState
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
     // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
+    // start not allowed if already started
+    BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE);
+
+    // can't terminate a carto instance which is still started
+    BOOST_TEST(viam_carto_terminate(&vc) ==
+               VIAM_CARTO_NOT_IN_TERMINATABLE_STATE);
 
     // GetPosition
     BOOST_TEST(viam_carto_get_position(nullptr, nullptr) ==
@@ -814,6 +859,43 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     // Stop
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
+    // stop not allowed if not started
+    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_NOT_IN_STARTED_STATE);
+
+    // behavior of methods after stop
+    // AddSensorReading
+    {
+        viam_carto_sensor_reading sr = new_test_sensor_reading(
+            "sensor_1", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    {
+        // GetPosition
+        viam_carto_get_position_response pr;
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    //  GetPointCloudMap
+    {
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    // GetInternalState
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
 
     // Terminate
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
@@ -891,14 +973,14 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop) {
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     viam::carto_facade::CartoFacade *cf =
         static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-    BOOST_TEST(cf->started == false);
+    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
 
     BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
     BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
 
     // // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(cf->started == true);
+    BOOST_TEST(((cf->state) == CartoFacadeState::STARTED));
 
     // Confirm at least one map is persisted within the map_rate_sec
     VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
@@ -911,7 +993,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop) {
 
     // Stop
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(cf->started == false);
+    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
 
     // Terminate
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
