@@ -528,7 +528,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
 
     // can't terminate a carto instance which is still started
     BOOST_TEST(viam_carto_terminate(&vc) ==
-               VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE);
+               VIAM_CARTO_NOT_IN_TERMINATABLE_STATE);
 
     // GetPosition
     BOOST_TEST(viam_carto_get_position(nullptr, nullptr) ==

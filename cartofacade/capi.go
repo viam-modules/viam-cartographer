@@ -468,6 +468,8 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE")
 	case C.VIAM_CARTO_NOT_IN_STARTED_STATE:
 		return errors.New("VIAM_CARTO_NOT_IN_STARTED_STATE")
+	case C.VIAM_CARTO_NOT_IN_TERMINATABLE_STATE:
+		return errors.New("VIAM_CARTO_NOT_IN_TERMINATABLE_STATE")
 	default:
 		return errors.New("status code unclassified")
 	}
