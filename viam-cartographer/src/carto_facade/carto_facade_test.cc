@@ -804,8 +804,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         viam_carto_get_internal_state_response isr;
         BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
                    VIAM_CARTO_SUCCESS);
-        // on linux this is strictly greater than but on mac
-        // for some reason it is only equal to.
+        // on aarm64 linux this is strictly greater than
+        // on aarm64 mac for some reason it is equal to
+        // https://viam.atlassian.net/browse/RSDK-3866
         BOOST_TEST(blength(isr.internal_state) >=
                    last_internal_state_response_size);
         last_internal_state_response_size = blength(isr.internal_state);
