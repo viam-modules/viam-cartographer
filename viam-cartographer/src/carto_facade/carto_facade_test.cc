@@ -702,7 +702,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         viam_carto_get_internal_state_response isr;
         BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
                    VIAM_CARTO_SUCCESS);
-        // special case: the first call to AddSensorReading don't
+        // special case: the first call to AddSensorReading doesn't
         // change the internal state but subsequent calls do.
         BOOST_TEST(blength(isr.internal_state) ==
                    last_internal_state_response_size);
