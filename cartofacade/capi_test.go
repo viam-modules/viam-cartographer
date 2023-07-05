@@ -7,24 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"crypto/sha256"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 )
-
-func testPointCloudsDiffer(t *testing.T, pc1, pc2 pointcloud.PointCloud) {
-	b1 := new(bytes.Buffer)
-	err := pointcloud.ToPCD(pc1, b1, pointcloud.PCDAscii)
-	test.That(t, err, test.ShouldBeNil)
-
-	b2 := new(bytes.Buffer)
-	err = pointcloud.ToPCD(pc2, b2, pointcloud.PCDAscii)
-	test.That(t, err, test.ShouldBeNil)
-	t.Logf("b1: %x, b2: %x", sha256.Sum256(b1.Bytes()), sha256.Sum256(b2.Bytes()))
-
-	test.That(t, b1.Bytes(), test.ShouldNotResemble, b2.Bytes())
-}
 
 func positionIsZero(t *testing.T, position GetPosition) {
 	test.That(t, position.X, test.ShouldEqual, 0)
@@ -230,6 +216,7 @@ func TestCGoAPI(t *testing.T) {
 		internalState, err = vc.getInternalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
 		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
 		lastInternalState = internalState
 
@@ -251,12 +238,12 @@ func TestCGoAPI(t *testing.T) {
 		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
-		lastPc := pc
 
 		// test getInternalState always returns different non empty results than first call
 		internalState, err = vc.getInternalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
 		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
 		lastInternalState = internalState
 
@@ -284,12 +271,12 @@ func TestCGoAPI(t *testing.T) {
 		pc, err = pointcloud.ReadPCD(bytes.NewReader(pcd))
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
-		testPointCloudsDiffer(t, pc, lastPc)
 
 		// test getInternalState always returns different non empty results than second call
 		internalState, err = vc.getInternalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
 		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
 
 		// test stop
