@@ -2,6 +2,8 @@
 #ifndef VIAM_CARTO_FACADE_UTIL_H
 #define VIAM_CARTO_FACADE_UTIL_H
 
+#include <pcl/PCLPointCloud2.h>
+
 #include <string>
 #include <tuple>
 
@@ -39,6 +41,8 @@ const auto HEADERTEMPLATECOLOR =
     "VIEWPOINT 0 0 0 1 0 0 0\n"
     "POINTS %d\n"
     "DATA binary\n";
+void read_and_delete_file(std::string filename, std::string *buffer);
+
 std::string pcd_header(int mapSize, bool hasColor);
 
 void write_float_to_buffer_in_bytes(std::string &buffer, float f);
@@ -48,6 +52,7 @@ void write_int_to_buffer_in_bytes(std::string &buffer, int d);
 std::tuple<bool, cartographer::sensor::TimedPointCloudData>
 carto_sensor_reading(std::string sensor_reading,
                      int64_t sensor_reading_time_unix_micro);
+int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob);
 }  // namespace util
 }  // namespace carto_facade
 }  // namespace viam
