@@ -254,7 +254,7 @@ std::string get_latest_internal_state_filename(
 
 void CartoFacade::IOInit() {
     if (state != CartoFacadeState::INITIALIZED) {
-        LOG(ERROR) << "state is  " << state << " expected "
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
                    << CartoFacadeState::INITIALIZED;
         throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
     }
@@ -309,7 +309,7 @@ void CartoFacade::IOInit() {
     }
 
     // TODO: google cartographer will termiante the program if
-    // the internal state is invalid
+    // the internal carto facade state is invalid
     // see https://viam.atlassian.net/browse/RSDK-3553
     if (action_mode == ActionMode::UPDATING ||
         action_mode == ActionMode::LOCALIZING) {
@@ -568,7 +568,7 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
 
 void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     if (state != CartoFacadeState::STARTED) {
-        LOG(ERROR) << "state is  " << state << " expected "
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
@@ -593,7 +593,7 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
 
 void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
     if (state != CartoFacadeState::STARTED) {
-        LOG(ERROR) << "state is  " << state << " expected "
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
@@ -636,7 +636,7 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
 // https://viam.atlassian.net/browse/RSDK-3878
 void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
     if (state != CartoFacadeState::STARTED) {
-        LOG(ERROR) << "state is  " << state << " expected "
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
@@ -667,7 +667,7 @@ void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
 
 void CartoFacade::Start() {
     if (state != CartoFacadeState::IO_INITIALIZED) {
-        LOG(ERROR) << "state is  " << state << " expected "
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
                    << CartoFacadeState::IO_INITIALIZED;
         throw VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE;
     }
@@ -738,7 +738,7 @@ void CartoFacade::SaveInternalStateOnInterval() {
 
 void CartoFacade::Stop() {
     if (state != CartoFacadeState::STARTED) {
-        LOG(ERROR) << "state is  " << state << " expected "
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
@@ -748,7 +748,8 @@ void CartoFacade::Stop() {
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     if (state != CartoFacadeState::STARTED) {
-        LOG(ERROR) << "state is  " << state << " expected "
+        LOG(ERROR) << "carto facade is in state: " << state
+                   << " expected it to be in state: "
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
