@@ -671,8 +671,8 @@ void CartoFacade::Start() {
                    << CartoFacadeState::IO_INITIALIZED;
         throw VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE;
     }
-    StartSaveInternalState();
     state = CartoFacadeState::STARTED;
+    StartSaveInternalState();
 };
 
 void CartoFacade::StartSaveInternalState() {
@@ -742,8 +742,8 @@ void CartoFacade::Stop() {
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
     }
-    StopSaveInternalState();
     state = CartoFacadeState::IO_INITIALIZED;
+    StopSaveInternalState();
 };
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
