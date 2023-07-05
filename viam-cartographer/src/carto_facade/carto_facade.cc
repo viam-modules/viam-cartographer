@@ -82,6 +82,21 @@ std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
     return os;
 }
 
+std::ostream &operator<<(std::ostream &os, const CartoFacadeState &state) {
+    std::string state_str;
+    if (state == CartoFacadeState::INITIALIZED) {
+        state_str = "initialized";
+    } else if (state == CartoFacadeState::IO_INITIALIZED) {
+        state_str = "io_initialized";
+    } else if (state == CartoFacadeState::STARTED) {
+        state_str = "started";
+    } else {
+        throw std::runtime_error("invalid CartoFacadeState value");
+    }
+    os << state_str;
+    return os;
+}
+
 void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
     switch (lidar_config) {
         case VIAM_CARTO_TWO_D:
@@ -238,6 +253,11 @@ std::string get_latest_internal_state_filename(
 }
 
 void CartoFacade::IOInit() {
+    if (state != CartoFacadeState::INITIALIZED) {
+        LOG(ERROR) << "state is  " << state << " expected "
+                   << CartoFacadeState::INITIALIZED;
+        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+    }
     // Detect if data_dir has deprecated format
     if (fs::is_directory(config.data_dir + "/data")) {
         LOG(ERROR) << "data directory " << config.data_dir
@@ -329,6 +349,7 @@ void CartoFacade::IOInit() {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.StartLidarTrajectoryBuilder();
     }
+    state = CartoFacadeState::IO_INITIALIZED;
 };
 
 void CartoFacade::CacheLatestMap() {
@@ -546,6 +567,11 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
 }
 
 void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "state is  " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+    }
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
@@ -566,6 +592,11 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
 };
 
 void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "state is  " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+    }
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
     std::shared_lock optimization_lock{optimization_shared_mutex,
@@ -604,6 +635,11 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
 // This is the ticket to remove that failure mode:
 // https://viam.atlassian.net/browse/RSDK-3878
 void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "state is  " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+    }
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
     std::string filename = path_to_internal_state + "/" +
                            "temp_internal_state_" +
@@ -630,8 +666,13 @@ void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
 };
 
 void CartoFacade::Start() {
-    started = true;
+    if (state != CartoFacadeState::IO_INITIALIZED) {
+        LOG(ERROR) << "state is  " << state << " expected "
+                   << CartoFacadeState::IO_INITIALIZED;
+        throw VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE;
+    }
     StartSaveInternalState();
+    state = CartoFacadeState::STARTED;
 };
 
 void CartoFacade::StartSaveInternalState() {
@@ -643,7 +684,6 @@ void CartoFacade::StartSaveInternalState() {
 }
 
 void CartoFacade::StopSaveInternalState() {
-    started = false;
     if (config.map_rate_sec == std::chrono::seconds(0)) {
         return;
     }
@@ -653,11 +693,11 @@ void CartoFacade::StopSaveInternalState() {
 void CartoFacade::SaveInternalStateOnInterval() {
     auto check_for_shutdown_interval_usec =
         std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
-    while (started) {
+    while (state == CartoFacadeState::STARTED) {
         auto start = std::chrono::high_resolution_clock::now();
         // Sleep for config.map_rate_sec duration, but check frequently for
         // shutdown
-        while (started) {
+        while (state == CartoFacadeState::STARTED) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
             if (time_elapsed_msec >= config.map_rate_sec) {
@@ -679,7 +719,7 @@ void CartoFacade::SaveInternalStateOnInterval() {
 
         // Breakout without saving if the session has ended
 
-        if (!started) {
+        if (state != CartoFacadeState::STARTED) {
             LOG(INFO) << "Saving final optimized internal state";
         }
         std::time_t t = std::time(nullptr);
@@ -689,16 +729,29 @@ void CartoFacade::SaveInternalStateOnInterval() {
 
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SaveMapToFile(true, filename_with_timestamp);
-        if (!started) {
+        if (state != CartoFacadeState::STARTED) {
             LOG(INFO) << "Finished saving final optimized internal state";
             break;
         }
     }
 }
 
-void CartoFacade::Stop() { StopSaveInternalState(); };
+void CartoFacade::Stop() {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "state is  " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+    }
+    StopSaveInternalState();
+    state = CartoFacadeState::IO_INITIALIZED;
+};
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "state is  " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+    }
     if (biseq(config.component_reference, sr->sensor) == false) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->sensor) << " to be "
                 << config.component_reference;

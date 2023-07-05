@@ -18,13 +18,6 @@
 #include "bstrlib.h"
 #include "bstrwrap.h"
 
-// #include "../io/draw_trajectories.h"
-// #include "../io/file_handler.h"
-// #include "../utils/slam_service_helpers.h"
-// #include "Eigen/Core"
-// #include "cairo/cairo.h"
-// #include "cartographer/io/submap_painter.h"
-
 // BEGIN C API
 #ifdef __cplusplus
 extern "C" {
@@ -112,6 +105,8 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID 26
 #define VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR 27
 #define VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR 28
+#define VIAM_CARTO_NOT_IN_INITIALIZED_STATE 29
+#define VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE 30
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -312,6 +307,7 @@ const std::string configuration_update_basename = "updating_a_map.lua";
 carto_facade::ActionMode determine_action_mode(
     std::string path_to_map, std::chrono::seconds map_rate_sec);
 
+enum class CartoFacadeState { INITIALIZED, IO_INITIALIZED, STARTED };
 class CartoFacade {
    public:
     CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
@@ -359,7 +355,7 @@ class CartoFacade {
     viam::carto_facade::config config;
     viam_carto_algo_config algo_config;
     std::string path_to_internal_state;
-    std::atomic<bool> started{false};
+    std::atomic<CartoFacadeState> state{CartoFacadeState::INITIALIZED};
     std::string configuration_directory;
     ActionMode action_mode = ActionMode::MAPPING;
 
