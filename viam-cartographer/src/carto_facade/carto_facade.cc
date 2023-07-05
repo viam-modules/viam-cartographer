@@ -570,7 +570,7 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     if (state != CartoFacadeState::STARTED) {
         LOG(ERROR) << "state is  " << state << " expected "
                    << CartoFacadeState::STARTED;
-        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     cartographer::transform::Rigid3d global_pose;
     {
@@ -595,7 +595,7 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
     if (state != CartoFacadeState::STARTED) {
         LOG(ERROR) << "state is  " << state << " expected "
                    << CartoFacadeState::STARTED;
-        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     std::string pointcloud_map;
     // Write or grab the latest pointcloud map in form of a string
@@ -638,7 +638,7 @@ void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
     if (state != CartoFacadeState::STARTED) {
         LOG(ERROR) << "state is  " << state << " expected "
                    << CartoFacadeState::STARTED;
-        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
     std::string filename = path_to_internal_state + "/" +
@@ -740,7 +740,7 @@ void CartoFacade::Stop() {
     if (state != CartoFacadeState::STARTED) {
         LOG(ERROR) << "state is  " << state << " expected "
                    << CartoFacadeState::STARTED;
-        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     state = CartoFacadeState::IO_INITIALIZED;
     StopSaveInternalState();
@@ -750,7 +750,7 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     if (state != CartoFacadeState::STARTED) {
         LOG(ERROR) << "state is  " << state << " expected "
                    << CartoFacadeState::STARTED;
-        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     if (biseq(config.component_reference, sr->sensor) == false) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->sensor) << " to be "
