@@ -152,7 +152,6 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		fmt.Println(timestamp1.After(_zeroTime))
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
 
