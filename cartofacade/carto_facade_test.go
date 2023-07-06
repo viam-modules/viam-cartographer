@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"go.uber.org/multierr"
 	"os"
 	"sync"
 	"testing"
@@ -99,7 +100,7 @@ func TestRequest(t *testing.T) {
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		errMsg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
-		expectedErr := errors.Join(errors.New(errMsg), context.Canceled)
+		expectedErr := multierr.Combine(errors.New(errMsg), context.Canceled)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
@@ -125,7 +126,7 @@ func TestRequest(t *testing.T) {
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 10*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 
 		cancelFunc()
@@ -207,7 +208,7 @@ func TestStart(t *testing.T) {
 		// times out
 		err = cartoFacade.Start(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
@@ -259,7 +260,7 @@ func TestStop(t *testing.T) {
 		// times out
 		err = cartoFacade.Stop(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
@@ -311,7 +312,7 @@ func TestTerminate(t *testing.T) {
 		// times out
 		err = cartoFacade.Terminate(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
@@ -374,7 +375,7 @@ func TestAddSensorReading(t *testing.T) {
 		// times out
 		err = cartoFacade.AddSensorReading(cancelCtx, 1*time.Millisecond, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
@@ -430,7 +431,7 @@ func TestGetPosition(t *testing.T) {
 		// times out
 		_, err = cartoFacade.GetPosition(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
@@ -484,7 +485,7 @@ func TestGetInternalState(t *testing.T) {
 		// times out
 		_, err = cartoFacade.GetInternalState(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
@@ -538,7 +539,7 @@ func TestGetPointCloudMap(t *testing.T) {
 		// times out
 		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		expectedErr := errors.Join(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 

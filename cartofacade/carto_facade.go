@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"go.uber.org/multierr"
 )
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
@@ -321,11 +323,11 @@ func (cf *CartoFacade) request(
 			return response.result, response.err
 		case <-ctx.Done():
 			msg := "timeout has occurred while trying to read request from cartofacade"
-			return nil, errors.Join(errors.New(msg), ctx.Err())
+			return nil, multierr.Combine(errors.New(msg), ctx.Err())
 		}
 	case <-ctx.Done():
 		msg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
-		return nil, errors.Join(errors.New(msg), ctx.Err())
+		return nil, multierr.Combine(errors.New(msg), ctx.Err())
 	}
 }
 
