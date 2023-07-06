@@ -11,6 +11,8 @@ import (
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
 
+var UNABLE_TO_ACQUIRE_LOCK = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
+
 // Initialize calls into the cartofacade C code.
 func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) error {
 	cf.start(ctx, activeBackgroundWorkers)
@@ -184,9 +186,9 @@ type RequestInterface interface {
 	doWork(q *CartoFacade) (interface{}, error)
 }
 
-// Interface defines the functionality of a CartoFacade instance.
+// CartoFacadeI defines the functionality of a CartoFacade instance.
 // It should not be used outside of this package but needs to be public for testing purposes.
-type Interface interface {
+type CartoFacadeI interface {
 	request(
 		ctxParent context.Context,
 		requestType RequestType,
@@ -317,10 +319,10 @@ func (cf *CartoFacade) request(
 		case response := <-req.responseChan:
 			return response.result, response.err
 		case <-ctx.Done():
-			return nil, errors.New("timeout has occurred while trying to read request from cartofacade")
+			return nil, errors.Join(errors.New("timeout has occurred while trying to read request from cartofacade"), ctx.Err())
 		}
 	case <-ctx.Done():
-		return nil, errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?")
+		return nil, errors.Join(errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"), ctx.Err())
 	}
 }
 

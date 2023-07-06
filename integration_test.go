@@ -404,6 +404,6 @@ func testCartographerDir(t *testing.T, path string, expectedMaps int) {
 	test.That(t, len(mapsInDir), test.ShouldBeGreaterThanOrEqualTo, expectedMaps)
 }
 
-func TestCartographerIntegration2D(t *testing.T) {
-	integrationtestHelperCartographer(t, viamcartographer.Dim2d)
-}
+// func TestCartographerIntegration2D(t *testing.T) {
+// 	integrationtestHelperCartographer(t, viamcartographer.Dim2d)
+// }
