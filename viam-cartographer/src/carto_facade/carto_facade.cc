@@ -4,6 +4,9 @@
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+#include <boost/uuid/uuid.hpp>             // uuid class
+#include <boost/uuid/uuid_generators.hpp>  // generators
+#include <boost/uuid/uuid_io.hpp>
 
 #include "glog/logging.h"
 #include "io.h"
@@ -41,6 +44,14 @@ std::string to_std_string(bstring b_str) {
     return std_str;
 }
 
+bstring to_bstring(std::string str) {
+    bstring bstr = blk2bstr(str.c_str(), str.length());
+    if (bstr == NULL) {
+        throw VIAM_CARTO_OUT_OF_MEMORY;
+    }
+    return bstr;
+}
+
 // Convert the scale of a specified color channel from the given UCHAR
 // range of 0 - 255 to an inverse probability range of 100 - 0.
 int calculate_probability_from_color_channels(ColorARGB pixel_color) {
@@ -68,6 +79,21 @@ std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
         throw std::runtime_error("invalid ActionMode value");
     }
     os << action_mode_str;
+    return os;
+}
+
+std::ostream &operator<<(std::ostream &os, const CartoFacadeState &state) {
+    std::string state_str;
+    if (state == CartoFacadeState::INITIALIZED) {
+        state_str = "initialized";
+    } else if (state == CartoFacadeState::IO_INITIALIZED) {
+        state_str = "io_initialized";
+    } else if (state == CartoFacadeState::STARTED) {
+        state_str = "started";
+    } else {
+        throw std::runtime_error("invalid CartoFacadeState value");
+    }
+    os << state_str;
     return os;
 }
 
@@ -227,6 +253,11 @@ std::string get_latest_internal_state_filename(
 }
 
 void CartoFacade::IOInit() {
+    if (state != CartoFacadeState::INITIALIZED) {
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
+                   << CartoFacadeState::INITIALIZED;
+        throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
+    }
     // Detect if data_dir has deprecated format
     if (fs::is_directory(config.data_dir + "/data")) {
         LOG(ERROR) << "data directory " << config.data_dir
@@ -318,6 +349,7 @@ void CartoFacade::IOInit() {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.StartLidarTrajectoryBuilder();
     }
+    state = CartoFacadeState::IO_INITIALIZED;
 };
 
 void CartoFacade::CacheLatestMap() {
@@ -535,6 +567,11 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
 }
 
 void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
     cartographer::transform::Rigid3d global_pose;
     {
         std::lock_guard<std::mutex> lk(viam_response_mutex);
@@ -554,13 +591,87 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     r->component_reference = bstrcpy(config.component_reference);
 };
 
-void CartoFacade::GetPointCloudMap(
-    viam_carto_get_point_cloud_map_response *r){};
+void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
+    std::string pointcloud_map;
+    // Write or grab the latest pointcloud map in form of a string
+    std::shared_lock optimization_lock{optimization_shared_mutex,
+                                       std::defer_lock};
+    if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
+        // We are able to lock the optimization_shared_mutex, which means
+        // that the optimization is not ongoing and we can grab the newest
+        // map
+        GetLatestSampledPointCloudMapString(pointcloud_map);
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        latest_pointcloud_map = pointcloud_map;
+    } else {
+        // Either we are in localization mode or we couldn't lock the mutex
+        // which means the optimization process locked it and we need to use
+        // the backed up latest map
+        if (action_mode == ActionMode::LOCALIZING) {
+            LOG(INFO) << "In localization mode, using cached pointcloud map";
+        } else {
+            LOG(INFO)
+                << "Optimization is occuring, using cached pointcloud map";
+        }
+        std::lock_guard<std::mutex> lk(viam_response_mutex);
+        pointcloud_map = latest_pointcloud_map;
+    }
 
-void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r){};
+    if (pointcloud_map.empty()) {
+        LOG(ERROR) << "map pointcloud does not have points yet";
+        throw VIAM_CARTO_POINTCLOUD_MAP_EMPTY;
+    }
+    r->point_cloud_pcd = to_bstring(pointcloud_map);
+};
+
+// TODO: This function is unnecessarily prone to IO errors
+// due to going through the file system  in order to read
+// the internal state.
+// This is the ticket to remove that failure mode:
+// https://viam.atlassian.net/browse/RSDK-3878
+void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
+    boost::uuids::uuid uuid = boost::uuids::random_generator()();
+    std::string filename = path_to_internal_state + "/" +
+                           "temp_internal_state_" +
+                           boost::uuids::to_string(uuid) + ".pbstream";
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        bool ok = map_builder.SaveMapToFile(true, filename);
+        if (!ok) {
+            LOG(ERROR) << "Failed to save the internal state as a pbstream.";
+            throw VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR;
+        }
+    }
+
+    std::string internal_state;
+    try {
+        viam::carto_facade::util::read_and_delete_file(filename,
+                                                       &internal_state);
+    } catch (std::exception &e) {
+        LOG(ERROR) << "Failed to read and/or delete internal state file: "
+                   << e.what();
+        throw VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR;
+    }
+    r->internal_state = to_bstring(internal_state);
+};
 
 void CartoFacade::Start() {
-    started = true;
+    if (state != CartoFacadeState::IO_INITIALIZED) {
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
+                   << CartoFacadeState::IO_INITIALIZED;
+        throw VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE;
+    }
+    state = CartoFacadeState::STARTED;
     StartSaveInternalState();
 };
 
@@ -573,7 +684,6 @@ void CartoFacade::StartSaveInternalState() {
 }
 
 void CartoFacade::StopSaveInternalState() {
-    started = false;
     if (config.map_rate_sec == std::chrono::seconds(0)) {
         return;
     }
@@ -583,11 +693,11 @@ void CartoFacade::StopSaveInternalState() {
 void CartoFacade::SaveInternalStateOnInterval() {
     auto check_for_shutdown_interval_usec =
         std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
-    while (started) {
+    while (state == CartoFacadeState::STARTED) {
         auto start = std::chrono::high_resolution_clock::now();
         // Sleep for config.map_rate_sec duration, but check frequently for
         // shutdown
-        while (started) {
+        while (state == CartoFacadeState::STARTED) {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
             if (time_elapsed_msec >= config.map_rate_sec) {
@@ -609,7 +719,7 @@ void CartoFacade::SaveInternalStateOnInterval() {
 
         // Breakout without saving if the session has ended
 
-        if (!started) {
+        if (state != CartoFacadeState::STARTED) {
             LOG(INFO) << "Saving final optimized internal state";
         }
         std::time_t t = std::time(nullptr);
@@ -619,16 +729,30 @@ void CartoFacade::SaveInternalStateOnInterval() {
 
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.SaveMapToFile(true, filename_with_timestamp);
-        if (!started) {
+        if (state != CartoFacadeState::STARTED) {
             LOG(INFO) << "Finished saving final optimized internal state";
             break;
         }
     }
 }
 
-void CartoFacade::Stop() { StopSaveInternalState(); };
+void CartoFacade::Stop() {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
+    state = CartoFacadeState::IO_INITIALIZED;
+    StopSaveInternalState();
+};
 
 void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state
+                   << " expected it to be in state: "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
     if (biseq(config.component_reference, sr->sensor) == false) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->sensor) << " to be "
                 << config.component_reference;
@@ -654,6 +778,9 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         map_builder.AddSensorData(measurement);
         auto local_poses = map_builder.GetLocalSlamResultPoses();
         VLOG(1) << "local_poses.size(): " << local_poses.size();
+        // NOTE: The first time local_poses.size() goes positive will
+        // be the second time that map_builder.AddSensorData() succeeds.
+        // At that time the pose will still be zeroed out.
         if (local_poses.size() > 0) {
             update_latest_global_pose = true;
             tmp_global_pose = map_builder.GetGlobalPose(local_poses.back());
@@ -841,8 +968,17 @@ extern int viam_carto_terminate(viam_carto **ppVC) {
     }
     viam::carto_facade::CartoFacade *cf =
         static_cast<viam::carto_facade::CartoFacade *>((*ppVC)->carto_obj);
+    if (cf->state != viam::carto_facade::CartoFacadeState::INITIALIZED &&
+        cf->state != viam::carto_facade::CartoFacadeState::IO_INITIALIZED) {
+        LOG(ERROR) << "carto facade is in state: " << cf->state << " expected "
+                   << viam::carto_facade::CartoFacadeState::INITIALIZED
+                   << " or "
+                   << viam::carto_facade::CartoFacadeState::IO_INITIALIZED;
+        return VIAM_CARTO_NOT_IN_TERMINATABLE_STATE;
+    }
     delete cf;
     free((viam_carto *)*ppVC);
+    *ppVC = nullptr;
     return VIAM_CARTO_SUCCESS;
 };
 
@@ -933,6 +1069,13 @@ extern int viam_carto_get_position_response_destroy(
 
 extern int viam_carto_get_point_cloud_map(
     viam_carto *vc, viam_carto_get_point_cloud_map_response *r) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+    }
     try {
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
@@ -949,15 +1092,53 @@ extern int viam_carto_get_point_cloud_map(
 
 extern int viam_carto_get_point_cloud_map_response_destroy(
     viam_carto_get_point_cloud_map_response *r) {
-    return VIAM_CARTO_SUCCESS;
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+    }
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+    rc = bdestroy(r->point_cloud_pcd);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    r->point_cloud_pcd = nullptr;
+    return return_code;
 };
 
 extern int viam_carto_get_internal_state(
     viam_carto *vc, viam_carto_get_internal_state_response *r) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+    }
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
+        cf->GetInternalState(r);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+
     return VIAM_CARTO_SUCCESS;
 };
 
 extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r) {
-    return VIAM_CARTO_SUCCESS;
+    if (r == nullptr) {
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+    }
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+    rc = bdestroy(r->internal_state);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    r->internal_state = nullptr;
+    return return_code;
 };

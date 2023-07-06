@@ -239,15 +239,14 @@ func (vc *Carto) getPointCloudMap() ([]byte, error) {
 		return nil, err
 	}
 
+	pcd := bstringToByteSlice(value.point_cloud_pcd)
+
 	status = C.viam_carto_get_point_cloud_map_response_destroy(&value)
 	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	if value.point_cloud_pcd != nil {
-		return bstringToByteSlice(value.point_cloud_pcd), nil
-	}
-	return nil, errors.New("nil pointcloud")
+	return pcd, nil
 }
 
 // GetInternalState is a wrapper for viam_carto_get_internal_state
@@ -260,15 +259,14 @@ func (vc *Carto) getInternalState() ([]byte, error) {
 		return nil, err
 	}
 
+	interalState := bstringToByteSlice(value.internal_state)
+
 	status = C.viam_carto_get_internal_state_response_destroy(&value)
 	if err := toError(status); err != nil {
 		return nil, err
 	}
 
-	if value.internal_state != nil {
-		return bstringToByteSlice(value.internal_state), nil
-	}
-	return nil, errors.New("nil internal state")
+	return interalState, nil
 }
 
 // this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
@@ -450,6 +448,28 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_SENSOR_READING_EMPTY")
 	case C.VIAM_CARTO_SENSOR_READING_INVALID:
 		return errors.New("VIAM_CARTO_SENSOR_READING_INVALID")
+	case C.VIAM_CARTO_GET_POSITION_RESPONSE_INVALID:
+		return errors.New("VIAM_CARTO_GET_POSITION_RESPONSE_INVALID")
+	case C.VIAM_CARTO_POINTCLOUD_MAP_EMPTY:
+		return errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY")
+	case C.VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID:
+		return errors.New("VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID")
+	case C.VIAM_CARTO_LIB_ALREADY_INITIALIZED:
+		return errors.New("VIAM_CARTO_LIB_ALREADY_INITIALIZED")
+	case C.VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID:
+		return errors.New("VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID")
+	case C.VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR:
+		return errors.New("VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR")
+	case C.VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR:
+		return errors.New("VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR")
+	case C.VIAM_CARTO_NOT_IN_INITIALIZED_STATE:
+		return errors.New("VIAM_CARTO_NOT_IN_INITIALIZED_STATE")
+	case C.VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE:
+		return errors.New("VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE")
+	case C.VIAM_CARTO_NOT_IN_STARTED_STATE:
+		return errors.New("VIAM_CARTO_NOT_IN_STARTED_STATE")
+	case C.VIAM_CARTO_NOT_IN_TERMINATABLE_STATE:
+		return errors.New("VIAM_CARTO_NOT_IN_TERMINATABLE_STATE")
 	default:
 		return errors.New("status code unclassified")
 	}
