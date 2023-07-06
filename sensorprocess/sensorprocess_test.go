@@ -21,7 +21,20 @@ type addSensorReadingArgs struct {
 	readingTimestamp time.Time
 }
 
-var unknownErr error = errors.New("unknown error")
+var (
+	expectedPCD = []byte(`VERSION .7
+FIELDS x y z
+SIZE 4 4 4
+TYPE F F F
+COUNT 1 1 1
+WIDTH 0
+HEIGHT 1
+VIEWPOINT 0 0 0 1 0 0 0
+POINTS 0
+DATA binary
+`)
+	errUnknown = errors.New("unknown error")
+)
 
 func TestAddSensorReadingReplaySensor(t *testing.T) {
 	logger := golog.NewTestLogger(t)
@@ -48,7 +61,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 		AddSensorReadingFromReplaySensor(context.Background(), reading, readingTimestamp, config)
 	})
 
-	t.Run("When AddSensorReading returns UNABLE_TO_ACQUIRE_LOCK error and the context is cancelled, no infinite loop", func(t *testing.T) {
+	t.Run("AddSensorReading returns UNABLE_TO_ACQUIRE_LOCK error and the context is cancelled, no infinite loop", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -56,7 +69,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 			currentReading []byte,
 			readingTimestamp time.Time,
 		) error {
-			return cartofacade.UNABLE_TO_ACQUIRE_LOCK
+			return cartofacade.ErrUnableToAcquireLock
 		}
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -103,7 +116,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 				return errors.New("unexpected error")
 			}
 			if len(calls) < 4 {
-				return cartofacade.UNABLE_TO_ACQUIRE_LOCK
+				return cartofacade.ErrUnableToAcquireLock
 			}
 			return nil
 		}
@@ -150,7 +163,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("When AddSensorReading blocks for more than the DataRateMs and returns an UNABLE_TO_ACQUIRE_LOCK error, returns 0", func(t *testing.T) {
+	t.Run("AddSensorReading slower than DataRateMs and returns lock error, returns 0", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -159,7 +172,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 			readingTimestamp time.Time,
 		) error {
 			time.Sleep(1 * time.Second)
-			return cartofacade.UNABLE_TO_ACQUIRE_LOCK
+			return cartofacade.ErrUnableToAcquireLock
 		}
 
 		timeToSleep := AddSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
@@ -175,14 +188,14 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 			readingTimestamp time.Time,
 		) error {
 			time.Sleep(1 * time.Second)
-			return errors.New("not UNABLE_TO_ACQUIRE_LOCK error")
+			return errUnknown
 		}
 
 		timeToSleep := AddSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("When AddSensorReading blocks for is less than the DataRateMs and succeeds, returns a number less than or equal to the DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than the DataRateMs and succeeds, returns int <= DataRateMs", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -198,7 +211,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.DataRateMs)
 	})
 
-	t.Run("When AddSensorReading blocks for is less than the DataRateMs and returns an UNABLE_TO_ACQUIRE_LOCK error, returns a number less than or equal to the DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than the DataRateMs and returns lock error, returns int <= DataRateMs", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -206,7 +219,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 			currentReading []byte,
 			readingTimestamp time.Time,
 		) error {
-			return cartofacade.UNABLE_TO_ACQUIRE_LOCK
+			return cartofacade.ErrUnableToAcquireLock
 		}
 
 		timeToSleep := AddSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
@@ -214,7 +227,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.DataRateMs)
 	})
 
-	t.Run("When AddSensorReading blocks for is less than the DataRateMs and returns an unexpected error, returns a number less than or equal to the DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than DataRateMs and returns unexpected error, returns int <= DataRateMs", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -222,7 +235,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 			currentReading []byte,
 			readingTimestamp time.Time,
 		) error {
-			return errors.New("not UNABLE_TO_ACQUIRE_LOCK error")
+			return errUnknown
 		}
 
 		timeToSleep := AddSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
@@ -268,9 +281,7 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = invalidReplaySensor
 		config.LidarName = invalidReplaySensor.Name
 
-		err = AddSensorReading(ctx, config)
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "invalid sensor")
+		AddSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 0)
 	})
 
@@ -299,10 +310,7 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = invalidReplaySensor
 		config.LidarName = invalidReplaySensor.Name
 
-		err = AddSensorReading(ctx, config)
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, "cannot parse")
-
+		AddSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 0)
 	})
 
@@ -327,21 +335,19 @@ func TestAddSensorReading(t *testing.T) {
 			}
 			calls = append(calls, args)
 			if len(calls) == 1 {
-				return unknownErr
+				return errUnknown
 			}
 			if len(calls) == 2 {
-				return cartofacade.UNABLE_TO_ACQUIRE_LOCK
+				return cartofacade.ErrUnableToAcquireLock
 			}
 			return nil
 		}
 		config.Lidar = replaySensor
 		config.LidarName = replaySensor.Name
 
-		err = AddSensorReading(ctx, config)
-		test.That(t, err, test.ShouldBeNil)
+		AddSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 
-		expectedPCD := []byte("VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\nWIDTH 0\nHEIGHT 1\nVIEWPOINT 0 0 0 1 0 0 0\nPOINTS 0\nDATA binary\n")
 		firstTimestamp := calls[0].readingTimestamp
 		for i, call := range calls {
 			t.Logf("call %d", i)
@@ -373,29 +379,25 @@ func TestAddSensorReading(t *testing.T) {
 			}
 			calls = append(calls, args)
 			if len(calls) == 1 {
-				return unknownErr
+				return errUnknown
 			}
 			if len(calls) == 2 {
-				return cartofacade.UNABLE_TO_ACQUIRE_LOCK
+				return cartofacade.ErrUnableToAcquireLock
 			}
 			return nil
 		}
 		config.Lidar = liveSensor
 		config.LidarName = liveSensor.Name
 
-		err = AddSensorReading(ctx, config)
-		test.That(t, err, test.ShouldBeNil)
+		AddSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 1)
 
-		err = AddSensorReading(ctx, config)
-		test.That(t, err, test.ShouldBeNil)
+		AddSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 2)
 
-		err = AddSensorReading(ctx, config)
-		test.That(t, err, test.ShouldBeNil)
+		AddSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 
-		expectedPCD := []byte("VERSION .7\nFIELDS x y z\nSIZE 4 4 4\nTYPE F F F\nCOUNT 1 1 1\nWIDTH 0\nHEIGHT 1\nVIEWPOINT 0 0 0 1 0 0 0\nPOINTS 0\nDATA binary\n")
 		for i, call := range calls {
 			t.Logf("call %d", i)
 			test.That(t, call.sensorName, test.ShouldResemble, "good_lidar")
