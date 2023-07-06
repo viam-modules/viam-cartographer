@@ -85,7 +85,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 			currentReading []byte,
 			readingTimestamp time.Time,
 		) error {
-			return errors.New("non UNABLE_TO_ACQUIRE_LOCK error")
+			return errUnknown
 		}
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -113,7 +113,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 			}
 			calls = append(calls, args)
 			if len(calls) == 1 {
-				return errors.New("unexpected error")
+				return errUnknown
 			}
 			if len(calls) < 4 {
 				return cartofacade.ErrUnableToAcquireLock
