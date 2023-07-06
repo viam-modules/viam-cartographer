@@ -80,7 +80,7 @@ func addSensorReading(
 }
 
 // addSensorReadingFromReplaySensor adds a reading from a replay sensor to the cartofacade
-// retries on error
+// retries on error.
 func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode

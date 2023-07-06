@@ -181,8 +181,7 @@ func TestStart(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Start", func(t *testing.T) {
 		// success case
@@ -233,8 +232,7 @@ func TestStop(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Stop", func(t *testing.T) {
 		// success case
@@ -285,8 +283,7 @@ func TestTerminate(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Terminate", func(t *testing.T) {
 		// success case
@@ -337,8 +334,7 @@ func TestAddSensorReading(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing AddSensorReading", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
@@ -401,8 +397,7 @@ func TestGetPosition(t *testing.T) {
 		return pos, nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetPosition", func(t *testing.T) {
 		// success case
@@ -457,8 +452,7 @@ func TestGetInternalState(t *testing.T) {
 		return internalState, nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetInternalState", func(t *testing.T) {
 		// success case
@@ -511,8 +505,7 @@ func TestGetPointCloudMap(t *testing.T) {
 		return internalState, nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetPointCloudMap", func(t *testing.T) {
 		// success case
