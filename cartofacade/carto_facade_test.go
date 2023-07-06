@@ -11,8 +11,6 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
-
-	"go.uber.org/multierr"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
