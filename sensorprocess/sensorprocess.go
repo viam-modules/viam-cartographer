@@ -34,22 +34,19 @@ type Config struct {
 func Start(
 	ctx context.Context,
 	config Config,
-	addSensorReading func(
-		ctx context.Context, config Config,
-	),
 ) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			AddSensorReading(ctx, config)
+			addSensorReading(ctx, config)
 		}
 	}
 }
 
-// AddSensorReading adds a lidar reading to the mapbuilder.
-func AddSensorReading(
+// addSensorReading adds a lidar reading to the mapbuilder.
+func addSensorReading(
 	parentCtx context.Context,
 	config Config,
 ) {
@@ -75,16 +72,16 @@ func AddSensorReading(
 			config.Logger.Warnw("Skipping sensor reading due to error converting replay sensor timestamp to RFC3339Nano", "error", err)
 			return
 		}
-		AddSensorReadingFromReplaySensor(ctxWithMetadata, buf.Bytes(), readingTime, config)
+		addSensorReadingFromReplaySensor(ctxWithMetadata, buf.Bytes(), readingTime, config)
 	} else {
-		timeToSleep := AddSensorReadingFromLiveReadings(ctxWithMetadata, buf.Bytes(), readingTime, config)
+		timeToSleep := addSensorReadingFromLiveReadings(ctxWithMetadata, buf.Bytes(), readingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
 }
 
-// AddSensorReadingFromReplaySensor adds a reading from a replay sensor to the cartofacade
+// addSensorReadingFromReplaySensor adds a reading from a replay sensor to the cartofacade
 // retries if unable to acquire lock.
-func AddSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
+func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode
 		we want to process each reading so if we cannot acquire the lock we should try again
@@ -108,9 +105,9 @@ func AddSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 	}
 }
 
-// AddSensorReadingFromLiveReadings adds a reading from a live lidar to the carto facade
+// addSensorReadingFromLiveReadings adds a reading from a live lidar to the carto facade
 // does not retry.
-func AddSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
+func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
 	startTime := time.Now()
 	err := config.Cartofacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {
