@@ -160,6 +160,11 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
+	// Set up the data directories
+	if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
+		return nil, err
+	}
+
 	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
@@ -346,10 +351,6 @@ func initCartoFacade(cancelCtx context.Context, cartoSvc *cartographerService) (
 }
 
 func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerService) (*cartographerService, error) {
-	// Set up the data directories
-	if err := vcConfig.SetupDirectories(cartoSvc.dataDirectory, cartoSvc.logger); err != nil {
-		return nil, err
-	}
 
 	if cartoSvc.primarySensorName != "" {
 		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, cartoSvc.lidar,

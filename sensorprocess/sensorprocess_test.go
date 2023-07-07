@@ -11,7 +11,6 @@ import (
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
