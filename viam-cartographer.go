@@ -235,7 +235,7 @@ func New(
 		return nil, err
 	}
 	success = true
-	return cartoSvc, err
+	return cartoSvc, nil
 }
 
 // TODO: write a test for this.
