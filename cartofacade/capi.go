@@ -407,7 +407,7 @@ func toError(status C.int) error {
 	case C.VIAM_CARTO_SUCCESS:
 		return nil
 	case C.VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK:
-		return errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
+		return ErrUnableToAcquireLock
 	case C.VIAM_CARTO_VC_INVALID:
 		return errors.New("VIAM_CARTO_VC_INVALID")
 	case C.VIAM_CARTO_OUT_OF_MEMORY:

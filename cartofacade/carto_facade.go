@@ -7,13 +7,18 @@ import (
 	"fmt"
 	"sync"
 	"time"
+
+	"go.uber.org/multierr"
 )
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
 
+// ErrUnableToAcquireLock is the error returned from AddSensorReading when lock can't be acquired.
+var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
+
 // Initialize calls into the cartofacade C code.
 func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) error {
-	cf.start(ctx, activeBackgroundWorkers)
+	cf.startCGoroutine(ctx, activeBackgroundWorkers)
 	untyped, err := cf.request(ctx, initialize, emptyRequestParams, timeout)
 	if err != nil {
 		return err
@@ -178,10 +183,61 @@ type CartoFacade struct {
 	requestChan     chan Request
 }
 
-// RequestInterface defines the functionality of a WorkItem.
+// RequestInterface defines the functionality of a Request.
 // It should not be used outside of this package but needs to be public for testing purposes.
 type RequestInterface interface {
 	doWork(q *CartoFacade) (interface{}, error)
+}
+
+// Interface defines the functionality of a CartoFacade instance.
+// It should not be used outside of this package but needs to be public for testing purposes.
+type Interface interface {
+	request(
+		ctxParent context.Context,
+		requestType RequestType,
+		inputs map[RequestParamType]interface{}, timeout time.Duration,
+	) (interface{}, error)
+	startCGoroutine(
+		ctx context.Context,
+		activeBackgroundWorkers *sync.WaitGroup,
+	)
+
+	Initialize(
+		ctx context.Context,
+		timeout time.Duration,
+		activeBackgroundWorkers *sync.WaitGroup,
+	) error
+	Start(
+		ctx context.Context,
+		timeout time.Duration,
+	) error
+	Stop(
+		ctx context.Context,
+		timeout time.Duration,
+	) error
+	Terminate(
+		ctx context.Context,
+		timeout time.Duration,
+	) error
+	AddSensorReading(
+		ctx context.Context,
+		timeout time.Duration,
+		sensorName string,
+		currentReading []byte,
+		readingTimestamp time.Time,
+	) error
+	GetPosition(
+		ctx context.Context,
+		timeout time.Duration,
+	) (GetPosition, error)
+	GetInternalState(
+		ctx context.Context,
+		timeout time.Duration,
+	) ([]byte, error)
+	GetPointCloudMap(
+		ctx context.Context,
+		timeout time.Duration,
+	) ([]byte, error)
 }
 
 // Request defines all of the necessary pieces to call into the CGo API.
@@ -266,15 +322,17 @@ func (cf *CartoFacade) request(
 		case response := <-req.responseChan:
 			return response.result, response.err
 		case <-ctx.Done():
-			return nil, errors.New("timeout has occurred while trying to read request from cartofacade")
+			msg := "timeout has occurred while trying to read request from cartofacade"
+			return nil, multierr.Combine(errors.New(msg), ctx.Err())
 		}
 	case <-ctx.Done():
-		return nil, errors.New("timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?")
+		msg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
+		return nil, multierr.Combine(errors.New(msg), ctx.Err())
 	}
 }
 
-// start starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
-func (cf *CartoFacade) start(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
+// startCGoroutine starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
+func (cf *CartoFacade) startCGoroutine(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
 	go func() {
 		defer activeBackgroundWorkers.Done()

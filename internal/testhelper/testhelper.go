@@ -45,6 +45,8 @@ const (
 	testDialMaxTimeoutSec              = 1
 	// TestTime can be used to test specific timestamps provided by a replay sensor.
 	TestTime = "2006-01-02T15:04:05.9999Z"
+	// BadTime can be used to represent something that should cause an error while parsing it as a time.
+	BadTime = "NOT A TIME"
 )
 
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
@@ -72,7 +74,9 @@ func SetupDeps(sensors []string) resource.Dependencies {
 		case "good_lidar":
 			deps[camera.Named(sensor)] = getGoodLidar()
 		case "replay_sensor":
-			deps[camera.Named(sensor)] = getReplaySensor()
+			deps[camera.Named(sensor)] = getReplaySensor(TestTime)
+		case "invalid_replay_sensor":
+			deps[camera.Named(sensor)] = getReplaySensor(BadTime)
 		case "invalid_sensor":
 			deps[camera.Named(sensor)] = getInvalidSensor()
 		case "gibberish":
@@ -103,12 +107,12 @@ func getGoodLidar() *inject.Camera {
 	return cam
 }
 
-func getReplaySensor() *inject.Camera {
+func getReplaySensor(testTime string) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
 		if mdMap, ok := md.(map[string][]string); ok {
-			mdMap[contextutils.TimeRequestedMetadataKey] = []string{TestTime}
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
 		return pointcloud.New(), nil
 	}

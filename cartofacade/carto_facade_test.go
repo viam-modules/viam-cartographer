@@ -10,10 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"go.uber.org/multierr"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 )
+
+const timeoutErrMessage = "timeout has occurred while trying to read request from cartofacade"
 
 func TestRequest(t *testing.T) {
 	cartoLib := CartoLibMock{}
@@ -37,7 +40,7 @@ func TestRequest(t *testing.T) {
 
 		cf := New(&cartoLib, config, algoConfig)
 		cf.carto = &carto
-		cf.start(cancelCtx, &activeBackgroundWorkers)
+		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 		res, err := cf.request(cancelCtx, position, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
@@ -64,7 +67,7 @@ func TestRequest(t *testing.T) {
 
 		cf := New(&cartoLib, config, algoConfig)
 		cf.carto = &carto
-		cf.start(cancelCtx, &activeBackgroundWorkers)
+		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
@@ -90,15 +93,15 @@ func TestRequest(t *testing.T) {
 
 		cf := New(&cartoLib, config, algoConfig)
 		cf.carto = &carto
-		cf.start(cancelCtx, &activeBackgroundWorkers)
+		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
-		errMessage := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
-		writeTimeoutErr := errors.New(errMessage)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, writeTimeoutErr)
+		errMsg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
+		expectedErr := multierr.Combine(errors.New(errMsg), context.Canceled)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	t.Run("test requesting with when the work function takes longer than the timeout", func(t *testing.T) {
@@ -119,12 +122,12 @@ func TestRequest(t *testing.T) {
 
 		cf := New(&cartoLib, config, algoConfig)
 		cf.carto = &carto
-		cf.start(cancelCtx, &activeBackgroundWorkers)
+		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 10*time.Millisecond)
-		readTimeoutErr := errors.New("timeout has occurred while trying to read request from cartofacade")
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, readTimeoutErr)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
@@ -153,8 +156,10 @@ func TestInitialize(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	cartoFacade.Terminate(cancelCtx, 5*time.Second)
-	lib.Terminate()
+	err = cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	test.That(t, err, test.ShouldBeNil)
+	err = lib.Terminate()
+	test.That(t, err, test.ShouldBeNil)
 	cancelFunc()
 	activeBackgroundWorkers.Wait()
 }
@@ -176,8 +181,7 @@ func TestStart(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Start", func(t *testing.T) {
 		// success case
@@ -203,7 +207,8 @@ func TestStart(t *testing.T) {
 		// times out
 		err = cartoFacade.Start(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	cancelFunc()
@@ -227,8 +232,7 @@ func TestStop(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Stop", func(t *testing.T) {
 		// success case
@@ -254,7 +258,8 @@ func TestStop(t *testing.T) {
 		// times out
 		err = cartoFacade.Stop(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	cancelFunc()
@@ -278,8 +283,7 @@ func TestTerminate(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Terminate", func(t *testing.T) {
 		// success case
@@ -305,7 +309,8 @@ func TestTerminate(t *testing.T) {
 		// times out
 		err = cartoFacade.Terminate(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	cancelFunc()
@@ -329,8 +334,7 @@ func TestAddSensorReading(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing AddSensorReading", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
@@ -367,7 +371,8 @@ func TestAddSensorReading(t *testing.T) {
 		// times out
 		err = cartoFacade.AddSensorReading(cancelCtx, 1*time.Millisecond, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	cancelFunc()
@@ -392,8 +397,7 @@ func TestGetPosition(t *testing.T) {
 		return pos, nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetPosition", func(t *testing.T) {
 		// success case
@@ -422,7 +426,8 @@ func TestGetPosition(t *testing.T) {
 		// times out
 		_, err = cartoFacade.GetPosition(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	cancelFunc()
@@ -447,8 +452,7 @@ func TestGetInternalState(t *testing.T) {
 		return internalState, nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetInternalState", func(t *testing.T) {
 		// success case
@@ -475,7 +479,8 @@ func TestGetInternalState(t *testing.T) {
 		// times out
 		_, err = cartoFacade.GetInternalState(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	cancelFunc()
@@ -500,8 +505,7 @@ func TestGetPointCloudMap(t *testing.T) {
 		return internalState, nil
 	}
 	cartoFacade.carto = &carto
-	cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
-	defer cartoFacade.Terminate(cancelCtx, 5*time.Second)
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetPointCloudMap", func(t *testing.T) {
 		// success case
@@ -528,7 +532,8 @@ func TestGetPointCloudMap(t *testing.T) {
 		// times out
 		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("timeout has occurred while trying to read request from cartofacade"))
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
 	cancelFunc()
