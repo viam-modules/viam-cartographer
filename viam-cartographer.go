@@ -232,8 +232,9 @@ func New(
 	}
 	cartoSvc, err = initCartoGrpcServer(ctx, cancelCtx, cartoSvc)
 	if err != nil {
-		success = true
+		return nil, err
 	}
+	success = true
 	return cartoSvc, err
 }
 
@@ -351,23 +352,22 @@ func initCartoFacade(cancelCtx context.Context, cartoSvc *cartographerService) (
 }
 
 func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerService) (*cartographerService, error) {
-
 	if cartoSvc.primarySensorName != "" {
 		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, cartoSvc.lidar,
 			cartoSvc.sensorValidationMaxTimeoutSec, cartoSvc.sensorValidationIntervalSec, cartoSvc.logger); err != nil {
-			return nil, errors.Wrap(err, "getting and saving data failed")
+			return cartoSvc, errors.Wrap(err, "getting and saving data failed")
 		}
 		cartoSvc.StartDataProcess(cancelCtx, cartoSvc.lidar, nil)
 		cartoSvc.logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 	}
 
 	if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
-		return nil, errors.Wrap(err, "error with slam service slam process")
+		return cartoSvc, errors.Wrap(err, "error with slam service slam process")
 	}
 
 	client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, cartoSvc.dialMaxTimeoutSec, cartoSvc.logger)
 	if err != nil {
-		return nil, errors.Wrap(err, "error with initial grpc client to slam algorithm")
+		return cartoSvc, errors.Wrap(err, "error with initial grpc client to slam algorithm")
 	}
 	cartoSvc.clientAlgo = client
 	cartoSvc.clientAlgoClose = clientClose
