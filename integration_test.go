@@ -52,7 +52,6 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	pointcloud, _ := pointcloud.ReadPCD(bytes.NewReader(pcd))
 	t.Logf("Pointcloud points: %v", pointcloud.Size())
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
-
 }
 
 // Checks the cartographer position within a defined tolerance.

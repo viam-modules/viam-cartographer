@@ -186,7 +186,6 @@ func TestNew(t *testing.T) {
 		grpcServer.Stop()
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
-
 }
 
 func TestDataProcess(t *testing.T) {
