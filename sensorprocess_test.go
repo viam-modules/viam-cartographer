@@ -1,4 +1,4 @@
-package sensorprocess
+package viamcartographer
 
 import (
 	"context"
@@ -41,7 +41,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
-	config := Config{
+	config := SensorProcessConfig{
 		Logger:      logger,
 		CartoFacade: &cf,
 		LidarName:   "good_lidar",
@@ -138,7 +138,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 	cf := cartofacade.Mock{}
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
-	config := Config{
+	config := SensorProcessConfig{
 		Logger:      logger,
 		CartoFacade: &cf,
 		LidarName:   "good_lidar",
@@ -247,7 +247,7 @@ func TestAddSensorReading(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	config := Config{
+	config := SensorProcessConfig{
 		Logger:      logger,
 		CartoFacade: &cf,
 		DataRateMs:  200,

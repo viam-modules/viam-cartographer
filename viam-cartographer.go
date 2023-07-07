@@ -28,7 +28,6 @@ import (
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
-	"github.com/viamrobotics/viam-cartographer/sensorprocess"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
@@ -119,7 +118,7 @@ func TerminateCartoLib() error {
 }
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService) {
-	spConfig := sensorprocess.Config{
+	spConfig := SensorProcessConfig{
 		CartoFacade:      &cartoSvc.cartofacade,
 		Lidar:            cartoSvc.lidar,
 		LidarName:        cartoSvc.primarySensorName,
@@ -128,7 +127,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService)
 		Logger:           cartoSvc.logger,
 		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
 	}
-	sensorprocess.Start(cancelCtx, spConfig)
+	StartSensorProcess(cancelCtx, spConfig)
 }
 
 // New returns a new slam service for the given robot.
