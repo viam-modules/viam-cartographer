@@ -16,7 +16,7 @@ func GetTestConfig(sensor string) (CartoConfig, string, error) {
 		MapRateSecond:      5,
 		DataDir:            dir,
 		ComponentReference: "component",
-		LidarConfig:        twoD,
+		LidarConfig:        TwoD,
 	}, dir, nil
 }
 
@@ -24,25 +24,25 @@ func GetTestConfig(sensor string) (CartoConfig, string, error) {
 func GetBadTestConfig() CartoConfig {
 	return CartoConfig{
 		Sensors:     []string{"rplidar", "imu"},
-		LidarConfig: twoD,
+		LidarConfig: TwoD,
 	}
 }
 
 // GetTestAlgoConfig gets a sample algo config for testing purposes.
 func GetTestAlgoConfig() CartoAlgoConfig {
 	return CartoAlgoConfig{
-		optimizeOnStart:      false,
-		optimizeEveryNNodes:  3,
-		numRangeData:         100,
-		missingDataRayLength: 25.0,
-		maxRange:             25.0,
-		minRange:             0.2,
-		maxSubmapsToKeep:     3,
-		freshSubmapsCount:    3,
-		minCoveredArea:       1.0,
-		minAddedSubmapsCount: 1,
-		occupiedSpaceWeight:  20.0,
-		translationWeight:    10.0,
-		rotationWeight:       1.0,
+		OptimizeOnStart:      false,
+		OptimizeEveryNNodes:  3,
+		NumRangeData:         100,
+		MissingDataRayLength: 25.0,
+		MaxRange:             25.0,
+		MinRange:             0.2,
+		MaxSubmapsToKeep:     3,
+		FreshSubmapsCount:    3,
+		MinCoveredArea:       1.0,
+		MinAddedSubmapsCount: 1,
+		OccupiedSpaceWeight:  20.0,
+		TranslationWeight:    10.0,
+		RotationWeight:       1.0,
 	}
 }

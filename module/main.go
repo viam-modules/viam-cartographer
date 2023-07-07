@@ -41,6 +41,11 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 		return nil
 	}
 
+	if err := viamcartographer.InitCartoLib(logger); err != nil {
+		return err
+	}
+	defer utils.UncheckedErrorFunc(viamcartographer.TerminateCartoLib)
+
 	// Instantiate the module
 	cartoModule, err := module.NewModuleFromArgs(ctx, logger)
 	if err != nil {

@@ -25,8 +25,6 @@ type Config struct {
 	Timeout          time.Duration
 	Logger           golog.Logger
 	TelemetryEnabled bool
-	// addSensorReadingFromReplaySensor func(context.Context, []byte, time.Time, Config)
-	// addSensorReadingFromLiveReadings func(context.Context, []byte, time.Time, Config) int
 }
 
 // Start polls the lidar to get the next sensor reading and adds it to the mapBuilder.

@@ -218,6 +218,7 @@ func CreateSLAMService(
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
 		testDialMaxTimeoutSec,
+		viamcartographer.DefaultCartoFacadeTimeout,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
