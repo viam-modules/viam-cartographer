@@ -242,6 +242,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 
 	testCartographerPosition(t, svc, "") // leaving this empty because cartographer does not interpret the component reference in offline mode
 	testCartographerMap(t, svc, false)
+	testCartographerMap(t, svc, false)
 
 	// Sleep to ensure cartographer saves at least one map
 	time.Sleep(time.Second * time.Duration(*attrCfg.MapRateSec))

@@ -40,6 +40,8 @@ var (
 	_false         = false
 	_zeroInt       = 0
 	_zeroTime      = time.Time{}
+	_zeroInt       = 0
+	_zeroTime      = time.Time{}
 )
 
 func TestNew(t *testing.T) {
