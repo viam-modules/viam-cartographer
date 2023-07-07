@@ -28,6 +28,7 @@ import (
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
+	"github.com/viamrobotics/viam-cartographer/sensorprocess"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
@@ -118,7 +119,7 @@ func TerminateCartoLib() error {
 }
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService) {
-	spConfig := SensorProcessConfig{
+	spConfig := sensorprocess.SensorProcessConfig{
 		CartoFacade:      &cartoSvc.cartofacade,
 		Lidar:            cartoSvc.lidar,
 		LidarName:        cartoSvc.primarySensorName,
@@ -127,7 +128,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService)
 		Logger:           cartoSvc.logger,
 		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
 	}
-	StartSensorProcess(cancelCtx, spConfig)
+	sensorprocess.StartSensorProcess(cancelCtx, spConfig)
 }
 
 // New returns a new slam service for the given robot.
@@ -204,9 +205,9 @@ func New(
 		localizationMode:              mapRateSec == 0,
 		mapTimestamp:                  time.Now().UTC(),
 	}
-
+	success := false
 	defer func() {
-		if err != nil {
+		if !success {
 			logger.Errorw("New() hit error, closing...", "error", err)
 			if err := cartoSvc.Close(ctx); err != nil {
 				logger.Errorw("error closing out after error", "error", err)
@@ -223,6 +224,9 @@ func New(
 		return cartoSvc, err
 	}
 	cartoSvc, err = initCartoGrpcServer(ctx, cancelCtx, cartoSvc)
+	if err != nil {
+		success = true
+	}
 	return cartoSvc, err
 }
 

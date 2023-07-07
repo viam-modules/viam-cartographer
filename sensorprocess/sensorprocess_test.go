@@ -1,4 +1,4 @@
-package viamcartographer
+package sensorprocess
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"go.viam.com/test"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
+	"github.com/viamrobotics/viam-cartographer/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
@@ -409,3 +409,4 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 	})
 }
+
