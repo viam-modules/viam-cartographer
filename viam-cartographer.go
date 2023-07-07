@@ -28,7 +28,7 @@ import (
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
-	"github.com/viamrobotics/viam-cartographer/internal/sensorprocess"
+	"github.com/viamrobotics/viam-cartographer/sensorprocess"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
