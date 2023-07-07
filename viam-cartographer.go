@@ -34,8 +34,10 @@ import (
 )
 
 // Model is the model name of cartographer.
-var Model = resource.NewModel("viam", "slam", "cartographer")
-var cartoLib cartofacade.CartoLib
+var (
+	Model    = resource.NewModel("viam", "slam", "cartographer")
+	cartoLib cartofacade.CartoLib
+)
 
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
@@ -98,7 +100,7 @@ func init() {
 
 // InitCartoLib is run to initialize the cartographer library
 // must be called before module.AddModelFromRegistry is
-// called
+// called.
 func InitCartoLib(logger golog.Logger) error {
 	minloglevel := 1 // warn
 	vlog := 0        //  disabled
@@ -119,7 +121,7 @@ func TerminateCartoLib() error {
 }
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService) {
-	spConfig := sensorprocess.SensorProcessConfig{
+	spConfig := sensorprocess.Config{
 		CartoFacade:      &cartoSvc.cartofacade,
 		Lidar:            cartoSvc.lidar,
 		LidarName:        cartoSvc.primarySensorName,
@@ -128,7 +130,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService)
 		Logger:           cartoSvc.logger,
 		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
 	}
-	sensorprocess.StartSensorProcess(cancelCtx, spConfig)
+	sensorprocess.Start(cancelCtx, spConfig)
 }
 
 // New returns a new slam service for the given robot.
@@ -230,7 +232,7 @@ func New(
 	return cartoSvc, err
 }
 
-// TODO: write a test for this
+// TODO: write a test for this.
 func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (cartofacade.CartoAlgoConfig, error) {
 	cartoAlgoCfg := defaultCartoAlgoCfg
 	logger.Warnf("NICK: defaultCartoAlgoCfgPtr: %p, cartoAlgoCfgPtr: %p", &defaultCartoAlgoCfg, &cartoAlgoCfg)
@@ -343,7 +345,7 @@ func initCartoFacade(cancelCtx context.Context, cartoSvc *cartographerService) (
 	return cartoSvc, nil
 }
 
-func initCartoGrpcServer(ctx context.Context, cancelCtx context.Context, cartoSvc *cartographerService) (*cartographerService, error) {
+func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerService) (*cartographerService, error) {
 	// Set up the data directories
 	if err := vcConfig.SetupDirectories(cartoSvc.dataDirectory, cartoSvc.logger); err != nil {
 		return nil, err

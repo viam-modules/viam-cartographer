@@ -3,6 +3,7 @@ package testhelper
 import (
 	"context"
 	"errors"
+
 	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/pointcloud"
@@ -32,8 +33,8 @@ func SetupDeps(sensors []string) resource.Dependencies {
 			deps[camera.Named(sensor)] = getReplaySensor(BadTime)
 		case "invalid_sensor":
 			deps[camera.Named(sensor)] = getInvalidSensor()
-    default:
-      continue
+		default:
+			continue
 		}
 	}
 	return deps

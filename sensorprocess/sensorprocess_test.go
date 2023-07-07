@@ -10,8 +10,9 @@ import (
 	"go.viam.com/test"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 type addSensorReadingArgs struct {
@@ -41,7 +42,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
-	config := SensorProcessConfig{
+	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
 		LidarName:   "good_lidar",
@@ -138,7 +139,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 	cf := cartofacade.Mock{}
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
-	config := SensorProcessConfig{
+	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
 		LidarName:   "good_lidar",
@@ -247,7 +248,7 @@ func TestAddSensorReading(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	config := SensorProcessConfig{
+	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
 		DataRateMs:  200,
@@ -409,4 +410,3 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 	})
 }
-

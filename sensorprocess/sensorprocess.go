@@ -1,3 +1,4 @@
+// Package sensorprocess contains the logic to add lidar or replay sensor readings to cartographer's mapbuilder
 package sensorprocess
 
 import (
@@ -15,8 +16,8 @@ import (
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
-// SensorProcessConfig holds config needed throughout the process of adding a sensor reading to the mapbuilder.
-type SensorProcessConfig struct {
+// Config holds config needed throughout the process of adding a sensor reading to the mapbuilder.
+type Config struct {
 	CartoFacade      cartofacade.Interface
 	Lidar            lidar.Lidar
 	LidarName        string
@@ -26,11 +27,11 @@ type SensorProcessConfig struct {
 	TelemetryEnabled bool
 }
 
-// StartSensorProcess polls the lidar to get the next sensor reading and adds it to the mapBuilder.
+// Start polls the lidar to get the next sensor reading and adds it to the mapBuilder.
 // stops when the context is Done.
-func StartSensorProcess(
+func Start(
 	ctx context.Context,
-	config SensorProcessConfig,
+	config Config,
 ) {
 	for {
 		select {
@@ -45,7 +46,7 @@ func StartSensorProcess(
 // addSensorReading adds a lidar reading to the mapbuilder.
 func addSensorReading(
 	parentCtx context.Context,
-	config SensorProcessConfig,
+	config Config,
 ) {
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(parentCtx)
 	readingPc, err := config.Lidar.GetData(ctxWithMetadata)
@@ -78,7 +79,7 @@ func addSensorReading(
 
 // addSensorReadingFromReplaySensor adds a reading from a replay sensor to the cartofacade
 // retries on error.
-func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readingTime time.Time, config SensorProcessConfig) {
+func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode
 		we want to process each reading so if we cannot acquire the lock we should try again
@@ -104,7 +105,7 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 
 // addSensorReadingFromLiveReadings adds a reading from a live lidar to the carto facade
 // does not retry.
-func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readingTime time.Time, config SensorProcessConfig) int {
+func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
 	startTime := time.Now()
 	err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {
