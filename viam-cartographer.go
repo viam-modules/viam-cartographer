@@ -123,7 +123,7 @@ func TerminateCartoLib() error {
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService) {
 	spConfig := sensorprocess.Config{
-		CartoFacade:      &cartoSvc.cartofacade,
+		CartoFacade:      cartoSvc.cartofacade,
 		Lidar:            cartoSvc.lidar,
 		LidarName:        cartoSvc.primarySensorName,
 		DataRateMs:       cartoSvc.dataRateMs,
@@ -131,7 +131,11 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService)
 		Logger:           cartoSvc.logger,
 		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
 	}
-	sensorprocess.Start(cancelCtx, spConfig)
+	cartoSvc.activeBackgroundWorkers.Add(1)
+	go func() {
+		defer cartoSvc.activeBackgroundWorkers.Done()
+		sensorprocess.Start(cancelCtx, spConfig)
+	}()
 }
 
 // New returns a new slam service for the given robot.
@@ -162,6 +166,7 @@ func New(
 	}
 
 	// Set up the data directories
+	// TODO: Figure out how to not do this if v2 is enabled
 	if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
 		return nil, err
 	}
@@ -217,6 +222,7 @@ func New(
 	defer func() {
 		if !success {
 			logger.Errorw("New() hit error, closing...", "error", err)
+			logger.Errorf("cartoSvc %p", cartoSvc)
 			if err := cartoSvc.Close(ctx); err != nil {
 				logger.Errorw("error closing out after error", "error", err)
 			}
@@ -224,14 +230,19 @@ func New(
 	}()
 
 	if modularizationV2Enabled {
-		cartoSvc, err = initCartoFacade(cancelCtx, cartoSvc)
+		if err := dim2d.ValidateGetData(cancelCtx, cartoSvc.lidar, cartoSvc.sensorValidationMaxTimeoutSec, cartoSvc.sensorValidationIntervalSec, cartoSvc.logger); err != nil {
+			err := errors.Wrap(err, "failed to get data from lidar")
+			return nil, err
+		}
+
+		err = initCartoFacade(cancelCtx, cartoSvc)
 		if err != nil {
-			return cartoSvc, err
+			return nil, err
 		}
 		initSensorProcess(cancelCtx, cartoSvc)
 		return cartoSvc, err
 	}
-	cartoSvc, err = initCartoGrpcServer(ctx, cancelCtx, cartoSvc)
+	err = initCartoGrpcServer(ctx, cancelCtx, cartoSvc)
 	if err != nil {
 		return nil, err
 	}
@@ -328,10 +339,14 @@ func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (
 	return cartoAlgoCfg, nil
 }
 
-func initCartoFacade(cancelCtx context.Context, cartoSvc *cartographerService) (*cartographerService, error) {
+// initCartoFacade
+// 1. creates a new initCartoFacade
+// 2. initializes it and starts it
+// 3. terminates it if start fails.
+func initCartoFacade(cancelCtx context.Context, cartoSvc *cartographerService) error {
 	cartoAlgoConfig, err := parseCartoAlgoConfig(cartoSvc.configParams, cartoSvc.logger)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	cartoCfg := cartofacade.CartoConfig{
@@ -345,35 +360,67 @@ func initCartoFacade(cancelCtx context.Context, cartoSvc *cartographerService) (
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
 	err = cf.Initialize(cancelCtx, cartoSvc.cartoFacadeTimeout, &cartoSvc.activeBackgroundWorkers)
 	if err != nil {
-		return nil, err
+		cartoSvc.logger.Errorw("cartofacade initialize failed", "error", err)
+		return err
 	}
-	cartoSvc.cartofacade = cf
+	err = cf.Start(cancelCtx, cartoSvc.cartoFacadeTimeout)
+	if err != nil {
+		cartoSvc.logger.Errorw("cartofacade start failed", "error", err)
+		termErr := cf.Terminate(cancelCtx, cartoSvc.cartoFacadeTimeout)
+		if termErr != nil {
+			cartoSvc.logger.Errorw("cartofacade terminate failed", "error", termErr)
+			return termErr
+		}
+		return err
+	}
+	cartoSvc.cartofacade = &cf
 
-	return cartoSvc, nil
+	return nil
 }
 
-func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerService) (*cartographerService, error) {
+// terminateCartoFacade
+// 1. stops & terminates carto facade
+// TODO: How does this work if we are closing down the context which manages the carto facade?
+func terminateCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
+	if cartoSvc.cartofacade == nil {
+		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
+		return nil
+	}
+	stopErr := cartoSvc.cartofacade.Stop(ctx, cartoSvc.cartoFacadeTimeout)
+	if stopErr != nil {
+		cartoSvc.logger.Errorw("cartofacade stop failed", "error", stopErr)
+	}
+
+	err := cartoSvc.cartofacade.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
+	if err != nil {
+		cartoSvc.logger.Errorw("cartofacade terminate failed", "error", err)
+		return err
+	}
+	return stopErr
+}
+
+func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerService) error {
 	if cartoSvc.primarySensorName != "" {
 		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, cartoSvc.lidar,
 			cartoSvc.sensorValidationMaxTimeoutSec, cartoSvc.sensorValidationIntervalSec, cartoSvc.logger); err != nil {
-			return cartoSvc, errors.Wrap(err, "getting and saving data failed")
+			return errors.Wrap(err, "getting and saving data failed")
 		}
 		cartoSvc.StartDataProcess(cancelCtx, cartoSvc.lidar, nil)
 		cartoSvc.logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 	}
 
 	if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
-		return cartoSvc, errors.Wrap(err, "error with slam service slam process")
+		return errors.Wrap(err, "error with slam service slam process")
 	}
 
 	client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, cartoSvc.dialMaxTimeoutSec, cartoSvc.logger)
 	if err != nil {
-		return cartoSvc, errors.Wrap(err, "error with initial grpc client to slam algorithm")
+		return errors.Wrap(err, "error with initial grpc client to slam algorithm")
 	}
 	cartoSvc.clientAlgo = client
 	cartoSvc.clientAlgoClose = clientClose
 
-	return cartoSvc, nil
+	return nil
 }
 
 // cartographerService is the structure of the slam service.
@@ -395,7 +442,7 @@ type cartographerService struct {
 	useLiveData         bool
 
 	modularizationV2Enabled bool
-	cartofacade             cartofacade.CartoFacade
+	cartofacade             *cartofacade.CartoFacade
 	cartoFacadeTimeout      time.Duration
 
 	port       string
@@ -555,6 +602,23 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
+	cartoSvc.logger.Infof("cartoSvc.modularizationV2Enabled: %b", cartoSvc.modularizationV2Enabled)
+	// if v2 not enabled terminate carto facade & clean up
+	// background go routines
+	if cartoSvc.modularizationV2Enabled {
+		// TODO: Make this atomic & idempotent
+		cartoSvc.logger.Info("about to call terminateCartoFacade")
+		err := terminateCartoFacade(ctx, cartoSvc)
+		if err != nil {
+			cartoSvc.logger.Errorw("close hit error", "error", err)
+		}
+		cartoSvc.cancelFunc()
+		cartoSvc.activeBackgroundWorkers.Wait()
+		return nil
+	}
+	cartoSvc.logger.Info("past if branch")
+
+	// if v2 not enabled
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
@@ -577,6 +641,7 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		return errors.Wrap(err, "error occurred during closeout of process")
 	}
 	cartoSvc.activeBackgroundWorkers.Wait()
+	cartoSvc.logger.Info("before close ended")
 	return nil
 }
 

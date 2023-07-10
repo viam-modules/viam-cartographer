@@ -11,6 +11,7 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
@@ -52,6 +53,55 @@ func NewLidar(
 	}
 
 	return lidar, nil
+}
+
+// TODO: Move to 2d.
+func GetData(ctx context.Context, lidar lidar.Lidar) (time.Time, pointcloud.PointCloud, error) {
+	ctx, md := contextutils.ContextWithMetadata(ctx)
+	reqTime := time.Now().UTC()
+	pointcloud, err := lidar.GetData(ctx)
+	if err != nil {
+		return reqTime, nil, err
+	}
+
+	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+	if ok {
+		reqTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+		if err != nil {
+			return reqTime, nil, err
+		}
+	}
+	return reqTime, pointcloud, nil
+}
+
+func ValidateGetData(
+	ctx context.Context,
+	lidar lidar.Lidar,
+	sensorValidationMaxTimeoutSec int,
+	sensorValidationIntervalSec int,
+	logger golog.Logger,
+) error {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateGetData")
+	defer span.End()
+
+	startTime := time.Now().UTC()
+
+	for {
+		_, _, err := GetData(ctx, lidar)
+		if err == nil {
+			break
+		}
+
+		logger.Debugw("ValidateGetData hit error: ", "error", err)
+		if time.Since(startTime) >= time.Duration(sensorValidationMaxTimeoutSec)*time.Second {
+			return errors.Wrap(err, "ValidateGetData timeout")
+		}
+		if !goutils.SelectContextOrWait(ctx, time.Duration(sensorValidationIntervalSec)*time.Second) {
+			return ctx.Err()
+		}
+	}
+
+	return nil
 }
 
 // ValidateGetAndSaveData makes sure that the provided sensor is actually a lidar and can
