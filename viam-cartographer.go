@@ -222,7 +222,6 @@ func New(
 	defer func() {
 		if !success {
 			logger.Errorw("New() hit error, closing...", "error", err)
-			logger.Errorf("cartoSvc %p", cartoSvc)
 			if err := cartoSvc.Close(ctx); err != nil {
 				logger.Errorw("error closing out after error", "error", err)
 			}
@@ -258,7 +257,6 @@ func New(
 // TODO: write a test for this.
 func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (cartofacade.CartoAlgoConfig, error) {
 	cartoAlgoCfg := defaultCartoAlgoCfg
-	logger.Warnf("NICK: defaultCartoAlgoCfgPtr: %p, cartoAlgoCfgPtr: %p", &defaultCartoAlgoCfg, &cartoAlgoCfg)
 	for k, val := range configParams {
 		switch k {
 		case "optimize_on_start":
