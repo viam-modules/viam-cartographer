@@ -40,6 +40,8 @@ func SetupDeps(sensors []string) resource.Dependencies {
 		switch sensor {
 		case "good_lidar":
 			deps[camera.Named(sensor)] = getGoodLidar()
+		case "warming_up_lidar":
+			deps[camera.Named(sensor)] = getWarmingUpLidar()
 		case "replay_sensor":
 			deps[camera.Named(sensor)] = getReplaySensor(TestTime)
 		case "invalid_replay_sensor":
@@ -55,6 +57,28 @@ func SetupDeps(sensors []string) resource.Dependencies {
 		}
 	}
 	return deps
+}
+
+func getWarmingUpLidar() *inject.Camera {
+	cam := &inject.Camera{}
+	couter := 0
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		couter++
+		if couter == 1 {
+			return nil, errors.Errorf("warming up %d", couter)
+		}
+		return pointcloud.New(), nil
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		return nil, errors.New("lidar not camera")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{}, nil
+	}
+	return cam
 }
 
 func getGoodLidar() *inject.Camera {

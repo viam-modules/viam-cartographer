@@ -233,8 +233,8 @@ func New(
 		if err := dim2d.ValidateGetData(
 			cancelCtx,
 			cartoSvc.lidar,
-			cartoSvc.sensorValidationMaxTimeoutSec,
-			cartoSvc.sensorValidationIntervalSec,
+			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
+			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
 			cartoSvc.logger); err != nil {
 			err := errors.Wrap(err, "failed to get data from lidar")
 			return nil, err

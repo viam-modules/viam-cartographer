@@ -84,8 +84,8 @@ func GetTimedData(ctx context.Context, lidar lidar.Lidar) (time.Time, pointcloud
 func ValidateGetData(
 	ctx context.Context,
 	lidar lidar.Lidar,
-	sensorValidationMaxTimeoutSec int,
-	sensorValidationIntervalSec int,
+	sensorValidationMaxTimeout time.Duration,
+	sensorValidationInterval time.Duration,
 	logger golog.Logger,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateGetData")
@@ -100,10 +100,10 @@ func ValidateGetData(
 		}
 
 		logger.Debugw("ValidateGetData hit error: ", "error", err)
-		if time.Since(startTime) >= time.Duration(sensorValidationMaxTimeoutSec)*time.Second {
+		if time.Since(startTime) >= sensorValidationMaxTimeout {
 			return errors.Wrap(err, "ValidateGetData timeout")
 		}
-		if !goutils.SelectContextOrWait(ctx, time.Duration(sensorValidationIntervalSec)*time.Second) {
+		if !goutils.SelectContextOrWait(ctx, sensorValidationInterval) {
 			return ctx.Err()
 		}
 	}
