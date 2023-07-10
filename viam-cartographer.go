@@ -605,12 +605,8 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
-	cartoSvc.logger.Infof("cartoSvc.modularizationV2Enabled: %b", cartoSvc.modularizationV2Enabled)
-	// if v2 not enabled terminate carto facade & clean up
-	// background go routines
 	if cartoSvc.modularizationV2Enabled {
 		// TODO: Make this atomic & idempotent
-		cartoSvc.logger.Info("about to call terminateCartoFacade")
 		err := terminateCartoFacade(ctx, cartoSvc)
 		if err != nil {
 			cartoSvc.logger.Errorw("close hit error", "error", err)
@@ -619,9 +615,7 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		cartoSvc.activeBackgroundWorkers.Wait()
 		return nil
 	}
-	cartoSvc.logger.Info("past if branch")
 
-	// if v2 not enabled
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
@@ -644,7 +638,6 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		return errors.Wrap(err, "error occurred during closeout of process")
 	}
 	cartoSvc.activeBackgroundWorkers.Wait()
-	cartoSvc.logger.Info("before close ended")
 	return nil
 }
 
