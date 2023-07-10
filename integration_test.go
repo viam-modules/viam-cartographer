@@ -26,8 +26,8 @@ import (
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/dataprocess"
-	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
-	th "github.com/viamrobotics/viam-cartographer/testhelper"
+	internaltesthelper "github.com/viamrobotics/viam-cartographer/internal/testhelper"
+	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (
@@ -100,7 +100,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 		t.Skip()
 	}
 
-	dataDir, err := testhelper.CreateTempFolderArchitecture(logger)
+	dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	prevNumFiles := 0
@@ -125,16 +125,16 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	}
 
 	// Release point cloud for service validation
-	th.IntegrationLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, true, viamcartographer.DefaultExecutableName)
+	svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
-	th.IntegrationLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 
 	// Make sure we initialize in mapping mode
-	logReader := svc.(testhelper.Service).GetSLAMProcessBufferedLogReader()
+	logReader := svc.(internaltesthelper.Service).GetSLAMProcessBufferedLogReader()
 	for {
 		line, err := logReader.ReadString('\n')
 		test.That(t, err, test.ShouldBeNil)
@@ -147,14 +147,14 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	}
 
 	// Wait for cartographer to finish processing data
-	for i := 0; i < th.NumPointClouds-2; i++ {
+	for i := 0; i < testhelper.NumPointClouds-2; i++ {
 		t.Logf("Find log line for point cloud %v", i)
-		th.IntegrationLidarReleasePointCloudChan <- 1
+		testhelper.IntegrationLidarReleasePointCloudChan <- 1
 		for {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
 			if strings.Contains(line, "Passed sensor data to SLAM") {
-				prevNumFiles = testhelper.CheckDeleteProcessedData(
+				prevNumFiles = internaltesthelper.CheckDeleteProcessedData(
 					t,
 					subAlgo,
 					dataDir,
@@ -207,11 +207,11 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	}
 
 	// Create slam service using a real cartographer binary
-	svc, err = testhelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
+	svc, err = internaltesthelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in mapping mode
-	logReader = svc.(testhelper.Service).GetSLAMProcessBufferedLogReader()
+	logReader = svc.(internaltesthelper.Service).GetSLAMProcessBufferedLogReader()
 	for {
 		line, err := logReader.ReadString('\n')
 		test.That(t, err, test.ShouldBeNil)
@@ -227,7 +227,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 		line, err := logReader.ReadString('\n')
 		test.That(t, err, test.ShouldBeNil)
 		if strings.Contains(line, "Passed sensor data to SLAM") {
-			prevNumFiles = testhelper.CheckDeleteProcessedData(
+			prevNumFiles = internaltesthelper.CheckDeleteProcessedData(
 				t,
 				subAlgo,
 				dataDir,
@@ -253,7 +253,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	time.Sleep(time.Millisecond * cartoSleepMsec)
 
 	// Remove existing pointclouds, but leave maps and config (so we keep the lua files).
-	test.That(t, testhelper.ResetFolder(dataDir+"/data"), test.ShouldBeNil)
+	test.That(t, internaltesthelper.ResetFolder(dataDir+"/data"), test.ShouldBeNil)
 	prevNumFiles = 0
 
 	// Count the initial number of maps in the map directory (should equal 1)
@@ -279,13 +279,13 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	}
 
 	// Release point cloud for service validation
-	th.IntegrationLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err = testhelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
+	svc, err = internaltesthelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in localization mode
-	logReader = svc.(testhelper.Service).GetSLAMProcessBufferedLogReader()
+	logReader = svc.(internaltesthelper.Service).GetSLAMProcessBufferedLogReader()
 	for {
 		line, err := logReader.ReadString('\n')
 		test.That(t, err, test.ShouldBeNil)
@@ -297,15 +297,15 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	}
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
-	th.IntegrationLidarReleasePointCloudChan <- 1
-	for i := 0; i < th.NumPointClouds-2; i++ {
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
+	for i := 0; i < testhelper.NumPointClouds-2; i++ {
 		t.Logf("Find log line for point cloud %v", i)
-		th.IntegrationLidarReleasePointCloudChan <- 1
+		testhelper.IntegrationLidarReleasePointCloudChan <- 1
 		for {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
 			if strings.Contains(line, "Passed sensor data to SLAM") {
-				prevNumFiles = testhelper.CheckDeleteProcessedData(
+				prevNumFiles = internaltesthelper.CheckDeleteProcessedData(
 					t,
 					subAlgo,
 					dataDir,
@@ -321,7 +321,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	testCartographerMap(t, svc, true)
 
 	// Remove maps so that testing is done on the map generated by the internal map
-	test.That(t, testhelper.ResetFolder(dataDir+"/map"), test.ShouldBeNil)
+	test.That(t, internaltesthelper.ResetFolder(dataDir+"/map"), test.ShouldBeNil)
 
 	testCartographerInternalState(t, svc, dataDir)
 
@@ -335,7 +335,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	time.Sleep(time.Millisecond * cartoSleepMsec)
 
 	// Remove existing pointclouds, but leave maps and config (so we keep the lua files).
-	test.That(t, testhelper.ResetFolder(dataDir+"/data"), test.ShouldBeNil)
+	test.That(t, internaltesthelper.ResetFolder(dataDir+"/data"), test.ShouldBeNil)
 	prevNumFiles = 0
 
 	// Test online mode using the map generated in the offline test
@@ -355,13 +355,13 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	}
 
 	// Release point cloud for service validation
-	th.IntegrationLidarReleasePointCloudChan <- 1
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
 	// Create slam service using a real cartographer binary
-	svc, err = testhelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
+	svc, err = internaltesthelper.CreateSLAMService(t, attrCfg, golog.NewTestLogger(t), true, viamcartographer.DefaultExecutableName)
 	test.That(t, err, test.ShouldBeNil)
 
 	// Make sure we initialize in updating mode
-	logReader = svc.(testhelper.Service).GetSLAMProcessBufferedLogReader()
+	logReader = svc.(internaltesthelper.Service).GetSLAMProcessBufferedLogReader()
 	for {
 		line, err := logReader.ReadString('\n')
 		test.That(t, err, test.ShouldBeNil)
@@ -373,15 +373,15 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	}
 
 	// Release point cloud, since cartographer looks for the second most recent point cloud
-	th.IntegrationLidarReleasePointCloudChan <- 1
-	for i := 0; i < th.NumPointClouds-2; i++ {
+	testhelper.IntegrationLidarReleasePointCloudChan <- 1
+	for i := 0; i < testhelper.NumPointClouds-2; i++ {
 		t.Logf("Find log line for point cloud %v", i)
-		th.IntegrationLidarReleasePointCloudChan <- 1
+		testhelper.IntegrationLidarReleasePointCloudChan <- 1
 		for {
 			line, err := logReader.ReadString('\n')
 			test.That(t, err, test.ShouldBeNil)
 			if strings.Contains(line, "Passed sensor data to SLAM") {
-				prevNumFiles = testhelper.CheckDeleteProcessedData(
+				prevNumFiles = internaltesthelper.CheckDeleteProcessedData(
 					t,
 					subAlgo,
 					dataDir,
@@ -405,7 +405,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	testCartographerDir(t, dataDir, 2)
 
 	// Clear out directory
-	testhelper.ClearDirectory(t, dataDir)
+	internaltesthelper.ClearDirectory(t, dataDir)
 }
 
 // Checks the current slam directory to see if the number of files matches the expected amount.

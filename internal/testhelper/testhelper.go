@@ -20,7 +20,7 @@ import (
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	th "github.com/viamrobotics/viam-cartographer/testhelper"
+	externaltesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (
@@ -70,7 +70,7 @@ func CreateSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
-	deps := th.SetupDeps(cfg.Sensors)
+	deps := externaltesthelper.SetupDeps(cfg.Sensors)
 
 	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
