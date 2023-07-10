@@ -476,11 +476,11 @@ func TestParseCartoAlgoConfig(t *testing.T) {
 
 	t.Run("returns error when param type is invalid", func(t *testing.T) {
 		configParams := map[string]string{
-			"optimize_on_start": "hi",
+			"optimize_every_n_nodes": "hihi",
 		}
 
 		cartoAlgoConfig, err := parseCartoAlgoConfig(configParams, logger)
-		test.That(t, err, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, errors.New("strconv.Atoi: parsing \"hihi\": invalid syntax"))
 		test.That(t, cartoAlgoConfig, test.ShouldResemble, defaultCartoAlgoCfg)
 	})
 }
