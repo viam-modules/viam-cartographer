@@ -167,9 +167,6 @@ func New(
 
 	// Set up the data directories
 	// TODO: Figure out how to not do this if v2 is enabled
-	if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
-		return nil, err
-	}
 
 	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
 		svcConfig,
@@ -178,8 +175,15 @@ func New(
 		defaultMapRateSec,
 		logger,
 	)
+
 	if err != nil {
 		return nil, err
+	}
+
+	if !modularizationV2Enabled {
+		if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
+			return nil, err
+		}
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
@@ -335,8 +339,10 @@ func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (
 				return cartoAlgoCfg, err
 			}
 			cartoAlgoCfg.RotationWeight = fVal
+			// ignore mode as it is a special case
+		case "mode":
 		default:
-			logger.Warn("unused config param: %s: %s", k, val)
+			logger.Warnf("unused config param: %s: %s", k, val)
 		}
 	}
 	return cartoAlgoCfg, nil
