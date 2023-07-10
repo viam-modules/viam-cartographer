@@ -13,6 +13,7 @@ import (
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	th "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 func TestNewLidar(t *testing.T) {
@@ -20,7 +21,7 @@ func TestNewLidar(t *testing.T) {
 
 	t.Run("No sensor provided", func(t *testing.T) {
 		sensors := []string{}
-		deps := testhelper.SetupDeps(sensors)
+		deps := th.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(context.Background(), deps, sensors, logger)
 		expectedLidar := lidar.Lidar{}
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
@@ -29,7 +30,7 @@ func TestNewLidar(t *testing.T) {
 
 	t.Run("Failed lidar creation due to more than one sensor provided", func(t *testing.T) {
 		sensors := []string{"lidar", "one-too-many"}
-		deps := testhelper.SetupDeps(sensors)
+		deps := th.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(context.Background(), deps, sensors, logger)
 		expectedLidar := lidar.Lidar{}
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
@@ -39,7 +40,7 @@ func TestNewLidar(t *testing.T) {
 
 	t.Run("Failed lidar creation with non-existing sensor", func(t *testing.T) {
 		sensors := []string{"gibberish"}
-		deps := testhelper.SetupDeps(sensors)
+		deps := th.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(context.Background(), deps, sensors, logger)
 		expectedLidar := lidar.Lidar{}
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
@@ -51,7 +52,7 @@ func TestNewLidar(t *testing.T) {
 	t.Run("Successful lidar creation", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
 		ctx := context.Background()
-		deps := testhelper.SetupDeps(sensors)
+		deps := th.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(ctx, deps, sensors, logger)
 		test.That(t, actualLidar.Name, test.ShouldEqual, sensors[0])
 		test.That(t, err, test.ShouldBeNil)
@@ -70,7 +71,7 @@ func TestGetAndSaveData(t *testing.T) {
 
 	t.Run("Successful call to GetAndSaveData", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
-		deps := testhelper.SetupDeps(sensors)
+		deps := th.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(ctx, deps, sensors, logger)
 		test.That(t, actualLidar.Name, test.ShouldEqual, sensors[0])
 		test.That(t, err, test.ShouldBeNil)
@@ -94,7 +95,7 @@ func TestValidateGetAndSaveData(t *testing.T) {
 
 	t.Run("Successful call to ValidateGetAndSaveData", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
-		deps := testhelper.SetupDeps(sensors)
+		deps := th.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(ctx, deps, sensors, logger)
 		test.That(t, actualLidar.Name, test.ShouldEqual, sensors[0])
 		test.That(t, err, test.ShouldBeNil)

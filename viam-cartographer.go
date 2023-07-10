@@ -49,7 +49,7 @@ const (
 	defaultSensorValidationIntervalSec   = 1
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
-	DefaultCartoFacadeTimeout            = 5 * time.Second
+	defaultCartoFacadeTimeout            = 5 * time.Second
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -92,7 +92,7 @@ func init() {
 				defaultSensorValidationMaxTimeoutSec,
 				defaultSensorValidationIntervalSec,
 				defaultDialMaxTimeoutSec,
-				DefaultCartoFacadeTimeout,
+				defaultCartoFacadeTimeout,
 			)
 		},
 	})
@@ -116,6 +116,7 @@ func InitCartoLib(logger golog.Logger) error {
 	return nil
 }
 
+// TerminateCartoLib is run to terminate the cartographer library.
 func TerminateCartoLib() error {
 	return cartoLib.Terminate()
 }

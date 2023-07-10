@@ -77,7 +77,9 @@ type GetPosition struct {
 type LidarConfig int64
 
 const (
+	// TwoD LidarConfig denotes a 2d lidar
 	TwoD LidarConfig = iota
+	// ThreeD LidarConfig denotes a 3d lidar
 	ThreeD
 )
 

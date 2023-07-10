@@ -24,6 +24,7 @@ import (
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	th "github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 const (
@@ -215,7 +216,7 @@ func TestDataProcess(t *testing.T) {
 		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
 
 		sensors := []string{"good_lidar"}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(th.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -232,7 +233,7 @@ func TestDataProcess(t *testing.T) {
 	t.Run("Failed startup of data process with invalid sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
 		sensors := []string{"invalid_sensor"}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(th.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -250,7 +251,7 @@ func TestDataProcess(t *testing.T) {
 		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
 
 		sensors := []string{"replay_sensor"}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(th.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -261,7 +262,7 @@ func TestDataProcess(t *testing.T) {
 		cancelFunc()
 		files, err := os.ReadDir(filepath.Join(dataDir, "data"))
 		test.That(t, len(files), test.ShouldBeGreaterThanOrEqualTo, 1)
-		test.That(t, files[0].Name(), test.ShouldContainSubstring, testhelper.TestTime)
+		test.That(t, files[0].Name(), test.ShouldContainSubstring, th.TestTime)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
