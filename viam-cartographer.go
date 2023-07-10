@@ -27,9 +27,9 @@ import (
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/sensorprocess"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	dim2d "github.com/viamrobotics/viam-cartographer/sensors/lidar/dim-2d"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
 
@@ -230,7 +230,12 @@ func New(
 	}()
 
 	if modularizationV2Enabled {
-		if err := dim2d.ValidateGetData(cancelCtx, cartoSvc.lidar, cartoSvc.sensorValidationMaxTimeoutSec, cartoSvc.sensorValidationIntervalSec, cartoSvc.logger); err != nil {
+		if err := dim2d.ValidateGetData(
+			cancelCtx,
+			cartoSvc.lidar,
+			cartoSvc.sensorValidationMaxTimeoutSec,
+			cartoSvc.sensorValidationIntervalSec,
+			cartoSvc.logger); err != nil {
 			err := errors.Wrap(err, "failed to get data from lidar")
 			return nil, err
 		}

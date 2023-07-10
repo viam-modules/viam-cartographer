@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	inject "github.com/viamrobotics/viam-cartographer/internal/inject"
+	inject "github.com/viamrobotics/viam-cartographer/testhelper/inject"
 )
 
 type pointCloudClientMock struct {

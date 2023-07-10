@@ -10,9 +10,9 @@ import (
 	"github.com/pkg/errors"
 	"go.viam.com/test"
 
-	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
 	internaltesthelper "github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	dim2d "github.com/viamrobotics/viam-cartographer/sensors/lidar/dim-2d"
 	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
 

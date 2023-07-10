@@ -55,8 +55,11 @@ func NewLidar(
 	return lidar, nil
 }
 
-// TODO: Move to 2d.
-func GetData(ctx context.Context, lidar lidar.Lidar) (time.Time, pointcloud.PointCloud, error) {
+// GetTimedData returns a 2d lidar reading, the timestamp from when it wask taken
+// (eitehr in live mode or offline mode)
+// and an error if an error occurred getting the lidar data or parsing the offline
+// timestamp.
+func GetTimedData(ctx context.Context, lidar lidar.Lidar) (time.Time, pointcloud.PointCloud, error) {
 	ctx, md := contextutils.ContextWithMetadata(ctx)
 	reqTime := time.Now().UTC()
 	pointcloud, err := lidar.GetData(ctx)
@@ -74,6 +77,10 @@ func GetData(ctx context.Context, lidar lidar.Lidar) (time.Time, pointcloud.Poin
 	return reqTime, pointcloud, nil
 }
 
+// ValidateGetData checks every sensorValidationIntervalSec if the provided lidar
+// returned a valid timed lidar readings every sensorValidationIntervalSec
+// until either success or sensorValidationMaxTimeoutSec has elapsed.
+// returns an error if no valid lidar readings were returned.
 func ValidateGetData(
 	ctx context.Context,
 	lidar lidar.Lidar,
@@ -87,7 +94,7 @@ func ValidateGetData(
 	startTime := time.Now().UTC()
 
 	for {
-		_, _, err := GetData(ctx, lidar)
+		_, _, err := GetTimedData(ctx, lidar)
 		if err == nil {
 			break
 		}
