@@ -683,7 +683,6 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		cartoSvc.logger.Warn("Close() called multiple times")
 		return nil
 	}
-	// TODO: Make this atomic & idempotent
 	if cartoSvc.modularizationV2Enabled {
 		// stop sensor process workers
 		cartoSvc.cancelSensorProcessFunc()
