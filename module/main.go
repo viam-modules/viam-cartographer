@@ -46,8 +46,9 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	}
 
 	defer func() {
-		err := viamcartographer.TerminateCartoLib()
-		logger.Errorw("failed to terminate carto lib", "error", err)
+		if err := viamcartographer.TerminateCartoLib(); err != nil {
+			logger.Errorw("failed to terminate carto lib", "error", err)
+		}
 	}()
 
 	// Instantiate the module
