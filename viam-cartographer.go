@@ -36,9 +36,10 @@ import (
 
 // Model is the model name of cartographer.
 var (
-	Model     = resource.NewModel("viam", "slam", "cartographer")
-	cartoLib  cartofacade.CartoLib
-	closedErr = errors.Errorf("resource (%s) is closed", Model.String())
+	Model    = resource.NewModel("viam", "slam", "cartographer")
+	cartoLib cartofacade.CartoLib
+	// ErrClosed denotes that the slam service method was called on a closed slam resource.
+	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
 )
 
 const (
@@ -501,7 +502,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	defer span.End()
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPosition called after closed")
-		return nil, "", closedErr
+		return nil, "", ErrClosed
 	}
 
 	if cartoSvc.modularizationV2Enabled {
@@ -548,7 +549,7 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
-		return nil, closedErr
+		return nil, ErrClosed
 	}
 
 	if !cartoSvc.localizationMode {
@@ -564,8 +565,8 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 	defer span.End()
 
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
-		return nil, closedErr
+		cartoSvc.logger.Warn("GetInternalState called after closed")
+		return nil, ErrClosed
 	}
 
 	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
@@ -578,8 +579,8 @@ func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time
 	defer span.End()
 
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
-		return cartoSvc.mapTimestamp, closedErr
+		cartoSvc.logger.Warn("GetLatestMapInfo called after closed")
+		return cartoSvc.mapTimestamp, ErrClosed
 	}
 
 	return cartoSvc.mapTimestamp, nil
@@ -667,6 +668,10 @@ func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar
 }
 
 func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	if cartoSvc.closed {
+		cartoSvc.logger.Warn("DoCommand called after closed")
+		return nil, ErrClosed
+	}
 	return nil, viamgrpc.UnimplementedError
 }
 
