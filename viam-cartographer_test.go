@@ -16,7 +16,7 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
-	// "github.com/pkg/errors"
+	"github.com/pkg/errors"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/test"
 	"google.golang.org/grpc"
@@ -78,228 +78,258 @@ func initInternalState(t *testing.T) (string, func()) {
 
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
-	// dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
-	// test.That(t, err, test.ShouldBeNil)
+	dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
+	test.That(t, err, test.ShouldBeNil)
 
-	// 	t.Run("Successful creation of cartographer slam service with no sensor", func(t *testing.T) {
-	// 		grpcServer, port := setupTestGRPCServer(t)
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		attrCfg := &vcConfig.Config{
-	// 			Sensors:       []string{},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			Port:          "localhost:" + strconv.Itoa(port),
-	// 			UseLiveData:   &_false,
-	// 		}
+	t.Run("Successful creation of cartographer slam service with no sensor", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		test.That(t, err, test.ShouldBeNil)
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_false,
+		}
 
-	// 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeNil)
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
 
-	// 		grpcServer.Stop()
-	// 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	// 	})
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
 
-	// 	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
-	// 		grpcServer, port := setupTestGRPCServer(t)
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		attrCfg := &vcConfig.Config{
-	// 			Sensors:       []string{"lidar", "one-too-many"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			Port:          "localhost:" + strconv.Itoa(port),
-	// 			UseLiveData:   &_false,
-	// 		}
+	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		test.That(t, err, test.ShouldBeNil)
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{"lidar", "one-too-many"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_false,
+		}
 
-	// 		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeError,
-	// 			errors.New("configuring lidar camera error: 'sensors' must contain only one "+
-	// 				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
+		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("configuring lidar camera error: 'sensors' must contain only one "+
+				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
 
-	// 		grpcServer.Stop()
-	// 	})
+		grpcServer.Stop()
+	})
 
-	// 	t.Run("Failed creation of cartographer slam service with non-existing sensor", func(t *testing.T) {
-	// 		attrCfg := &vcConfig.Config{
-	// 			Sensors:       []string{"gibberish"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			DataRateMsec:  testDataRateMsec,
-	// 			UseLiveData:   &_true,
-	// 		}
+	t.Run("Failed creation of cartographer slam service with non-existing sensor", func(t *testing.T) {
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{"gibberish"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			DataRateMsec:  testDataRateMsec,
+			UseLiveData:   &_true,
+		}
 
-	// 		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeError,
-	// 			errors.New("configuring lidar camera error: error getting lidar camera "+
-	// 				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
-	// 	})
+		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("configuring lidar camera error: error getting lidar camera "+
+				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
+	})
 
-	// 	t.Run("Successful creation of cartographer slam service with good lidar", func(t *testing.T) {
-	// 		grpcServer, port := setupTestGRPCServer(t)
-	// 		attrCfg := &vcConfig.Config{
-	// 			Sensors:       []string{"good_lidar"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			DataRateMsec:  testDataRateMsec,
-	// 			Port:          "localhost:" + strconv.Itoa(port),
-	// 			UseLiveData:   &_true,
-	// 		}
+	t.Run("Successful creation of cartographer slam service with good lidar", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{"good_lidar"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			DataRateMsec:  testDataRateMsec,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_true,
+		}
 
-	// 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeNil)
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
 
-	// 		grpcServer.Stop()
-	// 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	// 	})
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
 
-	// 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
-	// 		"that errors during call to NextPointCloud", func(t *testing.T) {
-	// 		attrCfg := &vcConfig.Config{
-	// 			Sensors:       []string{"invalid_sensor"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			DataRateMsec:  testDataRateMsec,
-	// 			UseLiveData:   &_true,
-	// 		}
+	t.Run("Failed creation of cartographer slam service with invalid sensor "+
+		"that errors during call to NextPointCloud", func(t *testing.T) {
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{"invalid_sensor"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			DataRateMsec:  testDataRateMsec,
+			UseLiveData:   &_true,
+		}
 
-	// 		_, err = internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeError,
-	// 			errors.New("getting and saving data failed: error getting data from sensor: invalid sensor"))
-	// 	})
+		_, err = internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("getting and saving data failed: error getting data from sensor: invalid sensor"))
+	})
 
-	// 	internaltesthelper.ClearDirectory(t, dataDir)
+	internaltesthelper.ClearDirectory(t, dataDir)
 
-	// 	t.Run("Successful creation of cartographer slam service in localization mode", func(t *testing.T) {
-	// 		grpcServer, port := setupTestGRPCServer(t)
+	t.Run("Successful creation of cartographer slam service in localization mode", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
 
-	// 		attrCfg := &vcConfig.Config{
-	// 			Sensors:       []string{},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			Port:          "localhost:" + strconv.Itoa(port),
-	// 			UseLiveData:   &_false,
-	// 			MapRateSec:    &_zeroInt,
-	// 		}
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_false,
+			MapRateSec:    &_zeroInt,
+		}
 
-	// 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeNil)
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
 
-	// 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		_, err = svc.GetPointCloudMap(context.Background())
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-	// 		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
+		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		_, err = svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
+		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
 
-	// 		grpcServer.Stop()
-	// 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	// 	})
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
 
-	// 	t.Run("Successful creation of cartographer slam service in non localization mode", func(t *testing.T) {
-	// 		grpcServer, port := setupTestGRPCServer(t)
-	// 		attrCfg := &vcConfig.Config{
-	// 			Sensors:       []string{},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			Port:          "localhost:" + strconv.Itoa(port),
-	// 			UseLiveData:   &_false,
-	// 			MapRateSec:    &testMapRateSec,
-	// 		}
+	t.Run("Successful creation of cartographer slam service in non localization mode", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_false,
+			MapRateSec:    &testMapRateSec,
+		}
 
-	// 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeNil)
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
 
-	// 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		_, err = svc.GetPointCloudMap(context.Background())
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
-	// 		test.That(t, err, test.ShouldBeNil)
+		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		_, err = svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 
-	// 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-	// 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
+		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
+		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
 
-	// 		grpcServer.Stop()
-	// 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	// 	})
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
 
-	// 	t.Run("Successful creation of cartographer slam service with no sensor when feature flag enabled", func(t *testing.T) {
-	// 		attrCfg := &vcConfig.Config{
-	// 			ModularizationV2Enabled: &_true,
-	// 			Sensors:                 []string{},
-	// 			ConfigParams:            map[string]string{"mode": "2d"},
-	// 			DataDirectory:           dataDir,
-	// 			UseLiveData:             &_false,
-	// 		}
+	t.Run("Fails to create cartographer slam service with no sensor when feature flag enabled", func(t *testing.T) {
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
 
-	// 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	// 	})
+		dataDirectory, fsCleanupFunc := initInternalState(t)
+		defer fsCleanupFunc()
 
-	// 	t.Run("Failed creation of cartographer slam service with more than one sensor when feature flag enabled", func(t *testing.T) {
-	// 		attrCfg := &vcConfig.Config{
-	// 			ModularizationV2Enabled: &_true,
-	// 			Sensors:       []string{"lidar", "one-too-many"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			UseLiveData:   &_false,
-	// 		}
+		attrCfg := &vcConfig.Config{
+			ModularizationV2Enabled: &_true,
+			Sensors:                 []string{},
+			ConfigParams:            map[string]string{"mode": "2d"},
+			DataDirectory:           dataDirectory,
+			UseLiveData:             &_false,
+		}
 
-	// 		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeError,
-	// 			errors.New("configuring lidar camera error: 'sensors' must contain only one "+
-	// 				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
-	// 	})
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeError, errors.New("error validating \"path\": \"at least one sensor must be configured\" is required"))
+		test.That(t, svc, test.ShouldBeNil)
+	})
 
-	// 	t.Run("Failed creation of cartographer slam service with non-existing sensor when feature flag enabled", func(t *testing.T) {
-	// 		attrCfg := &vcConfig.Config{
-	// 			ModularizationV2Enabled: &_true,
-	// 			Sensors:       []string{"gibberish"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			DataRateMsec:  testDataRateMsec,
-	// 			UseLiveData:   &_true,
-	// 		}
+	t.Run("Failed creation of cartographer slam service with more than one sensor when feature flag enabled", func(t *testing.T) {
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
 
-	// 		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeError,
-	// 			errors.New("configuring lidar camera error: error getting lidar camera "+
-	// 				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
-	// 	})
+		dataDirectory, fsCleanupFunc := initInternalState(t)
+		defer fsCleanupFunc()
 
-	// 	t.Run("Successful creation of cartographer slam service with good lidar when feature flag enabled", func(t *testing.T) {
-	// 		attrCfg := &vcConfig.Config{
-	// 			ModularizationV2Enabled: &_true,
-	// 			Sensors:       []string{"good_lidar"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			DataRateMsec:  testDataRateMsec,
-	// 			UseLiveData:   &_true,
-	// 		}
+		attrCfg := &vcConfig.Config{
+			ModularizationV2Enabled: &_true,
+			Sensors:                 []string{"lidar", "one-too-many"},
+			ConfigParams:            map[string]string{"mode": "2d"},
+			DataDirectory:           dataDirectory,
+			UseLiveData:             &_false,
+		}
 
-	// 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeNil)
+		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("configuring lidar camera error: 'sensors' must contain only one "+
+				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
+	})
 
-	// 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	// 	})
+	t.Run("Failed creation of cartographer slam service with non-existing sensor when feature flag enabled", func(t *testing.T) {
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
 
-	// 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
-	// 		"that errors during call to NextPointCloud when feature flag enabled", func(t *testing.T) {
-	// 		attrCfg := &vcConfig.Config{
-	// 			ModularizationV2Enabled: &_true,
-	// 			Sensors:       []string{"invalid_sensor"},
-	// 			ConfigParams:  map[string]string{"mode": "2d"},
-	// 			DataDirectory: dataDir,
-	// 			DataRateMsec:  testDataRateMsec,
-	// 			UseLiveData:   &_true,
-	// 		}
+		dataDirectory, fsCleanupFunc := initInternalState(t)
+		defer fsCleanupFunc()
 
-	// 		_, err = internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 		test.That(t, err, test.ShouldBeError,
-	// 			errors.New("failed to get data from lidar: ValidateGetData timeout: invalid sensor"))
-	// 	})
+		attrCfg := &vcConfig.Config{
+			ModularizationV2Enabled: &_true,
+			Sensors:                 []string{"gibberish"},
+			ConfigParams:            map[string]string{"mode": "2d"},
+			DataDirectory:           dataDirectory,
+			DataRateMsec:            testDataRateMsec,
+			UseLiveData:             &_true,
+		}
+
+		_, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("configuring lidar camera error: error getting lidar camera "+
+				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
+	})
+
+	t.Run("Successful creation of cartographer slam service with good lidar when feature flag enabled", func(t *testing.T) {
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
+
+		dataDirectory, fsCleanupFunc := initInternalState(t)
+		defer fsCleanupFunc()
+
+		attrCfg := &vcConfig.Config{
+			ModularizationV2Enabled: &_true,
+			Sensors:                 []string{"good_lidar"},
+			ConfigParams:            map[string]string{"mode": "2d"},
+			DataDirectory:           dataDirectory,
+			DataRateMsec:            testDataRateMsec,
+			UseLiveData:             &_true,
+		}
+
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
+
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
+
+	t.Run("Failed creation of cartographer slam service with invalid sensor "+
+		"that errors during call to NextPointCloud when feature flag enabled", func(t *testing.T) {
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
+
+		dataDirectory, fsCleanupFunc := initInternalState(t)
+		defer fsCleanupFunc()
+
+		attrCfg := &vcConfig.Config{
+			ModularizationV2Enabled: &_true,
+			Sensors:                 []string{"invalid_sensor"},
+			ConfigParams:            map[string]string{"mode": "2d"},
+			DataDirectory:           dataDirectory,
+			DataRateMsec:            testDataRateMsec,
+			UseLiveData:             &_true,
+		}
+
+		_, err = internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("failed to get data from lidar: ValidateGetData timeout: invalid sensor"))
+	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode when feature flag enabled", func(t *testing.T) {
 		termFunc := initTestCL(t, logger)
@@ -333,32 +363,38 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	// t.Run("Successful creation of cartographer slam service in non localization mode when feature flag enabled", func(t *testing.T) {
-	// 	attrCfg := &vcConfig.Config{
-	// 		ModularizationV2Enabled: &_true,
-	// 		Sensors:       []string{},
-	// 		ConfigParams:  map[string]string{"mode": "2d"},
-	// 		DataDirectory: dataDir,
-	// 		UseLiveData:   &_false,
-	// 		MapRateSec:    &testMapRateSec,
-	// 	}
+	t.Run("Successful creation of cartographer slam service in non localization mode when feature flag enabled", func(t *testing.T) {
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
 
-	// 	svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-	// 	test.That(t, err, test.ShouldBeNil)
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
 
-	// // TODO: Implement these
-	// 	// timestamp1, err := svc.GetLatestMapInfo(context.Background())
-	// 	// test.That(t, err, test.ShouldBeNil)
-	// 	// _, err = svc.GetPointCloudMap(context.Background())
-	// 	// test.That(t, err, test.ShouldBeNil)
-	// 	// timestamp2, err := svc.GetLatestMapInfo(context.Background())
-	// 	// test.That(t, err, test.ShouldBeNil)
+		attrCfg := &vcConfig.Config{
+			ModularizationV2Enabled: &_true,
+			Sensors:                 []string{"replay_sensor"},
+			ConfigParams:            map[string]string{"mode": "2d"},
+			DataDirectory:           dataDirectory,
+			UseLiveData:             &_false,
+			MapRateSec:              &testMapRateSec,
+		}
 
-	// 	// test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-	// 	// test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
 
-	// 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	// })
+		// TODO: Implement these
+		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		// test.That(t, err, test.ShouldBeNil)
+		// _, err = svc.GetPointCloudMap(context.Background())
+		// test.That(t, err, test.ShouldBeNil)
+		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		// test.That(t, err, test.ShouldBeNil)
+
+		// test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
+		// test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
+
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
 }
 
 func TestDataProcess(t *testing.T) {
