@@ -260,7 +260,6 @@ func New(
 	return cartoSvc, nil
 }
 
-// TODO: write a test for this.
 func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (cartofacade.CartoAlgoConfig, error) {
 	cartoAlgoCfg := defaultCartoAlgoCfg
 	for k, val := range configParams {
@@ -390,9 +389,6 @@ func initCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
 	return nil
 }
 
-// terminateCartoFacade
-// 1. stops & terminates carto facade
-// TODO: How does this work if we are closing down the context which manages the carto facade?
 func terminateCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
 	if cartoSvc.cartofacade == nil {
 		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
