@@ -244,7 +244,6 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 }
 
-//nolint:dupl
 func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
@@ -308,6 +307,22 @@ func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 			makeQuaternionFromGenericMap(inputQuat),
 		)
 		test.That(t, pose, test.ShouldResemble, expectedPose)
+	})
+
+	t.Run("error case", func(t *testing.T) {
+		mockCartoFacade.GetPositionFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+		) (cartofacade.GetPosition, error) {
+			return cartofacade.GetPosition{}, errors.New("testError")
+		}
+
+		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
+		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
+		pose, _, err := svc.GetPosition(context.Background())
+
+		test.That(t, err, test.ShouldBeError, errors.New("testError"))
+		test.That(t, pose, test.ShouldBeNil)
 	})
 }
 
