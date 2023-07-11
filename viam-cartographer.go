@@ -517,7 +517,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Context) (spatialmath.Pose, string, error) {
 	pos, err := cartoSvc.cartofacade.GetPosition(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
-		return spatialmath.NewZeroPose(), "", err
+		return nil, "", err
 	}
 
 	pose := spatialmath.NewPoseFromPoint(r3.Vector{X: pos.X, Y: pos.Y, Z: pos.Z})
