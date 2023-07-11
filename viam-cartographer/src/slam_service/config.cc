@@ -15,6 +15,7 @@ using namespace boost::filesystem;
 namespace viam {
 namespace config {
 
+int defaultIMUDataRateMS = 20;
 int defaultDataRateMS = 200;
 int defaultMapRateSec = 60;
 
@@ -25,6 +26,8 @@ DEFINE_string(port, "", "GRPC port");
 DEFINE_string(sensors, "", "Array of sensors.");
 DEFINE_int64(data_rate_ms, defaultDataRateMS,
              "Frequency at which we grab/save data.");
+DEFINE_int64(imu_data_rate_ms, defaultIMUDataRateMS,
+             "Frequency at which we grab/save IMU data.");
 DEFINE_int64(
     map_rate_sec, defaultMapRateSec,
     "Frequency at which we want to print map pictures while cartographer "
@@ -65,6 +68,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     LOG(INFO) << "port: " << FLAGS_port;
     LOG(INFO) << "sensors: " << FLAGS_sensors;
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms;
+    LOG(INFO) << "imu_data_rate_ms: " << FLAGS_imu_data_rate_ms;
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec;
     LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data;
     LOG(INFO) << "use_live_data: " << FLAGS_use_live_data;
@@ -99,6 +103,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.port = FLAGS_port;
     slamService.camera_name = FLAGS_sensors;
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
+    slamService.imu_data_rate_ms = std::chrono::milliseconds(FLAGS_imu_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
     slamService.delete_processed_data = FLAGS_delete_processed_data;
@@ -223,6 +228,7 @@ void ResetFlagsForTesting() {
     FLAGS_port = "";
     FLAGS_sensors = "";
     FLAGS_data_rate_ms = defaultDataRateMS;
+    FLAGS_imu_data_rate_ms = defaultIMUDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
     FLAGS_delete_processed_data = false;
     FLAGS_use_live_data = false;

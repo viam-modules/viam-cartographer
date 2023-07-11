@@ -53,6 +53,7 @@ type Config struct {
 	DataDirectory           string            `json:"data_dir"`
 	UseLiveData             *bool             `json:"use_live_data"`
 	DataRateMsec            int               `json:"data_rate_msec"`
+	IMUDataRateMsec         int               `json:"imu_data_rate_msec"`
 	MapRateSec              *int              `json:"map_rate_sec"`
 	Port                    string            `json:"port"`
 	DeleteProcessedData     *bool             `json:"delete_processed_data"`
@@ -86,6 +87,10 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, errors.New("cannot specify data_rate_msec less than zero")
 	}
 
+	if config.IMUDataRateMsec < 0 {
+		return nil, errors.New("cannot specify imu_data_rate_msec less than zero")
+	}
+
 	if config.MapRateSec != nil && *config.MapRateSec < 0 {
 		return nil, errors.New("cannot specify map_rate_sec less than zero")
 	}
@@ -98,8 +103,8 @@ func (config *Config) Validate(path string) ([]string, error) {
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
 func GetOptionalParameters(config *Config, defaultPort string,
-	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (string, int, int, bool, bool, bool, error) {
+	defaultDataRateMsec, defaultIMUDataRateMsec, defaultMapRateSec int, logger golog.Logger,
+) (string, int, int, int, bool, bool, bool, error) {
 	modularizationV2Enabled := false
 	if config.ModularizationV2Enabled != nil {
 		modularizationV2Enabled = *config.ModularizationV2Enabled
@@ -120,6 +125,12 @@ func GetOptionalParameters(config *Config, defaultPort string,
 		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMsec)
 	}
 
+	imuDataRateMsec := config.IMUDataRateMsec
+	if config.IMUDataRateMsec == 0 {
+		imuDataRateMsec = defaultIMUDataRateMsec
+		logger.Debugf("no imu_data_rate_msec given, setting to default value of %d", defaultIMUDataRateMsec)
+	}
+
 	mapRateSec := 0
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
@@ -136,7 +147,7 @@ func GetOptionalParameters(config *Config, defaultPort string,
 	if !modularizationV2Enabled {
 		useLiveData, err = DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
 		if err != nil {
-			return "", 0, 0, false, false, false, err
+			return "", 0, 0, 0, false, false, false, err
 		}
 	}
 
@@ -146,5 +157,5 @@ func GetOptionalParameters(config *Config, defaultPort string,
 		deleteProcessedData = DetermineDeleteProcessedData(logger, config.DeleteProcessedData, useLiveData)
 	}
 
-	return port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, nil
+	return port, dataRateMsec, imuDataRateMsec, mapRateSec, deleteProcessedData, useLiveData, modularizationV2Enabled, nil
 }

@@ -43,6 +43,7 @@ const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
 	DefaultExecutableName                = "carto_grpc_server"
 	defaultDataRateMsec                  = 200
+	defaultIMUDataRateMsec               = 20
 	defaultMapRateSec                    = 60
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
@@ -166,10 +167,16 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
+	// Set up the data directories
+	if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
+		return nil, err
+	}
+
+	port, dataRateMsec, imuDataRateMsec, mapRateSec, useLiveData, deleteProcessedData, _, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
 		defaultDataRateMsec,
+		defaultIMUDataRateMsec,
 		defaultMapRateSec,
 		logger,
 	)
@@ -210,6 +217,7 @@ func New(
 		deleteProcessedData:           deleteProcessedData,
 		port:                          port,
 		dataRateMs:                    dataRateMsec,
+		imuDataRateMs:                 imuDataRateMsec,
 		mapRateSec:                    mapRateSec,
 		cancelFunc:                    cancelFunc,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
@@ -459,9 +467,10 @@ type cartographerService struct {
 	cartoFacadeTimeout      time.Duration
 
 	// deprecated
-	port       string
-	dataRateMs int
-	mapRateSec int
+	port          string
+	dataRateMs    int
+	imuDataRateMs int
+	mapRateSec    int
 
 	// deprecated
 	cancelFunc              func()
