@@ -172,7 +172,7 @@ func New(
 		return nil, err
 	}
 
-	port, dataRateMsec, imuDataRateMsec, mapRateSec, useLiveData, deleteProcessedData, _, err := vcConfig.GetOptionalParameters(
+	port, dataRateMsec, imuDataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
 		defaultDataRateMsec,
