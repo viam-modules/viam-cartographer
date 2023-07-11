@@ -675,7 +675,7 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 	cartoSvc.mu.Lock()
 	defer cartoSvc.mu.Unlock()
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("Close() called muliple times")
+		cartoSvc.logger.Warn("Close() called multiple times")
 		return nil
 	}
 	// TODO: Make this atomic & idempotent
