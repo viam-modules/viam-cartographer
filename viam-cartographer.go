@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -38,6 +39,7 @@ import (
 var (
 	Model    = resource.NewModel("viam", "slam", "cartographer")
 	cartoLib cartofacade.CartoLib
+	jobsDone = false
 )
 
 const (
@@ -637,7 +639,19 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 
 func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
 	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-		cartoSvc.logger.Warn(err)
+		if strings.Contains(err.Error(), "reached end of dataset") {
+			if !jobsDone {
+				cartoSvc.logger.Warn(err)
+				_, err = os.Create(filepath.Join(cartoSvc.dataDirectory, "Jobs_Done.txt"))
+				if err != nil {
+					cartoSvc.logger.Warn(err)
+				}
+				jobsDone = true
+			}
+		} else {
+			cartoSvc.logger.Warn(err)
+		}
+
 	}
 	if c != nil {
 		c <- 1
