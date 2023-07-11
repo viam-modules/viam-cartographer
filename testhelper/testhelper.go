@@ -61,7 +61,7 @@ func SetupDeps(sensors []string) resource.Dependencies {
 
 func getWarmingUpLidar() *inject.Camera {
 	cam := &inject.Camera{}
-	couter := 0
+	counter := 0
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		counter++
 		if counter == 1 {
