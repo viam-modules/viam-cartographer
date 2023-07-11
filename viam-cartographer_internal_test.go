@@ -244,6 +244,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 }
 
+//nolint:dupl
 func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
@@ -254,13 +255,21 @@ func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 	var inputQuat map[string]interface{}
 
 	t.Run("successful client", func(t *testing.T) {
-
 		t.Run("origin pose success", func(t *testing.T) {
 			mockCartoFacade.GetPositionFunc = func(
 				ctx context.Context,
 				timeout time.Duration,
 			) (cartofacade.GetPosition, error) {
-				return cartofacade.GetPosition{X: 0, Y: 0, Z: 0, Real: 1.0, Imag: 0.0, Jmag: 0.0, Kmag: 0.0}, nil
+				return cartofacade.GetPosition{
+						X:    0,
+						Y:    0,
+						Z:    0,
+						Real: 1.0,
+						Imag: 0.0,
+						Jmag: 0.0,
+						Kmag: 0.0,
+					},
+					nil
 			}
 
 			inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
@@ -279,7 +288,16 @@ func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 				ctx context.Context,
 				timeout time.Duration,
 			) (cartofacade.GetPosition, error) {
-				return cartofacade.GetPosition{X: 5, Y: 5, Z: 5, Real: 1.0, Imag: 1.0, Jmag: 0.0, Kmag: 0.0}, nil
+				return cartofacade.GetPosition{
+						X:    5,
+						Y:    5,
+						Z:    5,
+						Real: 1.0,
+						Imag: 1.0,
+						Jmag: 0.0,
+						Kmag: 0.0,
+					},
+					nil
 			}
 
 			inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}

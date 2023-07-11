@@ -521,7 +521,14 @@ func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Con
 	}
 
 	pose := spatialmath.NewPoseFromPoint(r3.Vector{X: pos.X, Y: pos.Y, Z: pos.Z})
-	returnedExt := map[string]interface{}{"quat": map[string]interface{}{"real": pos.Real, "imag": pos.Imag, "jmag": pos.Jmag, "kmag": pos.Kmag}}
+	returnedExt := map[string]interface{}{
+		"quat": map[string]interface{}{
+			"real": pos.Real,
+			"imag": pos.Imag,
+			"jmag": pos.Jmag,
+			"kmag": pos.Kmag,
+		},
+	}
 	return vcUtils.CheckQuaternionFromClientAlgo(pose, cartoSvc.primarySensorName, returnedExt)
 }
 
