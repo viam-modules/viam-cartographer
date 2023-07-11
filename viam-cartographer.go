@@ -121,7 +121,7 @@ func TerminateCartoLib() error {
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService) {
 	spConfig := sensorprocess.Config{
-		CartoFacade:      &cartoSvc.cartofacade,
+		CartoFacade:      cartoSvc.cartofacade,
 		Lidar:            cartoSvc.lidar,
 		LidarName:        cartoSvc.primarySensorName,
 		DataRateMs:       cartoSvc.dataRateMs,
@@ -329,7 +329,7 @@ func initCartoFacade(cancelCtx context.Context, cartoSvc *cartographerService) (
 	if err != nil {
 		return nil, err
 	}
-	cartoSvc.cartofacade = cf
+	cartoSvc.cartofacade = &cf
 
 	return cartoSvc, nil
 }
@@ -382,7 +382,7 @@ type cartographerService struct {
 	useLiveData         bool
 
 	modularizationV2Enabled bool
-	cartofacade             cartofacade.CartoFacade
+	cartofacade             cartofacade.Interface
 	cartoFacadeTimeout      time.Duration
 
 	port       string
@@ -436,7 +436,7 @@ func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Con
 	}
 
 	pose := spatialmath.NewPoseFromPoint(r3.Vector{X: pos.X, Y: pos.Y, Z: pos.Z})
-	returnedExt := map[string]interface{}{"real": pos.Real, "imag": pos.Imag, "jmag": pos.Jmag, "kmag": pos.Kmag}
+	returnedExt := map[string]interface{}{"quat": map[string]interface{}{"real": pos.Real, "imag": pos.Imag, "jmag": pos.Jmag, "kmag": pos.Kmag}}
 	return vcUtils.CheckQuaternionFromClientAlgo(pose, cartoSvc.primarySensorName, returnedExt)
 }
 

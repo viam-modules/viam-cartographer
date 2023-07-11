@@ -181,11 +181,7 @@ func TestStart(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-<<<<<<< HEAD
-	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
-=======
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
->>>>>>> 0c13016 ([RSDK-3545] add sensor process (#185))
 
 	t.Run("testing Start", func(t *testing.T) {
 		// success case
@@ -236,11 +232,7 @@ func TestStop(t *testing.T) {
 		return nil
 	}
 	cartoFacade.carto = &carto
-<<<<<<< HEAD
-	cartoFacade.start(cancelCtx, &activeBackgroundWorkers)
-=======
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
->>>>>>> 0c13016 ([RSDK-3545] add sensor process (#185))
 
 	t.Run("testing Stop", func(t *testing.T) {
 		// success case
