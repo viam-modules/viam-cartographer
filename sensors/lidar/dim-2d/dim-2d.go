@@ -56,7 +56,7 @@ func NewLidar(
 }
 
 // GetTimedData returns a 2d lidar reading, the timestamp from when it wask taken
-// (eitehr in live mode or offline mode)
+// (either in live mode or offline mode)
 // and an error if an error occurred getting the lidar data or parsing the offline
 // timestamp.
 func GetTimedData(ctx context.Context, lidar lidar.Lidar) (time.Time, pointcloud.PointCloud, error) {
