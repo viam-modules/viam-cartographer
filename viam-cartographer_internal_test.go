@@ -254,62 +254,60 @@ func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 	var inputPose commonv1.Pose
 	var inputQuat map[string]interface{}
 
-	t.Run("successful client", func(t *testing.T) {
-		t.Run("origin pose success", func(t *testing.T) {
-			mockCartoFacade.GetPositionFunc = func(
-				ctx context.Context,
-				timeout time.Duration,
-			) (cartofacade.GetPosition, error) {
-				return cartofacade.GetPosition{
-						X:    0,
-						Y:    0,
-						Z:    0,
-						Real: 1.0,
-						Imag: 0.0,
-						Jmag: 0.0,
-						Kmag: 0.0,
-					},
-					nil
-			}
+	t.Run("origin pose success", func(t *testing.T) {
+		mockCartoFacade.GetPositionFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+		) (cartofacade.GetPosition, error) {
+			return cartofacade.GetPosition{
+					X:    0,
+					Y:    0,
+					Z:    0,
+					Real: 1.0,
+					Imag: 0.0,
+					Jmag: 0.0,
+					Kmag: 0.0,
+				},
+				nil
+		}
 
-			inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
-			inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
-			pose, _, err := svc.GetPosition(context.Background())
-			test.That(t, err, test.ShouldBeNil)
-			expectedPose := spatialmath.NewPose(
-				r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
-				makeQuaternionFromGenericMap(inputQuat),
-			)
-			test.That(t, pose, test.ShouldResemble, expectedPose)
-		})
+		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
+		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
+		pose, _, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		expectedPose := spatialmath.NewPose(
+			r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
+			makeQuaternionFromGenericMap(inputQuat),
+		)
+		test.That(t, pose, test.ShouldResemble, expectedPose)
+	})
 
-		t.Run("non origin pose success", func(t *testing.T) {
-			mockCartoFacade.GetPositionFunc = func(
-				ctx context.Context,
-				timeout time.Duration,
-			) (cartofacade.GetPosition, error) {
-				return cartofacade.GetPosition{
-						X:    5,
-						Y:    5,
-						Z:    5,
-						Real: 1.0,
-						Imag: 1.0,
-						Jmag: 0.0,
-						Kmag: 0.0,
-					},
-					nil
-			}
+	t.Run("non origin pose success", func(t *testing.T) {
+		mockCartoFacade.GetPositionFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+		) (cartofacade.GetPosition, error) {
+			return cartofacade.GetPosition{
+					X:    5,
+					Y:    5,
+					Z:    5,
+					Real: 1.0,
+					Imag: 1.0,
+					Jmag: 0.0,
+					Kmag: 0.0,
+				},
+				nil
+		}
 
-			inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
-			inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
-			pose, _, err := svc.GetPosition(context.Background())
-			test.That(t, err, test.ShouldBeNil)
-			expectedPose := spatialmath.NewPose(
-				r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
-				makeQuaternionFromGenericMap(inputQuat),
-			)
-			test.That(t, pose, test.ShouldResemble, expectedPose)
-		})
+		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
+		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
+		pose, _, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		expectedPose := spatialmath.NewPose(
+			r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
+			makeQuaternionFromGenericMap(inputQuat),
+		)
+		test.That(t, pose, test.ShouldResemble, expectedPose)
 	})
 }
 
