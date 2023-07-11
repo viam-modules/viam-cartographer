@@ -24,7 +24,7 @@ import (
 )
 
 const (
-	// SensorValidationMaxTimeoutSecForTest is used in the ValidateGetAndSaveDa
+	// SensorValidationMaxTimeoutSecForTest is used in the ValidateGetAndSaveData
 	// function to ensure that the sensor in the GetAndSaveData function
 	// returns data within an acceptable time.
 	SensorValidationMaxTimeoutSecForTest = 1
