@@ -181,6 +181,7 @@ func New(
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
+<<<<<<< HEAD
 		Named:                         c.ResourceName().AsNamed(),
 		primarySensorName:             lidar.Name,
 		lidar:                         lidar,
@@ -203,6 +204,25 @@ func New(
 		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
 		dialMaxTimeoutSec:             dialMaxTimeoutSec,
 		cartoFacadeTimeout:            cartoFacadeTimeout,
+=======
+		Named:                 c.ResourceName().AsNamed(),
+		primarySensorName:     lidar.Name,
+		executableName:        executableName,
+		subAlgo:               subAlgo,
+		slamProcess:           pexec.NewProcessManager(logger),
+		configParams:          svcConfig.ConfigParams,
+		dataDirectory:         svcConfig.DataDirectory,
+		useLiveData:           useLiveData,
+		deleteProcessedData:   deleteProcessedData,
+		port:                  port,
+		dataRateMs:            dataRateMsec,
+		mapRateSec:            mapRateSec,
+		cancelFunc:            cancelFunc,
+		logger:                logger,
+		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
+		localizationMode:      mapRateSec == 0,
+		mapTimestamp:          time.Now().UTC(),
+>>>>>>> f678204 (RSDK-3561 GetLatestMapInfo PR2 (#180))
 	}
 
 	defer func() {
@@ -403,9 +423,14 @@ type cartographerService struct {
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
 
+<<<<<<< HEAD
 	sensorValidationMaxTimeoutSec int
 	sensorValidationIntervalSec   int
 	dialMaxTimeoutSec             int
+=======
+	localizationMode bool
+	mapTimestamp     time.Time
+>>>>>>> f678204 (RSDK-3561 GetLatestMapInfo PR2 (#180))
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -431,6 +456,7 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	return vcUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
 }
 
+<<<<<<< HEAD
 func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Context) (spatialmath.Pose, string, error) {
 	pos, err := cartoSvc.cartofacade.GetPosition(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
@@ -443,11 +469,18 @@ func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Con
 }
 
 // GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+=======
+// GetPointCloudMap creates a request, recording the time, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+>>>>>>> f678204 (RSDK-3561 GetLatestMapInfo PR2 (#180))
 // function which will return the next chunk of the current pointcloud map.
+// If startup is in localization mode, the timestamp is NOT updated.
 func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
 
+	if !cartoSvc.localizationMode {
+		cartoSvc.mapTimestamp = time.Now().UTC()
+	}
 	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
@@ -458,6 +491,15 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 	defer span.End()
 
 	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
+}
+
+// GetLatestMapInfo returns the timestamp  associated with the latest call to GetPointCloudMap,
+// unless you are localizing; in which case the timestamp returned is the timestamp of the session.
+func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
+	_, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
+	defer span.End()
+
+	return cartoSvc.mapTimestamp, nil
 }
 
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
