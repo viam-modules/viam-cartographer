@@ -18,7 +18,7 @@ import (
 
 // Config holds config needed throughout the process of adding a sensor reading to the mapbuilder.
 type Config struct {
-	Cartofacade      cartofacade.Interface
+	CartoFacade      cartofacade.Interface
 	Lidar            lidar.Lidar
 	LidarName        string
 	DataRateMs       int
@@ -89,7 +89,7 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 		case <-ctx.Done():
 			return
 		default:
-			err := config.Cartofacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
+			err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
 				// TODO: increment telemetry counter success
 				return
@@ -107,7 +107,7 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 // does not retry.
 func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
 	startTime := time.Now()
-	err := config.Cartofacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
+	err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)

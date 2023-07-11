@@ -121,7 +121,7 @@ func TerminateCartoLib() error {
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService) {
 	spConfig := sensorprocess.Config{
-		Cartofacade:      cartoSvc.cartofacade,
+		CartoFacade:      cartoSvc.cartofacade,
 		Lidar:            cartoSvc.lidar,
 		LidarName:        cartoSvc.primarySensorName,
 		DataRateMs:       cartoSvc.dataRateMs,
@@ -181,30 +181,6 @@ func New(
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
-<<<<<<< HEAD
-		Named:                         c.ResourceName().AsNamed(),
-		primarySensorName:             lidar.Name,
-		lidar:                         lidar,
-		executableName:                executableName,
-		subAlgo:                       subAlgo,
-		slamProcess:                   pexec.NewProcessManager(logger),
-		configParams:                  svcConfig.ConfigParams,
-		dataDirectory:                 svcConfig.DataDirectory,
-		sensors:                       svcConfig.Sensors,
-		useLiveData:                   useLiveData,
-		deleteProcessedData:           deleteProcessedData,
-		port:                          port,
-		dataRateMs:                    dataRateMsec,
-		mapRateSec:                    mapRateSec,
-		cancelFunc:                    cancelFunc,
-		logger:                        logger,
-		bufferSLAMProcessLogs:         bufferSLAMProcessLogs,
-		modularizationV2Enabled:       modularizationV2Enabled,
-		sensorValidationMaxTimeoutSec: sensorValidationMaxTimeoutSec,
-		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
-		dialMaxTimeoutSec:             dialMaxTimeoutSec,
-		cartoFacadeTimeout:            cartoFacadeTimeout,
-=======
 		Named:                 c.ResourceName().AsNamed(),
 		primarySensorName:     lidar.Name,
 		executableName:        executableName,
@@ -222,7 +198,6 @@ func New(
 		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
 		localizationMode:      mapRateSec == 0,
 		mapTimestamp:          time.Now().UTC(),
->>>>>>> f678204 (RSDK-3561 GetLatestMapInfo PR2 (#180))
 	}
 
 	defer func() {
@@ -423,14 +398,12 @@ type cartographerService struct {
 	slamProcessLogWriter         io.WriteCloser
 	slamProcessBufferedLogReader bufio.Reader
 
-<<<<<<< HEAD
+	localizationMode              bool
+	mapTimestamp                  time.Time
 	sensorValidationMaxTimeoutSec int
 	sensorValidationIntervalSec   int
-	dialMaxTimeoutSec             int
-=======
-	localizationMode bool
-	mapTimestamp     time.Time
->>>>>>> f678204 (RSDK-3561 GetLatestMapInfo PR2 (#180))
+	// deprecated
+	dialMaxTimeoutSec int
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -456,7 +429,6 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	return vcUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
 }
 
-<<<<<<< HEAD
 func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Context) (spatialmath.Pose, string, error) {
 	pos, err := cartoSvc.cartofacade.GetPosition(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
@@ -469,9 +441,6 @@ func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Con
 }
 
 // GetPointCloudMap creates a request, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
-=======
-// GetPointCloudMap creates a request, recording the time, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
->>>>>>> f678204 (RSDK-3561 GetLatestMapInfo PR2 (#180))
 // function which will return the next chunk of the current pointcloud map.
 // If startup is in localization mode, the timestamp is NOT updated.
 func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {

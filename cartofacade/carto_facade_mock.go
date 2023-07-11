@@ -30,7 +30,7 @@ type Mock struct {
 		inputs map[RequestParamType]interface{},
 		timeout time.Duration,
 	) (interface{}, error)
-	startFunc func(
+	startCGoRoutineFunc func(
 		ctx context.Context,
 		activeBackgroundWorkers *sync.WaitGroup,
 	)
@@ -85,15 +85,15 @@ func (cf *Mock) request(
 	return cf.requestFunc(ctxParent, requestType, inputs, timeout)
 }
 
-// start calls the injected startFunc or the real version.
-func (cf *Mock) start(
+// start calls the injected startCGoRoutineFunc or the real version.
+func (cf *Mock) startCGoroutine(
 	ctx context.Context,
 	activeBackgroundWorkers *sync.WaitGroup,
 ) {
-	if cf.startFunc == nil {
-		cf.CartoFacade.start(ctx, activeBackgroundWorkers)
+	if cf.startCGoRoutineFunc == nil {
+		cf.CartoFacade.startCGoroutine(ctx, activeBackgroundWorkers)
 	}
-	cf.startFunc(ctx, activeBackgroundWorkers)
+	cf.startCGoRoutineFunc(ctx, activeBackgroundWorkers)
 }
 
 // Initialize calls the injected InitializeFunc or the real version.

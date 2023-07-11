@@ -18,7 +18,7 @@ var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 
 // Initialize calls into the cartofacade C code.
 func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) error {
-	cf.start(ctx, activeBackgroundWorkers)
+	cf.startCGoroutine(ctx, activeBackgroundWorkers)
 	untyped, err := cf.request(ctx, initialize, emptyRequestParams, timeout)
 	if err != nil {
 		return err
@@ -197,7 +197,7 @@ type Interface interface {
 		requestType RequestType,
 		inputs map[RequestParamType]interface{}, timeout time.Duration,
 	) (interface{}, error)
-	start(
+	startCGoroutine(
 		ctx context.Context,
 		activeBackgroundWorkers *sync.WaitGroup,
 	)
@@ -331,8 +331,8 @@ func (cf *CartoFacade) request(
 	}
 }
 
-// start starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
-func (cf *CartoFacade) start(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
+// startCGoroutine starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
+func (cf *CartoFacade) startCGoroutine(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
 	go func() {
 		defer activeBackgroundWorkers.Done()

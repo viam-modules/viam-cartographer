@@ -43,7 +43,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 	cf := cartofacade.Mock{}
 	config := Config{
 		Logger:      logger,
-		Cartofacade: &cf,
+		CartoFacade: &cf,
 		LidarName:   "good_lidar",
 		DataRateMs:  200,
 		Timeout:     10 * time.Second,
@@ -138,16 +138,15 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 	cf := cartofacade.Mock{}
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
-	// When addSensorReading blocks for longer than the data rate
 	config := Config{
 		Logger:      logger,
-		Cartofacade: &cf,
+		CartoFacade: &cf,
 		LidarName:   "good_lidar",
 		DataRateMs:  200,
 		Timeout:     10 * time.Second,
 	}
 
-	t.Run("When AddSensorReading blocks for more than the DataRateMs and succeeds, returns 0", func(t *testing.T) {
+	t.Run("When AddSensorReading blocks for more than the DataRateMs and succeeds, time to sleep is 0", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -163,7 +162,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddSensorReading slower than DataRateMs and returns lock error, returns 0", func(t *testing.T) {
+	t.Run("AddSensorReading slower than DataRateMs and returns lock error, time to sleep is 0", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -179,7 +178,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("When AddSensorReading blocks for more than the DataRateMs and returns an unexpected error, returns 0", func(t *testing.T) {
+	t.Run("When AddSensorReading blocks for more than the DataRateMs and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -195,7 +194,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddSensorReading faster than the DataRateMs and succeeds, returns int <= DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than the DataRateMs and succeeds, time to sleep is <= DataRateMs", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -211,7 +210,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.DataRateMs)
 	})
 
-	t.Run("AddSensorReading faster than the DataRateMs and returns lock error, returns int <= DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than the DataRateMs and returns lock error, time to sleep is <= DataRateMs", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -227,7 +226,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.DataRateMs)
 	})
 
-	t.Run("AddSensorReading faster than DataRateMs and returns unexpected error, returns int <= DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than DataRateMs and returns unexpected error, time to sleep is <= DataRateMs", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -250,7 +249,7 @@ func TestAddSensorReading(t *testing.T) {
 
 	config := Config{
 		Logger:      logger,
-		Cartofacade: &cf,
+		CartoFacade: &cf,
 		DataRateMs:  200,
 		Timeout:     10 * time.Second,
 	}
