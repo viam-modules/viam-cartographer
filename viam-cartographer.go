@@ -651,7 +651,6 @@ func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar
 		} else {
 			cartoSvc.logger.Warn(err)
 		}
-
 	}
 	if c != nil {
 		c <- 1
