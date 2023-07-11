@@ -19,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/test"
+	"go.viam.com/utils/artifact"
 	"google.golang.org/grpc"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
@@ -27,7 +28,6 @@ import (
 	internaltesthelper "github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	"github.com/viamrobotics/viam-cartographer/testhelper"
-	"go.viam.com/utils/artifact"
 )
 
 const (
@@ -73,7 +73,6 @@ func initInternalState(t *testing.T) (string, func()) {
 		err := os.RemoveAll(dataDirectory)
 		test.That(t, err, test.ShouldBeNil)
 	}
-
 }
 
 func TestNew(t *testing.T) {

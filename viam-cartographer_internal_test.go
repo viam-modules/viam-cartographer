@@ -484,4 +484,3 @@ func TestParseCartoAlgoConfig(t *testing.T) {
 		test.That(t, cartoAlgoConfig, test.ShouldResemble, defaultCartoAlgoCfg)
 	})
 }
-

@@ -177,7 +177,6 @@ func New(
 		defaultMapRateSec,
 		logger,
 	)
-
 	if err != nil {
 		return nil, err
 	}
