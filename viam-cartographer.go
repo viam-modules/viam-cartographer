@@ -166,9 +166,6 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	// Set up the data directories
-	// TODO: Figure out how to not do this if v2 is enabled
-
 	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
@@ -227,10 +224,8 @@ func New(
 		localizationMode:              mapRateSec == 0,
 		mapTimestamp:                  time.Now().UTC(),
 	}
-	success := false
 	defer func() {
-		// TODO: Change this to use err != nil
-		if !success {
+		if err != nil {
 			logger.Errorw("New() hit error, closing...", "error", err)
 			if err := cartoSvc.Close(ctx); err != nil {
 				logger.Errorw("error closing out after error", "error", err)
@@ -239,13 +234,13 @@ func New(
 	}()
 
 	if modularizationV2Enabled {
-		if err := dim2d.ValidateGetData(
+		if err = dim2d.ValidateGetData(
 			cancelSensorProcessCtx,
 			cartoSvc.lidar,
 			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
 			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
 			cartoSvc.logger); err != nil {
-			err := errors.Wrap(err, "failed to get data from lidar")
+			err = errors.Wrap(err, "failed to get data from lidar")
 			return nil, err
 		}
 
@@ -255,15 +250,13 @@ func New(
 		}
 
 		initSensorProcess(cancelSensorProcessCtx, cartoSvc)
-		success = true
-		return cartoSvc, err
+		return cartoSvc, nil
 	}
 
 	err = initCartoGrpcServer(ctx, cancelCtx, cartoSvc)
 	if err != nil {
 		return nil, err
 	}
-	success = true
 	return cartoSvc, nil
 }
 
