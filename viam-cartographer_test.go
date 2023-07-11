@@ -61,7 +61,8 @@ func initInternalState(t *testing.T) (string, func()) {
 	err = os.Mkdir(internalStateDir, os.ModePerm)
 	test.That(t, err, test.ShouldBeNil)
 
-	internalState, err := os.ReadFile(artifact.MustPath("viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"))
+	file := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
+	internalState, err := os.ReadFile(artifact.MustPath(file))
 	test.That(t, err, test.ShouldBeNil)
 
 	timestamp := time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC)
