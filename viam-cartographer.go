@@ -36,8 +36,9 @@ import (
 
 // Model is the model name of cartographer.
 var (
-	Model    = resource.NewModel("viam", "slam", "cartographer")
-	cartoLib cartofacade.CartoLib
+	Model     = resource.NewModel("viam", "slam", "cartographer")
+	cartoLib  cartofacade.CartoLib
+	closedErr = errors.Errorf("resource (%s) is closed", Model.String())
 )
 
 const (
@@ -436,6 +437,8 @@ func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerS
 type cartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
+	mu                sync.Mutex
+	closed            bool
 	primarySensorName string
 	lidar             lidar.Lidar
 	executableName    string
@@ -496,6 +499,10 @@ type cartographerService struct {
 func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialmath.Pose, string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
+	if cartoSvc.closed {
+		cartoSvc.logger.Warn("GetPosition called after closed")
+		return nil, "", closedErr
+	}
 
 	if cartoSvc.modularizationV2Enabled {
 		return cartoSvc.getPositionModularizationV2(ctx)
@@ -539,6 +546,11 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
 
+	if cartoSvc.closed {
+		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
+		return nil, closedErr
+	}
+
 	if !cartoSvc.localizationMode {
 		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
@@ -551,6 +563,11 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetInternalState")
 	defer span.End()
 
+	if cartoSvc.closed {
+		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
+		return nil, closedErr
+	}
+
 	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }
 
@@ -559,6 +576,11 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetLatestMapInfo")
 	defer span.End()
+
+	if cartoSvc.closed {
+		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
+		return cartoSvc.mapTimestamp, closedErr
+	}
 
 	return cartoSvc.mapTimestamp, nil
 }
@@ -650,6 +672,12 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
+	cartoSvc.mu.Lock()
+	defer cartoSvc.mu.Unlock()
+	if cartoSvc.closed {
+		cartoSvc.logger.Warn("Close() called muliple times")
+		return nil
+	}
 	// TODO: Make this atomic & idempotent
 	if cartoSvc.modularizationV2Enabled {
 		// stop sensor process workers
@@ -665,6 +693,7 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		// stop carto facade workers
 		cartoSvc.cancelCartoFacadeFunc()
 		cartoSvc.cartoFacadeWorkers.Wait()
+		cartoSvc.closed = true
 		return nil
 	}
 
@@ -690,6 +719,7 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		return errors.Wrap(err, "error occurred during closeout of process")
 	}
 	cartoSvc.activeBackgroundWorkers.Wait()
+	cartoSvc.closed = true
 	return nil
 }
 
