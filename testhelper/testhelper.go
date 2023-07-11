@@ -65,7 +65,7 @@ func getWarmingUpLidar() *inject.Camera {
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		counter++
 		if counter == 1 {
-			return nil, errors.Errorf("warming up %d", couter)
+			return nil, errors.Errorf("warming up %d", counter)
 		}
 		return pointcloud.New(), nil
 	}
