@@ -633,7 +633,7 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 		cartoSvc.cancelSensorProcessFunc()
 		cartoSvc.sensorProcessWorkers.Wait()
 
-		// termintae carto facade
+		// terminate carto facade
 		err := terminateCartoFacade(ctx, cartoSvc)
 		if err != nil {
 			cartoSvc.logger.Errorw("close hit error", "error", err)
