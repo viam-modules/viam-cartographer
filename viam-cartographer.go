@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
+	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap/zapcore"
@@ -455,7 +456,7 @@ type cartographerService struct {
 	useLiveData bool
 
 	modularizationV2Enabled bool
-	cartofacade             *cartofacade.CartoFacade
+	cartofacade             cartofacade.Interface
 	cartoFacadeTimeout      time.Duration
 
 	// deprecated
@@ -496,6 +497,10 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPosition")
 	defer span.End()
 
+	if cartoSvc.modularizationV2Enabled {
+		return cartoSvc.getPositionModularizationV2(ctx)
+	}
+
 	req := &pb.GetPositionRequest{Name: cartoSvc.Name().ShortName()}
 
 	resp, err := cartoSvc.clientAlgo.GetPosition(ctx, req)
@@ -507,6 +512,24 @@ func (cartoSvc *cartographerService) GetPosition(ctx context.Context) (spatialma
 	returnedExt := resp.Extra.AsMap()
 
 	return vcUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
+}
+
+func (cartoSvc *cartographerService) getPositionModularizationV2(ctx context.Context) (spatialmath.Pose, string, error) {
+	pos, err := cartoSvc.cartofacade.GetPosition(ctx, cartoSvc.cartoFacadeTimeout)
+	if err != nil {
+		return nil, "", err
+	}
+
+	pose := spatialmath.NewPoseFromPoint(r3.Vector{X: pos.X, Y: pos.Y, Z: pos.Z})
+	returnedExt := map[string]interface{}{
+		"quat": map[string]interface{}{
+			"real": pos.Real,
+			"imag": pos.Imag,
+			"jmag": pos.Jmag,
+			"kmag": pos.Kmag,
+		},
+	}
+	return vcUtils.CheckQuaternionFromClientAlgo(pose, cartoSvc.primarySensorName, returnedExt)
 }
 
 // GetPointCloudMap creates a request, recording the time, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
