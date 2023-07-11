@@ -244,104 +244,91 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 }
 
-//nolint:dupl
+func setMockGetPositionFunc(
+	mockCartoFacade *cartofacade.Mock,
+	pos cartofacade.GetPosition,
+) {
+	mockCartoFacade.GetPositionFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+	) (cartofacade.GetPosition, error) {
+		return pos,
+			nil
+	}
+}
+
+func checkGetPositionModularizationV2Outputs(
+	t *testing.T,
+	mockCartoFacade *cartofacade.Mock,
+	inputPose commonv1.Pose,
+	inputQuat map[string]interface{},
+	inputComponentRef string,
+	svc *cartographerService,
+	pos cartofacade.GetPosition,
+) {
+	setMockGetPositionFunc(mockCartoFacade, pos)
+
+	pose, componentReference, err := svc.GetPosition(context.Background())
+	test.That(t, err, test.ShouldBeNil)
+	expectedPose := spatialmath.NewPose(
+		r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
+		makeQuaternionFromGenericMap(inputQuat),
+	)
+	test.That(t, pose, test.ShouldResemble, expectedPose)
+	test.That(t, componentReference, test.ShouldEqual, inputComponentRef)
+}
+
 func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
 	svc.cartofacade = mockCartoFacade
 	svc.modularizationV2Enabled = true
 
+	originPos := cartofacade.GetPosition{
+		X:    0,
+		Y:    0,
+		Z:    0,
+		Real: 1.0,
+		Imag: 0.0,
+		Jmag: 0.0,
+		Kmag: 0.0,
+	}
+
+	nonOriginPos := cartofacade.GetPosition{
+		X:    5,
+		Y:    5,
+		Z:    5,
+		Real: 1.0,
+		Imag: 1.0,
+		Jmag: 0.0,
+		Kmag: 0.0,
+	}
+
 	var inputPose commonv1.Pose
 	var inputQuat map[string]interface{}
 
 	t.Run("empty component reference success", func(t *testing.T) {
 		svc.primarySensorName = ""
-		mockCartoFacade.GetPositionFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-		) (cartofacade.GetPosition, error) {
-			return cartofacade.GetPosition{
-					X:    0,
-					Y:    0,
-					Z:    0,
-					Real: 1.0,
-					Imag: 0.0,
-					Jmag: 0.0,
-					Kmag: 0.0,
-				},
-				nil
-		}
-
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
-		pose, componentReference, err := svc.GetPosition(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		expectedPose := spatialmath.NewPose(
-			r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
-			makeQuaternionFromGenericMap(inputQuat),
-		)
-		test.That(t, pose, test.ShouldResemble, expectedPose)
-		test.That(t, componentReference, test.ShouldEqual, "")
+
+		checkGetPositionModularizationV2Outputs(t, mockCartoFacade, inputPose, inputQuat, "", svc, originPos)
 	})
 
 	t.Run("origin pose success", func(t *testing.T) {
 		svc.primarySensorName = "primarySensor1"
-		mockCartoFacade.GetPositionFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-		) (cartofacade.GetPosition, error) {
-			return cartofacade.GetPosition{
-					X:    0,
-					Y:    0,
-					Z:    0,
-					Real: 1.0,
-					Imag: 0.0,
-					Jmag: 0.0,
-					Kmag: 0.0,
-				},
-				nil
-		}
-
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
-		pose, componentReference, err := svc.GetPosition(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		expectedPose := spatialmath.NewPose(
-			r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
-			makeQuaternionFromGenericMap(inputQuat),
-		)
-		test.That(t, pose, test.ShouldResemble, expectedPose)
-		test.That(t, componentReference, test.ShouldEqual, "primarySensor1")
+
+		checkGetPositionModularizationV2Outputs(t, mockCartoFacade, inputPose, inputQuat, "primarySensor1", svc, originPos)
 	})
 
 	t.Run("non origin pose success", func(t *testing.T) {
 		svc.primarySensorName = "primarySensor2"
-		mockCartoFacade.GetPositionFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-		) (cartofacade.GetPosition, error) {
-			return cartofacade.GetPosition{
-					X:    5,
-					Y:    5,
-					Z:    5,
-					Real: 1.0,
-					Imag: 1.0,
-					Jmag: 0.0,
-					Kmag: 0.0,
-				},
-				nil
-		}
-
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
-		pose, componentReference, err := svc.GetPosition(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		expectedPose := spatialmath.NewPose(
-			r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
-			makeQuaternionFromGenericMap(inputQuat),
-		)
-		test.That(t, pose, test.ShouldResemble, expectedPose)
-		test.That(t, componentReference, test.ShouldEqual, "primarySensor2")
+
+		checkGetPositionModularizationV2Outputs(t, mockCartoFacade, inputPose, inputQuat, "primarySensor2", svc, nonOriginPos)
 	})
 
 	t.Run("error case", func(t *testing.T) {
