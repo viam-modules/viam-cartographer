@@ -629,7 +629,7 @@ func TestClose(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	ctx := context.Background()
 
-	t.Run("is idempotent and makes all endpoints return errors", func(t *testing.T) {
+	t.Run("is idempotent and makes all endpoints return closed errors", func(t *testing.T) {
 		dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -672,7 +672,7 @@ func TestClose(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 	})
 
-	t.Run("is idempotent when feature flag enabled", func(t *testing.T) {
+	t.Run("is idempotent and makes all endpoints return closed errors when feature flag enabled", func(t *testing.T) {
 		termFunc := initTestCL(t, logger)
 		defer termFunc()
 
