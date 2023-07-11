@@ -29,7 +29,7 @@ func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, ac
 		return errors.New("unable to cast response from cartofacade to a carto struct")
 	}
 
-	cf.carto = &carto
+	cf.Carto = &carto
 
 	return nil
 }
@@ -177,7 +177,7 @@ go runtime doesn't spawn multiple OS threads, which would harm performance.
 */
 type CartoFacade struct {
 	cartoLib        CartoLibInterface
-	carto           CartoInterface
+	Carto           CartoInterface
 	cartoConfig     CartoConfig
 	cartoAlgoConfig CartoAlgoConfig
 	requestChan     chan Request
@@ -250,7 +250,7 @@ type Request struct {
 // New instantiates the Cartofacade struct which limits calls into C.
 func New(cartoLib CartoLibInterface, cartoCfg CartoConfig, cartoAlgoCfg CartoAlgoConfig) CartoFacade {
 	return CartoFacade{
-		carto:           &Carto{},
+		Carto:           &Carto{},
 		cartoLib:        cartoLib,
 		cartoConfig:     cartoCfg,
 		cartoAlgoConfig: cartoAlgoCfg,
@@ -267,11 +267,11 @@ func (r *Request) doWork(
 	case initialize:
 		return NewCarto(cf.cartoConfig, cf.cartoAlgoConfig, cf.cartoLib)
 	case start:
-		return nil, cf.carto.start()
+		return nil, cf.Carto.start()
 	case stop:
-		return nil, cf.carto.stop()
+		return nil, cf.Carto.stop()
 	case terminate:
-		return nil, cf.carto.terminate()
+		return nil, cf.Carto.terminate()
 	case addSensorReading:
 		sensor, ok := r.requestParams[sensor].(string)
 		if !ok {
@@ -288,13 +288,13 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, cf.carto.addSensorReading(sensor, reading, timestamp)
+		return nil, cf.Carto.addSensorReading(sensor, reading, timestamp)
 	case position:
-		return cf.carto.getPosition()
+		return cf.Carto.getPosition()
 	case internalState:
-		return cf.carto.getInternalState()
+		return cf.Carto.getInternalState()
 	case pointCloudMap:
-		return cf.carto.getPointCloudMap()
+		return cf.Carto.getPointCloudMap()
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", r.requestType)
 }

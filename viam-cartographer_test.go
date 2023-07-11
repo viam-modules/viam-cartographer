@@ -43,6 +43,39 @@ var (
 	_zeroTime      = time.Time{}
 )
 
+func initTestCL(t *testing.T, logger golog.Logger) func() {
+	t.Helper()
+	err := viamcartographer.InitCartoLib(logger)
+	test.That(t, err, test.ShouldBeNil)
+	return func() {
+		err = viamcartographer.TerminateCartoLib()
+		test.That(t, err, test.ShouldBeNil)
+	}
+}
+
+func initInternalState(t *testing.T) (string, func()) {
+	dataDirectory, err := os.MkdirTemp("", "*")
+	test.That(t, err, test.ShouldBeNil)
+
+	internalStateDir := filepath.Join(dataDirectory, "internal_state")
+	err = os.Mkdir(internalStateDir, os.ModePerm)
+	test.That(t, err, test.ShouldBeNil)
+
+	internalState, err := os.ReadFile(artifact.MustPath("viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"))
+	test.That(t, err, test.ShouldBeNil)
+
+	timestamp := time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC)
+	filename := dataprocess.CreateTimestampFilename(dataDirectory+"/internal_state", "internal_state", ".pbstream", timestamp)
+	err = os.WriteFile(filename, internalState, os.ModePerm)
+	test.That(t, err, test.ShouldBeNil)
+
+	return dataDirectory, func() {
+		err := os.RemoveAll(dataDirectory)
+		test.That(t, err, test.ShouldBeNil)
+	}
+
+}
+
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	// dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
@@ -269,37 +302,15 @@ func TestNew(t *testing.T) {
 	// 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode when feature flag enabled", func(t *testing.T) {
-		err := viamcartographer.InitCartoLib(logger)
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err = viamcartographer.TerminateCartoLib()
-			test.That(t, err, test.ShouldBeNil)
-		}()
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
 
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-
-		internalStateDir := filepath.Join(dataDirectory, "internal_state")
-		err = os.Mkdir(internalStateDir, os.ModePerm)
-		test.That(t, err, test.ShouldBeNil)
-
-		internalState, err := os.ReadFile(artifact.MustPath("viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"))
-		test.That(t, err, test.ShouldBeNil)
-
-		sensor := "replay_sensor"
-		timestamp := time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC)
-		filename := dataprocess.CreateTimestampFilename(dataDirectory+"/internal_state", sensor, ".pbstream", timestamp)
-		err = os.WriteFile(filename, internalState, os.ModePerm)
-		test.That(t, err, test.ShouldBeNil)
-
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
+		dataDirectory, fsCleanupFunc := initInternalState(t)
+		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
 			ModularizationV2Enabled: &_true,
-			Sensors:                 []string{sensor},
+			Sensors:                 []string{"replay_sensor"},
 			ConfigParams:            map[string]string{"mode": "2d"},
 			DataDirectory:           dataDirectory,
 			UseLiveData:             &_true,
@@ -319,7 +330,6 @@ func TestNew(t *testing.T) {
 		// test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		// test.That(t, timestamp1, test.ShouldResemble, timestamp2)
 
-    logger.Warn("calling close")
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 

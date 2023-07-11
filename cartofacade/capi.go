@@ -29,6 +29,7 @@ import "C"
 
 import (
 	"errors"
+	"fmt"
 	"time"
 	"unsafe"
 )
@@ -161,6 +162,7 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 
 // Start is a wrapper for viam_carto_start
 func (vc *Carto) start() error {
+  fmt.Printf("start: %p\n", vc)
 	status := C.viam_carto_start(vc.value)
 
 	if err := toError(status); err != nil {
@@ -172,6 +174,7 @@ func (vc *Carto) start() error {
 
 // Stop is a wrapper for viam_carto_stop
 func (vc *Carto) stop() error {
+  fmt.Printf("stop: %p\n", vc)
 	status := C.viam_carto_stop(vc.value)
 
 	if err := toError(status); err != nil {
@@ -183,6 +186,7 @@ func (vc *Carto) stop() error {
 
 // Terminate calls viam_carto_terminate to clean up memory for viam carto
 func (vc *Carto) terminate() error {
+  fmt.Printf("terminate: %p\n", vc)
 	status := C.viam_carto_terminate(&vc.value)
 
 	if err := toError(status); err != nil {
@@ -194,6 +198,7 @@ func (vc *Carto) terminate() error {
 
 // AddSensorReading is a wrapper for viam_carto_add_sensor_reading
 func (vc *Carto) addSensorReading(sensor string, readings []byte, timestamp time.Time) error {
+  fmt.Printf("addSensorReading: %p\n", vc)
 	value := toSensorReading(sensor, readings, timestamp)
 
 	status := C.viam_carto_add_sensor_reading(vc.value, &value)
@@ -212,6 +217,7 @@ func (vc *Carto) addSensorReading(sensor string, readings []byte, timestamp time
 
 // GetPosition is a wrapper for viam_carto_get_position
 func (vc *Carto) getPosition() (GetPosition, error) {
+  fmt.Printf("getPosition: %p\n", vc)
 	value := C.viam_carto_get_position_response{}
 
 	status := C.viam_carto_get_position(vc.value, &value)
@@ -232,6 +238,7 @@ func (vc *Carto) getPosition() (GetPosition, error) {
 
 // GetPointCloudMap is a wrapper for viam_carto_get_point_cloud_map
 func (vc *Carto) getPointCloudMap() ([]byte, error) {
+  fmt.Printf("getPointCloudMap: %p\n", vc)
 	// TODO: determine whether or not return needs to be a pointer for performance reasons
 	value := C.viam_carto_get_point_cloud_map_response{}
 
@@ -253,6 +260,7 @@ func (vc *Carto) getPointCloudMap() ([]byte, error) {
 
 // GetInternalState is a wrapper for viam_carto_get_internal_state
 func (vc *Carto) getInternalState() ([]byte, error) {
+  fmt.Printf("getInternalState: %p\n", vc)
 	value := C.viam_carto_get_internal_state_response{}
 
 	status := C.viam_carto_get_internal_state(vc.value, &value)
