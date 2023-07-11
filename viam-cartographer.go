@@ -131,7 +131,6 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService)
 		Logger:           cartoSvc.logger,
 		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
 	}
-	cartoSvc.logger.Warnf("cartoSvc.cartofacade.Carto: %p", &cartoSvc.cartofacade.Carto)
 
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
@@ -255,7 +254,6 @@ func New(
 			return nil, err
 		}
 
-		cartoSvc.logger.Warnf("before sensor process: cartoSvc.cartofacade.Carto: %p", &cartoSvc.cartofacade.Carto)
 		initSensorProcess(cancelSensorProcessCtx, cartoSvc)
 		success = true
 		return cartoSvc, err
@@ -394,9 +392,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
 		return err
 	}
 
-	cartoSvc.logger.Warnf("cf.Carto: %p", cf.Carto)
 	cartoSvc.cartofacade = &cf
-	cartoSvc.logger.Warnf("cartoSvc.cartofacade.Carto: %p", cartoSvc.cartofacade.Carto)
 
 	return nil
 }

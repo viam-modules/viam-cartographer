@@ -39,7 +39,7 @@ func TestRequest(t *testing.T) {
 		}
 
 		cf := New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
+		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 		res, err := cf.request(cancelCtx, position, map[RequestParamType]interface{}{}, 5*time.Second)
@@ -66,7 +66,7 @@ func TestRequest(t *testing.T) {
 		}
 
 		cf := New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
+		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
@@ -92,7 +92,7 @@ func TestRequest(t *testing.T) {
 		}
 
 		cf := New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
+		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
@@ -121,7 +121,7 @@ func TestRequest(t *testing.T) {
 		}
 
 		cf := New(&cartoLib, config, algoConfig)
-		cf.Carto = &carto
+		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 10*time.Millisecond)
@@ -180,7 +180,7 @@ func TestStart(t *testing.T) {
 	carto.StartFunc = func() error {
 		return nil
 	}
-	cartoFacade.Carto = &carto
+	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Start", func(t *testing.T) {
@@ -191,7 +191,7 @@ func TestStart(t *testing.T) {
 		carto.StartFunc = func() error {
 			return errors.New("test error 1")
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// returns error
 		err = cartoFacade.Start(cancelCtx, 5*time.Second)
@@ -202,7 +202,7 @@ func TestStart(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// times out
 		err = cartoFacade.Start(cancelCtx, 1*time.Millisecond)
@@ -231,7 +231,7 @@ func TestStop(t *testing.T) {
 	carto.StopFunc = func() error {
 		return nil
 	}
-	cartoFacade.Carto = &carto
+	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Stop", func(t *testing.T) {
@@ -242,7 +242,7 @@ func TestStop(t *testing.T) {
 		carto.StopFunc = func() error {
 			return errors.New("test error 2")
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// returns error
 		err = cartoFacade.Stop(cancelCtx, 5*time.Second)
@@ -253,7 +253,7 @@ func TestStop(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// times out
 		err = cartoFacade.Stop(cancelCtx, 1*time.Millisecond)
@@ -282,7 +282,7 @@ func TestTerminate(t *testing.T) {
 	carto.TerminateFunc = func() error {
 		return nil
 	}
-	cartoFacade.Carto = &carto
+	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing Terminate", func(t *testing.T) {
@@ -293,7 +293,7 @@ func TestTerminate(t *testing.T) {
 		carto.TerminateFunc = func() error {
 			return errors.New("test error 3")
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// returns error
 		err = cartoFacade.Terminate(cancelCtx, 5*time.Second)
@@ -304,7 +304,7 @@ func TestTerminate(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// times out
 		err = cartoFacade.Terminate(cancelCtx, 1*time.Millisecond)
@@ -333,7 +333,7 @@ func TestAddSensorReading(t *testing.T) {
 	carto.AddSensorReadingFunc = func(name string, reading []byte, time time.Time) error {
 		return nil
 	}
-	cartoFacade.Carto = &carto
+	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing AddSensorReading", func(t *testing.T) {
@@ -355,7 +355,7 @@ func TestAddSensorReading(t *testing.T) {
 		carto.AddSensorReadingFunc = func(name string, reading []byte, time time.Time) error {
 			return errors.New("test error 4")
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// returns error
 		err = cartoFacade.AddSensorReading(cancelCtx, 5*time.Second, "mysensor", buf.Bytes(), timestamp)
@@ -366,7 +366,7 @@ func TestAddSensorReading(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// times out
 		err = cartoFacade.AddSensorReading(cancelCtx, 1*time.Millisecond, "mysensor", buf.Bytes(), timestamp)
@@ -396,7 +396,7 @@ func TestGetPosition(t *testing.T) {
 		pos := GetPosition{X: 1, Y: 2, Z: 3}
 		return pos, nil
 	}
-	cartoFacade.Carto = &carto
+	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetPosition", func(t *testing.T) {
@@ -410,7 +410,7 @@ func TestGetPosition(t *testing.T) {
 		carto.GetPositionFunc = func() (GetPosition, error) {
 			return GetPosition{}, errors.New("test error 5")
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetPosition(cancelCtx, 5*time.Second)
@@ -421,7 +421,7 @@ func TestGetPosition(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return GetPosition{}, nil
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// times out
 		_, err = cartoFacade.GetPosition(cancelCtx, 1*time.Millisecond)
@@ -451,7 +451,7 @@ func TestGetInternalState(t *testing.T) {
 		internalState := []byte("hello!")
 		return internalState, nil
 	}
-	cartoFacade.Carto = &carto
+	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetInternalState", func(t *testing.T) {
@@ -463,7 +463,7 @@ func TestGetInternalState(t *testing.T) {
 		carto.GetInternalStateFunc = func() ([]byte, error) {
 			return []byte{}, errors.New("test error 6")
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetInternalState(cancelCtx, 5*time.Second)
@@ -474,7 +474,7 @@ func TestGetInternalState(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// times out
 		_, err = cartoFacade.GetInternalState(cancelCtx, 1*time.Millisecond)
@@ -504,7 +504,7 @@ func TestGetPointCloudMap(t *testing.T) {
 		internalState := []byte("hello!")
 		return internalState, nil
 	}
-	cartoFacade.Carto = &carto
+	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
 	t.Run("testing GetPointCloudMap", func(t *testing.T) {
@@ -516,7 +516,7 @@ func TestGetPointCloudMap(t *testing.T) {
 		carto.GetPointCloudMapFunc = func() ([]byte, error) {
 			return []byte{}, errors.New("test error 7")
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 5*time.Second)
@@ -527,7 +527,7 @@ func TestGetPointCloudMap(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
-		cartoFacade.Carto = &carto
+		cartoFacade.carto = &carto
 
 		// times out
 		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 1*time.Millisecond)
