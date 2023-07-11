@@ -77,8 +77,10 @@ type GetPosition struct {
 type LidarConfig int64
 
 const (
-	twoD LidarConfig = iota
-	threeD
+	// TwoD LidarConfig denotes a 2d lidar
+	TwoD LidarConfig = iota
+	// ThreeD LidarConfig denotes a 3d lidar
+	ThreeD
 )
 
 // CartoConfig contains config values from app
@@ -92,19 +94,19 @@ type CartoConfig struct {
 
 // CartoAlgoConfig contains config values from app
 type CartoAlgoConfig struct {
-	optimizeOnStart      bool
-	optimizeEveryNNodes  int
-	numRangeData         int
-	missingDataRayLength float32
-	maxRange             float32
-	minRange             float32
-	maxSubmapsToKeep     int
-	freshSubmapsCount    int
-	minCoveredArea       float64
-	minAddedSubmapsCount int
-	occupiedSpaceWeight  float64
-	translationWeight    float64
-	rotationWeight       float64
+	OptimizeOnStart      bool
+	OptimizeEveryNNodes  int
+	NumRangeData         int
+	MissingDataRayLength float32
+	MaxRange             float32
+	MinRange             float32
+	MaxSubmapsToKeep     int
+	FreshSubmapsCount    int
+	MinCoveredArea       float64
+	MinAddedSubmapsCount int
+	OccupiedSpaceWeight  float64
+	TranslationWeight    float64
+	RotationWeight       float64
 }
 
 // NewLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
@@ -311,9 +313,9 @@ func goStringToBstring(goStr string) C.bstring {
 
 func toLidarConfig(lidarConfig LidarConfig) (C.viam_carto_LIDAR_CONFIG, error) {
 	switch lidarConfig {
-	case twoD:
+	case TwoD:
 		return C.VIAM_CARTO_TWO_D, nil
-	case threeD:
+	case ThreeD:
 		return C.VIAM_CARTO_THREE_D, nil
 	default:
 		return 0, errors.New("invalid lidar config value")
@@ -349,19 +351,19 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 
 func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac := C.viam_carto_algo_config{}
-	vcac.optimize_on_start = C.bool(acfg.optimizeOnStart)
-	vcac.optimize_every_n_nodes = C.int(acfg.optimizeEveryNNodes)
-	vcac.num_range_data = C.int(acfg.numRangeData)
-	vcac.missing_data_ray_length = C.float(acfg.missingDataRayLength)
-	vcac.max_range = C.float(acfg.maxRange)
-	vcac.min_range = C.float(acfg.minRange)
-	vcac.max_submaps_to_keep = C.int(acfg.maxSubmapsToKeep)
-	vcac.fresh_submaps_count = C.int(acfg.freshSubmapsCount)
-	vcac.min_covered_area = C.double(acfg.minCoveredArea)
-	vcac.min_added_submaps_count = C.int(acfg.minAddedSubmapsCount)
-	vcac.occupied_space_weight = C.double(acfg.occupiedSpaceWeight)
-	vcac.translation_weight = C.double(acfg.translationWeight)
-	vcac.rotation_weight = C.double(acfg.rotationWeight)
+	vcac.optimize_on_start = C.bool(acfg.OptimizeOnStart)
+	vcac.optimize_every_n_nodes = C.int(acfg.OptimizeEveryNNodes)
+	vcac.num_range_data = C.int(acfg.NumRangeData)
+	vcac.missing_data_ray_length = C.float(acfg.MissingDataRayLength)
+	vcac.max_range = C.float(acfg.MaxRange)
+	vcac.min_range = C.float(acfg.MinRange)
+	vcac.max_submaps_to_keep = C.int(acfg.MaxSubmapsToKeep)
+	vcac.fresh_submaps_count = C.int(acfg.FreshSubmapsCount)
+	vcac.min_covered_area = C.double(acfg.MinCoveredArea)
+	vcac.min_added_submaps_count = C.int(acfg.MinAddedSubmapsCount)
+	vcac.occupied_space_weight = C.double(acfg.OccupiedSpaceWeight)
+	vcac.translation_weight = C.double(acfg.TranslationWeight)
+	vcac.rotation_weight = C.double(acfg.RotationWeight)
 	return vcac
 }
 

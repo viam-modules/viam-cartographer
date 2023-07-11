@@ -15,6 +15,7 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap/zapcore"
 	pb "go.viam.com/api/service/slam/v1"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/resource"
@@ -24,14 +25,19 @@ import (
 	goutils "go.viam.com/utils"
 	"go.viam.com/utils/pexec"
 
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
+	"github.com/viamrobotics/viam-cartographer/sensorprocess"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	dim2d "github.com/viamrobotics/viam-cartographer/sensors/lidar/dim-2d"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
 
 // Model is the model name of cartographer.
-var Model = resource.NewModel("viam", "slam", "cartographer")
+var (
+	Model    = resource.NewModel("viam", "slam", "cartographer")
+	cartoLib cartofacade.CartoLib
+)
 
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
@@ -43,7 +49,24 @@ const (
 	defaultSensorValidationIntervalSec   = 1
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
+	defaultCartoFacadeTimeout            = 5 * time.Second
 )
+
+var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
+	OptimizeOnStart:      false,
+	OptimizeEveryNNodes:  3,
+	NumRangeData:         30,
+	MissingDataRayLength: 25.0,
+	MaxRange:             25.0,
+	MinRange:             0.2,
+	MaxSubmapsToKeep:     3,
+	FreshSubmapsCount:    3,
+	MinCoveredArea:       1.0,
+	MinAddedSubmapsCount: 1,
+	OccupiedSpaceWeight:  20.0,
+	TranslationWeight:    10.0,
+	RotationWeight:       1.0,
+}
 
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
 type SubAlgo string
@@ -69,9 +92,51 @@ func init() {
 				defaultSensorValidationMaxTimeoutSec,
 				defaultSensorValidationIntervalSec,
 				defaultDialMaxTimeoutSec,
+				defaultCartoFacadeTimeout,
 			)
 		},
 	})
+}
+
+// InitCartoLib is run to initialize the cartographer library
+// must be called before module.AddModelFromRegistry is
+// called.
+func InitCartoLib(logger golog.Logger) error {
+	minloglevel := 1 // warn
+	vlog := 0        //  disabled
+	if logger.Level() == zapcore.DebugLevel {
+		minloglevel = 0 // info
+		vlog = 1        // verbose enabled
+	}
+	lib, err := cartofacade.NewLib(minloglevel, vlog)
+	if err != nil {
+		return err
+	}
+	cartoLib = lib
+	return nil
+}
+
+// TerminateCartoLib is run to terminate the cartographer library.
+func TerminateCartoLib() error {
+	return cartoLib.Terminate()
+}
+
+func initSensorProcess(cancelCtx context.Context, cartoSvc *cartographerService) {
+	spConfig := sensorprocess.Config{
+		CartoFacade:      cartoSvc.cartofacade,
+		Lidar:            cartoSvc.lidar,
+		LidarName:        cartoSvc.primarySensorName,
+		DataRateMs:       cartoSvc.dataRateMs,
+		Timeout:          cartoSvc.cartoFacadeTimeout,
+		Logger:           cartoSvc.logger,
+		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
+	}
+
+	cartoSvc.sensorProcessWorkers.Add(1)
+	go func() {
+		defer cartoSvc.sensorProcessWorkers.Done()
+		sensorprocess.Start(cancelCtx, spConfig)
+	}()
 }
 
 // New returns a new slam service for the given robot.
@@ -85,6 +150,7 @@ func New(
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
 	dialMaxTimeoutSec int,
+	cartoFacadeTimeout time.Duration,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -100,12 +166,7 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	// Set up the data directories
-	if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
-		return nil, err
-	}
-
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, _, err := vcConfig.GetOptionalParameters(
+	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
 		defaultDataRateMsec,
@@ -116,6 +177,12 @@ func New(
 		return nil, err
 	}
 
+	if !modularizationV2Enabled {
+		if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
+			return nil, err
+		}
+	}
+
 	// Get the lidar for the Dim2D cartographer sub algorithm
 	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig.Sensors, logger)
 	if err != nil {
@@ -124,59 +191,244 @@ func New(
 
 	// Need to pass in a long-lived context because ctx is short-lived
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+	// Need to be able to shut down the sensor process before the cartoFacade
+	cancelSensorProcessCtx, cancelSensorProcessFunc := context.WithCancel(context.Background())
+	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
-		Named:                 c.ResourceName().AsNamed(),
-		primarySensorName:     lidar.Name,
-		executableName:        executableName,
-		subAlgo:               subAlgo,
-		slamProcess:           pexec.NewProcessManager(logger),
-		configParams:          svcConfig.ConfigParams,
-		dataDirectory:         svcConfig.DataDirectory,
-		useLiveData:           useLiveData,
-		deleteProcessedData:   deleteProcessedData,
-		port:                  port,
-		dataRateMs:            dataRateMsec,
-		mapRateSec:            mapRateSec,
-		cancelFunc:            cancelFunc,
-		logger:                logger,
-		bufferSLAMProcessLogs: bufferSLAMProcessLogs,
-		localizationMode:      mapRateSec == 0,
-		mapTimestamp:          time.Now().UTC(),
+		Named:                         c.ResourceName().AsNamed(),
+		primarySensorName:             lidar.Name,
+		lidar:                         lidar,
+		executableName:                executableName,
+		subAlgo:                       subAlgo,
+		slamProcess:                   pexec.NewProcessManager(logger),
+		configParams:                  svcConfig.ConfigParams,
+		dataDirectory:                 svcConfig.DataDirectory,
+		sensors:                       svcConfig.Sensors,
+		useLiveData:                   useLiveData,
+		deleteProcessedData:           deleteProcessedData,
+		port:                          port,
+		dataRateMs:                    dataRateMsec,
+		mapRateSec:                    mapRateSec,
+		cancelFunc:                    cancelFunc,
+		cancelSensorProcessFunc:       cancelSensorProcessFunc,
+		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
+		logger:                        logger,
+		bufferSLAMProcessLogs:         bufferSLAMProcessLogs,
+		modularizationV2Enabled:       modularizationV2Enabled,
+		sensorValidationMaxTimeoutSec: sensorValidationMaxTimeoutSec,
+		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
+		dialMaxTimeoutSec:             dialMaxTimeoutSec,
+		cartoFacadeTimeout:            cartoFacadeTimeout,
+		localizationMode:              mapRateSec == 0,
+		mapTimestamp:                  time.Now().UTC(),
 	}
-
-	success := false
 	defer func() {
-		if !success {
+		if err != nil {
+			logger.Errorw("New() hit error, closing...", "error", err)
 			if err := cartoSvc.Close(ctx); err != nil {
 				logger.Errorw("error closing out after error", "error", err)
 			}
 		}
 	}()
 
-	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
-			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
-			return nil, errors.Wrap(err, "getting and saving data failed")
+	if modularizationV2Enabled {
+		if err = dim2d.ValidateGetData(
+			cancelSensorProcessCtx,
+			cartoSvc.lidar,
+			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
+			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+			cartoSvc.logger); err != nil {
+			err = errors.Wrap(err, "failed to get data from lidar")
+			return nil, err
 		}
-		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
-		logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
+
+		err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
+		if err != nil {
+			return nil, err
+		}
+
+		initSensorProcess(cancelSensorProcessCtx, cartoSvc)
+		return cartoSvc, nil
+	}
+
+	err = initCartoGrpcServer(ctx, cancelCtx, cartoSvc)
+	if err != nil {
+		return nil, err
+	}
+	return cartoSvc, nil
+}
+
+func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (cartofacade.CartoAlgoConfig, error) {
+	cartoAlgoCfg := defaultCartoAlgoCfg
+	for k, val := range configParams {
+		switch k {
+		case "optimize_on_start":
+			if val == "true" {
+				cartoAlgoCfg.OptimizeOnStart = true
+			}
+		case "optimize_every_n_nodes":
+			iVal, err := strconv.Atoi(val)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.OptimizeEveryNNodes = iVal
+		case "num_range_data":
+			iVal, err := strconv.Atoi(val)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.NumRangeData = iVal
+		case "missing_data_ray_length":
+			fVal, err := strconv.ParseFloat(val, 32)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MissingDataRayLength = float32(fVal)
+		case "max_range":
+			fVal, err := strconv.ParseFloat(val, 32)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MaxRange = float32(fVal)
+		case "min_range":
+			fVal, err := strconv.ParseFloat(val, 32)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MinRange = float32(fVal)
+		case "max_submaps_to_keep":
+			iVal, err := strconv.Atoi(val)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MaxSubmapsToKeep = iVal
+		case "fresh_submaps_count":
+			iVal, err := strconv.Atoi(val)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.FreshSubmapsCount = iVal
+		case "min_covered_area":
+			fVal, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MinCoveredArea = fVal
+		case "min_added_submaps_count":
+			iVal, err := strconv.Atoi(val)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MinAddedSubmapsCount = iVal
+		case "occupied_space_weight":
+			fVal, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.OccupiedSpaceWeight = fVal
+		case "translation_weight":
+			fVal, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.TranslationWeight = fVal
+		case "rotation_weight":
+			fVal, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.RotationWeight = fVal
+			// ignore mode as it is a special case
+		case "mode":
+		default:
+			logger.Warnf("unused config param: %s: %s", k, val)
+		}
+	}
+	return cartoAlgoCfg, nil
+}
+
+// initCartoFacade
+// 1. creates a new initCartoFacade
+// 2. initializes it and starts it
+// 3. terminates it if start fails.
+func initCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
+	cartoAlgoConfig, err := parseCartoAlgoConfig(cartoSvc.configParams, cartoSvc.logger)
+	if err != nil {
+		return err
+	}
+
+	cartoCfg := cartofacade.CartoConfig{
+		Sensors:            cartoSvc.sensors,
+		MapRateSecond:      cartoSvc.mapRateSec,
+		DataDir:            cartoSvc.dataDirectory,
+		ComponentReference: cartoSvc.primarySensorName,
+		LidarConfig:        cartofacade.TwoD,
+	}
+
+	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
+	err = cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
+	if err != nil {
+		cartoSvc.logger.Errorw("cartofacade initialize failed", "error", err)
+		return err
+	}
+	err = cf.Start(ctx, cartoSvc.cartoFacadeTimeout)
+	if err != nil {
+		cartoSvc.logger.Errorw("cartofacade start failed", "error", err)
+		termErr := cf.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
+		if termErr != nil {
+			cartoSvc.logger.Errorw("cartofacade terminate failed", "error", termErr)
+			return termErr
+		}
+		return err
+	}
+
+	cartoSvc.cartofacade = &cf
+
+	return nil
+}
+
+func terminateCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
+	if cartoSvc.cartofacade == nil {
+		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
+		return nil
+	}
+	stopErr := cartoSvc.cartofacade.Stop(ctx, cartoSvc.cartoFacadeTimeout)
+	if stopErr != nil {
+		cartoSvc.logger.Errorw("cartofacade stop failed", "error", stopErr)
+	}
+
+	err := cartoSvc.cartofacade.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
+	if err != nil {
+		cartoSvc.logger.Errorw("cartofacade terminate failed", "error", err)
+		return err
+	}
+	return stopErr
+}
+
+func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerService) error {
+	if cartoSvc.primarySensorName != "" {
+		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, cartoSvc.lidar,
+			cartoSvc.sensorValidationMaxTimeoutSec, cartoSvc.sensorValidationIntervalSec, cartoSvc.logger); err != nil {
+			return errors.Wrap(err, "getting and saving data failed")
+		}
+		cartoSvc.StartDataProcess(cancelCtx, cartoSvc.lidar, nil)
+		cartoSvc.logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 	}
 
 	if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
-		return nil, errors.Wrap(err, "error with slam service slam process")
+		return errors.Wrap(err, "error with slam service slam process")
 	}
 
-	client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, dialMaxTimeoutSec, logger)
+	client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, cartoSvc.dialMaxTimeoutSec, cartoSvc.logger)
 	if err != nil {
-		return nil, errors.Wrap(err, "error with initial grpc client to slam algorithm")
+		return errors.Wrap(err, "error with initial grpc client to slam algorithm")
 	}
 	cartoSvc.clientAlgo = client
 	cartoSvc.clientAlgoClose = clientClose
 
-	success = true
-	return cartoSvc, nil
+	return nil
 }
 
 // cartographerService is the structure of the slam service.
@@ -184,32 +436,58 @@ type cartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
 	primarySensorName string
+	lidar             lidar.Lidar
 	executableName    string
 	subAlgo           SubAlgo
-	slamProcess       pexec.ProcessManager
-	clientAlgo        pb.SLAMServiceClient
-	clientAlgoClose   func() error
+	// deprecated
+	slamProcess pexec.ProcessManager
+	// deprecated
+	clientAlgo pb.SLAMServiceClient
+	// deprecated
+	clientAlgoClose func() error
 
-	configParams        map[string]string
-	dataDirectory       string
+	configParams  map[string]string
+	dataDirectory string
+	sensors       []string
+	// deprecated
 	deleteProcessedData bool
-	useLiveData         bool
+	// deprecated
+	useLiveData bool
 
+	modularizationV2Enabled bool
+	cartofacade             *cartofacade.CartoFacade
+	cartoFacadeTimeout      time.Duration
+
+	// deprecated
 	port       string
 	dataRateMs int
 	mapRateSec int
 
+	// deprecated
 	cancelFunc              func()
+	cancelSensorProcessFunc func()
+	cancelCartoFacadeFunc   func()
 	logger                  golog.Logger
+	// deprecated
 	activeBackgroundWorkers sync.WaitGroup
+	sensorProcessWorkers    sync.WaitGroup
+	cartoFacadeWorkers      sync.WaitGroup
 
-	bufferSLAMProcessLogs        bool
-	slamProcessLogReader         io.ReadCloser
-	slamProcessLogWriter         io.WriteCloser
+	// deprecated
+	bufferSLAMProcessLogs bool
+	// deprecated
+	slamProcessLogReader io.ReadCloser
+	// deprecated
+	slamProcessLogWriter io.WriteCloser
+	// deprecated
 	slamProcessBufferedLogReader bufio.Reader
 
-	localizationMode bool
-	mapTimestamp     time.Time
+	localizationMode              bool
+	mapTimestamp                  time.Time
+	sensorValidationMaxTimeoutSec int
+	sensorValidationIntervalSec   int
+	// deprecated
+	dialMaxTimeoutSec int
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -349,6 +627,24 @@ func (cartoSvc *cartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *cartographerService) Close(ctx context.Context) error {
+	// TODO: Make this atomic & idempotent
+	if cartoSvc.modularizationV2Enabled {
+		// stop sensor process workers
+		cartoSvc.cancelSensorProcessFunc()
+		cartoSvc.sensorProcessWorkers.Wait()
+
+		// terminate carto facade
+		err := terminateCartoFacade(ctx, cartoSvc)
+		if err != nil {
+			cartoSvc.logger.Errorw("close hit error", "error", err)
+		}
+
+		// stop carto facade workers
+		cartoSvc.cancelCartoFacadeFunc()
+		cartoSvc.cartoFacadeWorkers.Wait()
+		return nil
+	}
+
 	defer func() {
 		if cartoSvc.clientAlgoClose != nil {
 			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)

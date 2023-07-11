@@ -95,8 +95,13 @@ else
 	$(error "Unsupported system. Only apt and brew currently supported.")
 endif
 
-build: ensure-submodule-initialized grpc/buf build-module
+build: bin/cartographer-module
+
+viam-cartographer/build/carto_grpc_server: ensure-submodule-initialized grpc/buf
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
+
+bin/cartographer-module: viam-cartographer/build/carto_grpc_server
+	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 
@@ -110,9 +115,6 @@ build-asan: build-debug
 
 build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
 build-debug: build
-
-build-module:
-	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
 test-cpp:
 	viam-cartographer/build/unit_tests -p -l all

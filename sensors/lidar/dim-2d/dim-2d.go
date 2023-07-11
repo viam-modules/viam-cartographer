@@ -11,6 +11,7 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
@@ -52,6 +53,62 @@ func NewLidar(
 	}
 
 	return lidar, nil
+}
+
+// GetTimedData returns a 2d lidar reading, the timestamp from when it wask taken
+// (either in live mode or offline mode)
+// and an error if an error occurred getting the lidar data or parsing the offline
+// timestamp.
+func GetTimedData(ctx context.Context, lidar lidar.Lidar) (time.Time, pointcloud.PointCloud, error) {
+	ctx, md := contextutils.ContextWithMetadata(ctx)
+	reqTime := time.Now().UTC()
+	pointcloud, err := lidar.GetData(ctx)
+	if err != nil {
+		return reqTime, nil, err
+	}
+
+	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+	if ok {
+		reqTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+		if err != nil {
+			return reqTime, nil, err
+		}
+	}
+	return reqTime, pointcloud, nil
+}
+
+// ValidateGetData checks every sensorValidationIntervalSec if the provided lidar
+// returned a valid timed lidar readings every sensorValidationIntervalSec
+// until either success or sensorValidationMaxTimeoutSec has elapsed.
+// returns an error if no valid lidar readings were returned.
+func ValidateGetData(
+	ctx context.Context,
+	lidar lidar.Lidar,
+	sensorValidationMaxTimeout time.Duration,
+	sensorValidationInterval time.Duration,
+	logger golog.Logger,
+) error {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateGetData")
+	defer span.End()
+
+	startTime := time.Now().UTC()
+
+	for {
+		_, _, err := GetTimedData(ctx, lidar)
+		if err == nil {
+			break
+		}
+
+		logger.Debugw("ValidateGetData hit error: ", "error", err)
+		if time.Since(startTime) >= sensorValidationMaxTimeout {
+			return errors.Wrap(err, "ValidateGetData timeout")
+		}
+		if !goutils.SelectContextOrWait(ctx, sensorValidationInterval) {
+			return ctx.Err()
+		}
+	}
+
+	return nil
 }
 
 // ValidateGetAndSaveData makes sure that the provided sensor is actually a lidar and can

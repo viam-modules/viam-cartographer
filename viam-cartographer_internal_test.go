@@ -5,6 +5,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	commonv1 "go.viam.com/api/common/v1"
@@ -16,7 +17,8 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	inject "github.com/viamrobotics/viam-cartographer/internal/inject"
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
+	inject "github.com/viamrobotics/viam-cartographer/testhelper/inject"
 )
 
 type pointCloudClientMock struct {
@@ -395,5 +397,90 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 			test.That(t, err.Error(), test.ShouldContainSubstring, "no GetInternalState defined for injected SLAM service client")
 			test.That(t, callback, test.ShouldBeNil)
 		})
+	})
+}
+
+func TestParseCartoAlgoConfig(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+
+	t.Run("returns default when config params are empty", func(t *testing.T) {
+		defaultCartoAlgoCfg := cartofacade.CartoAlgoConfig{
+			OptimizeOnStart:      false,
+			OptimizeEveryNNodes:  3,
+			NumRangeData:         30,
+			MissingDataRayLength: 25.0,
+			MaxRange:             25.0,
+			MinRange:             0.2,
+			MaxSubmapsToKeep:     3,
+			FreshSubmapsCount:    3,
+			MinCoveredArea:       1.0,
+			MinAddedSubmapsCount: 1,
+			OccupiedSpaceWeight:  20.0,
+			TranslationWeight:    10.0,
+			RotationWeight:       1.0,
+		}
+
+		configParams := map[string]string{}
+		cartoAlgoConfig, err := parseCartoAlgoConfig(configParams, logger)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, cartoAlgoConfig, test.ShouldResemble, defaultCartoAlgoCfg)
+	})
+
+	t.Run("returns overrides when config is non empty", func(t *testing.T) {
+		configParams := map[string]string{
+			"optimize_on_start":       "true",
+			"optimize_every_n_nodes":  "1",
+			"num_range_data":          "2",
+			"missing_data_ray_length": "3.0",
+			"max_range":               "4.0",
+			"min_range":               "5.0",
+			"max_submaps_to_keep":     "6",
+			"fresh_submaps_count":     "7",
+			"min_covered_area":        "8.0",
+			"min_added_submaps_count": "9",
+			"occupied_space_weight":   "10.0",
+			"translation_weight":      "11.0",
+			"rotation_weight":         "12.0",
+		}
+
+		overRidenCartoAlgoCfg := cartofacade.CartoAlgoConfig{
+			OptimizeOnStart:      true,
+			OptimizeEveryNNodes:  1,
+			NumRangeData:         2,
+			MissingDataRayLength: 3.0,
+			MaxRange:             4.0,
+			MinRange:             5.0,
+			MaxSubmapsToKeep:     6,
+			FreshSubmapsCount:    7,
+			MinCoveredArea:       8.0,
+			MinAddedSubmapsCount: 9,
+			OccupiedSpaceWeight:  10.0,
+			TranslationWeight:    11.0,
+			RotationWeight:       12.0,
+		}
+
+		cartoAlgoConfig, err := parseCartoAlgoConfig(configParams, logger)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, cartoAlgoConfig, test.ShouldResemble, overRidenCartoAlgoCfg)
+	})
+
+	t.Run("returns error when unsupported param provided", func(t *testing.T) {
+		configParams := map[string]string{
+			"optimize_on_start": "true",
+			"invalid_param":     "hihi",
+		}
+
+		_, err := parseCartoAlgoConfig(configParams, logger)
+		test.That(t, err, test.ShouldBeNil)
+	})
+
+	t.Run("returns error when param type is invalid", func(t *testing.T) {
+		configParams := map[string]string{
+			"optimize_every_n_nodes": "hihi",
+		}
+
+		cartoAlgoConfig, err := parseCartoAlgoConfig(configParams, logger)
+		test.That(t, err, test.ShouldBeError, errors.New("strconv.Atoi: parsing \"hihi\": invalid syntax"))
+		test.That(t, cartoAlgoConfig, test.ShouldResemble, defaultCartoAlgoCfg)
 	})
 }

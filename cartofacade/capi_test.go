@@ -72,7 +72,7 @@ func TestGetConfig(t *testing.T) {
 
 		freeBstringArray(vcc.sensors, vcc.sensors_len)
 
-		test.That(t, vcc.lidar_config, test.ShouldEqual, twoD)
+		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
 }
 

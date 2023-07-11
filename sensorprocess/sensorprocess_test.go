@@ -10,8 +10,8 @@ import (
 	"go.viam.com/test"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
 type addSensorReadingArgs struct {
