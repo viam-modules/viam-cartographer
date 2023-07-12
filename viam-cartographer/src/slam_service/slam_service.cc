@@ -17,6 +17,8 @@
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
+#include "github.com/open-source-parsers/jsoncpp"
+
 namespace {
 // Number of bytes in a pixel
 static const int bytesPerPixel = 4;
@@ -677,7 +679,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         // Set TrajectoryBuilder
         trajectory_id = map_builder.SetTrajectoryBuilder(&trajectory_builder,
-                                                         {kRangeSensorId});
+                                                         {kRangeSensorId, kIMUSensorId});
         VLOG(1) << "Using trajectory ID: " << trajectory_id;
     }
 
@@ -691,7 +693,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         cartographer::transform::Rigid3d();
     while (file != "") {
         // Ignore files that are not *.pcd files
-        if (file.find(".pcd") == std::string::npos) {
+        if (file.find(".pcd") == std::string::npos || file.find(".json") == std::string::npos) {
             file = GetNextDataFile();
             continue;
         }
@@ -729,14 +731,29 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         // Add data to the map_builder to add to the map
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            auto measurement = map_builder.GetDataFromFile(file);
-            if (measurement.ranges.size() > 0) {
-                trajectory_builder->AddSensorData(kRangeSensorId.id,
-                                                  measurement);
-                auto local_poses = map_builder.GetLocalSlamResultPoses();
-                if (local_poses.size() > 0) {
-                    tmp_global_pose = map_builder.GetGlobalPose(
-                        trajectory_id, local_poses.back());
+            if file.find(".pcd") {
+                auto measurement = map_builder.GetDataFromFile(file);
+                if (measurement.ranges.size() > 0) {
+                    trajectory_builder->AddSensorData(kRangeSensorId.id,
+                                                      measurement);
+                    auto local_poses = map_builder.GetLocalSlamResultPoses();
+                    if (local_poses.size() > 0) {
+                        tmp_global_pose = map_builder.GetGlobalPose(
+                            trajectory_id, local_poses.back());
+                    }
+                }
+            }
+            if file.find(".json") {
+                Json::Reader reader;
+                auto measurement = ifstream file(file);
+                if (measurement.ranges.size() > 0) {
+                    trajectory_builder->AddSensorData(kIMUSensorId.id,
+                                                      measurement);
+                    auto local_poses = map_builder.GetLocalSlamResultPoses();
+                    if (local_poses.size() > 0) {
+                        tmp_global_pose = map_builder.GetGlobalPose(
+                            trajectory_id, local_poses.back());
+                    }
                 }
             }
         }
