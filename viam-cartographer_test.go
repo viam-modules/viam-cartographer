@@ -83,7 +83,6 @@ func TestNew(t *testing.T) {
 
 	t.Run("Successful creation of cartographer slam service with no sensor", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
-		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &vcConfig.Config{
 			Sensors:       []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
@@ -101,7 +100,6 @@ func TestNew(t *testing.T) {
 
 	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
-		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &vcConfig.Config{
 			Sensors:       []string{"lidar", "one-too-many"},
 			ConfigParams:  map[string]string{"mode": "2d"},
@@ -625,6 +623,102 @@ func TestSLAMProcess(t *testing.T) {
 	})
 
 	internaltesthelper.ClearDirectory(t, dataDir)
+}
+
+func TestClose(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+	ctx := context.Background()
+
+	t.Run("is idempotent and makes all endpoints return closed errors", func(t *testing.T) {
+		dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
+		test.That(t, err, test.ShouldBeNil)
+
+		grpcServer, port := setupTestGRPCServer(t)
+		test.That(t, err, test.ShouldBeNil)
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_false,
+		}
+
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
+
+		grpcServer.Stop()
+		// call twice, assert result is the same to prove idempotence
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+
+		pose, componentRef, err := svc.GetPosition(ctx)
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+
+		gpcmF, err := svc.GetPointCloudMap(ctx)
+		test.That(t, gpcmF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+
+		gisF, err := svc.GetInternalState(ctx)
+		test.That(t, gisF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+
+		mapTime, err := svc.GetLatestMapInfo(ctx)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, mapTime, test.ShouldResemble, time.Time{})
+
+		cmd := map[string]interface{}{}
+		resp, err := svc.DoCommand(ctx, cmd)
+		test.That(t, resp, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+	})
+
+	t.Run("is idempotent and makes all endpoints return closed errors when feature flag enabled", func(t *testing.T) {
+		termFunc := initTestCL(t, logger)
+		defer termFunc()
+
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+
+		attrCfg := &vcConfig.Config{
+			ModularizationV2Enabled: &_true,
+			Sensors:                 []string{"replay_sensor"},
+			ConfigParams:            map[string]string{"mode": "2d"},
+			DataDirectory:           dataDirectory,
+			UseLiveData:             &_false,
+			MapRateSec:              &testMapRateSec,
+		}
+
+		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
+
+		// call twice, assert result is the same to prove idempotence
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+
+		pose, componentRef, err := svc.GetPosition(ctx)
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+
+		gpcmF, err := svc.GetPointCloudMap(ctx)
+		test.That(t, gpcmF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+
+		gisF, err := svc.GetInternalState(ctx)
+		test.That(t, gisF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+
+		mapTime, err := svc.GetLatestMapInfo(ctx)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, mapTime, test.ShouldResemble, time.Time{})
+
+		cmd := map[string]interface{}{}
+		resp, err := svc.DoCommand(ctx, cmd)
+		test.That(t, resp, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+	})
 }
 
 func TestDoCommand(t *testing.T) {
