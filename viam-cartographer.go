@@ -580,7 +580,7 @@ func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetLatestMapInfo called after closed")
-		return cartoSvc.mapTimestamp, ErrClosed
+		return time.Time{}, ErrClosed
 	}
 
 	return cartoSvc.mapTimestamp, nil
