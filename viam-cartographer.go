@@ -4,6 +4,7 @@ package viamcartographer
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -54,6 +55,7 @@ const (
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
 	defaultCartoFacadeTimeout            = 5 * time.Second
+	chunkSizeBytes                       = 1 * 1024 * 1024
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -572,7 +574,30 @@ func (cartoSvc *cartographerService) GetInternalState(ctx context.Context) (func
 		return nil, ErrClosed
 	}
 
+	if cartoSvc.modularizationV2Enabled {
+		return cartoSvc.getInternalStateModularizationV2Enabled(ctx)
+	}
+
 	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
+}
+
+func (cartoSvc *cartographerService) getInternalStateModularizationV2Enabled(ctx context.Context) (func() ([]byte, error), error) {
+	chunk := make([]byte, chunkSizeBytes)
+	is, err := cartoSvc.cartofacade.GetInternalState(ctx, cartoSvc.cartoFacadeTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	internalStateReader := bytes.NewReader(is)
+
+	f := func() ([]byte, error) {
+		bytesRead, err := internalStateReader.Read(chunk)
+		if err != nil {
+			return nil, err
+		}
+		return chunk[:bytesRead], err
+	}
+	return f, nil
 }
 
 // GetLatestMapInfo returns the timestamp  associated with the latest call to GetPointCloudMap,
