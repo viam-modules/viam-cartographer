@@ -460,14 +460,14 @@ func testApisThatReturnCallbackFuncsSuccess(
 	}
 
 	setMockFunc(mockCartoFacade, bytes)
-
-	getAndCheckCallbackFunc(t, api, false)
+	getAndCheckCallbackFunc(t, api, false, bytes)
 }
 
 func getAndCheckCallbackFunc(
 	t *testing.T,
 	api func(context.Context) (func() ([]byte, error), error),
 	emptyBytes bool,
+	inputBytes []byte,
 ) {
 	callback, err := api(context.Background())
 	test.That(t, err, test.ShouldBeNil)
@@ -478,6 +478,7 @@ func getAndCheckCallbackFunc(
 		test.That(t, bytes, test.ShouldBeNil)
 	} else {
 		test.That(t, bytes, test.ShouldNotBeNil)
+		test.That(t, bytes, test.ShouldResemble, inputBytes)
 	}
 }
 
@@ -519,7 +520,7 @@ func testApisThatReturnCallbackFuncs(
 
 	t.Run("no bytes success", func(t *testing.T) {
 		setMockFunc(mockCartoFacade, []byte{})
-		getAndCheckCallbackFunc(t, api, true)
+		getAndCheckCallbackFunc(t, api, true, []byte{})
 	})
 }
 
