@@ -442,6 +442,87 @@ func setMockGetPointCloudFunc(
 	}
 }
 
+func testApisThatReturnCallbackFuncsSuccess(
+	t *testing.T,
+	path string,
+	setMockFunc func(*cartofacade.Mock, []byte),
+	mockCartoFacade *cartofacade.Mock,
+	api func(context.Context) (func() ([]byte, error), error),
+	fileIsLargerThanChunkSize bool,
+) {
+	bytes, err := os.ReadFile(artifact.MustPath(path))
+	test.That(t, err, test.ShouldBeNil)
+
+	if fileIsLargerThanChunkSize {
+		test.That(t, len(bytes), test.ShouldBeGreaterThan, 1024*1024)
+	} else {
+		test.That(t, len(bytes), test.ShouldBeLessThan, 1024*1024)
+	}
+
+	setMockFunc(mockCartoFacade, bytes)
+
+	getAndCheckCallbackFunc(t, api, false)
+}
+
+func getAndCheckCallbackFunc(
+	t *testing.T,
+	api func(context.Context) (func() ([]byte, error), error),
+	emptyBytes bool,
+) {
+	callback, err := api(context.Background())
+	test.That(t, err, test.ShouldBeNil)
+	bytes, err := slam.HelperConcatenateChunksToFull(callback)
+	test.That(t, err, test.ShouldBeNil)
+
+	if emptyBytes {
+		test.That(t, bytes, test.ShouldBeNil)
+	} else {
+		test.That(t, bytes, test.ShouldNotBeNil)
+	}
+}
+
+func testApisThatReturnCallbackFuncs(
+	t *testing.T,
+	svc *cartographerService,
+	mockCartoFacade *cartofacade.Mock,
+	pathToFileLargerThanChunkSize string,
+	pathToFileSmallerThanChunkSize string,
+	api func(context.Context) (func() ([]byte, error), error),
+	setMockFunc func(*cartofacade.Mock, []byte),
+) {
+	svc.cartofacade = mockCartoFacade
+	svc.modularizationV2Enabled = true
+
+	t.Run("returned value smaller than 1 mb limit - success", func(t *testing.T) {
+		path := pathToFileLargerThanChunkSize
+		testApisThatReturnCallbackFuncsSuccess(
+			t,
+			path,
+			setMockFunc,
+			mockCartoFacade,
+			api,
+			false,
+		)
+	})
+
+	t.Run("returned value larger than 1 mb limit - success", func(t *testing.T) {
+		path := pathToFileSmallerThanChunkSize
+		testApisThatReturnCallbackFuncsSuccess(
+			t,
+			path,
+			setMockFunc,
+			mockCartoFacade,
+			api,
+			true,
+		)
+	})
+
+	t.Run("no bytes success", func(t *testing.T) {
+		setMockFunc(mockCartoFacade, []byte{})
+		getAndCheckCallbackFunc(t, api, true)
+	})
+}
+
 func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
@@ -562,86 +643,6 @@ func setMockGetInternalStateFunc(
 	) ([]byte, error) {
 		return pc, nil
 	}
-}
-
-func testApisThatReturnCallbackFuncsSuccess(
-	t *testing.T,
-	path string,
-	setMockFunc func(*cartofacade.Mock, []byte),
-	mockCartoFacade *cartofacade.Mock,
-	api func(context.Context) (func() ([]byte, error), error),
-	fileIsLargerThanChunkSize bool,
-) {
-	bytes, err := os.ReadFile(artifact.MustPath(path))
-	test.That(t, err, test.ShouldBeNil)
-
-	if fileIsLargerThanChunkSize {
-		test.That(t, len(bytes), test.ShouldBeGreaterThan, 1024*1024)
-	} else {
-		test.That(t, len(bytes), test.ShouldBeLessThan, 1024*1024)
-	}
-
-	setMockFunc(mockCartoFacade, bytes)
-
-	getAndCheckCallbackFunc(t, api, false)
-}
-
-func getAndCheckCallbackFunc(
-	t *testing.T,
-	api func(context.Context) (func() ([]byte, error), error),
-	emptyBytes bool,
-) {
-	callback, err := api(context.Background())
-	test.That(t, err, test.ShouldBeNil)
-	bytes, err := slam.HelperConcatenateChunksToFull(callback)
-	test.That(t, err, test.ShouldBeNil)
-	if emptyBytes {
-		test.That(t, bytes, test.ShouldBeNil)
-	} else {
-		test.That(t, bytes, test.ShouldNotBeNil)
-	}
-}
-
-func testApisThatReturnCallbackFuncs(
-	t *testing.T,
-	svc *cartographerService,
-	mockCartoFacade *cartofacade.Mock,
-	pathToFileLargerThanChunkSize string,
-	pathToFileSmallerThanChunkSize string,
-	api func(context.Context) (func() ([]byte, error), error),
-	setMockFunc func(*cartofacade.Mock, []byte),
-) {
-	svc.cartofacade = mockCartoFacade
-	svc.modularizationV2Enabled = true
-
-	t.Run("returned value smaller than 1 mb limit - success", func(t *testing.T) {
-		path := pathToFileLargerThanChunkSize
-		testApisThatReturnCallbackFuncsSuccess(
-			t,
-			path,
-			setMockFunc,
-			mockCartoFacade,
-			api,
-			false,
-		)
-	})
-
-	t.Run("returned value larger than 1 mb limit - success", func(t *testing.T) {
-		path := pathToFileSmallerThanChunkSize
-		testApisThatReturnCallbackFuncsSuccess(
-			t,
-			path,
-			setMockFunc,
-			mockCartoFacade,
-			api,
-			true,
-		)
-	})
-
-	t.Run("no bytes success", func(t *testing.T) {
-		setMockFunc(mockCartoFacade, []byte{})
-		getAndCheckCallbackFunc(t, api, true)
-	})
 }
 
 func TestGetInternalStateModularizationV2Endpoint(t *testing.T) {
