@@ -119,15 +119,17 @@ func New(
 		return nil, err
 	}
 
-	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig.LidarSensors, logger)
+	getLidar, err := dim2d.NewLidar(ctx, deps, svcConfig.LidarSensors, logger)
 	if err != nil {
 		return nil, err
 	}
-
-	imu, err := imu.New(deps, svcConfig.IMUSensors, 0)
+	getIMU, err := imu.New(deps, svcConfig.IMUSensors, 0)
 	if err != nil {
 		return nil, err
+	}
+	activeSensors := &slamSensors{
+		lidar: getLidar,
+		imu:   getIMU,
 	}
 
 	// Need to pass in a long-lived context because ctx is short-lived
@@ -166,11 +168,11 @@ func New(
 	}()
 
 	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveLidarData(cancelCtx, cartoSvc.dataDirectory, lidar,
+		if err := dim2d.ValidateGetAndSaveLidarData(cancelCtx, cartoSvc.dataDirectory, activeSensors.lidar,
 			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "getting and saving data failed")
 		}
-		cartoSvc.StartDataProcess(cancelCtx, lidar, nil)
+		cartoSvc.StartDataProcess(cancelCtx, activeSensors.lidar, nil)
 		logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 	}
 
@@ -222,6 +224,11 @@ type cartographerService struct {
 
 	localizationMode bool
 	mapTimestamp     time.Time
+}
+
+type slamSensors struct {
+	lidar lidar.Lidar
+	imu   imu.IMU
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -277,7 +284,7 @@ func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
 func (cartoSvc *cartographerService) StartDataProcess(
 	ctx context.Context,
-	lidar lidar.Lidar,
+	sensors *slamSensors,
 	c chan int,
 ) {
 	cartoSvc.activeBackgroundWorkers.Add(1)
@@ -293,14 +300,14 @@ func (cartoSvc *cartographerService) StartDataProcess(
 		if !cartoSvc.useLiveData {
 			// If we're not using live data, we read from the sensor as fast as
 			// possible, since the sensor is just playing back pre-captured data.
-			cartoSvc.readData(ctx, lidar, c)
+			cartoSvc.readData(ctx, sensors, c)
 		} else {
-			cartoSvc.readDataOnInterval(ctx, lidar, c)
+			cartoSvc.readDataOnInterval(ctx, sensors, c)
 		}
 	})
 }
 
-func (cartoSvc *cartographerService) readData(ctx context.Context, lidar lidar.Lidar, c chan int) {
+func (cartoSvc *cartographerService) readData(ctx context.Context, sensors *slamSensors, c chan int) {
 	for {
 		if err := ctx.Err(); err != nil {
 			if !errors.Is(err, context.Canceled) {
@@ -309,13 +316,15 @@ func (cartoSvc *cartographerService) readData(ctx context.Context, lidar lidar.L
 			return
 		}
 
-		cartoSvc.getNextDataPoint(ctx, lidar, c)
+		cartoSvc.getNextDataPoint(ctx, sensors, c)
 	}
 }
 
-func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	ticker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
-	defer ticker.Stop()
+func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sensors *slamSensors, c chan int) {
+	lidarTicker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
+	defer lidarTicker.Stop()
+	imuTicker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.imuDataRateMs))
+	defer imuTicker.Stop()
 	defer cartoSvc.activeBackgroundWorkers.Done()
 
 	for {
@@ -329,7 +338,7 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-lidarTicker.C:
 			if err := ctx.Err(); err != nil {
 				if !errors.Is(err, context.Canceled) {
 					cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
@@ -346,10 +355,20 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 	}
 }
 
-func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-		cartoSvc.logger.Warn(err)
+func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, sensor *slamSensors, c chan int) {
+	// Get lidar data
+	if (sensor.lidar != lidar.Lidar{} && sensor.imu == imu.IMU{}) {
+		if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, sensor.lidar, cartoSvc.logger); err != nil {
+			cartoSvc.logger.Warn(err)
+		}
 	}
+	// Get IMU data
+	if (sensor.lidar == lidar.Lidar{} && sensor.imu != imu.IMU{}) {
+		if _, err := imu.GetAndSaveIMUData(ctx, cartoSvc.dataDirectory, sensor.imu, cartoSvc.logger); err != nil {
+			cartoSvc.logger.Warn(err)
+		}
+	}
+
 	if c != nil {
 		c <- 1
 	}
@@ -390,9 +409,11 @@ func (cartoSvc *cartographerService) Close(ctx context.Context) error {
 func (cartoSvc *cartographerService) GetSLAMProcessConfig() pexec.ProcessConfig {
 	var args []string
 
-	args = append(args, "-sensors="+cartoSvc.primarySensorName)
+	args = append(args, "-lidar_sensors="+cartoSvc.primarySensorName)
+	args = append(args, "-imu_sensors="+cartoSvc.imuSensorName)
 	args = append(args, "-config_param="+vcUtils.DictToString(cartoSvc.configParams))
 	args = append(args, "-data_rate_ms="+strconv.Itoa(cartoSvc.dataRateMs))
+	args = append(args, "-imu_data_rate_ms="+strconv.Itoa(cartoSvc.imuDataRateMs))
 	args = append(args, "-map_rate_sec="+strconv.Itoa(cartoSvc.mapRateSec))
 	args = append(args, "-data_dir="+cartoSvc.dataDirectory)
 	args = append(args, "-delete_processed_data="+strconv.FormatBool(cartoSvc.deleteProcessedData))
