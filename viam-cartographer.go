@@ -7,6 +7,7 @@ import (
 	"context"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -226,6 +227,7 @@ func New(
 		cartoFacadeTimeout:            cartoFacadeTimeout,
 		localizationMode:              mapRateSec == 0,
 		mapTimestamp:                  time.Now().UTC(),
+		jobDone:                       false,
 	}
 	defer func() {
 		if err != nil {
@@ -493,6 +495,7 @@ type cartographerService struct {
 	sensorValidationIntervalSec   int
 	// deprecated
 	dialMaxTimeoutSec int
+	jobDone           bool
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -660,7 +663,18 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 
 func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
 	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-		cartoSvc.logger.Warn(err)
+		if strings.Contains(err.Error(), "reached end of dataset") {
+			if !cartoSvc.jobDone {
+				cartoSvc.logger.Warn(err)
+				_, err = os.Create(filepath.Join(cartoSvc.dataDirectory, "job_done.txt"))
+				if err != nil {
+					cartoSvc.logger.Warn(err)
+				}
+				cartoSvc.jobDone = true
+			}
+		} else {
+			cartoSvc.logger.Warn(err)
+		}
 	}
 	if c != nil {
 		c <- 1
