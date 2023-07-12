@@ -549,13 +549,14 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
 
-  if cartoSvc.closed {
+	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
 		return nil, ErrClosed
 	}
-  
+
 	if cartoSvc.modularizationV2Enabled {
 		return cartoSvc.getPointCloudMapModularizationV2(ctx)
+	}
 
 	if !cartoSvc.localizationMode {
 		cartoSvc.mapTimestamp = time.Now().UTC()
