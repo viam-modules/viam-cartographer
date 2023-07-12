@@ -28,6 +28,7 @@ import (
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/sensorprocess"
+	"github.com/viamrobotics/viam-cartographer/sensors/imu"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	dim2d "github.com/viamrobotics/viam-cartographer/sensors/lidar/dim-2d"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
@@ -417,7 +418,7 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *cartographerService) er
 
 func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *cartographerService) error {
 	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, cartoSvc.lidar,
+		if err := dim2d.ValidateGetAndSaveLidarData(cancelCtx, cartoSvc.dataDirectory, cartoSvc.lidar,
 			cartoSvc.sensorValidationMaxTimeoutSec, cartoSvc.sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return errors.Wrap(err, "getting and saving data failed")
 		}
@@ -588,9 +589,11 @@ func (cartoSvc *cartographerService) readData(ctx context.Context, lidar lidar.L
 	}
 }
 
-func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	ticker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
-	defer ticker.Stop()
+func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lidar lidar.Lidar, imu imu.IMU, c chan int) {
+	lidarTicker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
+	defer lidarTicker.Stop()
+	imuTicker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.imuDataRateMs))
+	defer imuTicker.Stop()
 	defer cartoSvc.activeBackgroundWorkers.Done()
 
 	for {
@@ -604,7 +607,7 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
+		case <-lidarTicker.C:
 			if err := ctx.Err(); err != nil {
 				if !errors.Is(err, context.Canceled) {
 					cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
@@ -621,10 +624,18 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 	}
 }
 
-func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-		cartoSvc.logger.Warn(err)
+func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, slamSensor interface{}, c chan int) {
+	switch sensor := slamSensor.(type) {
+	case lidar.Lidar:
+		if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, sensor, cartoSvc.logger); err != nil {
+			cartoSvc.logger.Warn(err)
+		}
+	case imu.IMU:
+		if _, err := imu.GetAndSaveIMUData(ctx, cartoSvc.dataDirectory, sensor, cartoSvc.logger); err != nil {
+			cartoSvc.logger.Warn(err)
+		}
 	}
+
 	if c != nil {
 		c <- 1
 	}

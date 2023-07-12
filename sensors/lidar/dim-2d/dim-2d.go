@@ -111,9 +111,9 @@ func ValidateGetData(
 	return nil
 }
 
-// ValidateGetAndSaveData makes sure that the provided sensor is actually a lidar and can
+// ValidateGetAndSaveLidarData makes sure that the provided sensor is actually a lidar and can
 // return pointclouds. It also ensures that saving the data to files works as intended.
-func ValidateGetAndSaveData(
+func ValidateGetAndSaveLidarData(
 	ctx context.Context,
 	dataDirectory string,
 	lidar lidar.Lidar,
@@ -121,7 +121,7 @@ func ValidateGetAndSaveData(
 	sensorValidationIntervalSec int,
 	logger golog.Logger,
 ) error {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateGetAndSaveData")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::ValidateGetAndSaveLidarData")
 	defer span.End()
 
 	var err error
@@ -130,7 +130,7 @@ func ValidateGetAndSaveData(
 	startTime := time.Now().UTC()
 
 	for {
-		path, err = GetAndSaveData(ctx, dataDirectory, lidar, logger)
+		path, err = GetAndSaveLidarData(ctx, dataDirectory, lidar, logger)
 		paths = append(paths, path)
 
 		if err == nil {
@@ -157,11 +157,11 @@ func ValidateGetAndSaveData(
 	return nil
 }
 
-// GetAndSaveData gets the pointcloud from the lidar and saves it to the provided data directory.
+// GetAndSaveLidarData gets the pointcloud from the lidar and saves it to the provided data directory.
 // On success, it returns the absolute filepath where the data was saved, along with any error
 // associated with the data saving.
-func GetAndSaveData(ctx context.Context, dataDirectory string, lidar lidar.Lidar, logger golog.Logger) (string, error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::GetAndSaveData")
+func GetAndSaveLidarData(ctx context.Context, dataDirectory string, lidar lidar.Lidar, logger golog.Logger) (string, error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::dim2d::GetAndSaveLidarData")
 	defer span.End()
 
 	ctx, md := contextutils.ContextWithMetadata(ctx)

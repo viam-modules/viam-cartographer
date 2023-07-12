@@ -4,11 +4,14 @@ package dataprocess
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/golang/geo/r3"
 	pc "go.viam.com/rdk/pointcloud"
+	"go.viam.com/rdk/spatialmath"
 )
 
 const (
@@ -28,6 +31,23 @@ func WritePCDToFile(pointcloud pc.PointCloud, filename string) error {
 	if err := pc.ToPCD(pointcloud, buf, 1); err != nil {
 		return err
 	}
+	return WriteBytesToFile(buf.Bytes(), filename)
+}
+
+// WriteJSONToFile encodes the imu data and then saves it to the passed filename.
+func WriteJSONToFile(linearAcceleration r3.Vector, angularVelocity spatialmath.AngularVelocity, filename string) error {
+	buf := new(bytes.Buffer)
+
+	jsonLinAcc, err := json.Marshal(linearAcceleration)
+	if err != nil {
+		return err
+	}
+	jsonAngVel, err := json.Marshal(angularVelocity)
+	if err != nil {
+		return err
+	}
+	buf.Write(jsonLinAcc)
+	buf.Write(jsonAngVel)
 	return WriteBytesToFile(buf.Bytes(), filename)
 }
 

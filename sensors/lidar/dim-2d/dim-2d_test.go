@@ -64,20 +64,20 @@ func TestNewLidar(t *testing.T) {
 	})
 }
 
-func TestGetAndSaveData(t *testing.T) {
+func TestGetAndSaveLidarData(t *testing.T) {
 	ctx := context.Background()
 	logger := golog.NewTestLogger(t)
 	dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	t.Run("Successful call to GetAndSaveData", func(t *testing.T) {
+	t.Run("Successful call to GetAndSaveLidarData", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
 		deps := testhelper.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(ctx, deps, sensors, logger)
 		test.That(t, actualLidar.Name, test.ShouldEqual, sensors[0])
 		test.That(t, err, test.ShouldBeNil)
 
-		_, err = dim2d.GetAndSaveData(ctx, dataDir, actualLidar, logger)
+		_, err = dim2d.GetAndSaveLidarData(ctx, dataDir, actualLidar, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		files, err := os.ReadDir(dataDir + "/data/")
@@ -88,20 +88,20 @@ func TestGetAndSaveData(t *testing.T) {
 	internaltesthelper.ClearDirectory(t, dataDir)
 }
 
-func TestValidateGetAndSaveData(t *testing.T) {
+func TestValidateGetAndSaveLidarData(t *testing.T) {
 	ctx := context.Background()
 	logger := golog.NewTestLogger(t)
 	dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	t.Run("Successful call to ValidateGetAndSaveData", func(t *testing.T) {
+	t.Run("Successful call to ValidateGetAndSaveLidarData", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
 		deps := testhelper.SetupDeps(sensors)
 		actualLidar, err := dim2d.NewLidar(ctx, deps, sensors, logger)
 		test.That(t, actualLidar.Name, test.ShouldEqual, sensors[0])
 		test.That(t, err, test.ShouldBeNil)
 
-		err = dim2d.ValidateGetAndSaveData(ctx,
+		err = dim2d.ValidateGetAndSaveLidarData(ctx,
 			dataDir,
 			actualLidar,
 			internaltesthelper.SensorValidationMaxTimeoutSecForTest,

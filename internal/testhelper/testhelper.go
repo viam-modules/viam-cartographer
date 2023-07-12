@@ -24,13 +24,13 @@ import (
 )
 
 const (
-	// SensorValidationMaxTimeoutSecForTest is used in the ValidateGetAndSaveData
-	// function to ensure that the sensor in the GetAndSaveData function
+	// SensorValidationMaxTimeoutSecForTest is used in the ValidateGetAndSaveLidarData
+	// function to ensure that the sensor in the GetAndSaveLidarData function
 	// returns data within an acceptable time.
 	SensorValidationMaxTimeoutSecForTest = 1
-	// SensorValidationIntervalSecForTest is used in the ValidateGetAndSaveData
+	// SensorValidationIntervalSecForTest is used in the ValidateGetAndSaveLidarData
 	// function for the while loop that attempts to grab data from the
-	// sensor that is used in the GetAndSaveData function.
+	// sensor that is used in the GetAndSaveLidarData function.
 	SensorValidationIntervalSecForTest = 1
 	testDialMaxTimeoutSec              = 1
 )
