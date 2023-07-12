@@ -97,6 +97,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 	}
 
 	deps := config.LidarSensors
+	deps = append(deps, config.IMUSensors...)
 
 	return deps, nil
 }

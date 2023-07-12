@@ -3,6 +3,7 @@ package imu
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"time"
 
@@ -27,6 +28,12 @@ type IMU struct {
 
 // New creates a new IMU sensor based on the sensor definition and the service config.
 func New(deps resource.Dependencies, sensors []string, sensorIndex int) (IMU, error) {
+
+	if len(sensors) == 0 { // empty IMU if none is specified
+		fmt.Println("beep")
+		fmt.Println(len(sensors))
+		return IMU{}, nil
+	}
 	name, err := utils.GetName(sensors, sensorIndex)
 	if err != nil {
 		return IMU{}, err

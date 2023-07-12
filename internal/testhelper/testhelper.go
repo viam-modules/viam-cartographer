@@ -12,13 +12,16 @@ import (
 	"testing"
 
 	"github.com/edaniels/golog"
+	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
+	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
+	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/rdk/testutils/inject"
 	"go.viam.com/rdk/utils/contextutils"
 	"go.viam.com/test"
@@ -64,10 +67,10 @@ type Service interface {
 }
 
 // SetupDeps returns the dependencies based on the sensors passed as arguments.
-func SetupDeps(sensors []string) resource.Dependencies {
+func SetupDeps(lidar_sensors []string, imu_sensors []string) resource.Dependencies {
 	deps := make(resource.Dependencies)
 
-	for _, sensor := range sensors {
+	for _, sensor := range lidar_sensors {
 		switch sensor {
 		case "good_lidar":
 			deps[camera.Named(sensor)] = getGoodLidar()
@@ -83,6 +86,20 @@ func SetupDeps(sensors []string) resource.Dependencies {
 			continue
 		}
 	}
+
+	for _, sensor := range imu_sensors {
+		switch sensor {
+		case "good_imu":
+			deps[movementsensor.Named(sensor)] = getGoodIMU()
+		case "invalid_sensor":
+			deps[movementsensor.Named(sensor)] = getInvalidIMUSensor()
+		case "gibberish":
+			return deps
+		default:
+			continue
+		}
+	}
+
 	return deps
 }
 
@@ -173,6 +190,30 @@ func getIntegrationLidar() *inject.Camera {
 	return cam
 }
 
+func getGoodIMU() *inject.MovementSensor {
+	injectIMU := &inject.MovementSensor{}
+	vec := r3.NewPreciseVector(1, 1, 1).Vector()
+	injectIMU.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		return vec, nil
+	}
+	injectIMU.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		return spatialmath.PointAngVel(vec, vec), nil
+	}
+	return injectIMU
+}
+
+func getInvalidIMUSensor() *inject.MovementSensor {
+	injectIMU := &inject.MovementSensor{}
+	injectIMU.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		return r3.Vector{}, errors.New("invalid sensor")
+	}
+	injectIMU.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
+	}
+
+	return injectIMU
+}
+
 // ClearDirectory deletes the contents in the path directory
 // without deleting path itself.
 func ClearDirectory(t *testing.T, path string) {
@@ -196,13 +237,15 @@ func CreateSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
-	deps := SetupDeps(cfg.Sensors)
+	deps := SetupDeps(cfg.LidarSensors, cfg.IMUSensors)
 
 	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
+	expectedDeps := cfg.LidarSensors
+	expectedDeps = append(expectedDeps, cfg.IMUSensors...)
+	test.That(t, sensorDeps, test.ShouldResemble, expectedDeps)
 
 	svc, err := viamcartographer.New(
 		ctx,

@@ -54,7 +54,7 @@ func NewLidar(
 	return lidar, nil
 }
 
-// ValidateGetAndSaveData makes sure that the provided sensor is actually a lidar and can
+// ValidateGetAndSaveLidarData makes sure that the provided sensor is actually a lidar and can
 // return pointclouds. It also ensures that saving the data to files works as intended.
 func ValidateGetAndSaveLidarData(
 	ctx context.Context,

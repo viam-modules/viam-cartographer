@@ -48,7 +48,8 @@ func TestNew(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{},
+			LidarSensors:  []string{},
+			IMUSensors:    []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
@@ -66,7 +67,8 @@ func TestNew(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		test.That(t, err, test.ShouldBeNil)
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"lidar", "one-too-many"},
+			LidarSensors:  []string{"lidar", "one-too-many"},
+			IMUSensors:    []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
@@ -83,7 +85,8 @@ func TestNew(t *testing.T) {
 
 	t.Run("Failed creation of cartographer slam service with non-existing sensor", func(t *testing.T) {
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"gibberish"},
+			LidarSensors:  []string{"gibberish"},
+			IMUSensors:    []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			DataRateMsec:  testDataRateMsec,
@@ -99,7 +102,46 @@ func TestNew(t *testing.T) {
 	t.Run("Successful creation of cartographer slam service with good lidar", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			LidarSensors:  []string{"good_lidar"},
+			IMUSensors:    []string{},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			DataRateMsec:  testDataRateMsec,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_true,
+		}
+
+		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
+
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
+
+	t.Run("Successful creation of cartographer slam service with good lidar and good imu", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		attrCfg := &vcConfig.Config{
+			LidarSensors:  []string{"good_lidar"},
+			IMUSensors:    []string{"good_imu"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDir,
+			DataRateMsec:  testDataRateMsec,
+			Port:          "localhost:" + strconv.Itoa(port),
+			UseLiveData:   &_true,
+		}
+
+		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
+
+		grpcServer.Stop()
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
+
+	t.Run("Failed creation of cartographer slam service with good lidar and invalid imu", func(t *testing.T) {
+		grpcServer, port := setupTestGRPCServer(t)
+		attrCfg := &vcConfig.Config{
+			LidarSensors:  []string{"good_lidar"},
+			IMUSensors:    []string{"invalid_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			DataRateMsec:  testDataRateMsec,
@@ -117,7 +159,8 @@ func TestNew(t *testing.T) {
 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"invalid_sensor"},
+			LidarSensors:  []string{"invalid_sensor"},
+			IMUSensors:    []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			DataRateMsec:  testDataRateMsec,
@@ -135,7 +178,8 @@ func TestNew(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{},
+			LidarSensors:  []string{},
+			IMUSensors:    []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
@@ -162,7 +206,8 @@ func TestNew(t *testing.T) {
 	t.Run("Successful creation of cartographer slam service in non localization mode", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{},
+			LidarSensors:  []string{},
+			IMUSensors:    []string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
@@ -195,7 +240,7 @@ func TestDataProcess(t *testing.T) {
 
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &vcConfig.Config{
-		Sensors:       []string{"good_lidar"},
+		LidarSensors:  []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d"},
 		DataDirectory: dataDir,
 		DataRateMsec:  testDataRateMsec,
@@ -215,7 +260,8 @@ func TestDataProcess(t *testing.T) {
 		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
 
 		sensors := []string{"good_lidar"}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		imu_sensors := []string{}
+		lidar, err := lidar.New(testhelper.SetupDeps(sensors, imu_sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -232,7 +278,7 @@ func TestDataProcess(t *testing.T) {
 	t.Run("Failed startup of data process with invalid sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
 		sensors := []string{"invalid_sensor"}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		lidar, err := lidar.New(testhelper.SetupDeps(sensors, sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -250,7 +296,8 @@ func TestDataProcess(t *testing.T) {
 		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
 
 		sensors := []string{"replay_sensor"}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		imu_sensors := []string{}
+		lidar, err := lidar.New(testhelper.SetupDeps(sensors, imu_sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -277,7 +324,7 @@ func TestEndpointFailures(t *testing.T) {
 
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &vcConfig.Config{
-		Sensors:       []string{"good_lidar"},
+		LidarSensors:  []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDir,
 		MapRateSec:    &testMapRateSec,
@@ -322,7 +369,7 @@ func TestSLAMProcess(t *testing.T) {
 	t.Run("Successful start of live SLAM process with default parameters", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			LidarSensors:  []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
@@ -338,7 +385,8 @@ func TestSLAMProcess(t *testing.T) {
 
 		cmdResult := [][]string{
 			{testExecutableName},
-			{"-sensors=good_lidar"},
+			{"-lidar_sensors=good_lidar"},
+			{"-imu_sensors=good_imu"},
 			{"-config_param={test_param=viam,mode=2d}", "-config_param={mode=2d,test_param=viam}"},
 			{"-data_rate_ms=200"},
 			{"-map_rate_sec=60"},
@@ -362,7 +410,8 @@ func TestSLAMProcess(t *testing.T) {
 	t.Run("Successful start of offline SLAM process with default parameters", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{},
+			LidarSensors:  []string{},
+			IMUSensors:    []string{},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
 			Port:          "localhost:" + strconv.Itoa(port),
@@ -378,7 +427,8 @@ func TestSLAMProcess(t *testing.T) {
 
 		cmdResult := [][]string{
 			{testExecutableName},
-			{"-sensors="},
+			{"-lidar_sensors="},
+			{"-imu_sensors="},
 			{"-config_param={mode=2d,test_param=viam}", "-config_param={test_param=viam,mode=2d}"},
 			{"-data_rate_ms=200"},
 			{"-map_rate_sec=60"},
@@ -402,7 +452,7 @@ func TestSLAMProcess(t *testing.T) {
 	t.Run("Failed start of SLAM process that errors out due to invalid binary location", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			LidarSensors:  []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 			DataDirectory: dataDir,
 			MapRateSec:    &testMapRateSec,
@@ -424,7 +474,7 @@ func TestDoCommand(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &vcConfig.Config{
-		Sensors:       []string{"good_lidar"},
+		LidarSensors:  []string{"good_lidar"},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDir,
 		MapRateSec:    &testMapRateSec,
