@@ -38,9 +38,8 @@ import (
 
 // Model is the model name of cartographer.
 var (
-	Model          = resource.NewModel("viam", "slam", "cartographer")
-	cartoLib       cartofacade.CartoLib
-	chunkSizeBytes = 1 * 1024 * 1024
+	Model    = resource.NewModel("viam", "slam", "cartographer")
+	cartoLib cartofacade.CartoLib
 	// ErrClosed denotes that the slam service method was called on a closed slam resource.
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
 )
@@ -56,6 +55,7 @@ const (
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
 	defaultCartoFacadeTimeout            = 5 * time.Second
+	chunkSizeBytes                       = 1 * 1024 * 1024
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -557,12 +557,12 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func
 		return nil, ErrClosed
 	}
 
-	if cartoSvc.modularizationV2Enabled {
-		return cartoSvc.getPointCloudMapModularizationV2(ctx)
-	}
-
 	if !cartoSvc.localizationMode {
 		cartoSvc.mapTimestamp = time.Now().UTC()
+	}
+
+	if cartoSvc.modularizationV2Enabled {
+		return cartoSvc.getPointCloudMapModularizationV2(ctx)
 	}
 	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
 }

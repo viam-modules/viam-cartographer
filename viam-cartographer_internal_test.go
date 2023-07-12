@@ -3,6 +3,7 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
+	"go.viam.com/utils/artifact"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -447,11 +449,15 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	svc.cartofacade = mockCartoFacade
 	svc.modularizationV2Enabled = true
 
-	inputPointCloudMapBytes := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
-	setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
+	var inputPointCloudMapBytes = []byte{}
 
-	t.Run("small chunk size success", func(t *testing.T) {
-		chunkSizeBytes = 1
+	t.Run("pointcloud smaller than 1 mb limit - success", func(t *testing.T) {
+		file := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"
+		inputPointCloudMapBytes, err := os.ReadFile(artifact.MustPath(file))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, len(inputPointCloudMapBytes), test.ShouldBeLessThan, 1024*1024)
+
+		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
 		callback, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
@@ -459,8 +465,13 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 		test.That(t, pointCloudMapBytes, test.ShouldResemble, inputPointCloudMapBytes)
 	})
 
-	t.Run("large chunk size success", func(t *testing.T) {
-		chunkSizeBytes = 100
+	t.Run("pointcloud larger than 1 mb limit - success", func(t *testing.T) {
+		file := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_1.pcd"
+		inputPointCloudMapBytes, err := os.ReadFile(artifact.MustPath(file))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, len(inputPointCloudMapBytes), test.ShouldBeGreaterThan, 1024*1024)
+
+		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
 		callback, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
@@ -469,15 +480,8 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	})
 
 	t.Run("no bytes success", func(t *testing.T) {
-		chunkSizeBytes = 1
 		inputPointCloudMapBytes = []byte{}
-
-		mockCartoFacade.GetPointCloudMapFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-		) ([]byte, error) {
-			return inputPointCloudMapBytes, nil
-		}
+		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
 
 		callback, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -487,8 +491,8 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	})
 
 	t.Run("cartofacade error", func(t *testing.T) {
-		chunkSizeBytes = 1
 		inputPointCloudMapBytes = []byte{}
+		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
 
 		mockCartoFacade.GetPointCloudMapFunc = func(
 			ctx context.Context,

@@ -349,6 +349,9 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		// TODO: Implement these
+		_, componentReference, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, componentReference, test.ShouldEqual, "replay_sensor")
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 		_, err = svc.GetPointCloudMap(context.Background())
@@ -381,10 +384,13 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		// TODO: Implement these
+		_, componentReference, err := svc.GetPosition(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, componentReference, test.ShouldEqual, "replay_sensor")
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
-		// _, err = svc.GetPointCloudMap(context.Background())
-		// test.That(t, err, test.ShouldBeNil)
+		_, err = svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 
