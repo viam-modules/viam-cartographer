@@ -127,9 +127,12 @@ func New(
 	if err != nil {
 		return nil, err
 	}
+
 	activeSensors := &slamSensors{
-		lidar: getLidar,
-		imu:   getIMU,
+		lidar:        getLidar,
+		lidar_active: false,
+		imu:          getIMU,
+		imu_active:   false,
 	}
 
 	// Need to pass in a long-lived context because ctx is short-lived
@@ -138,8 +141,8 @@ func New(
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
 		Named:                 c.ResourceName().AsNamed(),
-		primarySensorName:     lidar.Name,
-		imuSensorName:         imu.Name,
+		primarySensorName:     activeSensors.lidar.Name,
+		imuSensorName:         activeSensors.imu.Name,
 		executableName:        executableName,
 		subAlgo:               subAlgo,
 		slamProcess:           pexec.NewProcessManager(logger),
@@ -172,7 +175,7 @@ func New(
 			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "getting and saving data failed")
 		}
-		cartoSvc.StartDataProcess(cancelCtx, activeSensors.lidar, nil)
+		cartoSvc.StartDataProcess(cancelCtx, activeSensors, nil)
 		logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
 	}
 
@@ -227,8 +230,10 @@ type cartographerService struct {
 }
 
 type slamSensors struct {
-	lidar lidar.Lidar
-	imu   imu.IMU
+	lidar        lidar.Lidar
+	lidar_active bool
+	imu          imu.IMU
+	imu_active   bool
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -346,25 +351,51 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sen
 				return
 			}
 
+			// Do not execute if no lidar is configured.
+			if cartoSvc.primarySensorName == "" {
+				return
+			}
+
 			cartoSvc.activeBackgroundWorkers.Add(1)
 			goutils.PanicCapturingGo(func() {
 				defer cartoSvc.activeBackgroundWorkers.Done()
-				cartoSvc.getNextDataPoint(ctx, lidar, c)
+				sensors.lidar_active = true
+				sensors.imu_active = false
+				cartoSvc.getNextDataPoint(ctx, sensors, c)
+			})
+		case <-imuTicker.C:
+			if err := ctx.Err(); err != nil {
+				if !errors.Is(err, context.Canceled) {
+					cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
+				}
+				return
+			}
+			// Do not execute if no IMU is configured.
+			if cartoSvc.imuSensorName == "" {
+				return
+			}
+
+			cartoSvc.activeBackgroundWorkers.Add(1)
+			goutils.PanicCapturingGo(func() {
+				defer cartoSvc.activeBackgroundWorkers.Done()
+				sensors.lidar_active = false
+				sensors.imu_active = true
+				cartoSvc.getNextDataPoint(ctx, sensors, c)
 			})
 		}
 	}
 }
 
-func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, sensor *slamSensors, c chan int) {
+func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, sensors *slamSensors, c chan int) {
 	// Get lidar data
-	if (sensor.lidar != lidar.Lidar{} && sensor.imu == imu.IMU{}) {
-		if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, sensor.lidar, cartoSvc.logger); err != nil {
+	if sensors.lidar_active && !sensors.imu_active {
+		if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, sensors.lidar, cartoSvc.logger); err != nil {
 			cartoSvc.logger.Warn(err)
 		}
 	}
 	// Get IMU data
-	if (sensor.lidar == lidar.Lidar{} && sensor.imu != imu.IMU{}) {
-		if _, err := imu.GetAndSaveIMUData(ctx, cartoSvc.dataDirectory, sensor.imu, cartoSvc.logger); err != nil {
+	if !sensors.lidar_active && sensors.imu_active {
+		if _, err := imu.GetAndSaveIMUData(ctx, cartoSvc.dataDirectory, sensors.imu, cartoSvc.logger); err != nil {
 			cartoSvc.logger.Warn(err)
 		}
 	}
