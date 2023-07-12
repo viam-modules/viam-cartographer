@@ -449,7 +449,7 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	svc.cartofacade = mockCartoFacade
 	svc.modularizationV2Enabled = true
 
-	var inputPointCloudMapBytes = []byte{}
+	inputPointCloudMapBytes := []byte{}
 
 	t.Run("pointcloud smaller than 1 mb limit - success", func(t *testing.T) {
 		file := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"

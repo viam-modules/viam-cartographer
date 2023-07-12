@@ -210,15 +210,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
-		logger := golog.NewDebugLogger("testing")
 		logger.Infof("timestamp1 = %v\n", timestamp1)
-		test.That(t, err, test.ShouldBeNil)
-		pcmFunc, err := svc.GetPointCloudMap(context.Background())
-		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
-		test.That(t, err, test.ShouldBeNil)
-
-		logger.Infof("pcm = %v\n", pcm)
-		t.Fatal()
 		test.That(t, err, test.ShouldBeNil)
 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
