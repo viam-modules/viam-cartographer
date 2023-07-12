@@ -26,6 +26,7 @@ import (
 
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	dim2d "github.com/viamrobotics/viam-cartographer/internal/dim-2d"
+	"github.com/viamrobotics/viam-cartographer/sensors/imu"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
 )
@@ -37,6 +38,7 @@ const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
 	DefaultExecutableName                = "carto_grpc_server"
 	defaultDataRateMsec                  = 200
+	defaultIMUDataRateMsec               = 20
 	defaultMapRateSec                    = 60
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
@@ -105,10 +107,11 @@ func New(
 		return nil, err
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, _, err := vcConfig.GetOptionalParameters(
+	port, dataRateMsec, imuDataRateMsec, mapRateSec, useLiveData, deleteProcessedData, _, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		localhost0,
 		defaultDataRateMsec,
+		defaultIMUDataRateMsec,
 		defaultMapRateSec,
 		logger,
 	)
@@ -117,7 +120,12 @@ func New(
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig.Sensors, logger)
+	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig.LidarSensors, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	imu, err := imu.New(deps, svcConfig.IMUSensors, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +137,7 @@ func New(
 	cartoSvc := &cartographerService{
 		Named:                 c.ResourceName().AsNamed(),
 		primarySensorName:     lidar.Name,
+		imuSensorName:         imu.Name,
 		executableName:        executableName,
 		subAlgo:               subAlgo,
 		slamProcess:           pexec.NewProcessManager(logger),
@@ -138,6 +147,7 @@ func New(
 		deleteProcessedData:   deleteProcessedData,
 		port:                  port,
 		dataRateMs:            dataRateMsec,
+		imuDataRateMs:         imuDataRateMsec,
 		mapRateSec:            mapRateSec,
 		cancelFunc:            cancelFunc,
 		logger:                logger,
@@ -156,7 +166,7 @@ func New(
 	}()
 
 	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, lidar,
+		if err := dim2d.ValidateGetAndSaveLidarData(cancelCtx, cartoSvc.dataDirectory, lidar,
 			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "getting and saving data failed")
 		}
@@ -184,6 +194,7 @@ type cartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
 	primarySensorName string
+	imuSensorName     string
 	executableName    string
 	subAlgo           SubAlgo
 	slamProcess       pexec.ProcessManager
@@ -195,9 +206,10 @@ type cartographerService struct {
 	deleteProcessedData bool
 	useLiveData         bool
 
-	port       string
-	dataRateMs int
-	mapRateSec int
+	port          string
+	dataRateMs    int
+	imuDataRateMs int
+	mapRateSec    int
 
 	cancelFunc              func()
 	logger                  golog.Logger
@@ -335,7 +347,7 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 }
 
 func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
+	if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
 		cartoSvc.logger.Warn(err)
 	}
 	if c != nil {
