@@ -48,7 +48,8 @@ func DetermineUseLiveData(logger golog.Logger, liveData *bool, sensors []string)
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Sensors                 []string          `json:"sensors"`
+	LidarSensors            []string          `json:"lidar_sensors"`
+	IMUSensors              []string          `json:"imu_sensors"`
 	ConfigParams            map[string]string `json:"config_params"`
 	DataDirectory           string            `json:"data_dir"`
 	UseLiveData             *bool             `json:"use_live_data"`
@@ -70,8 +71,8 @@ func (config *Config) Validate(path string) ([]string, error) {
 
 	// require at least one sensor for full mod v2
 	if modularizationV2Enabled {
-		if config.Sensors == nil || len(config.Sensors) < 1 {
-			return nil, utils.NewConfigValidationFieldRequiredError(path, "at least one sensor must be configured")
+		if config.LidarSensors == nil || len(config.LidarSensors) < 1 {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "at least one lidar sensor must be configured")
 		}
 	}
 
@@ -95,7 +96,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, errors.New("cannot specify map_rate_sec less than zero")
 	}
 
-	deps := config.Sensors
+	deps := config.LidarSensors
 
 	return deps, nil
 }
@@ -145,7 +146,7 @@ func GetOptionalParameters(config *Config, defaultPort string,
 	var err error
 	useLiveData := true
 	if !modularizationV2Enabled {
-		useLiveData, err = DetermineUseLiveData(logger, config.UseLiveData, config.Sensors)
+		useLiveData, err = DetermineUseLiveData(logger, config.UseLiveData, config.LidarSensors)
 		if err != nil {
 			return "", 0, 0, 0, false, false, false, err
 		}

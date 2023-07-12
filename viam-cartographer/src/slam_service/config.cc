@@ -78,7 +78,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
     slamService.use_live_data = FLAGS_use_live_data;
-    if (slamService.use_live_data && FLAGS_sensors.empty()) {
+    if (slamService.use_live_data && FLAGS_lidar_sensors.empty()) {
         throw std::runtime_error(
             "a true use_live_data value is invalid when no sensors are given");
     }
@@ -103,9 +103,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
     slamService.config_params = FLAGS_config_param;
     slamService.port = FLAGS_port;
-    slamService.camera_name = FLAGS_sensors;
+    slamService.camera_name = FLAGS_lidar_sensors;
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
-    slamService.imu_data_rate_ms = std::chrono::milliseconds(FLAGS_imu_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
     slamService.delete_processed_data = FLAGS_delete_processed_data;
