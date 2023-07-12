@@ -449,8 +449,6 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	svc.cartofacade = mockCartoFacade
 	svc.modularizationV2Enabled = true
 
-	inputPointCloudMapBytes := []byte{}
-
 	t.Run("pointcloud smaller than 1 mb limit - success", func(t *testing.T) {
 		file := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"
 		inputPointCloudMapBytes, err := os.ReadFile(artifact.MustPath(file))
@@ -480,8 +478,7 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	})
 
 	t.Run("no bytes success", func(t *testing.T) {
-		inputPointCloudMapBytes = []byte{}
-		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
+		setMockGetPointCloudFunc(mockCartoFacade, []byte{})
 
 		callback, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -491,8 +488,7 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 	})
 
 	t.Run("cartofacade error", func(t *testing.T) {
-		inputPointCloudMapBytes = []byte{}
-		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
+		setMockGetPointCloudFunc(mockCartoFacade, []byte{})
 
 		mockCartoFacade.GetPointCloudMapFunc = func(
 			ctx context.Context,
