@@ -357,12 +357,12 @@ func TestNew(t *testing.T) {
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 
-		// pcmFunc, err := svc.GetPointCloudMap(context.Background())
-		// test.That(t, err, test.ShouldBeNil)
+		pcmFunc, err := svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 
-		// pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
-		// test.That(t, err, test.ShouldBeNil)
-		// test.That(t, pcm, test.ShouldNotBeNil)
+		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pcm, test.ShouldNotBeNil)
 
 		isFunc, err := svc.GetInternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -406,12 +406,12 @@ func TestNew(t *testing.T) {
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 
-		// pcmFunc, err := svc.GetPointCloudMap(context.Background())
-		// test.That(t, err, test.ShouldBeNil)
+		pcmFunc, err := svc.GetPointCloudMap(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 
-		// pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
-		// test.That(t, err, test.ShouldBeNil)
-		// test.That(t, pcm, test.ShouldNotBeNil)
+		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pcm, test.ShouldNotBeNil)
 
 		isFunc, err := svc.GetInternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
