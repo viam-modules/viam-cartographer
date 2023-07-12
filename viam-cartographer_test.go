@@ -390,7 +390,7 @@ func TestNew(t *testing.T) {
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 		_, err = svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 
