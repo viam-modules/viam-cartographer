@@ -360,10 +360,17 @@ func TestNew(t *testing.T) {
 		_, componentReference, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "replay_sensor")
+
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
-		_, err = svc.GetPointCloudMap(context.Background())
+
+		pcmFunc, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
+
+		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pcm, test.ShouldNotBeNil)
+
 		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 		// test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
@@ -396,11 +403,17 @@ func TestNew(t *testing.T) {
 		_, componentReference, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
+
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
-		_, err = svc.GetPointCloudMap(context.Background())
+
+		pcmFunc, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		// test.That(t, err, test.ShouldBeError, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
+
+		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pcm, test.ShouldNotBeNil)
+
 		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 
