@@ -442,50 +442,102 @@ func setMockGetPointCloudFunc(
 	}
 }
 
-func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
-	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
-	mockCartoFacade := &cartofacade.Mock{}
+func testApisThatReturnCallbackFuncsSuccess(
+	t *testing.T,
+	path string,
+	setMockFunc func(*cartofacade.Mock, []byte),
+	mockCartoFacade *cartofacade.Mock,
+	api func(context.Context) (func() ([]byte, error), error),
+	fileIsLargerThanChunkSize bool,
+) {
+	bytes, err := os.ReadFile(artifact.MustPath(path))
+	test.That(t, err, test.ShouldBeNil)
 
+	if fileIsLargerThanChunkSize {
+		test.That(t, len(bytes), test.ShouldBeGreaterThan, 1024*1024)
+	} else {
+		test.That(t, len(bytes), test.ShouldBeLessThan, 1024*1024)
+	}
+
+	setMockFunc(mockCartoFacade, bytes)
+	getAndCheckCallbackFunc(t, api, false, bytes)
+}
+
+func getAndCheckCallbackFunc(
+	t *testing.T,
+	api func(context.Context) (func() ([]byte, error), error),
+	emptyBytes bool,
+	inputBytes []byte,
+) {
+	callback, err := api(context.Background())
+	test.That(t, err, test.ShouldBeNil)
+	bytes, err := slam.HelperConcatenateChunksToFull(callback)
+	test.That(t, err, test.ShouldBeNil)
+
+	if emptyBytes {
+		test.That(t, bytes, test.ShouldBeNil)
+	} else {
+		test.That(t, bytes, test.ShouldNotBeNil)
+		test.That(t, bytes, test.ShouldResemble, inputBytes)
+	}
+}
+
+func testApisThatReturnCallbackFuncs(
+	t *testing.T,
+	svc *cartographerService,
+	mockCartoFacade *cartofacade.Mock,
+	pathToFileLargerThanChunkSize string,
+	pathToFileSmallerThanChunkSize string,
+	api func(context.Context) (func() ([]byte, error), error),
+	setMockFunc func(*cartofacade.Mock, []byte),
+) {
 	svc.cartofacade = mockCartoFacade
 	svc.modularizationV2Enabled = true
 
-	t.Run("pointcloud smaller than 1 mb limit - success", func(t *testing.T) {
-		file := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"
-		inputPointCloudMapBytes, err := os.ReadFile(artifact.MustPath(file))
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, len(inputPointCloudMapBytes), test.ShouldBeLessThan, 1024*1024)
-
-		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
-		callback, err := svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pointCloudMapBytes, test.ShouldResemble, inputPointCloudMapBytes)
+	t.Run("returned value smaller than 1 mb limit - success", func(t *testing.T) {
+		path := pathToFileLargerThanChunkSize
+		testApisThatReturnCallbackFuncsSuccess(
+			t,
+			path,
+			setMockFunc,
+			mockCartoFacade,
+			api,
+			false,
+		)
 	})
 
-	t.Run("pointcloud larger than 1 mb limit - success", func(t *testing.T) {
-		file := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_1.pcd"
-		inputPointCloudMapBytes, err := os.ReadFile(artifact.MustPath(file))
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, len(inputPointCloudMapBytes), test.ShouldBeGreaterThan, 1024*1024)
-
-		setMockGetPointCloudFunc(mockCartoFacade, inputPointCloudMapBytes)
-		callback, err := svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pointCloudMapBytes, test.ShouldResemble, inputPointCloudMapBytes)
+	t.Run("returned value larger than 1 mb limit - success", func(t *testing.T) {
+		path := pathToFileSmallerThanChunkSize
+		testApisThatReturnCallbackFuncsSuccess(
+			t,
+			path,
+			setMockFunc,
+			mockCartoFacade,
+			api,
+			true,
+		)
 	})
 
 	t.Run("no bytes success", func(t *testing.T) {
-		setMockGetPointCloudFunc(mockCartoFacade, []byte{})
-
-		callback, err := svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pointCloudMapBytes, test.ShouldBeNil)
+		setMockFunc(mockCartoFacade, []byte{})
+		getAndCheckCallbackFunc(t, api, true, []byte{})
 	})
+}
+
+func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	mockCartoFacade := &cartofacade.Mock{}
+	pathToFileLargerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"
+	pathToFileSmallerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_1.pcd"
+	testApisThatReturnCallbackFuncs(
+		t,
+		svc,
+		mockCartoFacade,
+		pathToFileLargerThanChunkSize,
+		pathToFileSmallerThanChunkSize,
+		svc.GetPointCloudMap,
+		setMockGetPointCloudFunc,
+	)
 
 	t.Run("cartofacade error", func(t *testing.T) {
 		setMockGetPointCloudFunc(mockCartoFacade, []byte{})
@@ -579,6 +631,49 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 			test.That(t, err.Error(), test.ShouldContainSubstring, "no GetInternalState defined for injected SLAM service client")
 			test.That(t, callback, test.ShouldBeNil)
 		})
+	})
+}
+
+func setMockGetInternalStateFunc(
+	mock *cartofacade.Mock,
+	pc []byte,
+) {
+	mock.GetInternalStateFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+	) ([]byte, error) {
+		return pc, nil
+	}
+}
+
+func TestGetInternalStateModularizationV2Endpoint(t *testing.T) {
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	mockCartoFacade := &cartofacade.Mock{}
+	pathToFileLargerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
+	pathToFileSmallerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_1.pbstream"
+	testApisThatReturnCallbackFuncs(
+		t,
+		svc,
+		mockCartoFacade,
+		pathToFileLargerThanChunkSize,
+		pathToFileSmallerThanChunkSize,
+		svc.GetInternalState,
+		setMockGetInternalStateFunc,
+	)
+
+	t.Run("cartofacade error", func(t *testing.T) {
+		setMockGetInternalStateFunc(mockCartoFacade, []byte{})
+
+		mockCartoFacade.GetInternalStateFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+		) ([]byte, error) {
+			return nil, errors.New("test")
+		}
+
+		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, callback, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, errors.New("test"))
 	})
 }
 

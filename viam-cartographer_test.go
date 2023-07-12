@@ -364,6 +364,13 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
 
+		isFunc, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+
+		is, err := slam.HelperConcatenateChunksToFull(isFunc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, is, test.ShouldNotBeNil)
+
 		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 		// test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
@@ -405,6 +412,13 @@ func TestNew(t *testing.T) {
 		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
+
+		isFunc, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+
+		is, err := slam.HelperConcatenateChunksToFull(isFunc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, is, test.ShouldNotBeNil)
 
 		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
