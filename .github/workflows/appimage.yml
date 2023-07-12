@@ -35,13 +35,13 @@ jobs:
 
     steps:
     - name: Check out code
-      if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+      if: inputs.release_type != 'pr'
       uses: actions/checkout@v3
       with:
         submodules: recursive
       
     - name: Check out PR branch code
-      if: github.event_name == 'pull_request_target'
+      if: inputs.release_type == 'pr'
       uses: actions/checkout@v3
       with:
         ref: ${{ github.event.pull_request.head.sha }}
@@ -66,7 +66,7 @@ jobs:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
     - name: Build and Package (PR)
-      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+      if: inputs.release_type == 'pr'
       run: |
         sudo -u testbot bash -lc 'make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
