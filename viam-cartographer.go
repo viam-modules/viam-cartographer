@@ -4,6 +4,7 @@ package viamcartographer
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"io"
 	"os"
@@ -36,8 +37,9 @@ import (
 
 // Model is the model name of cartographer.
 var (
-	Model    = resource.NewModel("viam", "slam", "cartographer")
-	cartoLib cartofacade.CartoLib
+	Model          = resource.NewModel("viam", "slam", "cartographer")
+	cartoLib       cartofacade.CartoLib
+	chunkSizeBytes = 1 * 1024 * 1024
 )
 
 const (
@@ -539,10 +541,33 @@ func (cartoSvc *cartographerService) GetPointCloudMap(ctx context.Context) (func
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::cartographerService::GetPointCloudMap")
 	defer span.End()
 
+	if cartoSvc.modularizationV2Enabled {
+		return cartoSvc.getPointCloudMapModularizationV2(ctx)
+	}
+
 	if !cartoSvc.localizationMode {
 		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
 	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
+}
+
+func (cartoSvc *cartographerService) getPointCloudMapModularizationV2(ctx context.Context) (func() ([]byte, error), error) {
+	chunk := make([]byte, chunkSizeBytes)
+	pc, err := cartoSvc.cartofacade.GetPointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
+	if err != nil {
+		return nil, err
+	}
+
+	pointcloudReader := bytes.NewReader(pc)
+
+	f := func() ([]byte, error) {
+		bytesRead, err := pointcloudReader.Read(chunk)
+		if err != nil {
+			return nil, err
+		}
+		return chunk[:bytesRead], err
+	}
+	return f, nil
 }
 
 // GetInternalState creates a request, calls the slam algorithms GetInternalState endpoint and returns a callback
