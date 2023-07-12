@@ -390,7 +390,6 @@ func TestNew(t *testing.T) {
 
 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, err, test.ShouldBeNil)
 
 		// TODO: Implement these
 		_, componentReference, err := svc.GetPosition(context.Background())
