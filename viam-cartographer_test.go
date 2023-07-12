@@ -663,8 +663,9 @@ func TestClose(t *testing.T) {
 		test.That(t, gisF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 
-		_, err = svc.GetLatestMapInfo(ctx)
+		mapTime, err := svc.GetLatestMapInfo(ctx)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, mapTime, test.ShouldResemble, time.Time{})
 
 		cmd := map[string]interface{}{}
 		resp, err := svc.DoCommand(ctx, cmd)
@@ -707,8 +708,9 @@ func TestClose(t *testing.T) {
 		test.That(t, gisF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 
-		_, err = svc.GetLatestMapInfo(ctx)
+		mapTime, err := svc.GetLatestMapInfo(ctx)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, mapTime, test.ShouldResemble, time.Time{})
 
 		cmd := map[string]interface{}{}
 		resp, err := svc.DoCommand(ctx, cmd)
