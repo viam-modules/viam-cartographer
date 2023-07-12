@@ -3,6 +3,7 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
+	"go.viam.com/utils/artifact"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -504,6 +506,79 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 			test.That(t, err.Error(), test.ShouldContainSubstring, "no GetInternalState defined for injected SLAM service client")
 			test.That(t, callback, test.ShouldBeNil)
 		})
+	})
+}
+
+func setMockGetInternalStateFunc(
+	mock *cartofacade.Mock,
+	pc []byte,
+) {
+	mock.GetInternalStateFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+	) ([]byte, error) {
+		return pc, nil
+	}
+}
+
+func TestGetInternalStateModularizationV2Endpoint(t *testing.T) {
+	svc := &cartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	mockCartoFacade := &cartofacade.Mock{}
+
+	svc.cartofacade = mockCartoFacade
+	svc.modularizationV2Enabled = true
+
+	t.Run("pointcloud smaller than 1 mb limit - success", func(t *testing.T) {
+		file := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
+		inputInternalStateBytes, err := os.ReadFile(artifact.MustPath(file))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, len(inputInternalStateBytes), test.ShouldBeLessThan, 1024*1024)
+
+		setMockGetInternalStateFunc(mockCartoFacade, inputInternalStateBytes)
+		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		pointCloudMapBytes, err := slam.HelperConcatenateChunksToFull(callback)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pointCloudMapBytes, test.ShouldResemble, inputInternalStateBytes)
+	})
+
+	t.Run("pointcloud larger than 1 mb limit - success", func(t *testing.T) {
+		file := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_1.pbstream"
+		inputInternalStateBytes, err := os.ReadFile(artifact.MustPath(file))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, len(inputInternalStateBytes), test.ShouldBeGreaterThan, 1024*1024)
+
+		setMockGetInternalStateFunc(mockCartoFacade, inputInternalStateBytes)
+		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalStateBytes, test.ShouldResemble, inputInternalStateBytes)
+	})
+
+	t.Run("no bytes success", func(t *testing.T) {
+		setMockGetInternalStateFunc(mockCartoFacade, []byte{})
+
+		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		internalStateBytes, err := slam.HelperConcatenateChunksToFull(callback)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalStateBytes, test.ShouldBeNil)
+	})
+
+	t.Run("cartofacade error", func(t *testing.T) {
+		setMockGetInternalStateFunc(mockCartoFacade, []byte{})
+
+		mockCartoFacade.GetInternalStateFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+		) ([]byte, error) {
+			return nil, errors.New("test")
+		}
+
+		callback, err := svc.GetInternalState(context.Background())
+		test.That(t, callback, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, errors.New("test"))
 	})
 }
 
