@@ -210,7 +210,8 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
-		logger.Infof("timestamp1 = %v\n", timestamp1)
+		test.That(t, err, test.ShouldBeNil)
+		_, err = svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
