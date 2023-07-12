@@ -15,6 +15,7 @@ using namespace boost::filesystem;
 namespace viam {
 namespace config {
 
+int defaultIMUDataRateMS = 20;
 int defaultDataRateMS = 200;
 int defaultMapRateSec = 60;
 
@@ -22,9 +23,12 @@ DEFINE_string(data_dir, "",
               "Directory in which sensor data and maps are expected.");
 DEFINE_string(config_param, "", "Config parameters for cartographer.");
 DEFINE_string(port, "", "GRPC port");
-DEFINE_string(sensors, "", "Array of sensors.");
+DEFINE_string(lidar_sensors, "", "Array of lidar sensors.");
+DEFINE_string(imu_sensors, "", "Array of imu sensors.");
 DEFINE_int64(data_rate_ms, defaultDataRateMS,
-             "Frequency at which we grab/save data.");
+             "Frequency at which we grab/save lidar data.");
+DEFINE_int64(imu_data_rate_ms, defaultIMUDataRateMS,
+             "Frequency at which we grab/save IMU data.");
 DEFINE_int64(
     map_rate_sec, defaultMapRateSec,
     "Frequency at which we want to print map pictures while cartographer "
@@ -63,8 +67,10 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     LOG(INFO) << "data_dir: " << FLAGS_data_dir;
     LOG(INFO) << "config_param: " << FLAGS_config_param;
     LOG(INFO) << "port: " << FLAGS_port;
-    LOG(INFO) << "sensors: " << FLAGS_sensors;
+    LOG(INFO) << "lidar_sensors: " << FLAGS_lidar_sensors;
+    LOG(INFO) << "imu_sensors: " << FLAGS_imu_sensors;
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms;
+    LOG(INFO) << "imu_data_rate_ms: " << FLAGS_imu_data_rate_ms;
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec;
     LOG(INFO) << "delete_processed_data: " << FLAGS_delete_processed_data;
     LOG(INFO) << "use_live_data: " << FLAGS_use_live_data;
@@ -72,7 +78,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.path_to_data = FLAGS_data_dir + "/data";
     slamService.path_to_map = FLAGS_data_dir + "/map";
     slamService.use_live_data = FLAGS_use_live_data;
-    if (slamService.use_live_data && FLAGS_sensors.empty()) {
+    if (slamService.use_live_data && FLAGS_lidar_sensors.empty()) {
         throw std::runtime_error(
             "a true use_live_data value is invalid when no sensors are given");
     }
@@ -97,7 +103,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
 
     slamService.config_params = FLAGS_config_param;
     slamService.port = FLAGS_port;
-    slamService.camera_name = FLAGS_sensors;
+    slamService.camera_name = FLAGS_lidar_sensors;
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
@@ -221,8 +227,10 @@ void ResetFlagsForTesting() {
     FLAGS_config_param = "";
     FLAGS_data_dir = "";
     FLAGS_port = "";
-    FLAGS_sensors = "";
+    FLAGS_lidar_sensors = "";
+    FLAGS_imu_sensors = "";
     FLAGS_data_rate_ms = defaultDataRateMS;
+    FLAGS_imu_data_rate_ms = defaultIMUDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
     FLAGS_delete_processed_data = false;
     FLAGS_use_live_data = false;
