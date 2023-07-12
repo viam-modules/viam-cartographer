@@ -23,9 +23,10 @@ DEFINE_string(data_dir, "",
               "Directory in which sensor data and maps are expected.");
 DEFINE_string(config_param, "", "Config parameters for cartographer.");
 DEFINE_string(port, "", "GRPC port");
-DEFINE_string(sensors, "", "Array of sensors.");
+DEFINE_string(lidar_sensors, "", "Array of lidar sensors.");
+DEFINE_string(imu_sensors, "", "Array of imu sensors.");
 DEFINE_int64(data_rate_ms, defaultDataRateMS,
-             "Frequency at which we grab/save data.");
+             "Frequency at which we grab/save lidar data.");
 DEFINE_int64(imu_data_rate_ms, defaultIMUDataRateMS,
              "Frequency at which we grab/save IMU data.");
 DEFINE_int64(
@@ -66,7 +67,8 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     LOG(INFO) << "data_dir: " << FLAGS_data_dir;
     LOG(INFO) << "config_param: " << FLAGS_config_param;
     LOG(INFO) << "port: " << FLAGS_port;
-    LOG(INFO) << "sensors: " << FLAGS_sensors;
+    LOG(INFO) << "lidar_sensors: " << FLAGS_lidar_sensors;
+    LOG(INFO) << "imu_sensors: " << FLAGS_imu_sensors;
     LOG(INFO) << "data_rate_ms: " << FLAGS_data_rate_ms;
     LOG(INFO) << "imu_data_rate_ms: " << FLAGS_imu_data_rate_ms;
     LOG(INFO) << "map_rate_sec: " << FLAGS_map_rate_sec;
@@ -226,7 +228,8 @@ void ResetFlagsForTesting() {
     FLAGS_config_param = "";
     FLAGS_data_dir = "";
     FLAGS_port = "";
-    FLAGS_sensors = "";
+    FLAGS_lidar_sensors = "";
+    FLAGS_imu_sensors = "";
     FLAGS_data_rate_ms = defaultDataRateMS;
     FLAGS_imu_data_rate_ms = defaultIMUDataRateMS;
     FLAGS_map_rate_sec = defaultMapRateSec;
