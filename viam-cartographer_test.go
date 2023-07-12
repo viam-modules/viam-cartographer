@@ -18,6 +18,7 @@ import (
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	viamgrpc "go.viam.com/rdk/grpc"
+	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 	"google.golang.org/grpc"
@@ -209,8 +210,15 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		logger := golog.NewDebugLogger("testing")
+		logger.Infof("timestamp1 = %v\n", timestamp1)
 		test.That(t, err, test.ShouldBeNil)
-		_, err = svc.GetPointCloudMap(context.Background())
+		pcmFunc, err := svc.GetPointCloudMap(context.Background())
+		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
+		test.That(t, err, test.ShouldBeNil)
+
+		logger.Infof("pcm = %v\n", pcm)
+		t.Fatal()
 		test.That(t, err, test.ShouldBeNil)
 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -368,29 +376,31 @@ func TestNew(t *testing.T) {
 		termFunc := initTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
+		dataDirectory, fsCleanupFunc := initInternalState(t)
+		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
 			ModularizationV2Enabled: &_true,
-			Sensors:                 []string{"replay_sensor"},
+			Sensors:                 []string{"good_lidar"},
 			ConfigParams:            map[string]string{"mode": "2d"},
 			DataDirectory:           dataDirectory,
-			UseLiveData:             &_false,
-			MapRateSec:              &testMapRateSec,
+			DataRateMsec:            testDataRateMsec,
+			UseLiveData:             &_true,
 		}
 
 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		test.That(t, err, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeNil)
 
 		// TODO: Implement these
 		_, componentReference, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "replay_sensor")
+		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
 		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 		_, err = svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeError, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
+		test.That(t, err, test.ShouldBeNil)
+		// test.That(t, err, test.ShouldBeError, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		// test.That(t, err, test.ShouldBeNil)
 
