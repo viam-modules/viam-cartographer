@@ -647,6 +647,7 @@ func TestClose(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		grpcServer.Stop()
+		// call twice, assert result is the same to prove idempotence
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 
@@ -692,6 +693,7 @@ func TestClose(t *testing.T) {
 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
+		// call twice, assert result is the same to prove idempotence
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 
