@@ -39,7 +39,6 @@ import (
 var (
 	Model    = resource.NewModel("viam", "slam", "cartographer")
 	cartoLib cartofacade.CartoLib
-	jobsDone = false
 	// ErrClosed denotes that the slam service method was called on a closed slam resource.
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
 )
@@ -228,6 +227,7 @@ func New(
 		cartoFacadeTimeout:            cartoFacadeTimeout,
 		localizationMode:              mapRateSec == 0,
 		mapTimestamp:                  time.Now().UTC(),
+		jobDone:                       false,
 	}
 	defer func() {
 		if err != nil {
@@ -495,6 +495,7 @@ type cartographerService struct {
 	sensorValidationIntervalSec   int
 	// deprecated
 	dialMaxTimeoutSec int
+	jobDone           bool
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -663,13 +664,13 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, lid
 func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
 	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
 		if strings.Contains(err.Error(), "reached end of dataset") {
-			if !jobsDone {
+			if !cartoSvc.jobDone {
 				cartoSvc.logger.Warn(err)
-				_, err = os.Create(filepath.Join(cartoSvc.dataDirectory, "Jobs_Done.txt"))
+				_, err = os.Create(filepath.Join(cartoSvc.dataDirectory, "job_done.txt"))
 				if err != nil {
 					cartoSvc.logger.Warn(err)
 				}
-				jobsDone = true
+				cartoSvc.jobDone = true
 			}
 		} else {
 			cartoSvc.logger.Warn(err)
