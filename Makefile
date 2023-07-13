@@ -150,14 +150,4 @@ install: install-lua-files
 	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
 
-appimage: build
-	cd etc/packaging/appimages && BUILD_CHANNEL=${BUILD_CHANNEL} appimage-builder --recipe cartographer-module-`uname -m`.yml
-	mkdir -p etc/packaging/appimages/deploy/
-	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
-	chmod 755 etc/packaging/appimages/deploy/*.AppImage
-
-appimage-ci: build
-	cd etc/packaging/appimages && ./package_release_module.sh
-	mkdir -p etc/packaging/appimages/deploy/
-	mv etc/packaging/appimages/*.AppImage* etc/packaging/appimages/deploy/
-	chmod 755 etc/packaging/appimages/deploy/*.AppImage
+include *.make
