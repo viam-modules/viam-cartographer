@@ -8,6 +8,7 @@
 #include <string>
 
 #include "../io/file_handler.h"
+#include "../dist/json/json.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
@@ -17,7 +18,7 @@
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
-#include "github.com/open-source-parsers/jsoncpp"
+#include "../../../jsoncpp/dist/json/json.h"
 
 namespace {
 // Number of bytes in a pixel
@@ -734,6 +735,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             if file.find(".pcd") {
                 auto measurement = map_builder.GetDataFromFile(file);
                 if (measurement.ranges.size() > 0) {
+                    LOG(INFO) << "Adding Lidar Data...";
                     trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                       measurement);
                     auto local_poses = map_builder.GetLocalSlamResultPoses();
@@ -747,6 +749,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 Json::Reader reader;
                 auto measurement = ifstream file(file);
                 if (measurement.ranges.size() > 0) {
+                    LOG(INFO) << "Adding IMU Data...";
                     trajectory_builder->AddSensorData(kIMUSensorId.id,
                                                       measurement);
                     auto local_poses = map_builder.GetLocalSlamResultPoses();

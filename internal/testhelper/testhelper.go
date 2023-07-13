@@ -6,6 +6,7 @@ package testhelper
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"os"
 	"strconv"
 	"sync/atomic"
@@ -30,7 +31,6 @@ import (
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
 const (
@@ -58,7 +58,7 @@ var IntegrationLidarReleasePointCloudChan = make(chan int, 1)
 // slam processes in the slam service. These functions are not exported to the user. This resolves
 // a circular import caused by the inject package.
 type Service interface {
-	StartDataProcess(cancelCtx context.Context, lidar lidar.Lidar, c chan int)
+	StartDataProcess(cancelCtx context.Context, sensors *viamcartographer.SlamSensors, c chan int)
 	StartSLAMProcess(ctx context.Context) error
 	StopSLAMProcess() error
 	Close(ctx context.Context) error
@@ -91,15 +91,13 @@ func SetupDeps(lidar_sensors []string, imu_sensors []string) resource.Dependenci
 		switch sensor {
 		case "good_imu":
 			deps[movementsensor.Named(sensor)] = getGoodIMU()
-		case "invalid_sensor":
-			deps[movementsensor.Named(sensor)] = getInvalidIMUSensor()
 		case "gibberish":
+			fmt.Println("got here")
 			return deps
 		default:
 			continue
 		}
 	}
-
 	return deps
 }
 
@@ -199,18 +197,6 @@ func getGoodIMU() *inject.MovementSensor {
 	injectIMU.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		return spatialmath.PointAngVel(vec, vec), nil
 	}
-	return injectIMU
-}
-
-func getInvalidIMUSensor() *inject.MovementSensor {
-	injectIMU := &inject.MovementSensor{}
-	injectIMU.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return r3.Vector{}, errors.New("invalid sensor")
-	}
-	injectIMU.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
-	}
-
 	return injectIMU
 }
 

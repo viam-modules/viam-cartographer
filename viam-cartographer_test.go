@@ -21,14 +21,17 @@ import (
 	"go.viam.com/test"
 	"google.golang.org/grpc"
 
+	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/internal/testhelper"
+	"github.com/viamrobotics/viam-cartographer/sensors/imu"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
 const (
-	testExecutableName = "true" // the program "true", not the boolean value
-	testDataRateMsec   = 200
+	testExecutableName  = "true" // the program "true", not the boolean value
+	testDataRateMsec    = 200
+	testIMUDataRateMsec = 20
 )
 
 var (
@@ -137,11 +140,11 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	t.Run("Failed creation of cartographer slam service with good lidar and invalid imu", func(t *testing.T) {
+	t.Run("Failed creation of cartographer slam service with good lidar and gibberish imu", func(t *testing.T) {
 		grpcServer, port := setupTestGRPCServer(t)
 		attrCfg := &vcConfig.Config{
 			LidarSensors:  []string{"good_lidar"},
-			IMUSensors:    []string{"invalid_sensor"},
+			IMUSensors:    []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDir,
 			DataRateMsec:  testDataRateMsec,
@@ -149,11 +152,14 @@ func TestNew(t *testing.T) {
 			UseLiveData:   &_true,
 		}
 
-		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
-		test.That(t, err, test.ShouldBeNil)
+		_, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
+		fmt.Println("am here too")
+		test.That(t, err, test.ShouldBeError,
+			errors.New("error getting IMU sensor "+
+				"gibberish for slam service: \"rdk:component:movement_sensor/gibberish\" missing from dependencies"))
 
 		grpcServer.Stop()
-		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+
 	})
 
 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
@@ -240,12 +246,14 @@ func TestDataProcess(t *testing.T) {
 
 	grpcServer, port := setupTestGRPCServer(t)
 	attrCfg := &vcConfig.Config{
-		LidarSensors:  []string{"good_lidar"},
-		ConfigParams:  map[string]string{"mode": "2d"},
-		DataDirectory: dataDir,
-		DataRateMsec:  testDataRateMsec,
-		Port:          "localhost:" + strconv.Itoa(port),
-		UseLiveData:   &_true,
+		LidarSensors:    []string{"good_lidar"},
+		IMUSensors:      []string{"good_imu"},
+		ConfigParams:    map[string]string{"mode": "2d"},
+		DataDirectory:   dataDir,
+		DataRateMsec:    testDataRateMsec,
+		IMUDataRateMsec: testIMUDataRateMsec,
+		Port:            "localhost:" + strconv.Itoa(port),
+		UseLiveData:     &_true,
 	}
 
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
@@ -253,20 +261,31 @@ func TestDataProcess(t *testing.T) {
 
 	grpcServer.Stop()
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-
+	fmt.Println(svc)
 	slamSvc := svc.(testhelper.Service)
 
 	t.Run("Successful startup of data process with good lidar", func(t *testing.T) {
 		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
-
-		sensors := []string{"good_lidar"}
+		fmt.Println(slamSvc)
+		lidar_sensors := []string{"good_lidar"}
 		imu_sensors := []string{}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors, imu_sensors), sensors, 0)
+		deps := testhelper.SetupDeps(lidar_sensors, imu_sensors)
+		lidar, err := lidar.New(deps, lidar_sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
-
+		imu, err := imu.New(deps, imu_sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
+		fmt.Println("amazed")
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		c := make(chan int, 100)
-		slamSvc.StartDataProcess(cancelCtx, lidar, c)
+
+		sensors := &viamcartographer.SlamSensors{
+			Lidar:        lidar,
+			Lidar_active: true,
+			IMU:          imu,
+			IMU_active:   true,
+		}
+		fmt.Println("got to here")
+		slamSvc.StartDataProcess(cancelCtx, sensors, c)
 
 		<-c
 		cancelFunc()
@@ -277,13 +296,18 @@ func TestDataProcess(t *testing.T) {
 
 	t.Run("Failed startup of data process with invalid sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
-		sensors := []string{"invalid_sensor"}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors, sensors), sensors, 0)
+		lidar_sensors := []string{"invalid_sensor"}
+		lidar, err := lidar.New(testhelper.SetupDeps(lidar_sensors, lidar_sensors), lidar_sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		c := make(chan int, 100)
-		slamSvc.StartDataProcess(cancelCtx, lidar, c)
+		sensors := &viamcartographer.SlamSensors{
+			Lidar:        lidar,
+			Lidar_active: true,
+		}
+
+		slamSvc.StartDataProcess(cancelCtx, sensors, c)
 
 		<-c
 		allObs := obs.All()
@@ -295,14 +319,18 @@ func TestDataProcess(t *testing.T) {
 	t.Run("When replay sensor is configured, we read timestamps from the context", func(t *testing.T) {
 		defer testhelper.ClearDirectory(t, filepath.Join(dataDir, "data"))
 
-		sensors := []string{"replay_sensor"}
+		lidar_sensors := []string{"replay_sensor"}
 		imu_sensors := []string{}
-		lidar, err := lidar.New(testhelper.SetupDeps(sensors, imu_sensors), sensors, 0)
+		lidar, err := lidar.New(testhelper.SetupDeps(lidar_sensors, imu_sensors), lidar_sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		c := make(chan int, 100)
-		slamSvc.StartDataProcess(cancelCtx, lidar, c)
+		sensors := &viamcartographer.SlamSensors{
+			Lidar:        lidar,
+			Lidar_active: true,
+		}
+		slamSvc.StartDataProcess(cancelCtx, sensors, c)
 
 		<-c
 		cancelFunc()

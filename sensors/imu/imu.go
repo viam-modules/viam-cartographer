@@ -106,6 +106,6 @@ func GetAndSaveIMUData(ctx context.Context, dataDirectory string, imu IMU, logge
 	}
 
 	dataDir := filepath.Join(dataDirectory, "data")
-	filename := dataprocess.CreateTimestampFilename(dataDir, imu.Name, ".json", timeReq)
+	filename := dataprocess.CreateTimestampFilename(dataDir, "DEFAULT", ".json", timeReq)
 	return filename, dataprocess.WriteJSONToFile(linearAcceleration, angularVelocity, filename)
 }

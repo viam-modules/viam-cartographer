@@ -50,10 +50,10 @@ const (
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
 type SubAlgo string
 type SlamSensors struct {
-	lidar        lidar.Lidar
-	lidar_active bool
-	imu          imu.IMU
-	imu_active   bool
+	Lidar        lidar.Lidar
+	Lidar_active bool
+	IMU          imu.IMU
+	IMU_active   bool
 }
 
 // Dim2d runs cartographer with a 2D LIDAR only.
@@ -135,10 +135,10 @@ func New(
 	}
 
 	activeSensors := &SlamSensors{
-		lidar:        getLidar,
-		lidar_active: false,
-		imu:          getIMU,
-		imu_active:   false,
+		Lidar:        getLidar,
+		Lidar_active: false,
+		IMU:          getIMU,
+		IMU_active:   false,
 	}
 
 	// Need to pass in a long-lived context because ctx is short-lived
@@ -147,8 +147,8 @@ func New(
 	// Cartographer SLAM Service Object
 	cartoSvc := &cartographerService{
 		Named:                 c.ResourceName().AsNamed(),
-		primarySensorName:     activeSensors.lidar.Name,
-		imuSensorName:         activeSensors.imu.Name,
+		primarySensorName:     activeSensors.Lidar.Name,
+		imuSensorName:         activeSensors.IMU.Name,
 		executableName:        executableName,
 		subAlgo:               subAlgo,
 		slamProcess:           pexec.NewProcessManager(logger),
@@ -177,7 +177,7 @@ func New(
 	}()
 
 	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveLidarData(cancelCtx, cartoSvc.dataDirectory, activeSensors.lidar,
+		if err := dim2d.ValidateGetAndSaveLidarData(cancelCtx, cartoSvc.dataDirectory, activeSensors.Lidar,
 			sensorValidationMaxTimeoutSec, sensorValidationIntervalSec, cartoSvc.logger); err != nil {
 			return nil, errors.Wrap(err, "getting and saving data failed")
 		}
@@ -358,8 +358,8 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sen
 			cartoSvc.activeBackgroundWorkers.Add(1)
 			goutils.PanicCapturingGo(func() {
 				defer cartoSvc.activeBackgroundWorkers.Done()
-				sensors.lidar_active = true
-				sensors.imu_active = false
+				sensors.Lidar_active = true
+				sensors.IMU_active = false
 				cartoSvc.getNextDataPoint(ctx, sensors, c)
 			})
 		case <-imuTicker.C:
@@ -377,8 +377,8 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sen
 			cartoSvc.activeBackgroundWorkers.Add(1)
 			goutils.PanicCapturingGo(func() {
 				defer cartoSvc.activeBackgroundWorkers.Done()
-				sensors.lidar_active = false
-				sensors.imu_active = true
+				sensors.Lidar_active = false
+				sensors.IMU_active = true
 				cartoSvc.getNextDataPoint(ctx, sensors, c)
 			})
 		}
@@ -387,14 +387,14 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sen
 
 func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, sensors *SlamSensors, c chan int) {
 	// Get lidar data
-	if sensors.lidar_active && !sensors.imu_active {
-		if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, sensors.lidar, cartoSvc.logger); err != nil {
+	if sensors.Lidar_active && !sensors.IMU_active {
+		if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, sensors.Lidar, cartoSvc.logger); err != nil {
 			cartoSvc.logger.Warn(err)
 		}
 	}
 	// Get IMU data
-	if !sensors.lidar_active && sensors.imu_active {
-		if _, err := imu.GetAndSaveIMUData(ctx, cartoSvc.dataDirectory, sensors.imu, cartoSvc.logger); err != nil {
+	if !sensors.Lidar_active && sensors.IMU_active {
+		if _, err := imu.GetAndSaveIMUData(ctx, cartoSvc.dataDirectory, sensors.IMU, cartoSvc.logger); err != nil {
 			cartoSvc.logger.Warn(err)
 		}
 	}
