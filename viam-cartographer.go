@@ -49,7 +49,7 @@ const (
 
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
 type SubAlgo string
-type slamSensors struct {
+type SlamSensors struct {
 	lidar        lidar.Lidar
 	lidar_active bool
 	imu          imu.IMU
@@ -134,7 +134,7 @@ func New(
 		return nil, err
 	}
 
-	activeSensors := &slamSensors{
+	activeSensors := &SlamSensors{
 		lidar:        getLidar,
 		lidar_active: false,
 		imu:          getIMU,
@@ -288,7 +288,7 @@ func (cartoSvc *cartographerService) GetLatestMapInfo(ctx context.Context) (time
 // StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
 func (cartoSvc *cartographerService) StartDataProcess(
 	ctx context.Context,
-	sensors *slamSensors,
+	sensors *SlamSensors,
 	c chan int,
 ) {
 	cartoSvc.activeBackgroundWorkers.Add(1)
@@ -311,7 +311,7 @@ func (cartoSvc *cartographerService) StartDataProcess(
 	})
 }
 
-func (cartoSvc *cartographerService) readData(ctx context.Context, sensors *slamSensors, c chan int) {
+func (cartoSvc *cartographerService) readData(ctx context.Context, sensors *SlamSensors, c chan int) {
 	for {
 		if err := ctx.Err(); err != nil {
 			if !errors.Is(err, context.Canceled) {
@@ -324,7 +324,7 @@ func (cartoSvc *cartographerService) readData(ctx context.Context, sensors *slam
 	}
 }
 
-func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sensors *slamSensors, c chan int) {
+func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sensors *SlamSensors, c chan int) {
 	lidarTicker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
 	defer lidarTicker.Stop()
 	imuTicker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.imuDataRateMs))
@@ -385,7 +385,7 @@ func (cartoSvc *cartographerService) readDataOnInterval(ctx context.Context, sen
 	}
 }
 
-func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, sensors *slamSensors, c chan int) {
+func (cartoSvc *cartographerService) getNextDataPoint(ctx context.Context, sensors *SlamSensors, c chan int) {
 	// Get lidar data
 	if sensors.lidar_active && !sensors.imu_active {
 		if _, err := dim2d.GetAndSaveLidarData(ctx, cartoSvc.dataDirectory, sensors.lidar, cartoSvc.logger); err != nil {
