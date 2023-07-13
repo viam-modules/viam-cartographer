@@ -49,6 +49,12 @@ const (
 
 // SubAlgo defines the cartographer specific sub-algorithms that we support.
 type SubAlgo string
+type slamSensors struct {
+	lidar        lidar.Lidar
+	lidar_active bool
+	imu          imu.IMU
+	imu_active   bool
+}
 
 // Dim2d runs cartographer with a 2D LIDAR only.
 const Dim2d SubAlgo = "2d"
@@ -227,13 +233,6 @@ type cartographerService struct {
 
 	localizationMode bool
 	mapTimestamp     time.Time
-}
-
-type slamSensors struct {
-	lidar        lidar.Lidar
-	lidar_active bool
-	imu          imu.IMU
-	imu_active   bool
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
