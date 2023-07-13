@@ -349,13 +349,12 @@ func TestNew(t *testing.T) {
 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
-		// TODO: Implement these
 		_, componentReference, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "replay_sensor")
 
-		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
-		// test.That(t, err, test.ShouldBeNil)
+		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 
 		pcmFunc, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -371,10 +370,10 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
 
-		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
-		// test.That(t, err, test.ShouldBeNil)
-		// test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-		// test.That(t, timestamp1, test.ShouldResemble, timestamp2)
+		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
+		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
 
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
@@ -398,13 +397,12 @@ func TestNew(t *testing.T) {
 		svc, err := internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeNil)
 
-		// TODO: Implement these
 		_, componentReference, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
 
-		// timestamp1, err := svc.GetLatestMapInfo(context.Background())
-		// test.That(t, err, test.ShouldBeNil)
+		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 
 		pcmFunc, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -420,11 +418,11 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
 
-		// timestamp2, err := svc.GetLatestMapInfo(context.Background())
-		// test.That(t, err, test.ShouldBeNil)
+		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		test.That(t, err, test.ShouldBeNil)
 
-		// test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-		// test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
+		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
+		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
 
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
