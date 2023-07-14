@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
@@ -116,101 +115,4 @@ func TestValidateGetAndSaveData(t *testing.T) {
 	})
 
 	internaltesthelper.ClearDirectory(t, dataDir)
-}
-
-func TestGetTimedData(t *testing.T) {
-	logger := golog.NewTestLogger(t)
-	ctx := context.Background()
-
-	sensors := []string{"invalid_sensor"}
-	invalidLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	sensors = []string{"invalid_replay_sensor"}
-	invalidReplayLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	sensors = []string{"good_lidar"}
-	goodLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	sensors = []string{"replay_sensor"}
-	goodReplayLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	t.Run("when the lidar returns an error, returns that error", func(t *testing.T) {
-		_, pc, err := dim2d.GetTimedData(ctx, invalidLidar)
-		test.That(t, err, test.ShouldBeError, errors.New("invalid sensor"))
-		test.That(t, pc, test.ShouldBeNil)
-	})
-
-	t.Run("when the replay lidar succeeds but the timestamp is invalid, returns an error", func(t *testing.T) {
-		_, pc, err := dim2d.GetTimedData(ctx, invalidReplayLidar)
-		msg := "parsing time \"NOT A TIME\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"NOT A TIME\" as \"2006\""
-		test.That(t, err, test.ShouldBeError, errors.New(msg))
-		test.That(t, pc, test.ShouldBeNil)
-	})
-
-	t.Run("when a live lidar succeeds, returns current time in UTC and the reading", func(t *testing.T) {
-		beforeReading := time.Now().UTC()
-		pcTime, pc, err := dim2d.GetTimedData(ctx, goodLidar)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pc, test.ShouldNotBeNil)
-		test.That(t, pcTime.Before(beforeReading), test.ShouldBeFalse)
-		test.That(t, pcTime.Location(), test.ShouldEqual, time.UTC)
-	})
-
-	t.Run("when a replay lidar succeeds, returns the replay sensor time and the reading", func(t *testing.T) {
-		pcTime, pc, err := dim2d.GetTimedData(ctx, goodReplayLidar)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pc, test.ShouldNotBeNil)
-		test.That(t, pcTime, test.ShouldEqual, time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC))
-	})
-}
-
-func TestValidateGetData(t *testing.T) {
-	logger := golog.NewTestLogger(t)
-	ctx := context.Background()
-
-	sensors := []string{"good_lidar"}
-	goodLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	sensors = []string{"invalid_sensor"}
-	invalidLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
-	sensorValidationInterval := time.Duration(10) * time.Millisecond
-
-	t.Run("returns nil if a lidar reading succeeds immediately", func(t *testing.T) {
-		err := dim2d.ValidateGetData(ctx, goodLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("returns nil if a lidar reading succeeds within the timeout", func(t *testing.T) {
-		sensors = []string{"warming_up_lidar"}
-		warmingUpLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-		test.That(t, err, test.ShouldBeNil)
-
-		err = dim2d.ValidateGetData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("returns error if no lidar reading succeeds within the timeout", func(t *testing.T) {
-		err := dim2d.ValidateGetData(ctx, invalidLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeError, errors.New("ValidateGetData timeout: invalid sensor"))
-	})
-
-	t.Run("returns error if no lidar reading succeeds by the time the context is cancelled", func(t *testing.T) {
-		cancelledCtx, cancelFunc := context.WithCancel(context.Background())
-		cancelFunc()
-
-		sensors = []string{"warming_up_lidar"}
-		warmingUpLidar, err := dim2d.NewLidar(ctx, testhelper.SetupDeps(sensors), sensors, logger)
-		test.That(t, err, test.ShouldBeNil)
-
-		err = dim2d.ValidateGetData(cancelledCtx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeError, context.Canceled)
-	})
 }

@@ -8,8 +8,10 @@ package viamcartographer_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -22,8 +24,10 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
+	"go.viam.com/utils"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/dataprocess"
 	internaltesthelper "github.com/viamrobotics/viam-cartographer/internal/testhelper"
@@ -53,6 +57,40 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	pointcloud, _ := pointcloud.ReadPCD(bytes.NewReader(pcd))
 	t.Logf("Pointcloud points: %v", pointcloud.Size())
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
+}
+
+func testCartographerFullModPosition(t *testing.T, svc slam.Service, expectedComponentRef string) {
+	expectedPosOSX := r3.Vector{X: -1.0283431004415964, Y: 1.9804921951032644, Z: 0}
+
+	expectedPosLinux := r3.Vector{X: -0.062249046977189776, Y: 2.97876740701877, Z: 0}
+	tolerancePos := 0.001
+	expectedOri := &spatialmath.R4AA{Theta: 0, RX: 0, RY: 0, RZ: 1}
+	toleranceOri := 0.001
+
+	position, componentRef, err := svc.GetPosition(context.Background())
+	test.That(t, err, test.ShouldBeNil)
+	test.That(t, componentRef, test.ShouldEqual, expectedComponentRef)
+
+	actualPos := position.Point()
+	t.Logf("Position point: (%v, %v, %v)", actualPos.X, actualPos.Y, actualPos.Z)
+	// mac
+	if actualPos.X > expectedPosOSX.X-tolerancePos && actualPos.X < expectedPosOSX.X+tolerancePos {
+		test.That(t, actualPos.Y, test.ShouldBeBetween, expectedPosOSX.Y-tolerancePos, expectedPosOSX.Y+tolerancePos)
+		test.That(t, actualPos.Z, test.ShouldBeBetween, expectedPosOSX.Z-tolerancePos, expectedPosOSX.Z+tolerancePos)
+		// linux
+	} else if actualPos.X > expectedPosLinux.X-tolerancePos && actualPos.X < expectedPosLinux.X+tolerancePos {
+		test.That(t, actualPos.Y, test.ShouldBeBetween, expectedPosLinux.Y-tolerancePos, expectedPosLinux.Y+tolerancePos)
+		test.That(t, actualPos.Z, test.ShouldBeBetween, expectedPosLinux.Z-tolerancePos, expectedPosLinux.Z+tolerancePos)
+	} else {
+		t.Error("Position is outside of expected platform range")
+	}
+
+	actualOri := position.Orientation().AxisAngles()
+	t.Logf("Position orientation: RX: %v, RY: %v, RZ: %v, Theta: %v", actualOri.RX, actualOri.RY, actualOri.RZ, actualOri.Theta)
+	test.That(t, actualOri.RX, test.ShouldBeBetween, expectedOri.RX-toleranceOri, expectedOri.RX+toleranceOri)
+	test.That(t, actualOri.RY, test.ShouldBeBetween, expectedOri.RY-toleranceOri, expectedOri.RY+toleranceOri)
+	test.That(t, actualOri.RZ, test.ShouldBeBetween, expectedOri.RZ-toleranceOri, expectedOri.RZ+toleranceOri)
+	test.That(t, actualOri.Theta, test.ShouldBeBetween, expectedOri.Theta-toleranceOri, expectedOri.Theta+toleranceOri)
 }
 
 // Checks the cartographer position within a defined tolerance.
@@ -86,19 +124,222 @@ func testCartographerInternalState(t *testing.T, svc slam.Service, dataDir strin
 	test.That(t, err, test.ShouldBeNil)
 
 	// Save the data from the call to GetInternalState for use in next test.
+	saveInternalState(t, internalState, dataDir)
+}
+
+func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
 	timeStamp := time.Now()
 	filename := filepath.Join(dataDir, "map", "map_data_"+timeStamp.UTC().Format(dataprocess.SlamTimeFormat)+".pbstream")
-	err = os.WriteFile(filename, internalState, 0o644)
+	err := os.WriteFile(filename, internalState, 0o644)
 	test.That(t, err, test.ShouldBeNil)
+}
+
+func saveInternalStateFullMod(t *testing.T, internalState []byte, dataDir string) {
+	timeStamp := time.Now()
+	internalStateDir := filepath.Join(dataDir, "internal_state")
+	if err := os.Mkdir(internalStateDir, 0o755); err != nil {
+		t.Error("failed to create test internal state directory")
+	}
+	filename := filepath.Join(internalStateDir, "map_data_"+timeStamp.UTC().Format(dataprocess.SlamTimeFormat)+".pbstream")
+	if err := os.WriteFile(filename, internalState, 0o644); err != nil {
+		t.Error("failed to write test internal state")
+	}
+}
+
+func testHelperCartographerFullMod(
+	t *testing.T,
+	dataDirectory string,
+	subAlgo viamcartographer.SubAlgo,
+	logger golog.Logger,
+	replaySensor bool,
+	mapRateSec int,
+	expectedMode cartofacade.SlamMode,
+) []byte {
+	t.Helper()
+	termFunc := internaltesthelper.InitTestCL(t, logger)
+	defer termFunc()
+
+	attrCfg := &vcConfig.Config{
+		Sensors: []string{"stub_lidar"},
+		ConfigParams: map[string]string{
+			"mode": reflect.ValueOf(subAlgo).String(),
+		},
+		MapRateSec:              &mapRateSec,
+		DataDirectory:           dataDirectory,
+		ModularizationV2Enabled: &_true,
+	}
+
+	done := make(chan struct{})
+	sensorReadingInterval := time.Millisecond * 200
+	timedSensor, err := testhelper.FullModIntegrationLidarTimedSensor(t, attrCfg.Sensors[0], replaySensor, sensorReadingInterval, done)
+	test.That(t, err, test.ShouldBeNil)
+
+	svc, err := internaltesthelper.CreateFullModSLAMServiceIntegration(t, attrCfg, timedSensor, logger)
+	test.That(t, err, test.ShouldBeNil)
+	start := time.Now()
+
+	cSvc, ok := svc.(*viamcartographer.CartographerService)
+	test.That(t, ok, test.ShouldBeTrue)
+	test.That(t, cSvc.SlamMode, test.ShouldEqual, expectedMode)
+
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
+
+	defer cancelFunc()
+
+	// wait till all lidar readings have been read
+	if !utils.SelectContextOrWaitChan(ctx, done) {
+		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
+	}
+
+	testCartographerFullModPosition(t, svc, attrCfg.Sensors[0])
+	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
+
+	internalState, err := slam.GetInternalStateFull(context.Background(), svc)
+	test.That(t, err, test.ShouldBeNil)
+
+	// Close out slam service
+	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+
+	stop := time.Now()
+	testDuration := stop.Sub(start)
+	t.Logf("test duration %d", testDuration)
+
+	// Check that a map was generated as the test has been running for more than the map rate msec
+	mapsInDir, err := os.ReadDir(path.Join(dataDirectory, "internal_state"))
+	test.That(t, err, test.ShouldBeNil)
+	test.That(t, testDuration.Seconds(), test.ShouldBeGreaterThanOrEqualTo, time.Duration(*attrCfg.MapRateSec).Seconds())
+	test.That(t, len(mapsInDir), test.ShouldBeGreaterThan, 0)
+
+	// return the internal state so updating mode can be tested
+	return internalState
+}
+
+func integrationtestHelperCartographerFullMod(t *testing.T, subAlgo viamcartographer.SubAlgo) {
+	t.Helper()
+	logger := golog.NewTestLogger(t)
+	t.Run("live sensor mapping mode", func(t *testing.T) {
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		testHelperCartographerFullMod(t, dataDirectory, subAlgo, logger, false, 1, cartofacade.MappingMode)
+	})
+
+	t.Run("replay sensor mapping mode", func(t *testing.T) {
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		testHelperCartographerFullMod(t, dataDirectory, subAlgo, logger, true, 1, cartofacade.MappingMode)
+	})
+
+	t.Run("live sensor localizing mode", func(t *testing.T) {
+		dataDirectoryMapping, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryMapping)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// do a mapping run with replay sensor
+		internalState := testHelperCartographerFullMod(t, dataDirectoryMapping, subAlgo, logger, true, 1, cartofacade.MappingMode)
+
+		dataDirectoryLocalizing, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryLocalizing)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// save the internal state of the mapping run to a new datadir
+		saveInternalStateFullMod(t, internalState, dataDirectoryLocalizing)
+		// localize on that internal state
+		testHelperCartographerFullMod(t, dataDirectoryLocalizing, subAlgo, logger, false, 0, cartofacade.LocalizingMode)
+	})
+
+	t.Run("replay sensor localizing mode", func(t *testing.T) {
+		dataDirectoryMapping, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryMapping)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// do a mapping run with replay sensor
+		internalState := testHelperCartographerFullMod(t, dataDirectoryMapping, subAlgo, logger, true, 1, cartofacade.MappingMode)
+
+		dataDirectoryLocalizing, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryLocalizing)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// save the internal state of the mapping run to a new datadir
+		saveInternalStateFullMod(t, internalState, dataDirectoryLocalizing)
+		// localize on that internal state
+		testHelperCartographerFullMod(t, dataDirectoryLocalizing, subAlgo, logger, true, 0, cartofacade.LocalizingMode)
+	})
+
+	t.Run("live sensor updating mode", func(t *testing.T) {
+		dataDirectoryMapping, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryMapping)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// do a mapping run
+		internalState := testHelperCartographerFullMod(t, dataDirectoryMapping, subAlgo, logger, true, 1, cartofacade.MappingMode)
+
+		dataDirectoryUpdating, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryUpdating)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// save the internal state of the mapping run to a new datadir
+		saveInternalStateFullMod(t, internalState, dataDirectoryUpdating)
+		// update fromthat internal state
+		testHelperCartographerFullMod(t, dataDirectoryUpdating, subAlgo, logger, false, 1, cartofacade.UpdatingMode)
+	})
+
+	t.Run("replay sensor updating mode", func(t *testing.T) {
+		dataDirectoryMapping, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryMapping)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// do a mapping run
+		internalState := testHelperCartographerFullMod(t, dataDirectoryMapping, subAlgo, logger, true, 1, cartofacade.MappingMode)
+
+		dataDirectoryUpdating, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectoryUpdating)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		// save the internal state of the mapping run to a new datadir
+		saveInternalStateFullMod(t, internalState, dataDirectoryUpdating)
+		// update fromthat internal state
+		testHelperCartographerFullMod(t, dataDirectoryUpdating, subAlgo, logger, true, 1, cartofacade.UpdatingMode)
+	})
 }
 
 func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.SubAlgo) {
 	logger := golog.NewTestLogger(t)
 	_, err := exec.LookPath("carto_grpc_server")
-	if err != nil {
-		t.Log("Skipping test because carto_grpc_server binary was not found")
-		t.Skip()
-	}
+	test.That(t, err, test.ShouldBeNil)
 
 	dataDir, err := internaltesthelper.CreateTempFolderArchitecture(logger)
 	test.That(t, err, test.ShouldBeNil)
@@ -107,6 +348,7 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 
 	t.Log("\n=== Testing online mode ===\n")
 
+	start := time.Now()
 	mapRateSec := 9999
 	deleteProcessedData := false
 	useLiveData := true
@@ -171,6 +413,10 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 
 	// Close out slam service
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+
+	stop := time.Now()
+	testDuration := stop.Sub(start).Milliseconds()
+	t.Logf("test duration %d", testDuration)
 
 	// Sleep to ensure cartographer stops
 	time.Sleep(time.Millisecond * cartoSleepMsec)
@@ -417,4 +663,8 @@ func testCartographerDir(t *testing.T, path string, expectedMaps int) {
 
 func TestCartographerIntegration2D(t *testing.T) {
 	integrationtestHelperCartographer(t, viamcartographer.Dim2d)
+}
+
+func TestCartographerIntegration2DFullMod(t *testing.T) {
+	integrationtestHelperCartographerFullMod(t, viamcartographer.Dim2d)
 }

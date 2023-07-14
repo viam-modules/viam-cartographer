@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -15,10 +16,13 @@ import (
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
+	"go.viam.com/utils/artifact"
 	"go.viam.com/utils/pexec"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
+	"github.com/viamrobotics/viam-cartographer/dataprocess"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	externaltesthelper "github.com/viamrobotics/viam-cartographer/testhelper"
 )
@@ -56,6 +60,91 @@ func ClearDirectory(t *testing.T, path string) {
 	test.That(t, err, test.ShouldBeNil)
 }
 
+// CreateFullModSLAMService creates a slam service for testing.
+func CreateFullModSLAMService(
+	t *testing.T,
+	cfg *vcConfig.Config,
+	deps resource.Dependencies,
+	logger golog.Logger,
+) (slam.Service, error) {
+	t.Helper()
+
+	ctx := context.Background()
+	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
+	cfgService.ConvertedAttributes = cfg
+
+	sensorDeps, err := cfg.Validate("path")
+	if err != nil {
+		return nil, err
+	}
+	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
+
+	svc, err := viamcartographer.New(
+		ctx,
+		deps,
+		cfgService,
+		logger,
+		true,
+		"true",
+		SensorValidationMaxTimeoutSecForTest,
+		SensorValidationIntervalSecForTest,
+		testDialMaxTimeoutSec,
+		5*time.Second,
+		nil,
+	)
+	if err != nil {
+		test.That(t, svc, test.ShouldBeNil)
+		return nil, err
+	}
+
+	test.That(t, svc, test.ShouldNotBeNil)
+
+	return svc, nil
+}
+
+// CreateFullModSLAMServiceIntegration creates a slam service for testing.
+func CreateFullModSLAMServiceIntegration(
+	t *testing.T,
+	cfg *vcConfig.Config,
+	timedSensor s.TimedSensor,
+	logger golog.Logger,
+) (slam.Service, error) {
+	t.Helper()
+
+	ctx := context.Background()
+	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
+	cfgService.ConvertedAttributes = cfg
+
+	sensorDeps, err := cfg.Validate("path")
+	if err != nil {
+		return nil, err
+	}
+	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
+	deps := externaltesthelper.SetupDeps(cfg.Sensors)
+
+	svc, err := viamcartographer.New(
+		ctx,
+		deps,
+		cfgService,
+		logger,
+		true,
+		"true",
+		SensorValidationMaxTimeoutSecForTest,
+		SensorValidationIntervalSecForTest,
+		testDialMaxTimeoutSec,
+		5*time.Second,
+		timedSensor,
+	)
+	if err != nil {
+		test.That(t, svc, test.ShouldBeNil)
+		return nil, err
+	}
+
+	test.That(t, svc, test.ShouldNotBeNil)
+
+	return svc, nil
+}
+
 // CreateSLAMService creates a slam service for testing.
 func CreateSLAMService(
 	t *testing.T,
@@ -89,6 +178,7 @@ func CreateSLAMService(
 		SensorValidationIntervalSecForTest,
 		testDialMaxTimeoutSec,
 		5*time.Second,
+		nil,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
@@ -180,4 +270,41 @@ func CheckDataDirForExpectedFiles(t *testing.T, dir string, prev int, deleteProc
 		test.That(t, prev, test.ShouldEqual, len(files))
 	}
 	return len(files), nil
+}
+
+// InitTestCL initializes the carto library & returns a function to terminate it.
+func InitTestCL(t *testing.T, logger golog.Logger) func() {
+	t.Helper()
+	err := viamcartographer.InitCartoLib(logger)
+	test.That(t, err, test.ShouldBeNil)
+	return func() {
+		err = viamcartographer.TerminateCartoLib()
+		test.That(t, err, test.ShouldBeNil)
+	}
+}
+
+// InitInternalState creates the internal state directory witghin a temp directory
+// with an internal state pbstream file & returns the data directory & a function
+// to delete the data directory.
+func InitInternalState(t *testing.T) (string, func()) {
+	dataDirectory, err := os.MkdirTemp("", "*")
+	test.That(t, err, test.ShouldBeNil)
+
+	internalStateDir := filepath.Join(dataDirectory, "internal_state")
+	err = os.Mkdir(internalStateDir, os.ModePerm)
+	test.That(t, err, test.ShouldBeNil)
+
+	file := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
+	internalState, err := os.ReadFile(artifact.MustPath(file))
+	test.That(t, err, test.ShouldBeNil)
+
+	timestamp := time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC)
+	filename := dataprocess.CreateTimestampFilename(dataDirectory+"/internal_state", "internal_state", ".pbstream", timestamp)
+	err = os.WriteFile(filename, internalState, os.ModePerm)
+	test.That(t, err, test.ShouldBeNil)
+
+	return dataDirectory, func() {
+		err := os.RemoveAll(dataDirectory)
+		test.That(t, err, test.ShouldBeNil)
+	}
 }
