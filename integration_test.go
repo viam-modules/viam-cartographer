@@ -349,7 +349,6 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 
 	t.Log("\n=== Testing online mode ===\n")
 
-	start := time.Now()
 	mapRateSec := 9999
 	deleteProcessedData := false
 	useLiveData := true
@@ -414,10 +413,6 @@ func integrationtestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 
 	// Close out slam service
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-
-	stop := time.Now()
-	testDuration := stop.Sub(start).Milliseconds()
-	t.Logf("test duration %d", testDuration)
 
 	// Sleep to ensure cartographer stops
 	time.Sleep(time.Millisecond * cartoSleepMsec)
