@@ -20,12 +20,10 @@ import (
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
-	"go.viam.com/utils/artifact"
 	"google.golang.org/grpc"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/dataprocess"
 	internaltesthelper "github.com/viamrobotics/viam-cartographer/internal/testhelper"
 	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 	"github.com/viamrobotics/viam-cartographer/testhelper"
@@ -43,39 +41,6 @@ var (
 	_zeroInt       = 0
 	_zeroTime      = time.Time{}
 )
-
-func initTestCL(t *testing.T, logger golog.Logger) func() {
-	t.Helper()
-	err := viamcartographer.InitCartoLib(logger)
-	test.That(t, err, test.ShouldBeNil)
-	return func() {
-		err = viamcartographer.TerminateCartoLib()
-		test.That(t, err, test.ShouldBeNil)
-	}
-}
-
-func initInternalState(t *testing.T) (string, func()) {
-	dataDirectory, err := os.MkdirTemp("", "*")
-	test.That(t, err, test.ShouldBeNil)
-
-	internalStateDir := filepath.Join(dataDirectory, "internal_state")
-	err = os.Mkdir(internalStateDir, os.ModePerm)
-	test.That(t, err, test.ShouldBeNil)
-
-	file := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
-	internalState, err := os.ReadFile(artifact.MustPath(file))
-	test.That(t, err, test.ShouldBeNil)
-
-	timestamp := time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC)
-	filename := dataprocess.CreateTimestampFilename(dataDirectory+"/internal_state", "internal_state", ".pbstream", timestamp)
-	err = os.WriteFile(filename, internalState, os.ModePerm)
-	test.That(t, err, test.ShouldBeNil)
-
-	return dataDirectory, func() {
-		err := os.RemoveAll(dataDirectory)
-		test.That(t, err, test.ShouldBeNil)
-	}
-}
 
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
@@ -224,10 +189,10 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Fails to create cartographer slam service with no sensor when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, fsCleanupFunc := initInternalState(t)
+		dataDirectory, fsCleanupFunc := internaltesthelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -244,10 +209,10 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Failed creation of cartographer slam service with more than one sensor when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, fsCleanupFunc := initInternalState(t)
+		dataDirectory, fsCleanupFunc := internaltesthelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -265,10 +230,10 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Failed creation of cartographer slam service with non-existing sensor when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, fsCleanupFunc := initInternalState(t)
+		dataDirectory, fsCleanupFunc := internaltesthelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -287,10 +252,10 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Successful creation of cartographer slam service with good lidar when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, fsCleanupFunc := initInternalState(t)
+		dataDirectory, fsCleanupFunc := internaltesthelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -310,10 +275,10 @@ func TestNew(t *testing.T) {
 
 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
 		"that errors during call to NextPointCloud when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, fsCleanupFunc := initInternalState(t)
+		dataDirectory, fsCleanupFunc := internaltesthelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -327,14 +292,14 @@ func TestNew(t *testing.T) {
 
 		_, err = internaltesthelper.CreateSLAMService(t, attrCfg, logger, false, testExecutableName)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("failed to get data from lidar: ValidateGetData timeout: invalid sensor"))
+			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid sensor"))
 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, fsCleanupFunc := initInternalState(t)
+		dataDirectory, fsCleanupFunc := internaltesthelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -379,10 +344,10 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Successful creation of cartographer slam service in non localization mode when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, fsCleanupFunc := initInternalState(t)
+		dataDirectory, fsCleanupFunc := internaltesthelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -708,11 +673,15 @@ func TestClose(t *testing.T) {
 	})
 
 	t.Run("is idempotent and makes all endpoints return closed errors when feature flag enabled", func(t *testing.T) {
-		termFunc := initTestCL(t, logger)
+		termFunc := internaltesthelper.InitTestCL(t, logger)
 		defer termFunc()
 
 		dataDirectory, err := os.MkdirTemp("", "*")
 		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
 
 		attrCfg := &vcConfig.Config{
 			ModularizationV2Enabled: &_true,

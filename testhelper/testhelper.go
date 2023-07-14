@@ -2,10 +2,15 @@
 package testhelper
 
 import (
+	"bytes"
 	"context"
+	"fmt"
 	"os"
+	"path"
 	"strconv"
 	"sync/atomic"
+	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/viamrobotics/gostream"
@@ -16,6 +21,8 @@ import (
 	"go.viam.com/rdk/testutils/inject"
 	"go.viam.com/rdk/utils/contextutils"
 	"go.viam.com/utils/artifact"
+
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 const (
@@ -28,9 +35,44 @@ const (
 	BadTime = "NOT A TIME"
 )
 
+var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
+
 // IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
 // channel for the integration tests.
 var IntegrationLidarReleasePointCloudChan = make(chan int, 1)
+
+// SetupStubDeps returns stubbed dependencies based on the sensors
+// the stubs fail tests if called.
+func SetupStubDeps(sensors []string, t *testing.T) resource.Dependencies {
+	deps := make(resource.Dependencies)
+
+	for _, sensor := range sensors {
+		switch sensor {
+		case "stub_lidar":
+			deps[camera.Named(sensor)] = getStubLidar(t)
+		default:
+			t.Errorf("SetupStubDeps calld with unhandled sensor sensors: %s, %v", sensor, sensors)
+		}
+	}
+	return deps
+}
+
+func getStubLidar(t *testing.T) *inject.Camera {
+	cam := &inject.Camera{}
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		t.Error("stub lidar NextPointCloud called")
+		return nil, errors.New("invalid sensor")
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		t.Error("stub lidar Stream called")
+		return nil, errors.New("invalid sensor")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		t.Error("stub lidar Projector called")
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	return cam
+}
 
 // SetupDeps returns the dependencies based on the sensors passed as arguments.
 func SetupDeps(sensors []string) resource.Dependencies {
@@ -166,4 +208,103 @@ func getIntegrationLidar() *inject.Camera {
 		return camera.Properties{}, nil
 	}
 	return cam
+}
+
+func mockLidarReadingsValid() error {
+	dirEntries, err := os.ReadDir(mockLidarPath)
+	if err != nil {
+		return err
+	}
+
+	var files []string
+	for _, f := range dirEntries {
+		if !f.IsDir() {
+			files = append(files, f.Name())
+		}
+	}
+	if len(files) < NumPointClouds {
+		return errors.New("expected at least 15 lidar readings for integration test")
+	}
+	for i := 0; i < NumPointClouds; i++ {
+		found := false
+		expectedFile := fmt.Sprintf("%d.pcd", i)
+		for _, file := range files {
+			if file == expectedFile {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return errors.Errorf("expected %s to exist for integration test", path.Join(mockLidarPath, expectedFile))
+		}
+	}
+	return nil
+}
+
+// FullModIntegrationLidarTimedSensor returns a mock timed lidar sensor
+// or an error if preconditions to build the mock are not met.
+// It validates that all required mock lidar reading files are able to be found.
+// When the mock is called, it returns the next mock lidar reading, with the
+// ReadingTime incremented by the sensorReadingInterval.
+// The Replay sensor field of the mock readings will match the replay paramenter.
+// When the end of the mock lidar readings is reached, the done channel
+// is written to once so the caller can detect all lidar readings have been emitted
+// from the mock. This is intended to match the same "end of dataset" behavior of a
+// replay sensor.
+// It is imporntant to provide determanistic time information to cartographer to
+// ensure test outputs of cartographer are determanistic.
+func FullModIntegrationLidarTimedSensor(
+	t *testing.T,
+	sensor string,
+	replay bool,
+	sensorReadingInterval time.Duration,
+	done chan struct{},
+) (s.TimedSensor, error) {
+	err := mockLidarReadingsValid()
+	if err != nil {
+		return nil, err
+	}
+
+	var i uint64
+	closed := false
+
+	ts := &s.TimedSensorMock{}
+	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+
+	ts.TimedSensorReadingFunc = func(ctx context.Context) (s.TimedSensorReadingResponse, error) {
+		readingTime = readingTime.Add(sensorReadingInterval)
+		t.Logf("TimedSenorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		if i >= NumPointClouds {
+			// communicate to the test that all lidar readings have been written
+			if !closed {
+				done <- struct{}{}
+				closed = true
+			}
+			return s.TimedSensorReadingResponse{}, errors.New("end of dataset")
+		}
+
+		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
+		if err != nil {
+			t.Error("TimedSenorReading Mock failed to open pcd file")
+			return s.TimedSensorReadingResponse{}, err
+		}
+		readingPc, err := pointcloud.ReadPCD(file)
+		if err != nil {
+			t.Error("TimedSenorReading Mock failed to read pcd")
+			return s.TimedSensorReadingResponse{}, err
+		}
+
+		buf := new(bytes.Buffer)
+		err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
+		if err != nil {
+			t.Error("TimedSenorReading Mock failed to parse pcd")
+			return s.TimedSensorReadingResponse{}, err
+		}
+
+		i++
+		return s.TimedSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+	}
+
+	return ts, nil
 }

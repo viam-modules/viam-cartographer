@@ -1,25 +1,22 @@
-// Package sensorprocess contains the logic to add lidar or replay sensor readings to cartographer's mapbuilder
+// Package sensorprocess contains the logic to add lidar or replay sensor readings to cartographer's cartofacade
 package sensorprocess
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"math"
 	"time"
 
 	"github.com/edaniels/golog"
-	"go.viam.com/rdk/pointcloud"
-	"go.viam.com/rdk/utils/contextutils"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	"github.com/viamrobotics/viam-cartographer/sensors"
 )
 
-// Config holds config needed throughout the process of adding a sensor reading to the mapbuilder.
+// Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
 	CartoFacade      cartofacade.Interface
-	Lidar            lidar.Lidar
+	Lidar            sensors.TimedSensor
 	LidarName        string
 	DataRateMs       int
 	Timeout          time.Duration
@@ -27,7 +24,7 @@ type Config struct {
 	TelemetryEnabled bool
 }
 
-// Start polls the lidar to get the next sensor reading and adds it to the mapBuilder.
+// Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
 // stops when the context is Done.
 func Start(
 	ctx context.Context,
@@ -43,36 +40,21 @@ func Start(
 	}
 }
 
-// addSensorReading adds a lidar reading to the mapbuilder.
+// addSensorReading adds a lidar reading to the cartofacade.
 func addSensorReading(
-	parentCtx context.Context,
+	ctx context.Context,
 	config Config,
 ) {
-	ctxWithMetadata, md := contextutils.ContextWithMetadata(parentCtx)
-	readingPc, err := config.Lidar.GetData(ctxWithMetadata)
+	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
-		config.Logger.Warnw("Skipping sensor reading due to error getting lidar reading", "error", err)
-		return
-	}
-	readingTime := time.Now().UTC()
-
-	buf := new(bytes.Buffer)
-	err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
-	if err != nil {
-		config.Logger.Warnw("Skipping sensor reading due to error converting lidar reading to PCD", "error", err)
+		config.Logger.Warn(err)
 		return
 	}
 
-	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-	if ok {
-		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-		if err != nil {
-			config.Logger.Warnw("Skipping sensor reading due to error converting replay sensor timestamp to RFC3339Nano", "error", err)
-			return
-		}
-		addSensorReadingFromReplaySensor(ctxWithMetadata, buf.Bytes(), readingTime, config)
+	if tsr.Replay {
+		addSensorReadingFromReplaySensor(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
-		timeToSleep := addSensorReadingFromLiveReadings(ctxWithMetadata, buf.Bytes(), readingTime, config)
+		timeToSleep := addSensorReadingFromLiveReadings(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
 }
