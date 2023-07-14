@@ -156,7 +156,7 @@ func TestGetTimedData(t *testing.T) {
 		pcTime, pc, err := dim2d.GetTimedData(ctx, goodLidar)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc, test.ShouldNotBeNil)
-		test.That(t, pcTime.After(beforeReading), test.ShouldBeTrue)
+		test.That(t, pcTime.Before(beforeReading), test.ShouldBeFalse)
 		test.That(t, pcTime.Location(), test.ShouldEqual, time.UTC)
 	})
 

@@ -375,7 +375,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
-	err = cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
+	_, err = cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
 	if err != nil {
 		cartoSvc.logger.Errorw("cartofacade initialize failed", "error", err)
 		return err
