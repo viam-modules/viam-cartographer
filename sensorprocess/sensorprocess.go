@@ -115,30 +115,23 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 			err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
 				if config.TelemetryEnabled {
-					incrementTelemetry(config, successfulReadings)
+					config.lidarReadingCounter.Inc(successfulReadings)
 				}
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err) // Remove?
 				if config.TelemetryEnabled {
-					incrementTelemetry(config, unsuccessfulReadingsLockUnexpectedError)
+					config.lidarReadingCounter.Inc(unsuccessfulReadingsLockUnexpectedError)
 				}
 			} else {
 				config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err) // Remove?
 				if config.TelemetryEnabled {
-					incrementTelemetry(config, unsuccessfulReadingsLockNotAcquired)
+					config.lidarReadingCounter.Inc(unsuccessfulReadingsLockNotAcquired)
 				}
 			}
 		}
 	}
-}
-
-func incrementTelemetry(config Config, label string) {
-	if config.lidarReadingCounter == nil {
-		return
-	}
-	config.lidarReadingCounter.Inc(label)
 }
 
 // addSensorReadingFromLiveReadings adds a reading from a live lidar to the carto facade
