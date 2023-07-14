@@ -32,13 +32,15 @@ std::vector<std::string> ListSortedFilesInDirectory(std::string data_directory);
 cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time);
 
+cartographer::sensor::ImuData GetTimedIMUDataFromJSON(std::string file_path, double start_time);
+
 // RemoveFile removes the file at the provided path.
 void RemoveFile(std::string);
 
 // Converts UTC time string to a double value.
 double ReadTimeFromTimestamp(std::string timestamp);
 
-void ReadDataFromJSONToArray(std::string filename, double imu_data[3][3]);
+void ReadDataFromJSONToArray(std::string filename, double imu_data[]);
 
 }  // namespace io
 }  // namespace viam

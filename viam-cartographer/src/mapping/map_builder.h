@@ -65,6 +65,10 @@ class MapBuilder {
     // a PCD file.
     cartographer::sensor::TimedPointCloudData GetDataFromFile(std::string file);
 
+    cartographer::sensor::ImuData GetIMUDataFromFile(std::string file);
+
+    cartographer::sensor::ImuData GetTimedIMUDataFromJSON(std::string file_path, double start_time);
+
     // GetLocalSlamResultPoses returns the local slam result poses.
     std::vector<::cartographer::transform::Rigid3d> GetLocalSlamResultPoses();
 

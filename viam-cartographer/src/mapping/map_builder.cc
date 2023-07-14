@@ -126,6 +126,18 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
     return point_cloud;
 }
 
+cartographer::sensor::ImuData MapBuilder::GetIMUDataFromFile(
+    std::string file) {
+    cartographer::sensor::ImuData imu_data;
+
+    if (start_time == -1) {
+        throw std::runtime_error("start_time has not been initialized");
+    }
+    imu_data = viam::io::GetTimedIMUDataFromJSON(file, start_time);
+
+    return imu_data;
+}
+
 // TODO: There might still be a lot of room to improve accuracy & speed.
 // Might be worth investigating in the future.
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(

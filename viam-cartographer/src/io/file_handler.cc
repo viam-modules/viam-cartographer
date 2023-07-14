@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <iostream>
 #include <string>
+#include <regex>
 
 #include "glog/logging.h"
 
@@ -65,6 +66,30 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     timed_pcd.ranges = ranges;
 
     return timed_pcd;
+}
+
+cartographer::sensor::ImuData GetTimedIMUDataFromJSON(
+    std::string file_path, double start_time) {
+    pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
+
+    cartographer::sensor::ImuData imu_data;
+
+    double current_time = ReadTimeFromTimestamp(file_path.substr(
+        file_path.find(filename_prefix) + filename_prefix.length(),
+        file_path.find(".json")));
+    double time_delta = current_time - start_time;
+
+    VLOG(1) << "Accessing file " << file_path << " ... ";
+
+    imu_data.time = cartographer::common::FromUniversal(123) +
+                     cartographer::common::FromSeconds(double(time_delta));
+    
+    auto data = ReadDataFromJSONToArray(file_path);
+
+    imu_data.linear_acceleration = {data[0], data[1], data[2]};
+    imu_data.angular_velocity = {data[3], data[4], data[5]};
+
+    return imu_data;
 }
 
 std::vector<std::string> ListSortedFilesInDirectory(
@@ -126,7 +151,7 @@ double ReadTimeFromTimestamp(std::string timestamp) {
 }
 
 
-void ReadDataFromJSONToArray(std::string filename, double imu_data[3][3]) {
+std::vector<double> ReadDataFromJSONToArray(std::string filename) {
     std::ifstream in;    // Create an input file stream.
     in.open("j.json");
     if ( ! in ) {
@@ -137,10 +162,10 @@ void ReadDataFromJSONToArray(std::string filename, double imu_data[3][3]) {
     std::string input;
     getline(in,input);  // Get the first line from the file, if any.
 
-    std::std::regex regex("\"[A-Za-z]+\":(\\d+\\.?\\d*)");
-    std::std::smatch match;
+    std::regex regex("\"[A-Za-z]+\":(\\d+\\.?\\d*)");
+    std::smatch match;
 
-    while (std::std::regex_search(input, match, regex)) {
+    while (std::regex_search(input, match, regex)) {
         std::cout << match.str(1) << std::endl;
         input = match.suffix();
     }
@@ -151,10 +176,8 @@ void ReadDataFromJSONToArray(std::string filename, double imu_data[3][3]) {
         input = match.suffix();
     }
 
-    double acc[] = {listd[0], listd[1], listd[2]};
-    double gyro[] = {listd[3], listd[4], listd[5]};
-    imu_data[0] = acc;
-    imu_data[1] = gyro;
+    return listd;
+    
 }
 
 }  // namespace io

@@ -746,19 +746,12 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 }
             }
             if (file.find(".json")) {
-                double current_time = io::ReadTimeFromTimestamp(file);
-                double time_delta = current_time - map_builder.start_time;
-                double imu_time = cartographer::common::FromUniversal(123) +
-                     cartographer::common::FromSeconds(double(time_delta));
-                cartographer::sensor::ImuData test_data{
-                     cartographer::common::FromUniversal(imu_time),
-                    Eigen::Vector3d(0., 0., 9.8), Eigen::Vector3d::Zero()};
-                double imu_data[3][3];
-                io::ReadDataFromJSONToArray(file, imu_data);
-                if (true) {
+                
+                cartographer::sensor::ImuData imu_data = map_builder.GetIMUDataFromFile(file);
+                if (imu_data.linear_acceleration.size() > 0) {
                     LOG(INFO) << "Adding IMU Data...";
                     trajectory_builder->AddSensorData(kIMUSensorId.id,
-                                                     test_data);
+                                                     imu_data);
                     auto local_poses = map_builder.GetLocalSlamResultPoses();
                     if (local_poses.size() > 0) {
                         tmp_global_pose = map_builder.GetGlobalPose(
