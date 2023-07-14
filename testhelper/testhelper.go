@@ -41,14 +41,45 @@ var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
 // channel for the integration tests.
 var IntegrationLidarReleasePointCloudChan = make(chan int, 1)
 
+// SetupStubDeps returns stubbed dependencies based on the sensors
+// the stubs fail tests if called.
+func SetupStubDeps(sensors []string, t *testing.T) resource.Dependencies {
+	deps := make(resource.Dependencies)
+
+	for _, sensor := range sensors {
+		switch sensor {
+		case "stub_lidar":
+			deps[camera.Named(sensor)] = getStubLidar(t)
+		default:
+			t.Errorf("SetupStubDeps calld with unhandled sensor sensors: %s, %v", sensor, sensors)
+		}
+	}
+	return deps
+}
+
+func getStubLidar(t *testing.T) *inject.Camera {
+	cam := &inject.Camera{}
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		t.Error("stub lidar NextPointCloud called")
+		return nil, errors.New("invalid sensor")
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		t.Error("stub lidar Stream called")
+		return nil, errors.New("invalid sensor")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		t.Error("stub lidar Projector called")
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	return cam
+}
+
 // SetupDeps returns the dependencies based on the sensors passed as arguments.
 func SetupDeps(sensors []string) resource.Dependencies {
 	deps := make(resource.Dependencies)
 
 	for _, sensor := range sensors {
 		switch sensor {
-		case "stub_lidar":
-			deps[camera.Named(sensor)] = getInvalidSensor()
 		case "good_lidar":
 			deps[camera.Named(sensor)] = getGoodLidar()
 		case "warming_up_lidar":

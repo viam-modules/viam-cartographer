@@ -156,7 +156,6 @@ func testHelperCartographerFullMod(
 	mapRateSec int,
 	expectedMode cartofacade.SlamMode,
 ) []byte {
-	t.Helper()
 	termFunc := internaltesthelper.InitTestCL(t, logger)
 	defer termFunc()
 
@@ -216,7 +215,6 @@ func testHelperCartographerFullMod(
 }
 
 func integrationtestHelperCartographerFullMod(t *testing.T, subAlgo viamcartographer.SubAlgo) {
-	t.Helper()
 	logger := golog.NewTestLogger(t)
 	t.Run("live sensor mapping mode", func(t *testing.T) {
 		dataDirectory, err := os.MkdirTemp("", "*")

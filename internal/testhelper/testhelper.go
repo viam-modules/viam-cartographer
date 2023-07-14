@@ -67,8 +67,6 @@ func CreateFullModSLAMServiceIntegration(
 	timedSensor s.TimedSensor,
 	logger golog.Logger,
 ) (slam.Service, error) {
-	t.Helper()
-
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
@@ -78,7 +76,7 @@ func CreateFullModSLAMServiceIntegration(
 		return nil, err
 	}
 	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
-	deps := externaltesthelper.SetupDeps(cfg.Sensors)
+	deps := externaltesthelper.SetupStubDeps(cfg.Sensors, t)
 
 	svc, err := viamcartographer.New(
 		ctx,
