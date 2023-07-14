@@ -73,6 +73,7 @@ func testCartographerFullModPosition(t *testing.T, svc slam.Service, expectedCom
 
 	actualPos := position.Point()
 	t.Logf("Position point: (%v, %v, %v)", actualPos.X, actualPos.Y, actualPos.Z)
+	// https://viam.atlassian.net/browse/RSDK-3866
 	// mac
 	if actualPos.X > expectedPosOSX.X-tolerancePos && actualPos.X < expectedPosOSX.X+tolerancePos {
 		test.That(t, actualPos.Y, test.ShouldBeBetween, expectedPosOSX.Y-tolerancePos, expectedPosOSX.Y+tolerancePos)
