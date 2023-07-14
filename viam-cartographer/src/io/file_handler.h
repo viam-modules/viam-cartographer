@@ -38,6 +38,8 @@ void RemoveFile(std::string);
 // Converts UTC time string to a double value.
 double ReadTimeFromTimestamp(std::string timestamp);
 
+void ReadDataFromJSONToArray(std::string filename, double imu_data[3][3]);
+
 }  // namespace io
 }  // namespace viam
 

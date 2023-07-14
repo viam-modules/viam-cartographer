@@ -8,7 +8,7 @@
 #include <string>
 
 #include "../io/file_handler.h"
-#include "../dist/json/json.h"
+//#include "../dist/json/json.h"
 #include "../mapping/map_builder.h"
 #include "../utils/slam_service_helpers.h"
 #include "Eigen/Core"
@@ -18,7 +18,6 @@
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
-#include "../../../jsoncpp/dist/json/json.h"
 
 namespace {
 // Number of bytes in a pixel
@@ -732,7 +731,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         // Add data to the map_builder to add to the map
         {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            if file.find(".pcd") {
+            if (file.find(".pcd")) {
+                LOG(INFO) << "Am here...";
                 auto measurement = map_builder.GetDataFromFile(file);
                 if (measurement.ranges.size() > 0) {
                     LOG(INFO) << "Adding Lidar Data...";
@@ -745,13 +745,20 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                     }
                 }
             }
-            if file.find(".json") {
-                Json::Reader reader;
-                auto measurement = ifstream file(file);
-                if (measurement.ranges.size() > 0) {
+            if (file.find(".json")) {
+                double current_time = io::ReadTimeFromTimestamp(file);
+                double time_delta = current_time - map_builder.start_time;
+                double imu_time = cartographer::common::FromUniversal(123) +
+                     cartographer::common::FromSeconds(double(time_delta));
+                cartographer::sensor::ImuData test_data{
+                     cartographer::common::FromUniversal(imu_time),
+                    Eigen::Vector3d(0., 0., 9.8), Eigen::Vector3d::Zero()};
+                double imu_data[3][3];
+                io::ReadDataFromJSONToArray(file, imu_data);
+                if (true) {
                     LOG(INFO) << "Adding IMU Data...";
                     trajectory_builder->AddSensorData(kIMUSensorId.id,
-                                                      measurement);
+                                                     test_data);
                     auto local_poses = map_builder.GetLocalSlamResultPoses();
                     if (local_poses.size() > 0) {
                         tmp_global_pose = map_builder.GetGlobalPose(

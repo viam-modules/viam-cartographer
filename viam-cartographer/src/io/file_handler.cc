@@ -125,5 +125,37 @@ double ReadTimeFromTimestamp(std::string timestamp) {
     }
 }
 
+
+void ReadDataFromJSONToArray(std::string filename, double imu_data[3][3]) {
+    std::ifstream in;    // Create an input file stream.
+    in.open("j.json");
+    if ( ! in ) {
+        std::cout << "Error: Can't open the file named data.txt.\n";
+        exit(1);
+    }
+
+    std::string input;
+    getline(in,input);  // Get the first line from the file, if any.
+
+    std::std::regex regex("\"[A-Za-z]+\":(\\d+\\.?\\d*)");
+    std::std::smatch match;
+
+    while (std::std::regex_search(input, match, regex)) {
+        std::cout << match.str(1) << std::endl;
+        input = match.suffix();
+    }
+
+    std::vector<double> listd;
+    while (std::regex_search(input, match, regex)) {
+        listd.push_back(stod(match.str(1)));
+        input = match.suffix();
+    }
+
+    double acc[] = {listd[0], listd[1], listd[2]};
+    double gyro[] = {listd[3], listd[4], listd[5]};
+    imu_data[0] = acc;
+    imu_data[1] = gyro;
+}
+
 }  // namespace io
 }  // namespace viam
