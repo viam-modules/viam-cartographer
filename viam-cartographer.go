@@ -375,7 +375,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
-	err = cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
+	slamMode, err := cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
 	if err != nil {
 		cartoSvc.logger.Errorw("cartofacade initialize failed", "error", err)
 		return err
@@ -392,6 +392,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *cartographerService) error {
 	}
 
 	cartoSvc.cartofacade = &cf
+	cartoSvc.SlamMode = slamMode
 
 	return nil
 }
@@ -443,6 +444,7 @@ type cartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
 	mu                sync.Mutex
+	SlamMode          cartofacade.SlamMode
 	closed            bool
 	primarySensorName string
 	lidar             lidar.Lidar

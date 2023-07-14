@@ -38,7 +38,7 @@ type Mock struct {
 	InitializeFunc func(
 		ctx context.Context,
 		timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup,
-	) error
+	) (SlamMode, error)
 	StartFunc func(
 		ctx context.Context,
 		timeout time.Duration,
@@ -101,7 +101,7 @@ func (cf *Mock) Initialize(
 	ctx context.Context,
 	timeout time.Duration,
 	activeBackgroundWorkers *sync.WaitGroup,
-) error {
+) (SlamMode, error) {
 	if cf.InitializeFunc == nil {
 		return cf.CartoFacade.Initialize(ctx, timeout, activeBackgroundWorkers)
 	}

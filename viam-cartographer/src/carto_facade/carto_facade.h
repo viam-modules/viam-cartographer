@@ -29,9 +29,15 @@ typedef struct viam_carto_lib {
     int verbose;
 } viam_carto_lib;
 
+#define VIAM_CARTO_SLAM_MODE_UNKNOWN 0
+#define VIAM_CARTO_SLAM_MODE_MAPPING 1
+#define VIAM_CARTO_SLAM_MODE_LOCALIZING 2
+#define VIAM_CARTO_SLAM_MODE_UPDATING 3
+
 // Represents carto instance level state
 typedef struct viam_carto {
     void *carto_obj;
+    int slam_mode;
 } viam_carto;
 
 // GetPositionResponse
@@ -279,8 +285,8 @@ extern int viam_carto_get_internal_state_response_destroy(
 namespace viam {
 namespace carto_facade {
 std::string to_std_string(bstring b_str);
-enum class ActionMode { MAPPING, LOCALIZING, UPDATING };
-std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode);
+enum class SlamMode { MAPPING, LOCALIZING, UPDATING };
+std::ostream &operator<<(std::ostream &os, const SlamMode &slam_mode);
 static const int checkForShutdownIntervalMicroseconds = 1e5;
 
 // The resolutionMeters variable defines the area in meters that each pixel
@@ -306,8 +312,10 @@ const std::string configuration_mapping_basename = "mapping_new_map.lua";
 const std::string configuration_localization_basename = "locating_in_map.lua";
 const std::string configuration_update_basename = "updating_a_map.lua";
 
-carto_facade::ActionMode determine_action_mode(
-    std::string path_to_map, std::chrono::seconds map_rate_sec);
+carto_facade::SlamMode determine_slam_mode(std::string path_to_map,
+                                           std::chrono::seconds map_rate_sec);
+
+int slam_mode_to_vc_slam_mode(viam::carto_facade::SlamMode sm);
 
 enum class CartoFacadeState { INITIALIZED, IO_INITIALIZED, STARTED };
 class CartoFacade {
@@ -319,9 +327,9 @@ class CartoFacade {
     // IOInit:
     // 1. detects if the data_dir has a deprecated format & throws if it does
     // 2. creates the data_dir with the correct format if it doesn't exist
-    // 3. sets the correct action mode
+    // 3. sets the correct slam mode
     // 4. creates & configures the map builder with the right hyperparameters
-    // based on the action mode
+    // based on the slam mode
     // 5. starts the trajectory builder
     //
     // Needs to be first method called on newly instantiated CartoFacade object.
@@ -359,7 +367,7 @@ class CartoFacade {
     std::string path_to_internal_state;
     std::atomic<CartoFacadeState> state{CartoFacadeState::INITIALIZED};
     std::string configuration_directory;
-    ActionMode action_mode = ActionMode::MAPPING;
+    SlamMode slam_mode = SlamMode::MAPPING;
 
     // If mutexes map_builder_mutex and optimization_shared_mutex are held
     // concurrently, then optimization_shared_mutex must be taken
@@ -414,7 +422,7 @@ class CartoFacade {
     // the respective member variables.
     // void CacheLatestMap();
 
-    // If using the LOCALIZING action mode, cache a copy of the map before
+    // If using the LOCALIZING slam mode, cache a copy of the map before
     // beginning to process data. If cartographer fails to do this,
     // terminate the program.
     // void CacheMapInLocalizationMode();
