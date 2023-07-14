@@ -60,48 +60,6 @@ func ClearDirectory(t *testing.T, path string) {
 	test.That(t, err, test.ShouldBeNil)
 }
 
-// CreateFullModSLAMService creates a slam service for testing.
-func CreateFullModSLAMService(
-	t *testing.T,
-	cfg *vcConfig.Config,
-	deps resource.Dependencies,
-	logger golog.Logger,
-) (slam.Service, error) {
-	t.Helper()
-
-	ctx := context.Background()
-	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
-	cfgService.ConvertedAttributes = cfg
-
-	sensorDeps, err := cfg.Validate("path")
-	if err != nil {
-		return nil, err
-	}
-	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
-
-	svc, err := viamcartographer.New(
-		ctx,
-		deps,
-		cfgService,
-		logger,
-		true,
-		"true",
-		SensorValidationMaxTimeoutSecForTest,
-		SensorValidationIntervalSecForTest,
-		testDialMaxTimeoutSec,
-		5*time.Second,
-		nil,
-	)
-	if err != nil {
-		test.That(t, svc, test.ShouldBeNil)
-		return nil, err
-	}
-
-	test.That(t, svc, test.ShouldNotBeNil)
-
-	return svc, nil
-}
-
 // CreateFullModSLAMServiceIntegration creates a slam service for testing.
 func CreateFullModSLAMServiceIntegration(
 	t *testing.T,
