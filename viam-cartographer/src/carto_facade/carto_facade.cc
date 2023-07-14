@@ -1,6 +1,8 @@
 // This is an experimental integration of cartographer into RDK.
 #include "carto_facade.h"
 
+#include <pcl/console/print.h>  // pcl::console::setVerbosityLevel
+
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
@@ -864,6 +866,17 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
     FLAGS_logtostderr = 1;
     FLAGS_minloglevel = minloglevel;
     FLAGS_v = verbose;
+
+    // this is needed to suppress error logs
+    // from the PCL library
+    // saying the lidar reading is incorrec
+    // see:
+    // https://stackoverflow.com/questions/54763333/pcl-failed-to-find-match-for-field-rgba
+    // https://stackoverflow.com/questions/64560467/reading-point-clouds-from-las-files/64593667#64593667
+    if (verbose != 0) {
+        pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
+    }
+
     vcl->minloglevel = minloglevel;
     vcl->verbose = verbose;
 
