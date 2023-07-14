@@ -177,8 +177,8 @@ carto_sensor_reading(std::string sensor_reading,
         return {false, point_cloud};
     }
     VLOG(1) << "read_pcd succeeded";
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
-        new pcl::PointCloud<pcl::PointXYZRGB>);
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(
+        new pcl::PointCloud<pcl::PointXYZRGBA>);
     pcl::fromPCLPointCloud2(blob, *cloud);
 
     VLOG(1) << "Loaded " << cloud->width * cloud->height << " data points";
