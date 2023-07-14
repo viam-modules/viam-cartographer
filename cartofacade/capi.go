@@ -43,9 +43,24 @@ type CartoLibInterface interface {
 	Terminate() error
 }
 
+// SlamMode represents the lidar configuration
+type SlamMode int64
+
+const (
+	// UnknownMode denotes an unknown slam mode
+	UnknownMode SlamMode = iota
+	// MappingMode denotes the slam algo is in mapping mode
+	MappingMode
+	// LocalizingMode denotes the slam algo is in localizing only mode
+	LocalizingMode
+	// UpdatingMode denotes the slam algo is in updating mode
+	UpdatingMode
+)
+
 // Carto holds the c type viam_carto
 type Carto struct {
 	value *C.viam_carto
+	SlamMode
 }
 
 // CartoInterface describes the method signatures that Carto must implement
@@ -131,6 +146,19 @@ func (vcl *CartoLib) Terminate() error {
 	return nil
 }
 
+func toSlamMode(cSlamMode C.int) SlamMode {
+	switch cSlamMode {
+	case C.VIAM_CARTO_SLAM_MODE_MAPPING:
+		return MappingMode
+	case C.VIAM_CARTO_SLAM_MODE_LOCALIZING:
+		return LocalizingMode
+	case C.VIAM_CARTO_SLAM_MODE_UPDATING:
+		return UpdatingMode
+	default:
+		return UnknownMode
+	}
+}
+
 // NewCarto calls viam_carto_init and returns a pointer to a viam carto object. vcl is only an interface to facilitate testing & that the only type vcl it is actually expected to have is a CartoLib
 func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, error) {
 	var pVc *C.viam_carto
@@ -156,7 +184,9 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 	if status != C.BSTR_OK {
 		return Carto{}, errors.New("unable to free memory for sensor list")
 	}
-	return Carto{value: pVc}, nil
+
+	carto := Carto{value: pVc, SlamMode: toSlamMode(pVc.slam_mode)}
+	return carto, nil
 }
 
 // Start is a wrapper for viam_carto_start

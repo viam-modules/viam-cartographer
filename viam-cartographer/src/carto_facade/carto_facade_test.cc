@@ -197,6 +197,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_terminate(&invalidvc) == VIAM_CARTO_VC_INVALID);
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
+
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
     // can't terminate a carto instance that has already been terminated
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_VC_INVALID);
@@ -217,7 +219,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_LIB_INVALID);
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
+BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode) {
     viam_carto_lib *lib;
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
@@ -241,9 +243,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
             1, VIAM_CARTO_THREE_D, mapping_dir.string(), sensors_vec);
         BOOST_TEST(viam_carto_init(&vc1, lib, vcc_mapping, ac) ==
                    VIAM_CARTO_SUCCESS);
+        BOOST_TEST(vc1->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
         viam::carto_facade::CartoFacade *cf1 =
             static_cast<viam::carto_facade::CartoFacade *>(vc1->carto_obj);
-        BOOST_TEST(cf1->action_mode == ActionMode::MAPPING);
+        BOOST_TEST(cf1->slam_mode == SlamMode::MAPPING);
         BOOST_TEST(cf1->map_builder.GetOptimizeEveryNNodes() ==
                    ac.optimize_every_n_nodes);
         BOOST_TEST(cf1->map_builder.GetNumRangeData() == ac.num_range_data);
@@ -300,9 +303,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
             1, VIAM_CARTO_THREE_D, updating_dir.string(), sensors_vec);
         BOOST_TEST(viam_carto_init(&vc2, lib, vcc_updating, ac) ==
                    VIAM_CARTO_SUCCESS);
+        BOOST_TEST(vc2->slam_mode == VIAM_CARTO_SLAM_MODE_UPDATING);
         viam::carto_facade::CartoFacade *cf2 =
             static_cast<viam::carto_facade::CartoFacade *>(vc2->carto_obj);
-        BOOST_TEST(cf2->action_mode == ActionMode::UPDATING);
+        BOOST_TEST(cf2->slam_mode == SlamMode::UPDATING);
         BOOST_TEST(cf2->map_builder.GetOptimizeEveryNNodes() ==
                    ac.optimize_every_n_nodes);
         BOOST_TEST(cf2->map_builder.GetNumRangeData() == ac.num_range_data);
@@ -340,9 +344,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
 
         BOOST_TEST(viam_carto_init(&vc3, lib, vcc_updating,
                                    ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
+        BOOST_TEST(vc3->slam_mode == VIAM_CARTO_SLAM_MODE_UPDATING);
         viam::carto_facade::CartoFacade *cf2 =
             static_cast<viam::carto_facade::CartoFacade *>(vc3->carto_obj);
-        BOOST_TEST(cf2->action_mode == ActionMode::UPDATING);
+        BOOST_TEST(cf2->slam_mode == SlamMode::UPDATING);
         BOOST_TEST(viam_carto_terminate(&vc3) == VIAM_CARTO_SUCCESS);
         viam_carto_config_teardown(vcc_updating);
     }
@@ -354,9 +359,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
             0, VIAM_CARTO_THREE_D, updating_dir.string(), sensors_vec);
         BOOST_TEST(viam_carto_init(&vc4, lib, vcc_localizing, ac) ==
                    VIAM_CARTO_SUCCESS);
+        BOOST_TEST(vc4->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
         viam::carto_facade::CartoFacade *cf3 =
             static_cast<viam::carto_facade::CartoFacade *>(vc4->carto_obj);
-        BOOST_TEST(cf3->action_mode == ActionMode::LOCALIZING);
+        BOOST_TEST(cf3->slam_mode == SlamMode::LOCALIZING);
         BOOST_TEST(cf3->map_builder.GetOptimizeEveryNNodes() ==
                    ac.optimize_every_n_nodes);
         BOOST_TEST(cf3->map_builder.GetNumRangeData() == ac.num_range_data);
@@ -386,9 +392,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_action_mode) {
             0, VIAM_CARTO_THREE_D, updating_dir.string(), sensors_vec);
         BOOST_TEST(viam_carto_init(&vc5, lib, vcc_localizing,
                                    ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
+        BOOST_TEST(vc5->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
         viam::carto_facade::CartoFacade *cf3 =
             static_cast<viam::carto_facade::CartoFacade *>(vc5->carto_obj);
-        BOOST_TEST(cf3->action_mode == ActionMode::LOCALIZING);
+        BOOST_TEST(cf3->slam_mode == SlamMode::LOCALIZING);
         BOOST_TEST(viam_carto_terminate(&vc5) == VIAM_CARTO_SUCCESS);
         viam_carto_config_teardown(vcc_localizing);
     }
@@ -429,6 +436,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
         1, VIAM_CARTO_THREE_D, tmp_dir.string(), sensors_vec);
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
     viam::carto_facade::CartoFacade *cf =
         static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     BOOST_TEST((cf->lib) == lib);
@@ -485,6 +493,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
 
     // behavior of methods before start
     // AddSensorReading
@@ -971,6 +980,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop) {
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
     viam::carto_facade::CartoFacade *cf =
         static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));

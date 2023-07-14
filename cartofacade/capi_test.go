@@ -142,6 +142,7 @@ func TestCGoAPI(t *testing.T) {
 		// initialize viam_carto correctly
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, vc, test.ShouldNotBeNil)
+		test.That(t, vc.SlamMode, test.ShouldEqual, MappingMode)
 
 		// test start
 		err = vc.start()

@@ -67,18 +67,19 @@ int calculate_probability_from_color_channels(ColorARGB pixel_color) {
     return prob;
 }
 
-std::ostream &operator<<(std::ostream &os, const ActionMode &action_mode) {
-    std::string action_mode_str;
-    if (action_mode == ActionMode::MAPPING) {
-        action_mode_str = "mapping";
-    } else if (action_mode == ActionMode::LOCALIZING) {
-        action_mode_str = "localizing";
-    } else if (action_mode == ActionMode::UPDATING) {
-        action_mode_str = "updating";
+std::ostream &operator<<(std::ostream &os,
+                         const viam::carto_facade::SlamMode &slam_mode) {
+    std::string slam_mode_str;
+    if (slam_mode == viam::carto_facade::SlamMode::MAPPING) {
+        slam_mode_str = "mapping";
+    } else if (slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
+        slam_mode_str = "localizing";
+    } else if (slam_mode == viam::carto_facade::SlamMode::UPDATING) {
+        slam_mode_str = "updating";
     } else {
-        throw std::runtime_error("invalid ActionMode value");
+        throw std::runtime_error("invalid viam::carto_facade::SlamMode value");
     }
-    os << action_mode_str;
+    os << slam_mode_str;
     return os;
 }
 
@@ -162,20 +163,20 @@ std::string find_lua_files() {
     }
 };
 
-const std::string action_mode_lua_config_filename(ActionMode am) {
-    switch (am) {
-        case ActionMode::MAPPING:
+const std::string slam_mode_lua_config_filename(
+    viam::carto_facade::SlamMode sm) {
+    switch (sm) {
+        case viam::carto_facade::SlamMode::MAPPING:
             return configuration_mapping_basename;
             break;
-        case ActionMode::LOCALIZING:
+        case viam::carto_facade::SlamMode::LOCALIZING:
             return configuration_localization_basename;
             break;
-        case ActionMode::UPDATING:
+        case viam::carto_facade::SlamMode::UPDATING:
             return configuration_update_basename;
             break;
         default:
-            LOG(ERROR)
-                << "action_mode_lua_config_filename: action mode is invalid";
+            LOG(ERROR) << "slam_mode_lua_config_filename: slam mode is invalid";
             throw VIAM_CARTO_SLAM_MODE_INVALID;
     }
 };
@@ -267,17 +268,17 @@ void CartoFacade::IOInit() {
     }
     // Setup file system for saving internal state
     setup_filesystem(config.data_dir, path_to_internal_state);
-    action_mode =
-        determine_action_mode(path_to_internal_state, config.map_rate_sec);
-    VLOG(1) << "slam action mode: " << action_mode;
+    slam_mode =
+        determine_slam_mode(path_to_internal_state, config.map_rate_sec);
+    VLOG(1) << "slam slam mode: " << slam_mode;
     // TODO: Make this API user configurable
     auto cd = find_lua_files();
     if (cd.empty()) {
         throw VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
     }
     configuration_directory = cd;
-    // Detect action mode
-    auto config_basename = action_mode_lua_config_filename(action_mode);
+    // Detect slam mode
+    auto config_basename = slam_mode_lua_config_filename(slam_mode);
     // Setup MapBuilder
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
@@ -290,11 +291,11 @@ void CartoFacade::IOInit() {
             algo_config.missing_data_ray_length);
         map_builder.OverwriteMaxRange(algo_config.max_range);
         map_builder.OverwriteMinRange(algo_config.min_range);
-        if (action_mode == ActionMode::LOCALIZING) {
+        if (slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
             map_builder.OverwriteMaxSubmapsToKeep(
                 algo_config.max_submaps_to_keep);
         }
-        if (action_mode == ActionMode::UPDATING) {
+        if (slam_mode == viam::carto_facade::SlamMode::UPDATING) {
             map_builder.OverwriteFreshSubmapsCount(
                 algo_config.fresh_submaps_count);
             map_builder.OverwriteMinCoveredArea(algo_config.min_covered_area);
@@ -311,17 +312,18 @@ void CartoFacade::IOInit() {
     // TODO: google cartographer will termiante the program if
     // the internal state is invalid
     // see https://viam.atlassian.net/browse/RSDK-3553
-    if (action_mode == ActionMode::UPDATING ||
-        action_mode == ActionMode::LOCALIZING) {
+    if (slam_mode == viam::carto_facade::SlamMode::UPDATING ||
+        slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
         // Check if there is an apriori map (internal state) in the
         // path_to_internal_state directory
         std::string latest_internal_state_filename =
             get_latest_internal_state_filename(path_to_internal_state);
         VLOG(1) << "latest_internal_state_filename: "
                 << latest_internal_state_filename;
-        // load_frozen_trajectory has to be true for LOCALIZING action mode,
-        // and false for UPDATING action mode.
-        bool load_frozen_trajectory = (action_mode == ActionMode::LOCALIZING);
+        // load_frozen_trajectory has to be true for LOCALIZING slam mode,
+        // and false for UPDATING slam mode.
+        bool load_frozen_trajectory =
+            (slam_mode == viam::carto_facade::SlamMode::LOCALIZING);
         if (algo_config.optimize_on_start) {
             VLOG(1) << "running optimize_on_start";
             CacheLatestMap();
@@ -366,12 +368,12 @@ void CartoFacade::CacheLatestMap() {
     latest_pointcloud_map = std::move(pointcloud_map_tmp);
 }
 
-// If using the LOCALIZING action mode, cache a copy of the map before
+// If using the LOCALIZING slam mode, cache a copy of the map before
 // beginning to process data. If cartographer fails to do this,
 // terminate the program
 void CartoFacade::CacheMapInLocalizationMode() {
     VLOG(1) << "CacheMapInLocalizationMode()";
-    if (action_mode == ActionMode::LOCALIZING) {
+    if (slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
         std::string pointcloud_map_tmp;
         try {
             GetLatestSampledPointCloudMapString(pointcloud_map_tmp);
@@ -601,7 +603,8 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
     // Write or grab the latest pointcloud map in form of a string
     std::shared_lock optimization_lock{optimization_shared_mutex,
                                        std::defer_lock};
-    if (action_mode != ActionMode::LOCALIZING && optimization_lock.try_lock()) {
+    if (slam_mode != viam::carto_facade::SlamMode::LOCALIZING &&
+        optimization_lock.try_lock()) {
         // We are able to lock the optimization_shared_mutex, which means
         // that the optimization is not ongoing and we can grab the newest
         // map
@@ -612,7 +615,7 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
         // Either we are in localization mode or we couldn't lock the mutex
         // which means the optimization process locked it and we need to use
         // the backed up latest map
-        if (action_mode == ActionMode::LOCALIZING) {
+        if (slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
             LOG(INFO) << "In localization mode, using cached pointcloud map";
         } else {
             LOG(INFO)
@@ -796,7 +799,7 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     }
 };
 
-viam::carto_facade::ActionMode determine_action_mode(
+viam::carto_facade::SlamMode determine_slam_mode(
     std::string path_to_internal_state, std::chrono::seconds map_rate_sec) {
     // Check if there is an apriori map (internal state) in the
     // path_to_internal_state directory
@@ -812,11 +815,11 @@ viam::carto_facade::ActionMode determine_action_mode(
             if (map_rate_sec.count() == 0) {
                 // This log line is needed by rdk integration tests.
                 LOG(INFO) << "Running in localization only mode";
-                return viam::carto_facade::ActionMode::LOCALIZING;
+                return viam::carto_facade::SlamMode::LOCALIZING;
             }
             // This log line is needed by rdk integration tests.
             LOG(INFO) << "Running in updating mode";
-            return viam::carto_facade::ActionMode::UPDATING;
+            return viam::carto_facade::SlamMode::UPDATING;
         }
     }
     if (map_rate_sec.count() == 0) {
@@ -827,7 +830,19 @@ viam::carto_facade::ActionMode determine_action_mode(
     }
     // This log line is needed by rdk integration tests.
     LOG(INFO) << "Running in mapping mode";
-    return viam::carto_facade::ActionMode::MAPPING;
+    return viam::carto_facade::SlamMode::MAPPING;
+}
+
+int slam_mode_to_vc_slam_mode(viam::carto_facade::SlamMode sm) {
+    if (sm == viam::carto_facade::SlamMode::MAPPING) {
+        return VIAM_CARTO_SLAM_MODE_MAPPING;
+    } else if (sm == viam::carto_facade::SlamMode::LOCALIZING) {
+        return VIAM_CARTO_SLAM_MODE_LOCALIZING;
+    } else if (sm == viam::carto_facade::SlamMode::UPDATING) {
+        return VIAM_CARTO_SLAM_MODE_UPDATING;
+    } else {
+        throw std::runtime_error("invalid viam::carto_facade::SlamMode value");
+    }
 }
 
 }  // namespace carto_facade
@@ -904,8 +919,11 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         return VIAM_CARTO_UNKNOWN_ERROR;
     }
 
+    int slam_mode = VIAM_CARTO_SLAM_MODE_UNKNOWN;
     try {
         cf->IOInit();
+        slam_mode =
+            viam::carto_facade::slam_mode_to_vc_slam_mode(cf->slam_mode);
     } catch (int err) {
         delete cf;
         free(vc);
@@ -917,6 +935,7 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         return VIAM_CARTO_UNKNOWN_ERROR;
     }
     vc->carto_obj = cf;
+    vc->slam_mode = slam_mode;
 
     // point to newly created viam_carto struct
     *ppVC = vc;

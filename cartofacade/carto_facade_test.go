@@ -152,7 +152,8 @@ func TestInitialize(t *testing.T) {
 	cartoFacade := New(&lib, cfg, algoCfg)
 
 	t.Run("test Initialize - successful case", func(t *testing.T) {
-		err = cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
+		slamMode, err := cartoFacade.Initialize(cancelCtx, 5*time.Second, &activeBackgroundWorkers)
+		test.That(t, slamMode, test.ShouldEqual, MappingMode)
 		test.That(t, err, test.ShouldBeNil)
 	})
 

@@ -17,21 +17,21 @@ var emptyRequestParams = map[RequestParamType]interface{}{}
 var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 
 // Initialize calls into the cartofacade C code.
-func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) error {
+func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) (SlamMode, error) {
 	cf.startCGoroutine(ctx, activeBackgroundWorkers)
 	untyped, err := cf.request(ctx, initialize, emptyRequestParams, timeout)
 	if err != nil {
-		return err
+		return UnknownMode, err
 	}
 
 	carto, ok := untyped.(Carto)
 	if !ok {
-		return errors.New("unable to cast response from cartofacade to a carto struct")
+		return UnknownMode, errors.New("unable to cast response from cartofacade to a carto struct")
 	}
 
 	cf.carto = &carto
 
-	return nil
+	return carto.SlamMode, nil
 }
 
 // Start calls into the cartofacade C code.
@@ -206,7 +206,7 @@ type Interface interface {
 		ctx context.Context,
 		timeout time.Duration,
 		activeBackgroundWorkers *sync.WaitGroup,
-	) error
+	) (SlamMode, error)
 	Start(
 		ctx context.Context,
 		timeout time.Duration,
