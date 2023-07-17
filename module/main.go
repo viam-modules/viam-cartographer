@@ -46,7 +46,7 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 		return err
 	}
 
-	exporter, err := telemetry.SetupTelemetry()
+	exporter, err := telemetry.Init()
 	if err != nil {
 		return err
 	}

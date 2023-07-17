@@ -43,7 +43,7 @@ func Start(
 	config Config,
 ) {
 	if config.TelemetryEnabled {
-		lidarReadingCounter := setupTelemetry(config.ResourceName.Name)
+		lidarReadingCounter := initializeLidarCounter(config.ResourceName.Name)
 		config.lidarReadingCounter = lidarReadingCounter
 	}
 
@@ -57,7 +57,7 @@ func Start(
 	}
 }
 
-func setupTelemetry(resourceName string) *statz.Counter1[string] {
+func initializeLidarCounter(resourceName string) *statz.Counter1[string] {
 	telemetryDescription := fmt.Sprintf("The status (%s|%s|%s).", successfulReadings, lockNotAcquired, unexpectedError)
 	counterName := fmt.Sprintf("lidarReadingsConsumed-%s", resourceName)
 	lidarReadingCounter := statz.NewCounter1[string](counterName, statz.MetricConfig{

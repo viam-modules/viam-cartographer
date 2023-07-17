@@ -7,8 +7,8 @@ import (
 	"go.viam.com/utils/perf"
 )
 
-// SetupTelemetry sets up telemetry so logs and stats can be reported.
-func SetupTelemetry() (perf.Exporter, error) {
+// Init sets up telemetry so logs and stats can be reported.
+func Init() (perf.Exporter, error) {
 	exporter := perf.NewDevelopmentExporterWithOptions(perf.DevelopmentExporterOptions{
 		ReportingInterval: time.Second, // Good reporting interval time?
 	})
