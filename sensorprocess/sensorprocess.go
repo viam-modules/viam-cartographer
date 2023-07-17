@@ -14,13 +14,13 @@ import (
 	"go.viam.com/utils/perf/statz/units"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
+	"github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
 	CartoFacade         cartofacade.Interface
-	Lidar               lidar.Lidar
+	Lidar               sensors.TimedSensor
 	LidarName           string
 	DataRateMs          int
 	Timeout             time.Duration
@@ -80,7 +80,7 @@ func setupTelemetry(config Config) (perf.Exporter, *statz.Counter1[string], erro
 	return exporter, &lidarReadingCounter, nil
 }
 
-// addSensorReading adds a lidar reading to the mapbuilder.
+// addSensorReading adds a lidar reading to the cartofacade.
 func addSensorReading(
 	ctx context.Context,
 	config Config,
@@ -94,8 +94,7 @@ func addSensorReading(
 	if tsr.Replay {
 		addSensorReadingFromReplaySensor(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
-		config.Logger.Warnw("Skipping sensor reading due to error converting replay sensor timestamp to RFC3339Nano", "error", err)
-		timeToSleep := addSensorReadingFromLiveReadings(ctxWithMetadata, buf.Bytes(), readingTime, config)
+		timeToSleep := addSensorReadingFromLiveReadings(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
 }
