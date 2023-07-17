@@ -6,12 +6,14 @@ package testhelper
 import (
 	"bufio"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/edaniels/golog"
+	"github.com/google/uuid"
 	"github.com/pkg/errors"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
@@ -68,7 +70,7 @@ func CreateFullModSLAMServiceIntegration(
 	logger golog.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
-	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
+	cfgService := resource.Config{Name: getTestName(), API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
 	sensorDeps, err := cfg.Validate("path")
@@ -112,7 +114,7 @@ func CreateSLAMService(
 	t.Helper()
 
 	ctx := context.Background()
-	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
+	cfgService := resource.Config{Name: getTestName(), API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
 	deps := externaltesthelper.SetupDeps(cfg.Sensors)
@@ -263,4 +265,9 @@ func InitInternalState(t *testing.T) (string, func()) {
 		err := os.RemoveAll(dataDirectory)
 		test.That(t, err, test.ShouldBeNil)
 	}
+}
+
+func getTestName() string {
+	id := uuid.New()
+	return fmt.Sprintf("test-%s", id)
 }

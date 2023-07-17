@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
-	perf "go.viam.com/utils/perf"
+	"go.viam.com/rdk/resource"
 	statz "go.viam.com/utils/perf/statz"
 	"go.viam.com/utils/perf/statz/units"
 
@@ -26,6 +26,7 @@ type Config struct {
 	Timeout             time.Duration
 	Logger              golog.Logger
 	TelemetryEnabled    bool
+	ResourceName        resource.Name
 	lidarReadingCounter *statz.Counter1[string]
 }
 
@@ -42,12 +43,11 @@ func Start(
 	config Config,
 ) {
 	if config.TelemetryEnabled {
-		exporter, lidarReadingCounter, err := setupTelemetry()
+		lidarReadingCounter, err := setupTelemetry(config.ResourceName.Name)
 		if err != nil {
 			config.Logger.Errorf("Could not start telemetry: %s", err)
 			return
 		}
-		defer exporter.Stop()
 		config.lidarReadingCounter = lidarReadingCounter
 	}
 
@@ -61,16 +61,10 @@ func Start(
 	}
 }
 
-func setupTelemetry() (perf.Exporter, *statz.Counter1[string], error) {
-	exporter := perf.NewDevelopmentExporterWithOptions(perf.DevelopmentExporterOptions{
-		ReportingInterval: time.Second, // Good reporting interval time?
-	})
-	if err := exporter.Start(); err != nil {
-		return nil, nil, err
-	}
-
+func setupTelemetry(resourceName string) (*statz.Counter1[string], error) {
 	telemetryDescription := fmt.Sprintf("The status (%s|%s|%s).", successfulReadings, lockNotAcquired, unexpectedError)
-	lidarReadingCounter := statz.NewCounter1[string]("lidarReadingsConsumed", statz.MetricConfig{
+	counterName := fmt.Sprintf("lidarReadingsConsumed-%s", resourceName)
+	lidarReadingCounter := statz.NewCounter1[string](counterName, statz.MetricConfig{
 		Description: "The number of lidar readings",
 		Unit:        units.Dimensionless,
 		Labels: []statz.Label{
@@ -81,7 +75,7 @@ func setupTelemetry() (perf.Exporter, *statz.Counter1[string], error) {
 		},
 	})
 
-	return exporter, &lidarReadingCounter, nil
+	return &lidarReadingCounter, nil
 }
 
 // addSensorReading adds a lidar reading to the cartofacade.

@@ -11,6 +11,7 @@ import (
 	"go.viam.com/utils"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	telemetry "github.com/viamrobotics/viam-cartographer/telemetry"
 )
 
 // Versioning variables which are replaced by LD flags.
@@ -44,6 +45,13 @@ func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error
 	if err := viamcartographer.InitCartoLib(logger); err != nil {
 		return err
 	}
+
+	exporter, err := telemetry.SetupTelemetry()
+	if err != nil {
+		return err
+	}
+
+	defer exporter.Stop()
 
 	defer func() {
 		if err := viamcartographer.TerminateCartoLib(); err != nil {

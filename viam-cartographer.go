@@ -137,6 +137,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 		DataRateMs:       cartoSvc.dataRateMs,
 		Timeout:          cartoSvc.cartoFacadeTimeout,
 		Logger:           cartoSvc.logger,
+		ResourceName:     cartoSvc.Name(),
 		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
 	}
 

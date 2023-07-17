@@ -99,7 +99,7 @@ func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orien
 }
 
 func TestGetPositionEndpoint(t *testing.T) {
-	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc := &CartographerService{Named: resource.NewName(slam.API, "test0").AsNamed()}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
@@ -281,7 +281,7 @@ func checkGetPositionModularizationV2Outputs(
 }
 
 func TestGetPositionModularizationV2Endpoint(t *testing.T) {
-	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc := &CartographerService{Named: resource.NewName(slam.API, "test1").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
 	svc.cartofacade = mockCartoFacade
 	svc.modularizationV2Enabled = true
@@ -354,7 +354,7 @@ func TestGetPositionModularizationV2Endpoint(t *testing.T) {
 
 //nolint:dupl
 func TestGetPointCloudMapEndpoint(t *testing.T) {
-	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc := &CartographerService{Named: resource.NewName(slam.API, "test2").AsNamed()}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
@@ -525,7 +525,7 @@ func testApisThatReturnCallbackFuncs(
 }
 
 func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
-	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc := &CartographerService{Named: resource.NewName(slam.API, "test3").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
 	pathToFileLargerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"
 	pathToFileSmallerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_1.pcd"
@@ -557,7 +557,7 @@ func TestGetPointCloudMapEndpointModularizationV2Endpoint(t *testing.T) {
 
 //nolint:dupl
 func TestGetInternalStateEndpoint(t *testing.T) {
-	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc := &CartographerService{Named: resource.NewName(slam.API, "test4").AsNamed()}
 	mockSLAMClient := &inject.SLAMServiceClient{}
 	svc.clientAlgo = mockSLAMClient
 
@@ -647,7 +647,7 @@ func setMockGetInternalStateFunc(
 }
 
 func TestGetInternalStateModularizationV2Endpoint(t *testing.T) {
-	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
+	svc := &CartographerService{Named: resource.NewName(slam.API, "test5").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
 	pathToFileLargerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
 	pathToFileSmallerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_1.pbstream"
