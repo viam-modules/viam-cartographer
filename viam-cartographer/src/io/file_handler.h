@@ -11,6 +11,7 @@
 #include <string>
 
 #include "cartographer/sensor/timed_point_cloud_data.h"
+#include "cartographer/sensor/imu_data.h"
 
 namespace viam {
 namespace io {
@@ -40,7 +41,7 @@ void RemoveFile(std::string);
 // Converts UTC time string to a double value.
 double ReadTimeFromTimestamp(std::string timestamp);
 
-void ReadDataFromJSONToArray(std::string filename, double imu_data[]);
+cartographer::sensor::ImuData ReadDataFromJSONToArray(std::string filename);
 
 }  // namespace io
 }  // namespace viam

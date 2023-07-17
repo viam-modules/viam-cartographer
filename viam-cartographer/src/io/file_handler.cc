@@ -33,13 +33,15 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
 
     cartographer::sensor::TimedPointCloudData timed_pcd;
     cartographer::sensor::TimedPointCloud ranges;
-
+    LOG(INFO) << "Retrieving, file path is";
+    LOG(INFO) << file_path;
     // Open the point cloud file
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZRGB>);
     auto err = pcl::io::loadPCDFile<pcl::PointXYZRGB>(file_path, *cloud);
-
+    LOG(INFO) << "Got it";
     if (err == -1) {
+        LOG(INFO) << "THE CULPRIT";
         return timed_pcd;
     }
 
@@ -47,7 +49,7 @@ cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
         file_path.find(filename_prefix) + filename_prefix.length(),
         file_path.find(".pcd")));
     double time_delta = current_time - start_time;
-
+    LOG(INFO) << "Accessing PC";
     VLOG(1) << "Accessing file " << file_path << " ... ";
     VLOG(1) << "Loaded " << cloud->width * cloud->height << " data points";
 
@@ -80,15 +82,14 @@ cartographer::sensor::ImuData GetTimedIMUDataFromJSON(
     double time_delta = current_time - start_time;
 
     VLOG(1) << "Accessing file " << file_path << " ... ";
-
+    LOG(INFO) << "got time!";
     imu_data.time = cartographer::common::FromUniversal(123) +
                      cartographer::common::FromSeconds(double(time_delta));
     
-    auto data = ReadDataFromJSONToArray(file_path);
-
-    imu_data.linear_acceleration = {data[0], data[1], data[2]};
-    imu_data.angular_velocity = {data[3], data[4], data[5]};
-
+    cartographer::sensor::ImuData data = ReadDataFromJSONToArray(file_path);
+    
+    //imu_data.angular_velocity = Eigen::Vector3d(data[3], data[4], data[5]);
+    LOG(INFO) << "got data2!";
     return imu_data;
 }
 
@@ -151,32 +152,54 @@ double ReadTimeFromTimestamp(std::string timestamp) {
 }
 
 
-std::vector<double> ReadDataFromJSONToArray(std::string filename) {
+cartographer::sensor::ImuData ReadDataFromJSONToArray(std::string filename) {
     std::ifstream in;    // Create an input file stream.
-    in.open("j.json");
+    in.open(filename);
     if ( ! in ) {
-        std::cout << "Error: Can't open the file named data.txt.\n";
+        std::cout << "Error: Can't open the file named " << filename << ".\n";
         exit(1);
     }
 
     std::string input;
     getline(in,input);  // Get the first line from the file, if any.
+    LOG(INFO) << "line info:" << input;
+    std::regex doublePattern("-?\\d+\\.?\\d*");// regex("\"[A-Za-z]+\":(\\d+\\.?\\d*)");
+   
+    std::sregex_iterator it(input.begin(), input.end(), doublePattern);
+    std::sregex_iterator end;
 
-    std::regex regex("\"[A-Za-z]+\":(\\d+\\.?\\d*)");
-    std::smatch match;
-
-    while (std::regex_search(input, match, regex)) {
-        std::cout << match.str(1) << std::endl;
-        input = match.suffix();
-    }
-
+    
+    // Extract the double values
     std::vector<double> listd;
-    while (std::regex_search(input, match, regex)) {
-        listd.push_back(stod(match.str(1)));
-        input = match.suffix();
+    while (it != end) {
+        std::smatch match = *it;
+        std::string doubleString = match.str();
+        double value = std::stod(doubleString);
+        LOG(INFO) << "Found double: " << value << std::endl;
+        listd.push_back(value);
+        ++it;
     }
+   
+   
+   
+    // std::smatch match;
 
-    return listd;
+    // while (std::regex_search(input, match, regex)) {
+    //     std::cout << match.str(1) << std::endl;
+    //     input = match.suffix();
+    // }
+    
+    // LOG(INFO) << "SMATCH SZE: "<< match.size();
+    // std::vector<double> listd;
+    // while (std::regex_search(input, match, regex)) {
+    //     listd.push_back(stod(match.str(1)));
+    //     input = match.suffix();
+    // }
+    LOG(INFO) << "SIZE OF: " << listd.size();
+    cartographer::sensor::ImuData imu_data;
+    imu_data.linear_acceleration = Eigen::Vector3d(listd[0], listd[1], listd[2]);
+    imu_data.angular_velocity = Eigen::Vector3d(listd[3], listd[4], listd[5]);
+    return imu_data;
     
 }
 

@@ -66,9 +66,6 @@ const (
 	opTimeoutErrorMessage = "bad scan: OpTimeout"
 )
 
-// GetAndSaveLidarData gets the pointcloud from the lidar and saves it to the provided data directory.
-// On success, it returns the absolute filepath where the data was saved, along with any error
-// associated with the data saving.
 func GetAndSaveIMUData(ctx context.Context, dataDirectory string, imu IMU, logger golog.Logger) (string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::internal::imu::GetAndSaveIMUData")
 	defer span.End()

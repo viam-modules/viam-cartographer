@@ -154,6 +154,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     float missing_data_ray_length = 25.0;
     float max_range = 25.0;
     float min_range = 0.2;
+    bool use_imu_data = false;
     // TRAJECTORY_BUILDER.pure_localization_trimmer
     int max_submaps_to_keep = 3;  // LOCALIZATION only
     // MAP_BUILDER.pose_graph.overlapping_submaps_trimmer_2d

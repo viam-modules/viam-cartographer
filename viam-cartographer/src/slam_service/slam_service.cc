@@ -277,6 +277,7 @@ void SLAMServiceImpl::OverwriteMapBuilderParameters() {
         map_builder.OverwriteMissingDataRayLength(missing_data_ray_length);
         map_builder.OverwriteMaxRange(max_range);
         map_builder.OverwriteMinRange(min_range);
+        map_builder.OverwriteUseImuData(use_imu_data);
         if (action_mode == ActionMode::LOCALIZING) {
             map_builder.OverwriteMaxSubmapsToKeep(max_submaps_to_keep);
         }
@@ -487,6 +488,7 @@ double SLAMServiceImpl::SetUpSLAM() {
     double data_start_time = 0;
     if (action_mode == ActionMode::UPDATING ||
         action_mode == ActionMode::LOCALIZING) {
+            LOG(INFO) << "oh no we don't want to be here";
         // Check if there is an apriori map in the path_to_map directory
         std::string latest_map_filename =
             viam::utils::GetLatestMapFilename(path_to_map);
@@ -516,6 +518,7 @@ double SLAMServiceImpl::SetUpSLAM() {
 
         CacheMapInLocalizationMode();
     }
+    LOG(INFO) << "data_start_time is: " << data_start_time;
     return data_start_time;
 }
 
@@ -553,6 +556,7 @@ std::string SLAMServiceImpl::GetNextDataFileOffline() {
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOfflineHelper() {
+    LOG(INFO) << "Getting next offline data file";
     if (file_list_offline.size() - current_file_offline <= 2) {
         file_list_offline = viam::io::ListSortedFilesInDirectory(path_to_data);
     }
@@ -578,6 +582,7 @@ std::string SLAMServiceImpl::GetNextDataFileOfflineHelper() {
 }
 
 std::string SLAMServiceImpl::GetNextDataFileOnline() {
+    LOG(INFO) << "Getting next online data file";
     while (b_continue_session) {
         const auto file_list_online =
             viam::io::ListSortedFilesInDirectory(path_to_data);
@@ -656,7 +661,8 @@ void SLAMServiceImpl::SaveMapWithTimestamp() {
         std::time_t t = std::time(nullptr);
         const std::string filename_with_timestamp =
             viam::io::MakeFilenameWithTimestamp(path_to_map, t);
-
+         LOG(INFO) << "Path to save to is ";
+         LOG(INFO) << path_to_map;
         if (!use_live_data && finished_processing_offline) {
             {
                 std::lock_guard<std::mutex> lk(map_builder_mutex);
@@ -684,29 +690,35 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
     }
 
     LOG(INFO) << "Beginning to add data...";
-
+  
     bool set_start_time = false;
     auto file = GetNextDataFile();
+
 
     // Define tmp_global_pose here so it always has the previous pose
     cartographer::transform::Rigid3d tmp_global_pose =
         cartographer::transform::Rigid3d();
     while (file != "") {
+           LOG(INFO) << "Next file is: " << file;
         // Ignore files that are not *.pcd files
-        if (file.find(".pcd") == std::string::npos || file.find(".json") == std::string::npos) {
+        if (file.find(".pcd") == std::string::npos && file.find(".json") == std::string::npos) {
             file = GetNextDataFile();
             continue;
         }
+        
         if (!set_start_time) {
             // Go past files that are not supposed to be included in this run
             double file_time = viam::io::ReadTimeFromTimestamp(
                 file.substr(file.find(viam::io::filename_prefix) +
                                 viam::io::filename_prefix.length(),
                             file.find(".pcd")));
-            if (file_time < data_start_time) {
+            // First file should be of pointcloud, not IMU
+            LOG(INFO) << "start time is: " << data_start_time << " and file time is " << file_time;
+            if (file_time < data_start_time || file.find(".json") != std::string::npos) {
                 file = GetNextDataFile();
                 continue;
             }
+            LOG(INFO) << "Found first file to read in";
             // Get index of the first file we're reading in
             const auto files =
                 viam::io::ListSortedFilesInDirectory(path_to_data);
@@ -722,6 +734,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             // start saving maps
             {
                 std::lock_guard<std::mutex> lk(map_builder_mutex);
+                LOG(INFO) << "Setting start time...";
                 map_builder.SetStartTime(file);
                 set_start_time = true;
             }
@@ -730,9 +743,10 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         }
         // Add data to the map_builder to add to the map
         {
+            LOG(INFO) << "file is: " << file;
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            if (file.find(".pcd")) {
-                LOG(INFO) << "Am here...";
+            if (file.find(".pcd") != std::string::npos) {
+                LOG(INFO) << "Am adding Lidar for file: " << file;
                 auto measurement = map_builder.GetDataFromFile(file);
                 if (measurement.ranges.size() > 0) {
                     LOG(INFO) << "Adding Lidar Data...";
@@ -745,20 +759,22 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                     }
                 }
             }
-            if (file.find(".json")) {
-                
+            //if (file.find(".pcd") == std::string::npos && !file.find(".json") == std::string::npos)
+            if (file.find(".json") != std::string::npos && use_imu_data) {
+                LOG(INFO) << "Am adding IMU for file: " << file;
                 cartographer::sensor::ImuData imu_data = map_builder.GetIMUDataFromFile(file);
+                LOG(INFO) << "IMU Data: X:" << imu_data.linear_acceleration[0] << " Y: " << imu_data.linear_acceleration[1] <<" Z: " << imu_data.linear_acceleration[2];
                 if (imu_data.linear_acceleration.size() > 0) {
                     LOG(INFO) << "Adding IMU Data...";
-                    trajectory_builder->AddSensorData(kIMUSensorId.id,
-                                                     imu_data);
+                    //trajectory_builder->AddSensorData(kIMUSensorId.id,
+                    //                                 imu_data);
                     auto local_poses = map_builder.GetLocalSlamResultPoses();
                     if (local_poses.size() > 0) {
                         tmp_global_pose = map_builder.GetGlobalPose(
                             trajectory_id, local_poses.back());
                     }
                 }
-            }
+            }*/
         }
         // Save a copy of the global pose
         {
@@ -767,7 +783,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
         }
 
         // This log line is needed by rdk integration tests.
-        VLOG(1) << "Passed sensor data to SLAM " << file;
+        LOG(INFO) << "Passed sensor data to SLAM " << file;
 
         file = GetNextDataFile();
     }

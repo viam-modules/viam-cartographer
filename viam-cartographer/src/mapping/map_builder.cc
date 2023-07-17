@@ -178,6 +178,12 @@ void MapBuilder::OverwriteMinRange(float value) {
     mutable_trajectory_builder_2d_options->set_min_range(value);
 }
 
+void MapBuilder::OverwriteUseImuData(float value) {
+    auto mutable_trajectory_builder_2d_options =
+        trajectory_builder_options_.mutable_trajectory_builder_2d_options();
+    mutable_trajectory_builder_2d_options->set_use_imu_data(value);
+}
+
 void MapBuilder::OverwriteMaxSubmapsToKeep(int value) {
     trajectory_builder_options_.mutable_pure_localization_trimmer()
         ->set_max_submaps_to_keep(value);

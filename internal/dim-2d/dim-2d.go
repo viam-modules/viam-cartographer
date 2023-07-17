@@ -3,6 +3,7 @@ package dim2d
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -75,15 +76,19 @@ func ValidateGetAndSaveLidarData(
 	for {
 		path, err = GetAndSaveLidarData(ctx, dataDirectory, lidar, logger)
 		paths = append(paths, path)
-
+		fmt.Println("new path is")
+		fmt.Println(paths)
+		fmt.Println(err)
 		if err == nil {
 			break
 		}
+		fmt.Println("all g here")
 
 		// This takes about 5 seconds in real life, so a default timeout of
 		// defaultSensorValidationMaxTimeoutSec = 30 as it is used for the Constructor in
 		// viam-cartographer.go should be sufficient.
 		if time.Since(startTime) >= time.Duration(sensorValidationMaxTimeoutSec)*time.Second {
+			fmt.Println("this stupid error is being called")
 			return errors.Wrap(err, "error getting data from sensor")
 		}
 		if !goutils.SelectContextOrWait(ctx, time.Duration(sensorValidationIntervalSec)*time.Second) {
@@ -110,6 +115,7 @@ func GetAndSaveLidarData(ctx context.Context, dataDirectory string, lidar lidar.
 	ctx, md := contextutils.ContextWithMetadata(ctx)
 	pointcloud, err := lidar.GetData(ctx)
 	if err != nil {
+		fmt.Println("the error is here")
 		if err.Error() == opTimeoutErrorMessage {
 			logger.Warnw("Skipping this scan due to error", "error", err)
 			return "", nil
@@ -128,7 +134,7 @@ func GetAndSaveLidarData(ctx context.Context, dataDirectory string, lidar lidar.
 			return "", err
 		}
 	}
-
+	fmt.Println("saving data")
 	dataDir := filepath.Join(dataDirectory, "data")
 	filename := dataprocess.CreateTimestampFilename(dataDir, "DEFAULT", ".pcd", timeReq)
 	return filename, dataprocess.WritePCDToFile(pointcloud, filename)

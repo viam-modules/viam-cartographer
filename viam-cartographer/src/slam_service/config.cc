@@ -166,6 +166,8 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
             slamService.max_range = std::stof(new_parameter);
         } else if (parameter == "min_range") {
             slamService.min_range = std::stof(new_parameter);
+        } else if (parameter == "use_imu_data") {
+            slamService.use_imu_data = (new_parameter == "true");
         } else if (parameter == "max_submaps_to_keep") {
             if (slam_action_mode != ActionMode::LOCALIZING) {
                 LOG(WARNING) << "Not in localizing action mode: Setting "

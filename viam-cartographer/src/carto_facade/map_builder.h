@@ -90,6 +90,7 @@ class MapBuilder {
     void OverwriteMissingDataRayLength(float value);
     void OverwriteMaxRange(float value);
     void OverwriteMinRange(float value);
+    void OverwriteUseImuData(float value);
     void OverwriteMaxSubmapsToKeep(int value);
     void OverwriteFreshSubmapsCount(int value);
     void OverwriteMinCoveredArea(double value);

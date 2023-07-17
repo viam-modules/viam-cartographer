@@ -8,7 +8,7 @@ include "map_builder.lua"
 
 -- ===== Local SLAM Options ======
 -- no reason to change these:
-TRAJECTORY_BUILDER.trajectory_builder_2d.use_imu_data = true
+TRAJECTORY_BUILDER.trajectory_builder_2d.use_imu_data = false
 TRAJECTORY_BUILDER.trajectory_builder_2d.use_online_correlative_scan_matching = true
 TRAJECTORY_BUILDER.trajectory_builder_2d.min_range = 0.2
 TRAJECTORY_BUILDER.trajectory_builder_2d.max_range = 25.
