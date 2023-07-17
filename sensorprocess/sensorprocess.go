@@ -43,11 +43,7 @@ func Start(
 	config Config,
 ) {
 	if config.TelemetryEnabled {
-		lidarReadingCounter, err := setupTelemetry(config.ResourceName.Name)
-		if err != nil {
-			config.Logger.Errorf("Could not start telemetry: %s", err)
-			return
-		}
+		lidarReadingCounter := setupTelemetry(config.ResourceName.Name)
 		config.lidarReadingCounter = lidarReadingCounter
 	}
 
@@ -61,7 +57,7 @@ func Start(
 	}
 }
 
-func setupTelemetry(resourceName string) (*statz.Counter1[string], error) {
+func setupTelemetry(resourceName string) *statz.Counter1[string] {
 	telemetryDescription := fmt.Sprintf("The status (%s|%s|%s).", successfulReadings, lockNotAcquired, unexpectedError)
 	counterName := fmt.Sprintf("lidarReadingsConsumed-%s", resourceName)
 	lidarReadingCounter := statz.NewCounter1[string](counterName, statz.MetricConfig{
@@ -75,7 +71,7 @@ func setupTelemetry(resourceName string) (*statz.Counter1[string], error) {
 		},
 	})
 
-	return &lidarReadingCounter, nil
+	return &lidarReadingCounter
 }
 
 // addSensorReading adds a lidar reading to the cartofacade.
