@@ -420,7 +420,7 @@ func toSensorReading(sensor string, readings []byte, timestamp time.Time) C.viam
 	readingsCBytes := C.CBytes(readings)
 	defer C.free(readingsCBytes)
 	sr.sensor_reading = C.blk2bstr(readingsCBytes, C.int(len(readings)))
-	sr.sensor_reading_time_unix_micro = C.int64_t(timestamp.UnixMicro())
+	sr.sensor_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
 	return sr
 }
 
