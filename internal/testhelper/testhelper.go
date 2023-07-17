@@ -267,7 +267,7 @@ func InitInternalState(t *testing.T) (string, func()) {
 	}
 }
 
-// getTestResourceName returns a unique resource name for tests
+// getTestResourceName returns a unique resource name for tests.
 func getTestResourceName() string {
 	id := uuid.New()
 	return fmt.Sprintf("test-%s", id)
