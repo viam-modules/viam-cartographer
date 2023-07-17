@@ -869,7 +869,7 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
 
     // this is needed to suppress error logs
     // from the PCL library
-    // saying the lidar reading is incorrec
+    // saying the lidar reading is incorrect
     // see:
     // https://stackoverflow.com/questions/54763333/pcl-failed-to-find-match-for-field-rgba
     // https://stackoverflow.com/questions/64560467/reading-point-clouds-from-las-files/64593667#64593667
