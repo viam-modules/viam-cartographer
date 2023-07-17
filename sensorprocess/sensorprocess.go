@@ -4,32 +4,53 @@ package sensorprocess
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"time"
 
 	"github.com/edaniels/golog"
+	perf "go.viam.com/utils/perf"
+	statz "go.viam.com/utils/perf/statz"
+	"go.viam.com/utils/perf/statz/units"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
 )
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	CartoFacade      cartofacade.Interface
-	Lidar            sensors.TimedSensor
-	LidarName        string
-	DataRateMs       int
-	Timeout          time.Duration
-	Logger           golog.Logger
-	TelemetryEnabled bool
+	CartoFacade         cartofacade.Interface
+	Lidar               lidar.Lidar
+	LidarName           string
+	DataRateMs          int
+	Timeout             time.Duration
+	Logger              golog.Logger
+	TelemetryEnabled    bool
+	lidarReadingCounter *statz.Counter1[string]
 }
 
-// Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
+const (
+	successfulReadings                      = "successfull readings"
+	unsuccessfulReadingsLockNotAcquired     = "unsuccessful readings - unable to acquire lock"
+	unsuccessfulReadingsLockUnexpectedError = "unsuccessful readings - unexpected error"
+)
+
+// Start polls the lidar to get the next sensor reading and adds it to the mapBuilder.
 // stops when the context is Done.
 func Start(
 	ctx context.Context,
 	config Config,
 ) {
+	if config.TelemetryEnabled {
+		exporter, lidarReadingCounter, err := setupTelemetry(config)
+		if err != nil {
+			config.Logger.Errorf("Could not start telemetry: %s", err)
+			return
+		}
+		defer exporter.Stop()
+		config.lidarReadingCounter = lidarReadingCounter
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -40,7 +61,26 @@ func Start(
 	}
 }
 
-// addSensorReading adds a lidar reading to the cartofacade.
+func setupTelemetry(config Config) (perf.Exporter, *statz.Counter1[string], error) {
+	exporter := perf.NewDevelopmentExporterWithOptions(perf.DevelopmentExporterOptions{
+		ReportingInterval: time.Second, // Good reporting interval time?
+	})
+	if err := exporter.Start(); err != nil {
+		return nil, nil, err
+	}
+
+	var lidarReadingCounter = statz.NewCounter1[string]("lidarReadingsConsumed", statz.MetricConfig{
+		Description: "The number of lidar readings",
+		Unit:        units.Dimensionless,
+		Labels: []statz.Label{
+			{Name: "status", Description: fmt.Sprintf("The status (%s|%s|%s).", successfulReadings, unsuccessfulReadingsLockNotAcquired, unsuccessfulReadingsLockUnexpectedError)},
+		},
+	})
+
+	return exporter, &lidarReadingCounter, nil
+}
+
+// addSensorReading adds a lidar reading to the mapbuilder.
 func addSensorReading(
 	ctx context.Context,
 	config Config,
@@ -54,7 +94,8 @@ func addSensorReading(
 	if tsr.Replay {
 		addSensorReadingFromReplaySensor(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
-		timeToSleep := addSensorReadingFromLiveReadings(ctx, tsr.Reading, tsr.ReadingTime, config)
+		config.Logger.Warnw("Skipping sensor reading due to error converting replay sensor timestamp to RFC3339Nano", "error", err)
+		timeToSleep := addSensorReadingFromLiveReadings(ctxWithMetadata, buf.Bytes(), readingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
 }
@@ -73,16 +114,31 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 		default:
 			err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
-				// TODO: increment telemetry counter success
+				if config.TelemetryEnabled {
+					incrementTelemetry(config, successfulReadings)
+				}
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-				// TODO: increment telemetry counter unexpected error
-				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
+				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err) // Remove?
+				if config.TelemetryEnabled {
+					incrementTelemetry(config, unsuccessfulReadingsLockUnexpectedError)
+				}
+			} else {
+				config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err) // Remove?
+				if config.TelemetryEnabled {
+					incrementTelemetry(config, unsuccessfulReadingsLockNotAcquired)
+				}
 			}
-			// TODO: increment telemetry counter unable to acquire lock
 		}
 	}
+}
+
+func incrementTelemetry(config Config, label string) {
+	if config.lidarReadingCounter == nil {
+		return
+	}
+	config.lidarReadingCounter.Inc(label)
 }
 
 // addSensorReadingFromLiveReadings adds a reading from a live lidar to the carto facade
@@ -92,14 +148,22 @@ func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readi
 	err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)
-			// TODO: increment telemetry counter unable to acquire lock
+			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err) // Remove?
+			if config.TelemetryEnabled {
+				config.lidarReadingCounter.Inc(unsuccessfulReadingsLockNotAcquired)
+			}
 		} else {
-			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
-			// TODO: increment telemetry counter unexpected error
+			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err) // Remove?
+			if config.TelemetryEnabled {
+				config.lidarReadingCounter.Inc(unsuccessfulReadingsLockUnexpectedError)
+			}
+		}
+	} else {
+		if config.TelemetryEnabled {
+			config.lidarReadingCounter.Inc(successfulReadings)
 		}
 	}
-	// TODO: increment telemetry counter success
+
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(config.DataRateMs-timeElapsedMs)))
 }

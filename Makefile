@@ -97,6 +97,9 @@ endif
 
 build: bin/cartographer-module
 
+clean-go: 
+	rm bin/cartographer-module
+
 viam-cartographer/build/carto_grpc_server: ensure-submodule-initialized grpc/buf
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
