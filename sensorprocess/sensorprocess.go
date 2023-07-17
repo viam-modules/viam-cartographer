@@ -30,9 +30,9 @@ type Config struct {
 }
 
 const (
-	successfulReadings                      = "successfull readings"
-	unsuccessfulReadingsLockNotAcquired     = "unsuccessful readings - unable to acquire lock"
-	unsuccessfulReadingsLockUnexpectedError = "unsuccessful readings - unexpected error"
+	successfulReadings = "successful readings"
+	lockNotAcquired    = "unsuccessful readings - unable to acquire lock"
+	unexpectedError    = "unsuccessful readings - unexpected error"
 )
 
 // Start polls the lidar to get the next sensor reading and adds it to the mapBuilder.
@@ -42,7 +42,7 @@ func Start(
 	config Config,
 ) {
 	if config.TelemetryEnabled {
-		exporter, lidarReadingCounter, err := setupTelemetry(config)
+		exporter, lidarReadingCounter, err := setupTelemetry()
 		if err != nil {
 			config.Logger.Errorf("Could not start telemetry: %s", err)
 			return
@@ -61,7 +61,7 @@ func Start(
 	}
 }
 
-func setupTelemetry(config Config) (perf.Exporter, *statz.Counter1[string], error) {
+func setupTelemetry() (perf.Exporter, *statz.Counter1[string], error) {
 	exporter := perf.NewDevelopmentExporterWithOptions(perf.DevelopmentExporterOptions{
 		ReportingInterval: time.Second, // Good reporting interval time?
 	})
@@ -69,11 +69,15 @@ func setupTelemetry(config Config) (perf.Exporter, *statz.Counter1[string], erro
 		return nil, nil, err
 	}
 
-	var lidarReadingCounter = statz.NewCounter1[string]("lidarReadingsConsumed", statz.MetricConfig{
+	telemetryDescription := fmt.Sprintf("The status (%s|%s|%s).", successfulReadings, lockNotAcquired, unexpectedError)
+	lidarReadingCounter := statz.NewCounter1[string]("lidarReadingsConsumed", statz.MetricConfig{
 		Description: "The number of lidar readings",
 		Unit:        units.Dimensionless,
 		Labels: []statz.Label{
-			{Name: "status", Description: fmt.Sprintf("The status (%s|%s|%s).", successfulReadings, unsuccessfulReadingsLockNotAcquired, unsuccessfulReadingsLockUnexpectedError)},
+			{
+				Name:        "status",
+				Description: telemetryDescription,
+			},
 		},
 	})
 
@@ -121,12 +125,12 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err) // Remove?
 				if config.TelemetryEnabled {
-					config.lidarReadingCounter.Inc(unsuccessfulReadingsLockUnexpectedError)
+					config.lidarReadingCounter.Inc(unexpectedError)
 				}
 			} else {
 				config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err) // Remove?
 				if config.TelemetryEnabled {
-					config.lidarReadingCounter.Inc(unsuccessfulReadingsLockNotAcquired)
+					config.lidarReadingCounter.Inc(lockNotAcquired)
 				}
 			}
 		}
@@ -142,12 +146,12 @@ func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readi
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err) // Remove?
 			if config.TelemetryEnabled {
-				config.lidarReadingCounter.Inc(unsuccessfulReadingsLockNotAcquired)
+				config.lidarReadingCounter.Inc(lockNotAcquired)
 			}
 		} else {
 			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err) // Remove?
 			if config.TelemetryEnabled {
-				config.lidarReadingCounter.Inc(unsuccessfulReadingsLockUnexpectedError)
+				config.lidarReadingCounter.Inc(unexpectedError)
 			}
 		}
 	} else {
