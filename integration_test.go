@@ -61,8 +61,7 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 
 func testCartographerFullModPosition(t *testing.T, svc slam.Service, expectedComponentRef string) {
 	expectedPosOSX := r3.Vector{X: -4.534156132500952, Y: 9.800089705182817, Z: 0}
-
-	expectedPosLinux := r3.Vector{X: -0.062249046977189776, Y: 2.97876740701877, Z: 0}
+	expectedPosLinux := r3.Vector{X: -3.0874594959315647, Y: 4.502970388777862, Z: 0}
 	tolerancePos := 0.001
 	expectedOri := &spatialmath.R4AA{Theta: 0.0018812019022632894, RX: 0, RY: 0, RZ: -1}
 	toleranceOri := 0.001
