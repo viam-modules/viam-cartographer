@@ -70,7 +70,7 @@ func CreateFullModSLAMServiceIntegration(
 	logger golog.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
-	cfgService := resource.Config{Name: getTestName(), API: slam.API, Model: viamcartographer.Model}
+	cfgService := resource.Config{Name: getTestResourceName(), API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
 	sensorDeps, err := cfg.Validate("path")
@@ -114,7 +114,7 @@ func CreateSLAMService(
 	t.Helper()
 
 	ctx := context.Background()
-	cfgService := resource.Config{Name: getTestName(), API: slam.API, Model: viamcartographer.Model}
+	cfgService := resource.Config{Name: getTestResourceName(), API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
 	deps := externaltesthelper.SetupDeps(cfg.Sensors)
@@ -267,7 +267,8 @@ func InitInternalState(t *testing.T) (string, func()) {
 	}
 }
 
-func getTestName() string {
+// getTestResourceName returns a unique resource name for tests
+func getTestResourceName() string {
 	id := uuid.New()
 	return fmt.Sprintf("test-%s", id)
 }
