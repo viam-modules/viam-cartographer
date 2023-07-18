@@ -53,9 +53,8 @@ func addSensorReading(
 		if strings.Contains(err.Error(), "reached end of dataset") {
 			config.Logger.Warn(err)
 			return true
-		} else {
-			config.Logger.Warn(err)
 		}
+		config.Logger.Warn(err)
 		return false
 	}
 

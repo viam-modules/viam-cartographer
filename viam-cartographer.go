@@ -750,18 +750,18 @@ func (cartoSvc *CartographerService) getNextDataPoint(ctx context.Context, lidar
 // DoCommand receives arbitrary commands.
 func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
 	if cartoSvc.closed {
+		cartoSvc.logger.Warn("DoCommand called after closed")
 		return nil, ErrClosed
 	}
 
 	if cartoSvc.modularizationV2Enabled {
-		return cartoSvc.doCommandModularizationV2(ctx, req)
+		return cartoSvc.doCommandModularizationV2(req)
 	}
 
 	return nil, viamgrpc.UnimplementedError
 }
 
 func (cartoSvc *CartographerService) doCommandModularizationV2(
-	ctx context.Context,
 	req map[string]interface{},
 ) (map[string]interface{}, error) {
 	if _, ok := req["job_done"]; ok {
