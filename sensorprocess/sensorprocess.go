@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -22,6 +23,7 @@ type Config struct {
 	Timeout          time.Duration
 	Logger           golog.Logger
 	TelemetryEnabled bool
+	jobDone          bool
 }
 
 // Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -29,11 +31,11 @@ type Config struct {
 func Start(
 	ctx context.Context,
 	config Config,
-) {
+) bool {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return config.jobDone
 		default:
 			addSensorReading(ctx, config)
 		}
@@ -47,7 +49,14 @@ func addSensorReading(
 ) {
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
-		config.Logger.Warn(err)
+		if strings.Contains(err.Error(), "reached end of dataset") {
+			if !config.jobDone {
+				config.Logger.Warn(err)
+				config.jobDone = true
+			}
+		} else {
+			config.Logger.Warn(err)
+		}
 		return
 	}
 

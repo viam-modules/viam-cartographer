@@ -143,7 +143,11 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		sensorprocess.Start(cancelCtx, spConfig)
+		jobDone := sensorprocess.Start(cancelCtx, spConfig)
+		if jobDone {
+			cartoSvc.jobDone = true
+			cartoSvc.cancelSensorProcessFunc()
+		}
 	}()
 }
 
@@ -750,6 +754,23 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		cartoSvc.logger.Warn("DoCommand called after closed")
 		return nil, ErrClosed
 	}
+
+	if cartoSvc.modularizationV2Enabled {
+		return cartoSvc.doCommandModularizationV2(ctx, req)
+	}
+
+	return nil, viamgrpc.UnimplementedError
+}
+
+func (cartoSvc *CartographerService) doCommandModularizationV2(
+	ctx context.Context,
+	req map[string]interface{},
+) (map[string]interface{}, error) {
+	_, ok := req["jobDone"]
+	if ok {
+		return map[string]interface{}{"jobDone": cartoSvc.jobDone}, nil
+	}
+
 	return nil, viamgrpc.UnimplementedError
 }
 
