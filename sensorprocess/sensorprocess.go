@@ -23,7 +23,6 @@ type Config struct {
 	Timeout          time.Duration
 	Logger           golog.Logger
 	TelemetryEnabled bool
-	jobDone          bool
 }
 
 // Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -35,9 +34,11 @@ func Start(
 	for {
 		select {
 		case <-ctx.Done():
-			return config.jobDone
+			return false
 		default:
-			addSensorReading(ctx, config)
+			if jobDone := addSensorReading(ctx, config); jobDone {
+				return true
+			}
 		}
 	}
 }
@@ -46,18 +47,16 @@ func Start(
 func addSensorReading(
 	ctx context.Context,
 	config Config,
-) {
+) bool {
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		if strings.Contains(err.Error(), "reached end of dataset") {
-			if !config.jobDone {
-				config.Logger.Warn(err)
-				config.jobDone = true
-			}
+			config.Logger.Warn(err)
+			return true
 		} else {
 			config.Logger.Warn(err)
 		}
-		return
+		return false
 	}
 
 	if tsr.Replay {
@@ -66,6 +65,7 @@ func addSensorReading(
 		timeToSleep := addSensorReadingFromLiveReadings(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
+	return false
 }
 
 // addSensorReadingFromReplaySensor adds a reading from a replay sensor to the cartofacade

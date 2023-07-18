@@ -143,8 +143,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		jobDone := sensorprocess.Start(cancelCtx, spConfig)
-		if jobDone {
+		if jobDone := sensorprocess.Start(cancelCtx, spConfig); jobDone {
 			cartoSvc.jobDone = true
 			cartoSvc.cancelSensorProcessFunc()
 		}
@@ -751,7 +750,6 @@ func (cartoSvc *CartographerService) getNextDataPoint(ctx context.Context, lidar
 // DoCommand receives arbitrary commands.
 func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("DoCommand called after closed")
 		return nil, ErrClosed
 	}
 
@@ -766,9 +764,8 @@ func (cartoSvc *CartographerService) doCommandModularizationV2(
 	ctx context.Context,
 	req map[string]interface{},
 ) (map[string]interface{}, error) {
-	_, ok := req["jobDone"]
-	if ok {
-		return map[string]interface{}{"jobDone": cartoSvc.jobDone}, nil
+	if _, ok := req["job_done"]; ok {
+		return map[string]interface{}{"job_done": cartoSvc.jobDone}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError
