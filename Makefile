@@ -95,12 +95,13 @@ else
 	$(error "Unsupported system. Only apt and brew currently supported.")
 endif
 
-build: bin/cartographer-module
+build: cartographer-module
 
 viam-cartographer/build/carto_grpc_server: ensure-submodule-initialized grpc/buf
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
-bin/cartographer-module: viam-cartographer/build/carto_grpc_server
+cartographer-module: viam-cartographer/build/carto_grpc_server
+	rm -f bin/cartographer-module
 	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
