@@ -17,7 +17,10 @@ jobs:
     uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
 
   appimage:
+<<<<<<< HEAD
   # remove
+=======
+>>>>>>> 5ed4420 (RSDK-3591 Update Workflows (#169))
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     needs: test
     with:

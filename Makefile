@@ -117,10 +117,19 @@ build-asan: build-debug
 build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
 build-debug: build
 
+<<<<<<< HEAD
 # Linux only
 setup-cpp-debug: 
 	sudo apt install -y valgrind gdb
 
+=======
+<<<<<<< HEAD
+=======
+bin/cartographer-module:
+	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
+
+>>>>>>> 536beea (RSDK-3591 Update Workflows (#169))
+>>>>>>> 9785d50 (workflows)
 test-cpp:
 	viam-cartographer/build/unit_tests -p -l all
 
