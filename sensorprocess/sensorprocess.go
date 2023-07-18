@@ -51,10 +51,7 @@ func addSensorReading(
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		if strings.Contains(err.Error(), "reached end of dataset") {
-			return true
-		}
-		return false
+		return strings.Contains(err.Error(), "reached end of dataset")
 	}
 
 	if tsr.Replay {

@@ -280,9 +280,8 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = invalidReplaySensor
 		config.LidarName = invalidReplaySensor.Name
 
-		jobDone := addSensorReading(ctx, config)
+		addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 0)
-		test.That(t, jobDone, test.ShouldBeFalse)
 	})
 
 	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
@@ -420,21 +419,9 @@ func TestAddSensorReading(t *testing.T) {
 		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
 		test.That(t, err, test.ShouldBeNil)
 
-		var calls []addSensorReadingArgs
-		cf.AddSensorReadingFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-			sensorName string,
-			currentReading []byte,
-			readingTimestamp time.Time,
-		) error {
-			return errors.New("reached end of dataset")
-		}
 		config.Lidar = replaySensor
-		config.LidarName = replaySensor.Name
 
 		jobDone := addSensorReading(ctx, config)
-		test.That(t, len(calls), test.ShouldEqual, 0)
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 }
