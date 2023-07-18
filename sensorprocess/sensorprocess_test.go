@@ -280,8 +280,9 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = invalidReplaySensor
 		config.LidarName = invalidReplaySensor.Name
 
-		addSensorReading(ctx, config)
+		jobDone := addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 0)
+		test.That(t, jobDone, test.ShouldBeFalse)
 	})
 
 	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
@@ -309,8 +310,9 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = invalidReplaySensor
 		config.LidarName = invalidReplaySensor.Name
 
-		addSensorReading(ctx, config)
+		jobDone := addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 0)
+		test.That(t, jobDone, test.ShouldBeFalse)
 	})
 
 	t.Run("replay sensor adds sensor data until success", func(t *testing.T) {
@@ -344,8 +346,9 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = replaySensor
 		config.LidarName = replaySensor.Name
 
-		addSensorReading(ctx, config)
+		jobDone := addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 3)
+		test.That(t, jobDone, test.ShouldBeFalse)
 
 		firstTimestamp := calls[0].readingTimestamp
 		for i, call := range calls {
@@ -388,14 +391,17 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = liveSensor
 		config.LidarName = liveSensor.Name
 
-		addSensorReading(ctx, config)
+		jobDone := addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 1)
+		test.That(t, jobDone, test.ShouldBeFalse)
 
-		addSensorReading(ctx, config)
+		jobDone = addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 2)
+		test.That(t, jobDone, test.ShouldBeFalse)
 
-		addSensorReading(ctx, config)
+		jobDone = addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 3)
+		test.That(t, jobDone, test.ShouldBeFalse)
 
 		for i, call := range calls {
 			t.Logf("call %d", i)
@@ -407,5 +413,28 @@ func TestAddSensorReading(t *testing.T) {
 		}
 		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
+	})
+
+	t.Run("returns true when lidar returns an error that it reached end of dataset", func(t *testing.T) {
+		sensors := []string{"finished_replay_sensor"}
+		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
+
+		var calls []addSensorReadingArgs
+		cf.AddSensorReadingFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+			sensorName string,
+			currentReading []byte,
+			readingTimestamp time.Time,
+		) error {
+			return errors.New("reached end of dataset")
+		}
+		config.Lidar = replaySensor
+		config.LidarName = replaySensor.Name
+
+		jobDone := addSensorReading(ctx, config)
+		test.That(t, len(calls), test.ShouldEqual, 0)
+		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 }
