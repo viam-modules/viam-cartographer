@@ -766,15 +766,15 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 LOG(INFO) << "IMU Data: X:" << imu_data.linear_acceleration[0] << " Y: " << imu_data.linear_acceleration[1] <<" Z: " << imu_data.linear_acceleration[2];
                 if (imu_data.linear_acceleration.size() > 0) {
                     LOG(INFO) << "Adding IMU Data...";
-                    trajectory_builder->AddSensorData(kIMUSensorId.id,
-                                                     imu_data);
-                    auto local_poses = map_builder.GetLocalSlamResultPoses();
-                    if (local_poses.size() > 0) {
-                        tmp_global_pose = map_builder.GetGlobalPose(
-                            trajectory_id, local_poses.back());
-                    }
+                    //trajectory_builder->AddSensorData(kIMUSensorId.id,
+                    //                                 imu_data);
+                    // auto local_poses = map_builder.GetLocalSlamResultPoses();
+                    // if (local_poses.size() > 0) {
+                    //     tmp_global_pose = map_builder.GetGlobalPose(
+                    //         trajectory_id, local_poses.back());
+                    // }
                 }
-            }*/
+            }
         }
         // Save a copy of the global pose
         {
@@ -860,6 +860,11 @@ float SLAMServiceImpl::GetMaxRangeFromMapBuilder() {
 float SLAMServiceImpl::GetMinRangeFromMapBuilder() {
     std::lock_guard<std::mutex> lk(map_builder_mutex);
     return map_builder.GetMinRange();
+}
+
+bool SLAMServiceImpl::GetUseImuDataFromMapBuilder() {
+    std::lock_guard<std::mutex> lk(map_builder_mutex);
+    return map_builder.GetUseImuData();
 }
 
 int SLAMServiceImpl::GetMaxSubmapsToKeepFromMapBuilder() {

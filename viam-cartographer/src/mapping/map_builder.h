@@ -88,6 +88,7 @@ class MapBuilder {
     void OverwriteMissingDataRayLength(float value);
     void OverwriteMaxRange(float value);
     void OverwriteMinRange(float value);
+    void OverwriteUseImuData(bool value);
     void OverwriteMaxSubmapsToKeep(int value);
     void OverwriteFreshSubmapsCount(int value);
     void OverwriteMinCoveredArea(double value);
@@ -102,6 +103,7 @@ class MapBuilder {
     float GetMissingDataRayLength();
     float GetMaxRange();
     float GetMinRange();
+    bool GetUseImuData();
     int GetMaxSubmapsToKeep();
     int GetFreshSubmapsCount();
     double GetMinCoveredArea();

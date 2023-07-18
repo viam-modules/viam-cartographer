@@ -120,6 +120,7 @@ class SLAMServiceImpl final : public SLAMService::Service {
     float GetMissingDataRayLengthFromMapBuilder();
     float GetMaxRangeFromMapBuilder();
     float GetMinRangeFromMapBuilder();
+    bool GetUseImuDataFromMapBuilder();
     int GetMaxSubmapsToKeepFromMapBuilder();
     int GetFreshSubmapsCountFromMapBuilder();
     double GetMinCoveredAreaFromMapBuilder();

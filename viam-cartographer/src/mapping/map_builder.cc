@@ -178,7 +178,7 @@ void MapBuilder::OverwriteMinRange(float value) {
     mutable_trajectory_builder_2d_options->set_min_range(value);
 }
 
-void MapBuilder::OverwriteUseImuData(float value) {
+void MapBuilder::OverwriteUseImuData(bool value) {
     auto mutable_trajectory_builder_2d_options =
         trajectory_builder_options_.mutable_trajectory_builder_2d_options();
     mutable_trajectory_builder_2d_options->set_use_imu_data(value);
@@ -266,6 +266,11 @@ float MapBuilder::GetMaxRange() {
 float MapBuilder::GetMinRange() {
     return trajectory_builder_options_.trajectory_builder_2d_options()
         .min_range();
+}
+
+bool MapBuilder::GetUseImuData() {
+    return trajectory_builder_options_.trajectory_builder_2d_options()
+        .use_imu_data();
 }
 
 int MapBuilder::GetMaxSubmapsToKeep() {
