@@ -35,7 +35,11 @@ jobs:
 
     steps:
     - name: Check out code
+<<<<<<< HEAD
       if: inputs.release_type != 'pr'
+=======
+      if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
+>>>>>>> 5ed4420 (RSDK-3591 Update Workflows (#169))
       uses: actions/checkout@v3
       with:
         submodules: recursive
@@ -66,7 +70,11 @@ jobs:
         credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
 
     - name: Build and Package (PR)
+<<<<<<< HEAD
       if: inputs.release_type == 'pr'
+=======
+      if: contains(github.event.pull_request.labels.*.name, 'appimage') || contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
+>>>>>>> 5ed4420 (RSDK-3591 Update Workflows (#169))
       run: |
         sudo -u testbot bash -lc 'make BUILD_CHANNEL="pr-${{ github.event.pull_request.number }}" appimage'
 
@@ -90,4 +98,8 @@ jobs:
         destination: 'packages.viam.com/apps/slam-servers/'
         glob: '*'
         parent: false
+<<<<<<< HEAD
         gzip: false
+=======
+        gzip: false
+>>>>>>> 5ed4420 (RSDK-3591 Update Workflows (#169))
