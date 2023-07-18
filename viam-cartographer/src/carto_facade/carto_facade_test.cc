@@ -57,13 +57,13 @@ void viam_carto_config_teardown(viam_carto_config vcc) {
 }
 viam_carto_sensor_reading new_test_sensor_reading(
     std::string sensor, std::string pcd_path,
-    int64_t sensor_reading_time_unix_micro) {
+    int64_t sensor_reading_time_unix_milli) {
     viam_carto_sensor_reading sr;
     sr.sensor = bfromcstr(sensor.c_str());
     std::string pcd = help::read_file(pcd_path);
     sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
     BOOST_TEST(sr.sensor_reading != nullptr);
-    sr.sensor_reading_time_unix_micro = sensor_reading_time_unix_micro;
+    sr.sensor_reading_time_unix_milli = sensor_reading_time_unix_milli;
     return sr;
 }
 
@@ -589,7 +589,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         std::string pcd = help::binary_pcd(points);
         sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
         BOOST_TEST(sr.sensor_reading != nullptr);
-        sr.sensor_reading_time_unix_micro = 1687899990420347;
+        sr.sensor_reading_time_unix_milli = 1687899990420347;
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST);
         BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
@@ -604,7 +604,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         std::string pcd = help::binary_pcd(points);
         sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
         BOOST_TEST(sr.sensor_reading != nullptr);
-        sr.sensor_reading_time_unix_micro = 1687900014152474;
+        sr.sensor_reading_time_unix_milli = 1687900014152474;
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST);
         BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
@@ -620,7 +620,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         // passing 0 as the second parameter makes the string empty
         sr.sensor_reading = blk2bstr(pcd.c_str(), 0);
         BOOST_TEST(sr.sensor_reading != nullptr);
-        sr.sensor_reading_time_unix_micro = 1687900021820215;
+        sr.sensor_reading_time_unix_milli = 1687900021820215;
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_SENSOR_READING_EMPTY);
         BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==
@@ -635,7 +635,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         std::string pcd = "invalid lidar reading";
         sr.sensor_reading = blk2bstr(pcd.c_str(), pcd.length());
         BOOST_TEST(sr.sensor_reading != nullptr);
-        sr.sensor_reading_time_unix_micro = 1687900029557335;
+        sr.sensor_reading_time_unix_milli = 1687900029557335;
         BOOST_TEST(viam_carto_add_sensor_reading(vc, &sr) ==
                    VIAM_CARTO_SENSOR_READING_INVALID);
         BOOST_TEST(viam_carto_add_sensor_reading_destroy(&sr) ==

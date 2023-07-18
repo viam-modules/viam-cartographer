@@ -766,10 +766,10 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         throw VIAM_CARTO_SENSOR_READING_EMPTY;
     }
 
-    int64_t sensor_reading_time_unix_micro = sr->sensor_reading_time_unix_micro;
+    int64_t sensor_reading_time_unix_milli = sr->sensor_reading_time_unix_milli;
     auto [success, measurement] =
         viam::carto_facade::util::carto_sensor_reading(
-            sensor_reading, sensor_reading_time_unix_micro);
+            sensor_reading, sensor_reading_time_unix_milli);
     if (!success) {
         throw VIAM_CARTO_SENSOR_READING_INVALID;
     }
@@ -778,6 +778,8 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
     bool update_latest_global_pose = false;
 
     if (map_builder_mutex.try_lock()) {
+        VLOG(1) << "AddSensorData timestamp: " << measurement.time
+                << " measurement.ranges.size(): " << measurement.ranges.size();
         map_builder.AddSensorData(measurement);
         auto local_poses = map_builder.GetLocalSlamResultPoses();
         VLOG(1) << "local_poses.size(): " << local_poses.size();

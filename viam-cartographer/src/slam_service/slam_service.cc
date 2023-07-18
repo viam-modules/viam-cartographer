@@ -731,6 +731,9 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
             std::lock_guard<std::mutex> lk(map_builder_mutex);
             auto measurement = map_builder.GetDataFromFile(file);
             if (measurement.ranges.size() > 0) {
+                VLOG(1) << "AddSensorData timestamp: " << measurement.time
+                        << " measurement.ranges.size(): "
+                        << measurement.ranges.size();
                 trajectory_builder->AddSensorData(kRangeSensorId.id,
                                                   measurement);
                 auto local_poses = map_builder.GetLocalSlamResultPoses();
