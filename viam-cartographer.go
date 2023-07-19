@@ -757,16 +757,6 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		return nil, ErrClosed
 	}
 
-	if cartoSvc.modularizationV2Enabled {
-		return cartoSvc.doCommandModularizationV2(req)
-	}
-
-	return nil, viamgrpc.UnimplementedError
-}
-
-func (cartoSvc *CartographerService) doCommandModularizationV2(
-	req map[string]interface{},
-) (map[string]interface{}, error) {
 	if _, ok := req["job_done"]; ok {
 		return map[string]interface{}{"job_done": cartoSvc.jobDone.Load()}, nil
 	}
