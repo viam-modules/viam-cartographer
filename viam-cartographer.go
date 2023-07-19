@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -144,7 +145,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
 		if jobDone := sensorprocess.Start(cancelCtx, spConfig); jobDone {
-			cartoSvc.jobDone = true
+			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
 	}()
@@ -244,8 +245,10 @@ func New(
 		cartoFacadeTimeout:            cartoFacadeTimeout,
 		localizationMode:              mapRateSec == 0,
 		mapTimestamp:                  time.Now().UTC(),
-		jobDone:                       false,
 	}
+
+	cartoSvc.jobDone.Store(false)
+
 	defer func() {
 		if err != nil {
 			logger.Errorw("New() hit error, closing...", "error", err)
@@ -515,7 +518,7 @@ type CartographerService struct {
 	sensorValidationIntervalSec   int
 	// deprecated
 	dialMaxTimeoutSec int
-	jobDone           bool
+	jobDone           atomic.Bool
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -730,13 +733,13 @@ func (cartoSvc *CartographerService) readDataOnInterval(ctx context.Context, lid
 func (cartoSvc *CartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
 	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
 		if strings.Contains(err.Error(), "reached end of dataset") {
-			if !cartoSvc.jobDone {
+			if !cartoSvc.jobDone.Load() {
 				cartoSvc.logger.Warn(err)
 				_, err = os.Create(filepath.Join(cartoSvc.dataDirectory, "job_done.txt"))
 				if err != nil {
 					cartoSvc.logger.Warn(err)
 				}
-				cartoSvc.jobDone = true
+				cartoSvc.jobDone.Store(true)
 			}
 		} else {
 			cartoSvc.logger.Warn(err)
@@ -765,7 +768,7 @@ func (cartoSvc *CartographerService) doCommandModularizationV2(
 	req map[string]interface{},
 ) (map[string]interface{}, error) {
 	if _, ok := req["job_done"]; ok {
-		return map[string]interface{}{"job_done": cartoSvc.jobDone}, nil
+		return map[string]interface{}{"job_done": cartoSvc.jobDone.Load()}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError
