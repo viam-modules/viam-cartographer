@@ -10,7 +10,7 @@ namespace viam {
 namespace carto_facade {
 namespace io {
 
-BOOST_AUTO_TEST_SUITE(CartoFacade_io, *boost::unit_test::disabled())
+BOOST_AUTO_TEST_SUITE(CartoFacade_io)
 
 BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
     std::string path_to_dir = "path_to_dir";

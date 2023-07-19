@@ -10,8 +10,7 @@ import (
 	"go.viam.com/test"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	"github.com/viamrobotics/viam-cartographer/testhelper"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 type addSensorReadingArgs struct {
@@ -250,7 +249,8 @@ func invalidSensorTestHelper(
 	config Config,
 	sensors []string,
 ) {
-	sensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+	logger := golog.NewTestLogger(t)
+	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addSensorReadingArgs
@@ -314,7 +314,8 @@ func TestAddSensorReading(t *testing.T) {
 
 	t.Run("replay sensor adds sensor data until success", func(t *testing.T) {
 		sensors := []string{"replay_sensor"}
-		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		logger := golog.NewTestLogger(t)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addSensorReadingArgs
@@ -359,7 +360,8 @@ func TestAddSensorReading(t *testing.T) {
 
 	t.Run("live sensor adds sensor reading once and ignores errors", func(t *testing.T) {
 		sensors := []string{"good_lidar"}
-		liveSensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		logger := golog.NewTestLogger(t)
+		liveSensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addSensorReadingArgs
@@ -414,7 +416,8 @@ func TestAddSensorReading(t *testing.T) {
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset", func(t *testing.T) {
 		sensors := []string{"finished_replay_sensor"}
-		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		logger := golog.NewTestLogger(t)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
@@ -438,7 +441,8 @@ func TestStart(t *testing.T) {
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
 		sensors := []string{"finished_replay_sensor"}
-		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		logger := golog.NewTestLogger(t)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
@@ -449,7 +453,8 @@ func TestStart(t *testing.T) {
 
 	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
 		sensors := []string{"finished_replay_sensor"}
-		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		logger := golog.NewTestLogger(t)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor

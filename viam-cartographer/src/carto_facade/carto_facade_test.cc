@@ -85,7 +85,7 @@ viam_carto_algo_config viam_carto_algo_config_setup() {
     return ac;
 }
 
-BOOST_AUTO_TEST_SUITE(CartoFacadeCPPAPI, *boost::unit_test::disabled());
+BOOST_AUTO_TEST_SUITE(CartoFacadeCPPAPI);
 
 BOOST_AUTO_TEST_CASE(CartoFacade_lib_init_terminate) {
     viam_carto_lib *lib;

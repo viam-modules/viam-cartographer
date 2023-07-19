@@ -633,7 +633,7 @@ void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
 };
 
 // TODO: This function is unnecessarily prone to IO errors
-// due to going through the file system  in order to read
+// due to going through the file system in order to read
 // the internal state.
 // This is the ticket to remove that failure mode:
 // https://viam.atlassian.net/browse/RSDK-3878
@@ -704,16 +704,12 @@ void CartoFacade::SaveInternalStateOnInterval() {
             std::chrono::duration<double, std::milli> time_elapsed_msec =
                 std::chrono::high_resolution_clock::now() - start;
             if (time_elapsed_msec >= config.map_rate_sec) {
-                VLOG(1) << "time_elapsed_msec >= config.map_rate_sec";
                 break;
             }
             if (config.map_rate_sec - time_elapsed_msec >=
                 check_for_shutdown_interval_usec) {
-                VLOG(1) << "config.map_rate_sec - time_elapsed_msec >= "
-                           "check_for_shutdown_interval_usec";
                 std::this_thread::sleep_for(check_for_shutdown_interval_usec);
             } else {
-                VLOG(1) << "else";
                 std::this_thread::sleep_for(config.map_rate_sec -
                                             time_elapsed_msec);
                 break;

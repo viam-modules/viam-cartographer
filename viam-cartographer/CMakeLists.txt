@@ -72,9 +72,5 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
   ${PCL_LIBRARIES}
 )
 
-# executables
-add_executable(carto_grpc_server src/main.cc)
-target_link_libraries(carto_grpc_server PUBLIC viam-cartographer)
-
 add_executable(unit_tests ${ALL_VIAM_TEST_SRCS})
 target_link_libraries(unit_tests PUBLIC viam-cartographer)
