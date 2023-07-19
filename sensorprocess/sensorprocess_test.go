@@ -243,6 +243,41 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 	})
 }
 
+func invalidSensorTestHelper(
+	ctx context.Context,
+	t *testing.T,
+	cartoFacadeMock cartofacade.Mock,
+	config Config,
+	sensors []string,
+) {
+	sensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+	test.That(t, err, test.ShouldBeNil)
+
+	var calls []addSensorReadingArgs
+	cartoFacadeMock.AddSensorReadingFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+		sensorName string,
+		currentReading []byte,
+		readingTimestamp time.Time,
+	) error {
+		args := addSensorReadingArgs{
+			timeout:          timeout,
+			sensorName:       sensorName,
+			currentReading:   currentReading,
+			readingTimestamp: readingTimestamp,
+		}
+		calls = append(calls, args)
+		return nil
+	}
+	config.Lidar = sensor
+	config.LidarName = sensor.Name
+
+	jobDone := addSensorReading(ctx, config)
+	test.That(t, len(calls), test.ShouldEqual, 0)
+	test.That(t, jobDone, test.ShouldBeFalse)
+}
+
 func TestAddSensorReading(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	cf := cartofacade.Mock{}
@@ -257,61 +292,24 @@ func TestAddSensorReading(t *testing.T) {
 
 	t.Run("returns error when lidar GetData returns error, doesn't try to add sensor data", func(t *testing.T) {
 		sensors := []string{"invalid_sensor"}
-		invalidReplaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
-		test.That(t, err, test.ShouldBeNil)
-
-		var calls []addSensorReadingArgs
-		cf.AddSensorReadingFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-			sensorName string,
-			currentReading []byte,
-			readingTimestamp time.Time,
-		) error {
-			args := addSensorReadingArgs{
-				timeout:          timeout,
-				sensorName:       sensorName,
-				currentReading:   currentReading,
-				readingTimestamp: readingTimestamp,
-			}
-			calls = append(calls, args)
-			return nil
-		}
-		config.Lidar = invalidReplaySensor
-		config.LidarName = invalidReplaySensor.Name
-
-		addSensorReading(ctx, config)
-		test.That(t, len(calls), test.ShouldEqual, 0)
+		invalidSensorTestHelper(
+			ctx,
+			t,
+			cf,
+			config,
+			sensors,
+		)
 	})
 
 	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
 		sensors := []string{"invalid_replay_sensor"}
-		invalidReplaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
-		test.That(t, err, test.ShouldBeNil)
-
-		var calls []addSensorReadingArgs
-		cf.AddSensorReadingFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-			sensorName string,
-			currentReading []byte,
-			readingTimestamp time.Time,
-		) error {
-			args := addSensorReadingArgs{
-				timeout:          timeout,
-				sensorName:       sensorName,
-				currentReading:   currentReading,
-				readingTimestamp: readingTimestamp,
-			}
-			calls = append(calls, args)
-			return nil
-		}
-		config.Lidar = invalidReplaySensor
-		config.LidarName = invalidReplaySensor.Name
-
-		jobDone := addSensorReading(ctx, config)
-		test.That(t, len(calls), test.ShouldEqual, 0)
-		test.That(t, jobDone, test.ShouldBeFalse)
+		invalidSensorTestHelper(
+			ctx,
+			t,
+			cf,
+			config,
+			sensors,
+		)
 	})
 
 	t.Run("replay sensor adds sensor data until success", func(t *testing.T) {
