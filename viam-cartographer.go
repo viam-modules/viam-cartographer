@@ -247,8 +247,6 @@ func New(
 		mapTimestamp:                  time.Now().UTC(),
 	}
 
-	cartoSvc.jobDone.Store(false)
-
 	defer func() {
 		if err != nil {
 			logger.Errorw("New() hit error, closing...", "error", err)
