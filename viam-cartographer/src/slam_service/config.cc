@@ -105,6 +105,7 @@ void ParseAndValidateConfigParams(int argc, char** argv,
     slamService.port = FLAGS_port;
     slamService.camera_name = FLAGS_lidar_sensors;
     slamService.data_rate_ms = std::chrono::milliseconds(FLAGS_data_rate_ms);
+    slamService.imu_data_rate_ms = std::chrono::milliseconds(FLAGS_imu_data_rate_ms);
     slamService.map_rate_sec = std::chrono::seconds(FLAGS_map_rate_sec);
 
     slamService.delete_processed_data = FLAGS_delete_processed_data;
@@ -167,7 +168,9 @@ void OverwriteCartoConfigParam(SLAMServiceImpl& slamService,
         } else if (parameter == "min_range") {
             slamService.min_range = std::stof(new_parameter);
         } else if (parameter == "use_imu_data") {
+            LOG(INFO) << "setting imu use to " << parameter;
             slamService.use_imu_data = (new_parameter == "true");
+            LOG(INFO) << "setting imu use to " << slamService.use_imu_data;
         } else if (parameter == "max_submaps_to_keep") {
             if (slam_action_mode != ActionMode::LOCALIZING) {
                 LOG(WARNING) << "Not in localizing action mode: Setting "

@@ -179,6 +179,7 @@ void MapBuilder::OverwriteMinRange(float value) {
 }
 
 void MapBuilder::OverwriteUseImuData(bool value) {
+    LOG(INFO) << "Setting use_imu_data to: " << value;
     auto mutable_trajectory_builder_2d_options =
         trajectory_builder_options_.mutable_trajectory_builder_2d_options();
     mutable_trajectory_builder_2d_options->set_use_imu_data(value);

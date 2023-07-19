@@ -18,6 +18,8 @@
 #include "cartographer/mapping/map_builder.h"
 #include "glog/logging.h"
 
+#include <chrono>
+#include <thread>
 
 namespace {
 // Number of bytes in a pixel
@@ -713,7 +715,6 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                                 viam::io::filename_prefix.length(),
                             file.find(".pcd")));
             // First file should be of pointcloud, not IMU
-            LOG(INFO) << "start time is: " << data_start_time << " and file time is " << file_time;
             if (file_time < data_start_time || file.find(".json") != std::string::npos) {
                 file = GetNextDataFile();
                 continue;
@@ -757,6 +758,7 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                         tmp_global_pose = map_builder.GetGlobalPose(
                             trajectory_id, local_poses.back());
                     }
+                std::this_thread::sleep_for(std::chrono::milliseconds(20));    
                 }
             }
             //if (file.find(".pcd") == std::string::npos && !file.find(".json") == std::string::npos)
@@ -766,8 +768,8 @@ void SLAMServiceImpl::ProcessDataAndStartSavingMaps(double data_start_time) {
                 LOG(INFO) << "IMU Data: X:" << imu_data.linear_acceleration[0] << " Y: " << imu_data.linear_acceleration[1] <<" Z: " << imu_data.linear_acceleration[2];
                 if (imu_data.linear_acceleration.size() > 0) {
                     LOG(INFO) << "Adding IMU Data...";
-                    //trajectory_builder->AddSensorData(kIMUSensorId.id,
-                    //                                 imu_data);
+                    trajectory_builder->AddSensorData(kIMUSensorId.id,
+                                                     imu_data);
                     // auto local_poses = map_builder.GetLocalSlamResultPoses();
                     // if (local_poses.size() > 0) {
                     //     tmp_global_pose = map_builder.GetGlobalPose(
