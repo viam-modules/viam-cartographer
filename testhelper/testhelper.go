@@ -94,6 +94,8 @@ func SetupDeps(sensors []string) resource.Dependencies {
 			return deps
 		case "cartographer_int_lidar":
 			deps[camera.Named(sensor)] = getIntegrationLidar()
+		case "finished_replay_sensor":
+			deps[camera.Named(sensor)] = getFinishedReplaySensor()
 		default:
 			continue
 		}
@@ -197,6 +199,23 @@ func getIntegrationLidar() *inject.Camera {
 		default:
 			return nil, errors.Errorf("Lidar not ready to return point cloud %v", atomic.LoadUint64(&index))
 		}
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		return nil, errors.New("lidar not camera")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{}, nil
+	}
+	return cam
+}
+
+func getFinishedReplaySensor() *inject.Camera {
+	cam := &inject.Camera{}
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		return nil, errors.New("reached end of dataset")
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
 		return nil, errors.New("lidar not camera")

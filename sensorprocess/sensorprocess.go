@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -29,13 +30,15 @@ type Config struct {
 func Start(
 	ctx context.Context,
 	config Config,
-) {
+) bool {
 	for {
 		select {
 		case <-ctx.Done():
-			return
+			return false
 		default:
-			addSensorReading(ctx, config)
+			if jobDone := addSensorReading(ctx, config); jobDone {
+				return true
+			}
 		}
 	}
 }
@@ -44,11 +47,11 @@ func Start(
 func addSensorReading(
 	ctx context.Context,
 	config Config,
-) {
+) bool {
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		return
+		return strings.Contains(err.Error(), "reached end of dataset")
 	}
 
 	if tsr.Replay {
@@ -57,6 +60,7 @@ func addSensorReading(
 		timeToSleep := addSensorReadingFromLiveReadings(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
+	return false
 }
 
 // addSensorReadingFromReplaySensor adds a reading from a replay sensor to the cartofacade
