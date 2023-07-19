@@ -423,3 +423,40 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 }
+
+func TestStart(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+	cf := cartofacade.Mock{}
+
+	config := Config{
+		Logger:      logger,
+		CartoFacade: &cf,
+		DataRateMs:  200,
+		Timeout:     10 * time.Second,
+	}
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+
+	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
+		sensors := []string{"finished_replay_sensor"}
+		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
+
+		config.Lidar = replaySensor
+
+		jobDone := Start(context.Background(), config)
+		test.That(t, jobDone, test.ShouldBeTrue)
+	})
+
+	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
+		sensors := []string{"finished_replay_sensor"}
+		replaySensor, err := lidar.New(testhelper.SetupDeps(sensors), sensors, 0)
+		test.That(t, err, test.ShouldBeNil)
+
+		config.Lidar = replaySensor
+
+		cancelFunc()
+
+		jobDone := Start(cancelCtx, config)
+		test.That(t, jobDone, test.ShouldBeFalse)
+	})
+}
