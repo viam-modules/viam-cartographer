@@ -67,12 +67,8 @@ class MapBuilder {
     // a PCD file.
     cartographer::sensor::TimedPointCloudData GetDataFromFile(std::string file);
 
-    // GetLocalSlamResultPoses returns the local slam result poses.
-    std::vector<::cartographer::transform::Rigid3d> GetLocalSlamResultPoses();
-
     // GetGlobalPose returns the local pose based on the provided a local pose.
-    cartographer::transform::Rigid3d GetGlobalPose(
-        cartographer::transform::Rigid3d &local_pose);
+    cartographer::transform::Rigid3d GetGlobalPose();
 
     // AddSensorData adds sensor data to cartographer's internal state
     // throws if adding sensor data fails.
@@ -121,7 +117,8 @@ class MapBuilder {
     double data_start_time = 0;
 
    private:
-    std::vector<::cartographer::transform::Rigid3d> local_slam_result_poses_;
+    std::mutex local_slam_result_pose_mutex;
+    ::cartographer::transform::Rigid3d local_slam_result_pose = cartographer::transform::Rigid3d();;
     double start_time = -1;
 };
 }  // namespace carto_facade
