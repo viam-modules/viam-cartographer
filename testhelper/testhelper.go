@@ -216,7 +216,7 @@ func getIntegrationLidar() *inject.Camera {
 func getFinishedReplaySensor() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, replaypcd.ErrEndOfDataset
+		return nil, errors.Wrap(errors.New("wrapped error"), replaypcd.ErrEndOfDataset.Error())
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
 		return nil, errors.New("lidar not camera")
