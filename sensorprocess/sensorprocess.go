@@ -5,10 +5,10 @@ import (
 	"context"
 	"errors"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/edaniels/golog"
+	"go.viam.com/rdk/components/camera/replaypcd"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/sensors"
@@ -51,7 +51,7 @@ func addSensorReading(
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		return strings.Contains(err.Error(), "reached end of dataset")
+		return errors.Is(err, replaypcd.ErrEndOfDataset)
 	}
 
 	if tsr.Replay {

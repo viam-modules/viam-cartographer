@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
+	"go.viam.com/rdk/components/camera/replaypcd"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
@@ -215,7 +216,7 @@ func getIntegrationLidar() *inject.Camera {
 func getFinishedReplaySensor() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, errors.New("reached end of dataset")
+		return nil, replaypcd.ErrEndOfDataset
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
 		return nil, errors.New("lidar not camera")
