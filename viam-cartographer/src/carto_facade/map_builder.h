@@ -118,7 +118,9 @@ class MapBuilder {
 
    private:
     std::mutex local_slam_result_pose_mutex;
-    ::cartographer::transform::Rigid3d local_slam_result_pose = cartographer::transform::Rigid3d();;
+    ::cartographer::transform::Rigid3d local_slam_result_pose =
+        cartographer::transform::Rigid3d();
+    ;
     double start_time = -1;
 };
 }  // namespace carto_facade
