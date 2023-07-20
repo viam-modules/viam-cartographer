@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
+	"go.viam.com/rdk/components/camera/replaypcd"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/sensors"
-	"go.viam.com/components/camera/replaypcd"
 )
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
@@ -51,7 +51,7 @@ func addSensorReading(
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		return errors.Is(replaypcd.ErrEndOfDataset)
+		return errors.Is(err, replaypcd.ErrEndOfDataset)
 	}
 
 	if tsr.Replay {
