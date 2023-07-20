@@ -11,10 +11,10 @@ require (
 	github.com/rhysd/actionlint v1.6.24
 	github.com/viamrobotics/gostream v0.0.0-20230609200515-c5d67c29ed25
 	go.opencensus.io v0.24.0
-	go.viam.com/api v0.1.145
-	go.viam.com/rdk v0.4.0-rc0
+	go.viam.com/api v0.1.156
+	go.viam.com/rdk v0.5.0
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.37
+	go.viam.com/utils v0.1.38
 	google.golang.org/grpc v1.56.0
 	google.golang.org/protobuf v1.30.0
 )
