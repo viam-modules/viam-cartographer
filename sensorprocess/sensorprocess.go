@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -51,9 +52,8 @@ func addSensorReading(
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		return errors.Is(err, replaypcd.ErrEndOfDataset)
+		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 	}
-
 	if tsr.Replay {
 		addSensorReadingFromReplaySensor(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
