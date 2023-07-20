@@ -3,14 +3,9 @@
 package viamcartographer
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	"io"
-	"os"
-	"path/filepath"
 	"strconv"
-	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -20,22 +15,15 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap/zapcore"
-	pb "go.viam.com/api/service/slam/v1"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
-	"go.viam.com/rdk/services/slam/grpchelper"
 	"go.viam.com/rdk/spatialmath"
-	goutils "go.viam.com/utils"
-	"go.viam.com/utils/pexec"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/sensorprocess"
-	"github.com/viamrobotics/viam-cartographer/sensors"
-	"github.com/viamrobotics/viam-cartographer/sensors/lidar"
-	dim2d "github.com/viamrobotics/viam-cartographer/sensors/lidar/dim-2d"
-	vcUtils "github.com/viamrobotics/viam-cartographer/utils"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // Model is the model name of cartographer.
@@ -95,11 +83,8 @@ func init() {
 				deps,
 				c,
 				logger,
-				false,
-				DefaultExecutableName,
 				defaultSensorValidationMaxTimeoutSec,
 				defaultSensorValidationIntervalSec,
-				defaultDialMaxTimeoutSec,
 				defaultCartoFacadeTimeout,
 				nil,
 			)
@@ -132,13 +117,12 @@ func TerminateCartoLib() error {
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
-		CartoFacade:      cartoSvc.cartofacade,
-		Lidar:            cartoSvc.timedLidar,
-		LidarName:        cartoSvc.primarySensorName,
-		DataRateMs:       cartoSvc.dataRateMs,
-		Timeout:          cartoSvc.cartoFacadeTimeout,
-		Logger:           cartoSvc.logger,
-		TelemetryEnabled: cartoSvc.logger.Level() == zapcore.DebugLevel,
+		CartoFacade: cartoSvc.cartofacade,
+		Lidar:       cartoSvc.timedLidar,
+		LidarName:   cartoSvc.primarySensorName,
+		DataRateMs:  cartoSvc.dataRateMs,
+		Timeout:     cartoSvc.cartoFacadeTimeout,
+		Logger:      cartoSvc.logger,
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
@@ -157,13 +141,10 @@ func New(
 	deps resource.Dependencies,
 	c resource.Config,
 	logger golog.Logger,
-	bufferSLAMProcessLogs bool,
-	executableName string,
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
-	dialMaxTimeoutSec int,
 	cartoFacadeTimeout time.Duration,
-	testTimedSensorOverride sensors.TimedSensor,
+	testTimedSensorOverride s.TimedSensor,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -179,31 +160,19 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	port, dataRateMsec, mapRateSec, useLiveData, deleteProcessedData, modularizationV2Enabled, err := vcConfig.GetOptionalParameters(
+	dataRateMsec, mapRateSec := vcConfig.GetOptionalParameters(
 		svcConfig,
-		localhost0,
 		defaultDataRateMsec,
 		defaultMapRateSec,
 		logger,
 	)
-	if err != nil {
-		return nil, err
-	}
-
-	if !modularizationV2Enabled {
-		if err := vcConfig.SetupDirectories(svcConfig.DataDirectory, logger); err != nil {
-			return nil, err
-		}
-	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := dim2d.NewLidar(ctx, deps, svcConfig.Sensors, logger)
+	lidar, err := s.NewLidar(ctx, deps, svcConfig.Sensors, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	// Need to pass in a long-lived context because ctx is short-lived
-	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	// Need to be able to shut down the sensor process before the cartoFacade
 	cancelSensorProcessCtx, cancelSensorProcessFunc := context.WithCancel(context.Background())
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
@@ -222,28 +191,18 @@ func New(
 		primarySensorName:             lidar.Name,
 		lidar:                         lidar,
 		timedLidar:                    timedSensor,
-		executableName:                executableName,
 		subAlgo:                       subAlgo,
-		slamProcess:                   pexec.NewProcessManager(logger),
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
 		sensors:                       svcConfig.Sensors,
-		useLiveData:                   useLiveData,
-		deleteProcessedData:           deleteProcessedData,
-		port:                          port,
 		dataRateMs:                    dataRateMsec,
 		mapRateSec:                    mapRateSec,
-		cancelFunc:                    cancelFunc,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
 		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
 		logger:                        logger,
-		bufferSLAMProcessLogs:         bufferSLAMProcessLogs,
-		modularizationV2Enabled:       modularizationV2Enabled,
 		sensorValidationMaxTimeoutSec: sensorValidationMaxTimeoutSec,
 		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
-		dialMaxTimeoutSec:             dialMaxTimeoutSec,
 		cartoFacadeTimeout:            cartoFacadeTimeout,
-		localizationMode:              mapRateSec == 0,
 		mapTimestamp:                  time.Now().UTC(),
 	}
 
@@ -256,30 +215,22 @@ func New(
 		}
 	}()
 
-	if modularizationV2Enabled {
-		if err = sensors.ValidateGetData(
-			cancelSensorProcessCtx,
-			timedSensor,
-			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
-			cartoSvc.logger); err != nil {
-			err = errors.Wrap(err, "failed to get data from lidar")
-			return nil, err
-		}
-
-		err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
-		if err != nil {
-			return nil, err
-		}
-
-		initSensorProcess(cancelSensorProcessCtx, cartoSvc)
-		return cartoSvc, nil
+	if err = s.ValidateGetData(
+		cancelSensorProcessCtx,
+		timedSensor,
+		time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
+		time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+		cartoSvc.logger); err != nil {
+		err = errors.Wrap(err, "failed to get data from lidar")
+		return nil, err
 	}
 
-	err = initCartoGrpcServer(ctx, cancelCtx, cartoSvc)
+	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
 	if err != nil {
 		return nil, err
 	}
+
+	initSensorProcess(cancelSensorProcessCtx, cartoSvc)
 	return cartoSvc, nil
 }
 
@@ -431,30 +382,6 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 	return stopErr
 }
 
-func initCartoGrpcServer(ctx, cancelCtx context.Context, cartoSvc *CartographerService) error {
-	if cartoSvc.primarySensorName != "" {
-		if err := dim2d.ValidateGetAndSaveData(cancelCtx, cartoSvc.dataDirectory, cartoSvc.lidar,
-			cartoSvc.sensorValidationMaxTimeoutSec, cartoSvc.sensorValidationIntervalSec, cartoSvc.logger); err != nil {
-			return errors.Wrap(err, "getting and saving data failed")
-		}
-		cartoSvc.StartDataProcess(cancelCtx, cartoSvc.lidar, nil)
-		cartoSvc.logger.Debugf("Reading data from sensor: %v", cartoSvc.primarySensorName)
-	}
-
-	if err := cartoSvc.StartSLAMProcess(ctx); err != nil {
-		return errors.Wrap(err, "error with slam service slam process")
-	}
-
-	client, clientClose, err := vcConfig.SetupGRPCConnection(ctx, cartoSvc.port, cartoSvc.dialMaxTimeoutSec, cartoSvc.logger)
-	if err != nil {
-		return errors.Wrap(err, "error with initial grpc client to slam algorithm")
-	}
-	cartoSvc.clientAlgo = client
-	cartoSvc.clientAlgoClose = clientClose
-
-	return nil
-}
-
 // CartographerService is the structure of the slam service.
 type CartographerService struct {
 	resource.Named
@@ -463,60 +390,30 @@ type CartographerService struct {
 	SlamMode          cartofacade.SlamMode
 	closed            bool
 	primarySensorName string
-	lidar             lidar.Lidar
-	timedLidar        sensors.TimedSensor
-	executableName    string
+	lidar             s.Lidar
+	timedLidar        s.TimedSensor
 	subAlgo           SubAlgo
-	// deprecated
-	slamProcess pexec.ProcessManager
-	// deprecated
-	clientAlgo pb.SLAMServiceClient
-	// deprecated
-	clientAlgoClose func() error
 
 	configParams  map[string]string
 	dataDirectory string
 	sensors       []string
-	// deprecated
-	deleteProcessedData bool
-	// deprecated
-	useLiveData bool
 
-	modularizationV2Enabled bool
-	cartofacade             cartofacade.Interface
-	cartoFacadeTimeout      time.Duration
+	cartofacade        cartofacade.Interface
+	cartoFacadeTimeout time.Duration
 
-	// deprecated
-	port       string
 	dataRateMs int
 	mapRateSec int
 
-	// deprecated
-	cancelFunc              func()
 	cancelSensorProcessFunc func()
 	cancelCartoFacadeFunc   func()
 	logger                  golog.Logger
-	// deprecated
-	activeBackgroundWorkers sync.WaitGroup
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	// deprecated
-	bufferSLAMProcessLogs bool
-	// deprecated
-	slamProcessLogReader io.ReadCloser
-	// deprecated
-	slamProcessLogWriter io.WriteCloser
-	// deprecated
-	slamProcessBufferedLogReader bufio.Reader
-
-	localizationMode              bool
 	mapTimestamp                  time.Time
 	sensorValidationMaxTimeoutSec int
 	sensorValidationIntervalSec   int
-	// deprecated
-	dialMaxTimeoutSec int
-	jobDone           atomic.Bool
+	jobDone                       atomic.Bool
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
@@ -529,24 +426,6 @@ func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialma
 		return nil, "", ErrClosed
 	}
 
-	if cartoSvc.modularizationV2Enabled {
-		return cartoSvc.getPositionModularizationV2(ctx)
-	}
-
-	req := &pb.GetPositionRequest{Name: cartoSvc.Name().ShortName()}
-
-	resp, err := cartoSvc.clientAlgo.GetPosition(ctx, req)
-	if err != nil {
-		return nil, "", errors.Wrap(err, "error getting SLAM position")
-	}
-	pose := spatialmath.NewPoseFromProtobuf(resp.GetPose())
-	componentReference := resp.GetComponentReference()
-	returnedExt := resp.Extra.AsMap()
-
-	return vcUtils.CheckQuaternionFromClientAlgo(pose, componentReference, returnedExt)
-}
-
-func (cartoSvc *CartographerService) getPositionModularizationV2(ctx context.Context) (spatialmath.Pose, string, error) {
 	pos, err := cartoSvc.cartofacade.GetPosition(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, "", err
@@ -561,7 +440,7 @@ func (cartoSvc *CartographerService) getPositionModularizationV2(ctx context.Con
 			"kmag": pos.Kmag,
 		},
 	}
-	return vcUtils.CheckQuaternionFromClientAlgo(pose, cartoSvc.primarySensorName, returnedExt)
+	return CheckQuaternionFromClientAlgo(pose, cartoSvc.primarySensorName, returnedExt)
 }
 
 // GetPointCloudMap creates a request, recording the time, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
@@ -576,33 +455,15 @@ func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func
 		return nil, ErrClosed
 	}
 
-	if !cartoSvc.localizationMode {
+	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
 		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
 
-	if cartoSvc.modularizationV2Enabled {
-		return cartoSvc.getPointCloudMapModularizationV2(ctx)
-	}
-	return grpchelper.GetPointCloudMapCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
-}
-
-func (cartoSvc *CartographerService) getPointCloudMapModularizationV2(ctx context.Context) (func() ([]byte, error), error) {
-	chunk := make([]byte, chunkSizeBytes)
 	pc, err := cartoSvc.cartofacade.GetPointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, err
 	}
-
-	pointcloudReader := bytes.NewReader(pc)
-
-	f := func() ([]byte, error) {
-		bytesRead, err := pointcloudReader.Read(chunk)
-		if err != nil {
-			return nil, err
-		}
-		return chunk[:bytesRead], err
-	}
-	return f, nil
+	return toChunkedFunc(pc), nil
 }
 
 // GetInternalState creates a request, calls the slam algorithms GetInternalState endpoint and returns a callback
@@ -616,30 +477,27 @@ func (cartoSvc *CartographerService) GetInternalState(ctx context.Context) (func
 		return nil, ErrClosed
 	}
 
-	if cartoSvc.modularizationV2Enabled {
-		return cartoSvc.getInternalStateModularizationV2Enabled(ctx)
-	}
-
-	return grpchelper.GetInternalStateCallback(ctx, cartoSvc.Name().ShortName(), cartoSvc.clientAlgo)
-}
-
-func (cartoSvc *CartographerService) getInternalStateModularizationV2Enabled(ctx context.Context) (func() ([]byte, error), error) {
-	chunk := make([]byte, chunkSizeBytes)
 	is, err := cartoSvc.cartofacade.GetInternalState(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, err
 	}
 
-	internalStateReader := bytes.NewReader(is)
+	return toChunkedFunc(is), nil
+}
+
+func toChunkedFunc(b []byte) func() ([]byte, error) {
+	chunk := make([]byte, chunkSizeBytes)
+
+	reader := bytes.NewReader(b)
 
 	f := func() ([]byte, error) {
-		bytesRead, err := internalStateReader.Read(chunk)
+		bytesRead, err := reader.Read(chunk)
 		if err != nil {
 			return nil, err
 		}
 		return chunk[:bytesRead], err
 	}
-	return f, nil
+	return f
 }
 
 // GetLatestMapInfo returns the timestamp  associated with the latest call to GetPointCloudMap,
@@ -654,98 +512,6 @@ func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time
 	}
 
 	return cartoSvc.mapTimestamp, nil
-}
-
-// StartDataProcess starts a go routine that saves data from the lidar to the user-defined data directory.
-func (cartoSvc *CartographerService) StartDataProcess(
-	ctx context.Context,
-	lidar lidar.Lidar,
-	c chan int,
-) {
-	cartoSvc.activeBackgroundWorkers.Add(1)
-	if err := ctx.Err(); err != nil {
-		if !errors.Is(err, context.Canceled) {
-			cartoSvc.logger.Errorw("unexpected error in SLAM service", "error", err)
-		}
-		cartoSvc.activeBackgroundWorkers.Done()
-		return
-	}
-
-	goutils.PanicCapturingGo(func() {
-		if !cartoSvc.useLiveData {
-			// If we're not using live data, we read from the sensor as fast as
-			// possible, since the sensor is just playing back pre-captured data.
-			cartoSvc.readData(ctx, lidar, c)
-		} else {
-			cartoSvc.readDataOnInterval(ctx, lidar, c)
-		}
-	})
-}
-
-func (cartoSvc *CartographerService) readData(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	for {
-		if err := ctx.Err(); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
-			}
-			return
-		}
-
-		cartoSvc.getNextDataPoint(ctx, lidar, c)
-	}
-}
-
-func (cartoSvc *CartographerService) readDataOnInterval(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	ticker := time.NewTicker(time.Millisecond * time.Duration(cartoSvc.dataRateMs))
-	defer ticker.Stop()
-	defer cartoSvc.activeBackgroundWorkers.Done()
-
-	for {
-		if err := ctx.Err(); err != nil {
-			if !errors.Is(err, context.Canceled) {
-				cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
-			}
-			return
-		}
-
-		select {
-		case <-ctx.Done():
-			return
-		case <-ticker.C:
-			if err := ctx.Err(); err != nil {
-				if !errors.Is(err, context.Canceled) {
-					cartoSvc.logger.Errorw("unexpected error in SLAM data process", "error", err)
-				}
-				return
-			}
-
-			cartoSvc.activeBackgroundWorkers.Add(1)
-			goutils.PanicCapturingGo(func() {
-				defer cartoSvc.activeBackgroundWorkers.Done()
-				cartoSvc.getNextDataPoint(ctx, lidar, c)
-			})
-		}
-	}
-}
-
-func (cartoSvc *CartographerService) getNextDataPoint(ctx context.Context, lidar lidar.Lidar, c chan int) {
-	if _, err := dim2d.GetAndSaveData(ctx, cartoSvc.dataDirectory, lidar, cartoSvc.logger); err != nil {
-		if strings.Contains(err.Error(), "reached end of dataset") {
-			if !cartoSvc.jobDone.Load() {
-				cartoSvc.logger.Warn(err)
-				_, err = os.Create(filepath.Join(cartoSvc.dataDirectory, "job_done.txt"))
-				if err != nil {
-					cartoSvc.logger.Warn(err)
-				}
-				cartoSvc.jobDone.Store(true)
-			}
-		} else {
-			cartoSvc.logger.Warn(err)
-		}
-	}
-	if c != nil {
-		c <- 1
-	}
 }
 
 // DoCommand receives arbitrary commands.
@@ -770,170 +536,42 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 		cartoSvc.logger.Warn("Close() called multiple times")
 		return nil
 	}
-	if cartoSvc.modularizationV2Enabled {
-		// stop sensor process workers
-		cartoSvc.cancelSensorProcessFunc()
-		cartoSvc.sensorProcessWorkers.Wait()
+	// stop sensor process workers
+	cartoSvc.cancelSensorProcessFunc()
+	cartoSvc.sensorProcessWorkers.Wait()
 
-		// terminate carto facade
-		err := terminateCartoFacade(ctx, cartoSvc)
-		if err != nil {
-			cartoSvc.logger.Errorw("close hit error", "error", err)
-		}
-
-		// stop carto facade workers
-		cartoSvc.cancelCartoFacadeFunc()
-		cartoSvc.cartoFacadeWorkers.Wait()
-		cartoSvc.closed = true
-		return nil
+	// terminate carto facade
+	err := terminateCartoFacade(ctx, cartoSvc)
+	if err != nil {
+		cartoSvc.logger.Errorw("close hit error", "error", err)
 	}
 
-	defer func() {
-		if cartoSvc.clientAlgoClose != nil {
-			goutils.UncheckedErrorFunc(cartoSvc.clientAlgoClose)
-		}
-	}()
-	cartoSvc.cancelFunc()
-	if cartoSvc.bufferSLAMProcessLogs {
-		if cartoSvc.slamProcessLogReader != nil {
-			if err := cartoSvc.slamProcessLogReader.Close(); err != nil {
-				return errors.Wrap(err, "error occurred during closeout of slam log reader")
-			}
-		}
-		if cartoSvc.slamProcessLogWriter != nil {
-			if err := cartoSvc.slamProcessLogWriter.Close(); err != nil {
-				return errors.Wrap(err, "error occurred during closeout of slam log writer")
-			}
-		}
-	}
-	if err := cartoSvc.StopSLAMProcess(); err != nil {
-		return errors.Wrap(err, "error occurred during closeout of process")
-	}
-	cartoSvc.activeBackgroundWorkers.Wait()
+	// stop carto facade workers
+	cartoSvc.cancelCartoFacadeFunc()
+	cartoSvc.cartoFacadeWorkers.Wait()
 	cartoSvc.closed = true
 	return nil
 }
 
-// GetSLAMProcessConfig returns the process config for the SLAM process.
-func (cartoSvc *CartographerService) GetSLAMProcessConfig() pexec.ProcessConfig {
-	var args []string
+// CheckQuaternionFromClientAlgo checks to see if the internal SLAM algorithm sent a quaternion. If it did, return the updated pose.
+func CheckQuaternionFromClientAlgo(pose spatialmath.Pose, componentReference string,
+	returnedExt map[string]interface{},
+) (spatialmath.Pose, string, error) {
+	// check if extra contains a quaternion. If no quaternion is found, throw an error
+	if val, ok := returnedExt["quat"]; ok {
+		q := val.(map[string]interface{})
 
-	args = append(args, "-sensors="+cartoSvc.primarySensorName)
-	args = append(args, "-config_param="+vcUtils.DictToString(cartoSvc.configParams))
-	args = append(args, "-data_rate_ms="+strconv.Itoa(cartoSvc.dataRateMs))
-	args = append(args, "-map_rate_sec="+strconv.Itoa(cartoSvc.mapRateSec))
-	args = append(args, "-data_dir="+cartoSvc.dataDirectory)
-	args = append(args, "-delete_processed_data="+strconv.FormatBool(cartoSvc.deleteProcessedData))
-	args = append(args, "-use_live_data="+strconv.FormatBool(cartoSvc.useLiveData))
-	args = append(args, "-port="+cartoSvc.port)
-	args = append(args, "--aix-auto-update")
+		valReal, ok1 := q["real"].(float64)
+		valIMag, ok2 := q["imag"].(float64)
+		valJMag, ok3 := q["jmag"].(float64)
+		valKMag, ok4 := q["kmag"].(float64)
 
-	target := cartoSvc.executableName
-
-	appDir := os.Getenv("APPDIR")
-
-	if appDir != "" {
-		// The carto grpc server is expected to be in
-		// /usr/bin/ if we are running in an AppImage
-		target = appDir + "/usr/bin/" + strings.TrimPrefix(target, "/")
-	}
-
-	return pexec.ProcessConfig{
-		ID:   "slam_cartographer",
-		Name: target,
-		Args: args,
-		Log:  true,
-		// In appimage this is set to the appimage
-		// squashfs mount location (/tmp/.mountXXXXX)
-		// Otherwise, it is an empty string
-		CWD:     os.Getenv("APPRUN_RUNTIME"),
-		OneShot: false,
-	}
-}
-
-// GetSLAMProcessBufferedLogReader is deprecated.
-func (cartoSvc *CartographerService) GetSLAMProcessBufferedLogReader() bufio.Reader {
-	return cartoSvc.slamProcessBufferedLogReader
-}
-
-// StartSLAMProcess starts up the SLAM library process by calling the executable binary and giving it the necessary arguments.
-func (cartoSvc *CartographerService) StartSLAMProcess(ctx context.Context) error {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::StartSLAMProcess")
-	defer span.End()
-
-	processConfig := cartoSvc.GetSLAMProcessConfig()
-
-	var logReader io.ReadCloser
-	var logWriter io.WriteCloser
-	var bufferedLogReader bufio.Reader
-	if cartoSvc.port == localhost0 || cartoSvc.bufferSLAMProcessLogs {
-		logReader, logWriter = io.Pipe()
-		bufferedLogReader = *bufio.NewReader(logReader)
-		processConfig.LogWriter = logWriter
-	}
-
-	_, err := cartoSvc.slamProcess.AddProcessFromConfig(ctx, processConfig)
-	if err != nil {
-		return errors.Wrap(err, "problem adding slam process")
-	}
-
-	cartoSvc.logger.Debug("starting slam process")
-
-	if err = cartoSvc.slamProcess.Start(ctx); err != nil {
-		return errors.Wrap(err, "problem starting slam process")
-	}
-
-	if cartoSvc.port == localhost0 {
-		timeoutCtx, timeoutCancel := context.WithTimeout(ctx, parsePortMaxTimeoutSec*time.Second)
-		defer timeoutCancel()
-
-		if !cartoSvc.bufferSLAMProcessLogs {
-			defer func(logger golog.Logger) {
-				if err := logReader.Close(); err != nil {
-					logger.Debugw("Closing logReader returned an error", "error", err)
-				}
-			}(cartoSvc.logger)
-			defer func(logger golog.Logger) {
-				if err := logWriter.Close(); err != nil {
-					logger.Debugw("Closing logReader returned an error", "error", err)
-				}
-			}(cartoSvc.logger)
+		if !ok1 || !ok2 || !ok3 || !ok4 {
+			return nil, "", errors.Errorf("error getting SLAM position: quaternion given, but invalid format detected, %v", q)
 		}
-
-		for {
-			if err := timeoutCtx.Err(); err != nil {
-				return errors.Wrapf(err, "error getting port from slam process")
-			}
-
-			line, err := bufferedLogReader.ReadString('\n')
-			if err != nil {
-				return errors.Wrapf(err, "error getting port from slam process")
-			}
-			portLogLinePrefix := "Server listening on "
-			if strings.Contains(line, portLogLinePrefix) {
-				linePieces := strings.Split(line, portLogLinePrefix)
-				if len(linePieces) != 2 {
-					return errors.Errorf("failed to parse port from slam process log line: %v", line)
-				}
-				cartoSvc.port = "localhost:" + strings.TrimRight(linePieces[1], "\n")
-				break
-			}
-		}
+		actualPose := spatialmath.NewPose(pose.Point(),
+			&spatialmath.Quaternion{Real: valReal, Imag: valIMag, Jmag: valJMag, Kmag: valKMag})
+		return actualPose, componentReference, nil
 	}
-
-	if cartoSvc.bufferSLAMProcessLogs {
-		cartoSvc.slamProcessLogReader = logReader
-		cartoSvc.slamProcessLogWriter = logWriter
-		cartoSvc.slamProcessBufferedLogReader = bufferedLogReader
-	}
-
-	return nil
-}
-
-// StopSLAMProcess uses the process manager to stop the created slam process from running.
-func (cartoSvc *CartographerService) StopSLAMProcess() error {
-	if err := cartoSvc.slamProcess.Stop(); err != nil {
-		return errors.Wrap(err, "problem stopping slam process")
-	}
-	return nil
+	return nil, "", errors.Errorf("error getting SLAM position: quaternion not given, %v", returnedExt)
 }

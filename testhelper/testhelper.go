@@ -7,40 +7,46 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
-	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
-	"go.viam.com/rdk/components/camera/replaypcd"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
+	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/testutils/inject"
-	"go.viam.com/rdk/utils/contextutils"
+	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 
+	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 const (
+	// SlamTimeFormat is the timestamp format used in the dataprocess.
+	SlamTimeFormat = "2006-01-02T15:04:05.0000Z"
+	// SensorValidationMaxTimeoutSecForTest is used in the ValidateGetAndSaveData
+	// function to ensure that the sensor in the GetAndSaveData function
+	// returns data within an acceptable time.
+	SensorValidationMaxTimeoutSecForTest = 1
+	// SensorValidationIntervalSecForTest is used in the ValidateGetAndSaveData
+	// function for the while loop that attempts to grab data from the
+	// sensor that is used in the GetAndSaveData function.
+	SensorValidationIntervalSecForTest = 1
+	testDialMaxTimeoutSec              = 1
 	// NumPointClouds is the number of pointclouds saved in artifact
 	// for the cartographer integration tests.
 	NumPointClouds = 15
-	// TestTime can be used to test specific timestamps provided by a replay sensor.
-	TestTime = "2006-01-02T15:04:05.9999Z"
-	// BadTime can be used to represent something that should cause an error while parsing it as a time.
-	BadTime = "NOT A TIME"
 )
 
 var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
-
-// IntegrationLidarReleasePointCloudChan is the lidar pointcloud release
-// channel for the integration tests.
-var IntegrationLidarReleasePointCloudChan = make(chan int, 1)
 
 // SetupStubDeps returns stubbed dependencies based on the sensors
 // the stubs fail tests if called.
@@ -71,161 +77,6 @@ func getStubLidar(t *testing.T) *inject.Camera {
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		t.Error("stub lidar Projector called")
 		return nil, transform.NewNoIntrinsicsError("")
-	}
-	return cam
-}
-
-// SetupDeps returns the dependencies based on the sensors passed as arguments.
-func SetupDeps(sensors []string) resource.Dependencies {
-	deps := make(resource.Dependencies)
-
-	for _, sensor := range sensors {
-		switch sensor {
-		case "good_lidar":
-			deps[camera.Named(sensor)] = getGoodLidar()
-		case "warming_up_lidar":
-			deps[camera.Named(sensor)] = getWarmingUpLidar()
-		case "replay_sensor":
-			deps[camera.Named(sensor)] = getReplaySensor(TestTime)
-		case "invalid_replay_sensor":
-			deps[camera.Named(sensor)] = getReplaySensor(BadTime)
-		case "invalid_sensor":
-			deps[camera.Named(sensor)] = getInvalidSensor()
-		case "gibberish":
-			return deps
-		case "cartographer_int_lidar":
-			deps[camera.Named(sensor)] = getIntegrationLidar()
-		case "finished_replay_sensor":
-			deps[camera.Named(sensor)] = getFinishedReplaySensor()
-		default:
-			continue
-		}
-	}
-	return deps
-}
-
-func getWarmingUpLidar() *inject.Camera {
-	cam := &inject.Camera{}
-	counter := 0
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		counter++
-		if counter == 1 {
-			return nil, errors.Errorf("warming up %d", counter)
-		}
-		return pointcloud.New(), nil
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
-	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
-	}
-	return cam
-}
-
-func getGoodLidar() *inject.Camera {
-	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return pointcloud.New(), nil
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
-	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
-	}
-	return cam
-}
-
-func getReplaySensor(testTime string) *inject.Camera {
-	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		md := ctx.Value(contextutils.MetadataContextKey)
-		if mdMap, ok := md.(map[string][]string); ok {
-			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
-		}
-		return pointcloud.New(), nil
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
-	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
-	}
-	return cam
-}
-
-func getInvalidSensor() *inject.Camera {
-	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, errors.New("invalid sensor")
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("invalid sensor")
-	}
-	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		return nil, transform.NewNoIntrinsicsError("")
-	}
-	return cam
-}
-
-func getIntegrationLidar() *inject.Camera {
-	cam := &inject.Camera{}
-	var index uint64
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		select {
-		case <-IntegrationLidarReleasePointCloudChan:
-			i := atomic.AddUint64(&index, 1) - 1
-			if i >= NumPointClouds {
-				return nil, errors.New("No more cartographer point clouds")
-			}
-			file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
-			if err != nil {
-				return nil, err
-			}
-			pointCloud, err := pointcloud.ReadPCD(file)
-			if err != nil {
-				return nil, err
-			}
-			return pointCloud, nil
-		default:
-			return nil, errors.Errorf("Lidar not ready to return point cloud %v", atomic.LoadUint64(&index))
-		}
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
-	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
-	}
-	return cam
-}
-
-func getFinishedReplaySensor() *inject.Camera {
-	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, errors.Wrap(errors.New("wrapped error"), replaypcd.ErrEndOfDataset.Error())
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
-	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
 	}
 	return cam
 }
@@ -262,7 +113,7 @@ func mockLidarReadingsValid() error {
 	return nil
 }
 
-// FullModIntegrationLidarTimedSensor returns a mock timed lidar sensor
+// IntegrationLidarTimedSensor returns a mock timed lidar sensor
 // or an error if preconditions to build the mock are not met.
 // It validates that all required mock lidar reading files are able to be found.
 // When the mock is called, it returns the next mock lidar reading, with the
@@ -274,7 +125,7 @@ func mockLidarReadingsValid() error {
 // replay sensor.
 // It is imporntant to provide determanistic time information to cartographer to
 // ensure test outputs of cartographer are determanistic.
-func FullModIntegrationLidarTimedSensor(
+func IntegrationLidarTimedSensor(
 	t *testing.T,
 	sensor string,
 	replay bool,
@@ -327,4 +178,150 @@ func FullModIntegrationLidarTimedSensor(
 	}
 
 	return ts, nil
+}
+
+// ClearDirectory deletes the contents in the path directory
+// without deleting path itself.
+func ClearDirectory(t *testing.T, path string) {
+	t.Helper()
+
+	err := ResetFolder(path)
+	test.That(t, err, test.ShouldBeNil)
+}
+
+// CreateIntegrationSLAMService creates a slam service for testing.
+func CreateIntegrationSLAMService(
+	t *testing.T,
+	cfg *vcConfig.Config,
+	timedSensor s.TimedSensor,
+	logger golog.Logger,
+) (slam.Service, error) {
+	ctx := context.Background()
+	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
+	cfgService.ConvertedAttributes = cfg
+
+	sensorDeps, err := cfg.Validate("path")
+	if err != nil {
+		return nil, err
+	}
+	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
+	deps := SetupStubDeps(cfg.Sensors, t)
+
+	svc, err := viamcartographer.New(
+		ctx,
+		deps,
+		cfgService,
+		logger,
+		SensorValidationMaxTimeoutSecForTest,
+		SensorValidationIntervalSecForTest,
+		5*time.Second,
+		timedSensor,
+	)
+	if err != nil {
+		test.That(t, svc, test.ShouldBeNil)
+		return nil, err
+	}
+
+	test.That(t, svc, test.ShouldNotBeNil)
+
+	return svc, nil
+}
+
+// CreateSLAMService creates a slam service for testing.
+func CreateSLAMService(
+	t *testing.T,
+	cfg *vcConfig.Config,
+	logger golog.Logger,
+) (slam.Service, error) {
+	t.Helper()
+
+	ctx := context.Background()
+	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
+	cfgService.ConvertedAttributes = cfg
+
+	deps := s.SetupDeps(cfg.Sensors)
+
+	sensorDeps, err := cfg.Validate("path")
+	if err != nil {
+		return nil, err
+	}
+	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
+
+	svc, err := viamcartographer.New(
+		ctx,
+		deps,
+		cfgService,
+		logger,
+		SensorValidationMaxTimeoutSecForTest,
+		SensorValidationIntervalSecForTest,
+		5*time.Second,
+		nil,
+	)
+	if err != nil {
+		test.That(t, svc, test.ShouldBeNil)
+		return nil, err
+	}
+
+	test.That(t, svc, test.ShouldNotBeNil)
+
+	return svc, nil
+}
+
+// ResetFolder removes all content in path and creates a new directory
+// in its place.
+func ResetFolder(path string) error {
+	dirInfo, err := os.Stat(path)
+	if err != nil {
+		return err
+	}
+	if !dirInfo.IsDir() {
+		return errors.Errorf("the path passed ResetFolder does not point to a folder: %v", path)
+	}
+	if err = os.RemoveAll(path); err != nil {
+		return err
+	}
+	return os.Mkdir(path, dirInfo.Mode())
+}
+
+// InitTestCL initializes the carto library & returns a function to terminate it.
+func InitTestCL(t *testing.T, logger golog.Logger) func() {
+	t.Helper()
+	err := viamcartographer.InitCartoLib(logger)
+	test.That(t, err, test.ShouldBeNil)
+	return func() {
+		err = viamcartographer.TerminateCartoLib()
+		test.That(t, err, test.ShouldBeNil)
+	}
+}
+
+// InitInternalState creates the internal state directory witghin a temp directory
+// with an internal state pbstream file & returns the data directory & a function
+// to delete the data directory.
+func InitInternalState(t *testing.T) (string, func()) {
+	dataDirectory, err := os.MkdirTemp("", "*")
+	test.That(t, err, test.ShouldBeNil)
+
+	internalStateDir := filepath.Join(dataDirectory, "internal_state")
+	err = os.Mkdir(internalStateDir, os.ModePerm)
+	test.That(t, err, test.ShouldBeNil)
+
+	file := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
+	internalState, err := os.ReadFile(artifact.MustPath(file))
+	test.That(t, err, test.ShouldBeNil)
+
+	timestamp := time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC)
+	filename := CreateTimestampFilename(dataDirectory+"/internal_state", "internal_state", ".pbstream", timestamp)
+	err = os.WriteFile(filename, internalState, os.ModePerm)
+	test.That(t, err, test.ShouldBeNil)
+
+	return dataDirectory, func() {
+		err := os.RemoveAll(dataDirectory)
+		test.That(t, err, test.ShouldBeNil)
+	}
+}
+
+// CreateTimestampFilename creates an absolute filename with a primary sensor name and timestamp written
+// into the filename.
+func CreateTimestampFilename(dataDirectory, primarySensorName, fileType string, timeStamp time.Time) string {
+	return filepath.Join(dataDirectory, primarySensorName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
 }
