@@ -81,7 +81,6 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 
 	actualOri := position.Orientation().AxisAngles()
 	t.Logf("Position orientation: RX: %v, RY: %v, RZ: %v, Theta: %v", actualOri.RX, actualOri.RY, actualOri.RZ, actualOri.Theta)
-	t.Logf("Expected orientation: RX: %v, RY: %v, RZ: %v, Theta: %v", expectedOriOSX.RX, expectedOriOSX.RY, expectedOriOSX.RZ, expectedOriOSX.Theta)
 
 	if actualOri.Theta > expectedOriOSX.Theta-toleranceOri && actualOri.Theta < expectedOriOSX.Theta+toleranceOri {
 		test.That(t, actualOri.RX, test.ShouldBeBetween, expectedOriOSX.RX-toleranceOri, expectedOriOSX.RX+toleranceOri)
