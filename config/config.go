@@ -2,6 +2,8 @@
 package config
 
 import (
+	"strconv"
+
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.viam.com/utils"
@@ -17,16 +19,27 @@ type Config struct {
 	Camera        map[string]string `json:"camera"`
 	ConfigParams  map[string]string `json:"config_params"`
 	DataDirectory string            `json:"data_dir"`
-	DataFreqHz    int               `json:"data_freq_hz"`
 	MapRateSec    *int              `json:"map_rate_sec"`
 }
 
-var errCameraMustNotBeEmpty = errors.New("\"camera\" must not be empty")
+var errCameraMustHaveName = errors.New("\"camera\" must have name")
 
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) (map[string]string, error) {
-	if config.Camera == nil || len(config.Camera) < 1 {
-		return nil, utils.NewConfigValidationError(path, errCameraMustNotBeEmpty)
+	_, ok := config.Camera["name"]
+	if !ok {
+		return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
+	}
+	data_freq_hz, ok := config.Camera["data_freq_hz"]
+	if ok {
+		data_freq_hz, err := strconv.Atoi(data_freq_hz)
+		if err != nil {
+			return nil, errors.New("data_freq_hz must be a number")
+		}
+		if data_freq_hz < 0 {
+			return nil, errors.New("cannot specify data_freq_hz less than zero")
+		}
+
 	}
 
 	if config.ConfigParams["mode"] == "" {
@@ -35,10 +48,6 @@ func (config *Config) Validate(path string) (map[string]string, error) {
 
 	if config.DataDirectory == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
-	}
-
-	if config.DataFreqHz < 0 {
-		return nil, errors.New("cannot specify data_freq_hz less than zero")
 	}
 
 	if config.MapRateSec != nil && *config.MapRateSec < 0 {
@@ -55,10 +64,12 @@ func (config *Config) Validate(path string) (map[string]string, error) {
 func GetOptionalParameters(config *Config,
 	defaultDataFreqHz, defaultMapRateSec int, logger golog.Logger,
 ) (int, int) {
-	dataFreqHz := config.DataFreqHz
-	if config.DataFreqHz == 0 {
-		dataFreqHz = defaultDataFreqHz
+	dataFreqHz := defaultDataFreqHz
+	dataFreqHzIn, ok := config.Camera["data_freq_hz"]
+	if !ok {
 		logger.Debugf("no data_freq_hz given, setting to default value of %d", defaultDataFreqHz)
+	} else {
+		dataFreqHz, _ = strconv.Atoi(dataFreqHzIn)
 	}
 
 	mapRateSec := 0
