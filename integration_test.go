@@ -110,7 +110,7 @@ func testHelperCartographer(
 	defer termFunc()
 
 	attrCfg := &vcConfig.Config{
-		Sensors: []string{"stub_lidar"},
+		Camera: map[string]string{"name": "stub_lidar"},
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
@@ -120,7 +120,7 @@ func testHelperCartographer(
 
 	done := make(chan struct{})
 	sensorReadingInterval := time.Millisecond * 200
-	timedSensor, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Sensors[0], replaySensor, sensorReadingInterval, done)
+	timedSensor, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
 	test.That(t, err, test.ShouldBeNil)
 
 	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedSensor, logger)
@@ -140,7 +140,7 @@ func testHelperCartographer(
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
 
-	testCartographerPosition(t, svc, attrCfg.Sensors[0])
+	testCartographerPosition(t, svc, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
 
 	internalState, err := slam.GetInternalStateFull(context.Background(), svc)
