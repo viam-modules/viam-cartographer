@@ -17,8 +17,8 @@ func TestValidateGetData(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	ctx := context.Background()
 
-	sensors := []string{"good_lidar"}
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+	cam := map[string]string{"name": "good_lidar"}
+	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(cam), cam, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	sensors = []string{"invalid_sensor"}

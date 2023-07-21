@@ -12,7 +12,7 @@ func GetTestConfig(sensor string) (CartoConfig, string, error) {
 	}
 
 	return CartoConfig{
-		Sensors:            []string{sensor, "imu"},
+		Camera:             map[string]string{"name": "test_lidar", "data_freq_hz": "20"},
 		MapRateSecond:      5,
 		DataDir:            dir,
 		ComponentReference: "component",
@@ -23,7 +23,7 @@ func GetTestConfig(sensor string) (CartoConfig, string, error) {
 // GetBadTestConfig gets a sample config for testing purposes that will cause a failure.
 func GetBadTestConfig() CartoConfig {
 	return CartoConfig{
-		Sensors:     []string{"rplidar", "imu"},
+		Camera:      map[string]string{"name": "rplidar", "data_freq_hz": "20"},
 		LidarConfig: TwoD,
 	}
 }
