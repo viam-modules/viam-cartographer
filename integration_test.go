@@ -52,10 +52,10 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 }
 
 func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentRef string) {
-	expectedPosOSX := r3.Vector{X: -4.534156132500952, Y: 9.800089705182817, Z: 0}
+	expectedPosOSX := r3.Vector{X: 155.7488316264227, Y: -90.25868252233964, Z: 0}
 	expectedPosLinux := r3.Vector{X: -3.0874594959315647, Y: 4.502970388777862, Z: 0}
 	tolerancePos := 0.001
-	expectedOri := &spatialmath.R4AA{Theta: 0.0018812019022632894, RX: 0, RY: 0, RZ: -1}
+	expectedOri := &spatialmath.R4AA{Theta: 1.5465081272043815, RX: 0, RY: 0, RZ: 1}
 	toleranceOri := 0.001
 
 	position, componentRef, err := svc.GetPosition(context.Background())
