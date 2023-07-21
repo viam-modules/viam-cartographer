@@ -401,7 +401,6 @@ type CartographerService struct {
 	cartofacade        cartofacade.Interface
 	cartoFacadeTimeout time.Duration
 
-	dataRateMs int
 	mapRateSec int
 
 	cancelSensorProcessFunc func()
