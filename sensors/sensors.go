@@ -4,7 +4,7 @@ package sensors
 import (
 	"bytes"
 	"context"
-	"strings"
+	"strconv"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -18,16 +18,14 @@ import (
 )
 
 const (
-	// The Lidar is expected to be located at the first
-	// index in the provided `sensors` array in the slam
-	// service configuration.
-	lidarIndex = 0
+	defaultDataFreqHz = 20
 )
 
 // Lidar represents a LIDAR sensor.
 type Lidar struct {
-	Name  string
-	lidar camera.Camera
+	Name       string
+	lidar      camera.Camera
+	dataFreqHz int
 }
 
 // TimedSensorReadingResponse represents a sensor reading with a time & allows the caller to know if the reading is from a replay sensor.
@@ -46,38 +44,49 @@ type TimedSensor interface {
 func NewLidar(
 	ctx context.Context,
 	deps resource.Dependencies,
-	sensors []string,
+	cam map[string]string,
 	logger golog.Logger,
 ) (Lidar, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
 
-	// An empty `sensors: []` array is allowed in offline mode.
-	if len(sensors) == 0 {
-		logger.Debug("no sensor provided in 'sensors' config parameter")
+	// An empty camera field is allowed in offline mode.
+	_, ok := cam["name"]
+	if !ok {
+		logger.Debug("no camera provided in 'camera' config parameter")
 		return Lidar{}, nil
 	}
-	// If there is a sensor provided in the 'sensors' array, we enforce that only one
-	// sensor has to be provided.
-	if len(sensors) != 1 {
-		return Lidar{}, errors.Errorf("configuring lidar camera error: "+
-			"'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
-			strings.Join(sensors, ", "))
-	}
-
-	name, err := getName(sensors, lidarIndex)
-	if err != nil {
-		return Lidar{}, err
+	name := cam["name"]
+	dataFreqHz := defaultDataFreqHz
+	dataFreqHzIn, ok := cam["data_freq_hz"]
+	if !ok {
+		logger.Debugf("no data_freq_hz given, setting to default value of %d", defaultDataFreqHz)
+	} else {
+		var err error
+		dataFreqHz, err = strconv.Atoi(dataFreqHzIn)
+		if err != nil {
+			logger.Debug("data_freq_hz must only contain digits, setting to default value of %d", defaultDataFreqHz)
+		}
 	}
 
 	newLidar, err := camera.FromDependencies(deps, name)
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", name)
 	}
+	// If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
+	properties, err := newLidar.Properties(ctx)
+	if err != nil {
+		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", name)
+	}
+	if !properties.SupportsPCD {
+		return Lidar{}, errors.Errorf("configuring lidar camera error: " +
+			"'camera' must support PCD")
+	}
 
 	return Lidar{
-		Name:  name,
-		lidar: newLidar,
+		Name:       name,
+		lidar:      newLidar,
+		dataFreqHz: dataFreqHz,
 	}, nil
 }
 
