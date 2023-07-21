@@ -22,7 +22,7 @@ type Config struct {
 	MapRateSec    *int              `json:"map_rate_sec"`
 }
 
-var errCameraMustHaveName = errors.New("\"camera\" must have name")
+var errCameraMustHaveName = errors.New("\"camera[name]\" is required")
 
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) (map[string]string, error) {
@@ -34,7 +34,7 @@ func (config *Config) Validate(path string) (map[string]string, error) {
 	if ok {
 		data_freq_hz, err := strconv.Atoi(data_freq_hz)
 		if err != nil {
-			return nil, errors.New("data_freq_hz must be a number")
+			return nil, errors.New("data_freq_hz must only contain digits")
 		}
 		if data_freq_hz < 0 {
 			return nil, errors.New("cannot specify data_freq_hz less than zero")
