@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -16,13 +17,12 @@ import (
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	CartoFacade      cartofacade.Interface
-	Lidar            sensors.TimedSensor
-	LidarName        string
-	DataRateMs       int
-	Timeout          time.Duration
-	Logger           golog.Logger
-	TelemetryEnabled bool
+	CartoFacade cartofacade.Interface
+	Lidar       sensors.TimedSensor
+	LidarName   string
+	DataRateMs  int
+	Timeout     time.Duration
+	Logger      golog.Logger
 }
 
 // Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -51,9 +51,8 @@ func addSensorReading(
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		return errors.Is(err, replaypcd.ErrEndOfDataset)
+		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 	}
-
 	if tsr.Replay {
 		addSensorReadingFromReplaySensor(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
@@ -77,14 +76,11 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 		default:
 			err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
-				// TODO: increment telemetry counter success
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-				// TODO: increment telemetry counter unexpected error
 				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
 			}
-			// TODO: increment telemetry counter unable to acquire lock
 		}
 	}
 }
@@ -97,13 +93,10 @@ func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readi
 	if err != nil {
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)
-			// TODO: increment telemetry counter unable to acquire lock
 		} else {
 			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
-			// TODO: increment telemetry counter unexpected error
 		}
 	}
-	// TODO: increment telemetry counter success
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(config.DataRateMs-timeElapsedMs)))
 }

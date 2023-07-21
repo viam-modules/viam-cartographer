@@ -187,7 +187,8 @@ carto_sensor_reading(std::string sensor_reading,
         cartographer::sensor::TimedRangefinderPoint timed_rangefinder_point;
         timed_rangefinder_point.position = Eigen::Vector3f(
             cloud->points[i].x, cloud->points[i].y, cloud->points[i].z);
-        // TODO: Why are we doing this?
+        // NOTE: This makes it so that each point has a time that is unique
+        // within that measurement
         timed_rangefinder_point.time = 0 - i * 0.0001;
 
         ranges.push_back(timed_rangefinder_point);

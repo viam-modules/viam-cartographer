@@ -97,10 +97,10 @@ endif
 
 build: cartographer-module
 
-viam-cartographer/build/carto_grpc_server: ensure-submodule-initialized grpc/buf
+viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
-cartographer-module: viam-cartographer/build/carto_grpc_server
+cartographer-module: viam-cartographer/build/unit_tests
 	rm -f bin/cartographer-module
 	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
@@ -124,19 +124,22 @@ test-cpp:
 setup-cpp-full-mod: 
 	sudo apt install -y valgrind gdb
 
+setup-cpp-debug: 
+	sudo apt install -y valgrind gdb
+
 # Linux only
 test-cpp-full-mod-asan: build-asan
-	viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io -t CartoFacadeCPPAPI
+	viam-cartographer/build/unit_tests -p -l all
 
 test-cpp-full-mod-valgrind: build-debug
-	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all -t CartoFacade_io -t CartoFacadeCPPAPI
+	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all
 
 # Linux only
 test-cpp-full-mod-gdb: build-debug
-	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all
 
 test-cpp-full-mod: build-debug
-	viam-cartographer/build/unit_tests -p -l all -t CartoFacadeCPPAPI
+	viam-cartographer/build/unit_tests -p -l all
 
 test-go:
 	go test -race ./...
@@ -148,9 +151,7 @@ install-lua-files:
 	sudo cp viam-cartographer/lua_files/* /usr/local/share/cartographer/lua_files/
 
 install: install-lua-files
-	sudo rm -f /usr/local/bin/carto_grpc_server
 	sudo rm -f /usr/local/bin/cartographer-module
-	sudo cp viam-cartographer/build/carto_grpc_server /usr/local/bin/carto_grpc_server
 	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
 
 include *.make

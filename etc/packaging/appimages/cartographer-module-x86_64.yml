@@ -6,7 +6,6 @@ script:
  - mkdir -p $TARGET_APPDIR/usr/lib
  - mkdir -p $TARGET_APPDIR/usr/share/cartographer/lua_files
  - cp ../../../bin/cartographer-module $TARGET_APPDIR/usr/bin/
- - cp ../../../viam-cartographer/build/carto_grpc_server $TARGET_APPDIR/usr/bin/
  - cp ../../../viam-cartographer/lua_files/* $TARGET_APPDIR/usr/share/cartographer/lua_files
  - mkdir -p $TARGET_APPDIR/usr/share/icons/viam/256x256/apps/
  - cp ./viam-server.png $TARGET_APPDIR/usr/share/icons/viam/256x256/apps/viam-server.png
@@ -78,6 +77,7 @@ AppDir:
     - libglx0:amd64
     - libgl1:amd64
     - libglvnd0:amd64
+    - libnlopt0:amd64
 
   files:
     include: []

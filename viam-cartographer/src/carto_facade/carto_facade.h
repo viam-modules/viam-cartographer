@@ -60,18 +60,15 @@ typedef struct viam_carto_get_position_response {
 } viam_carto_get_position_response;
 
 typedef struct viam_carto_get_point_cloud_map_response {
-    // TODO: change to void* and a size
     bstring point_cloud_pcd;
 } viam_carto_get_point_cloud_map_response;
 
 typedef struct viam_carto_get_internal_state_response {
-    // TODO: change to void* and a size
     bstring internal_state;
 } viam_carto_get_internal_state_response;
 
 typedef struct viam_carto_sensor_reading {
     bstring sensor;
-    // TODO: change to void* and a size
     bstring sensor_reading;
     int64_t sensor_reading_time_unix_milli;
 } viam_carto_sensor_reading;
