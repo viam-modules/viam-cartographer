@@ -14,7 +14,7 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/viam-robotics/.github/workflows/test.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
 
   appimage:
   # remove
