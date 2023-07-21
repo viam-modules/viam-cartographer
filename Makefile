@@ -2,7 +2,8 @@ BUILD_CHANNEL?=local
 TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
 GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
-GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+LDFLAGS = -ldflags "-s -w -X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+# LDFLAGS = -ldflags "-s -w -extld="$(shell pwd)/etc/ld_wrapper.sh" -X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
 SHELL := /usr/bin/env bash
 export PATH := $(TOOL_BIN):$(PATH)
 export GOBIN := $(TOOL_BIN)
@@ -102,7 +103,7 @@ viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
 
 cartographer-module: viam-cartographer/build/unit_tests
 	rm -f bin/cartographer-module
-	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
+	mkdir -p bin && go build $(LDFLAGS) -o bin/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 
