@@ -37,7 +37,7 @@ var (
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
 	DefaultExecutableName                = "carto_grpc_server"
-	defaultDataRateMsec                  = 200
+	defaultLidarDataFreqHz               = 5
 	defaultMapRateSec                    = 60
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
@@ -120,7 +120,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 		CartoFacade: cartoSvc.cartofacade,
 		Lidar:       cartoSvc.timedLidar,
 		LidarName:   cartoSvc.primarySensorName,
-		DataRateMs:  cartoSvc.dataRateMs,
+		DataFreqHz:  cartoSvc.dataFreqHz,
 		Timeout:     cartoSvc.cartoFacadeTimeout,
 		Logger:      cartoSvc.logger,
 	}
@@ -160,15 +160,14 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	dataRateMsec, mapRateSec := vcConfig.GetOptionalParameters(
+	mapRateSec := vcConfig.GetOptionalParameters(
 		svcConfig,
-		defaultDataRateMsec,
 		defaultMapRateSec,
 		logger,
 	)
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := s.NewLidar(ctx, deps, svcConfig.Sensors, logger)
+	lidar, err := s.NewLidar(ctx, deps, svcConfig.Camera, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +194,6 @@ func New(
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
 		sensors:                       svcConfig.Sensors,
-		dataRateMs:                    dataRateMsec,
 		mapRateSec:                    mapRateSec,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
 		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
@@ -334,7 +332,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	}
 
 	cartoCfg := cartofacade.CartoConfig{
-		Sensors:            cartoSvc.sensors,
+		Camera:             cartoSvc.camera,
 		MapRateSecond:      cartoSvc.mapRateSec,
 		DataDir:            cartoSvc.dataDirectory,
 		ComponentReference: cartoSvc.primarySensorName,
@@ -394,13 +392,15 @@ type CartographerService struct {
 	timedLidar        s.TimedSensor
 	subAlgo           SubAlgo
 
-	configParams  map[string]string
-	dataDirectory string
-	sensors       []string
+	configParams   map[string]string
+	dataDirectory  string
+	camera         map[string]string
+	movementsensor map[string]string
 
 	cartofacade        cartofacade.Interface
 	cartoFacadeTimeout time.Duration
 
+	dataFreqHz int
 	mapRateSec int
 
 	cancelSensorProcessFunc func()

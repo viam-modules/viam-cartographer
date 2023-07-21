@@ -61,17 +61,8 @@ func (config *Config) Validate(path string) (map[string]string, error) {
 
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
-func GetOptionalParameters(config *Config,
-	defaultDataFreqHz, defaultMapRateSec int, logger golog.Logger,
-) (int, int) {
-	dataFreqHz := defaultDataFreqHz
-	dataFreqHzIn, ok := config.Camera["data_freq_hz"]
-	if !ok {
-		logger.Debugf("no data_freq_hz given, setting to default value of %d", defaultDataFreqHz)
-	} else {
-		dataFreqHz, _ = strconv.Atoi(dataFreqHzIn)
-	}
-
+func GetOptionalParameters(config *Config, defaultMapRateSec int, logger golog.Logger,
+) int {
 	mapRateSec := 0
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
@@ -80,5 +71,5 @@ func GetOptionalParameters(config *Config,
 		mapRateSec = *config.MapRateSec
 	}
 
-	return dataFreqHz, mapRateSec
+	return mapRateSec
 }

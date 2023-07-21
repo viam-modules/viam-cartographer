@@ -99,7 +99,7 @@ const (
 
 // CartoConfig contains config values from app
 type CartoConfig struct {
-	Sensors            []string
+	Camera             map[string]string
 	MapRateSecond      int
 	DataDir            string
 	ComponentReference string
