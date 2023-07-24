@@ -31,11 +31,6 @@ MapBuilder::~MapBuilder() {
     }
 }
 
-std::vector<::cartographer::transform::Rigid3d>
-MapBuilder::GetLocalSlamResultPoses() {
-    return local_slam_result_poses_;
-}
-
 void MapBuilder::SetUp(std::string configuration_directory,
                        std::string configuration_basename) {
     VLOG(1) << "MapBuilder::SetUp configuration_directory: "
@@ -129,7 +124,10 @@ MapBuilder::GetLocalSlamResultCallback() {
                const std::unique_ptr<
                    const cartographer::mapping::TrajectoryBuilderInterface::
                        InsertionResult>) {
-        local_slam_result_poses_.push_back(local_pose);
+        {
+            std::lock_guard<std::mutex> lk(local_slam_result_pose_mutex);
+            local_slam_result_pose = local_pose;
+        }
     };
 }
 
@@ -152,11 +150,13 @@ cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
 
 // TODO: There might still be a lot of room to improve accuracy & speed.
 // Might be worth investigating in the future.
-cartographer::transform::Rigid3d MapBuilder::GetGlobalPose(
-    cartographer::transform::Rigid3d &local_pose) {
+cartographer::transform::Rigid3d MapBuilder::GetGlobalPose() {
     auto local_transform =
         map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
-    return local_transform * local_pose;
+    {
+        std::lock_guard<std::mutex> lk(local_slam_result_pose_mutex);
+        return local_transform * local_slam_result_pose;
+    }
 }
 
 void MapBuilder::OverwriteOptimizeEveryNNodes(int value) {
