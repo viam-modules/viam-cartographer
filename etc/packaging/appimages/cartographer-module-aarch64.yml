@@ -34,6 +34,8 @@ AppDir:
     - libboost-iostreams1.74.0:arm64
     - libboost-filesystem1.74.0:arm64
     - libprotobuf31:arm64
+    - libxcb-render0:arm64
+    - libxcb-shm0:arm64
     - libabsl20200923:arm64
     - libc6:arm64
     - libceres1

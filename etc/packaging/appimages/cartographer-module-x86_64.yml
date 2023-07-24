@@ -35,6 +35,8 @@ AppDir:
     - libboost-filesystem1.74.0:amd64
     - libgrpc++1:amd64
     - libprotobuf31:amd64
+    - libxcb-render0:amd64
+    - libxcb-shm0:amd64
     - libabsl20200923:amd64
     - libceres1
     - libgoogle-glog0v5
