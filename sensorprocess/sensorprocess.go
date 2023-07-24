@@ -4,6 +4,7 @@ package sensorprocess
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ type Config struct {
 	CartoFacade cartofacade.Interface
 	Lidar       sensors.TimedSensor
 	LidarName   string
-	DataRateMs  int
+	DataFreqHz  int
 	Timeout     time.Duration
 	Logger      golog.Logger
 }
@@ -98,5 +99,8 @@ func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readi
 		}
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
-	return int(math.Max(0, float64(config.DataRateMs-timeElapsedMs)))
+	fmt.Println(config.DataFreqHz)
+	data_rate_ms := 100 / config.DataFreqHz
+	fmt.Println(data_rate_ms)
+	return int(math.Max(0, float64(data_rate_ms-timeElapsedMs)))
 }

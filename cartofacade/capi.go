@@ -179,7 +179,7 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 		return Carto{}, err
 	}
 
-	status = C.free_bstring_array(vcc.sensors, C.size_t(len(cfg.Sensors)))
+	status = C.free_bstring_array(vcc.sensors, C.size_t(1))
 	if status != C.BSTR_OK {
 		return Carto{}, errors.New("unable to free memory for sensor list")
 	}
@@ -360,9 +360,9 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 		return C.viam_carto_config{}, errors.New("unable to allocate memory for sensor list")
 	}
 	sensorSlice := unsafe.Slice(pSensor, sz)
-	for i, sensor := range cfg.Camera {
-		sensorSlice[i] = goStringToBstring(sensor)
-	}
+
+	sensorSlice[0] = goStringToBstring(cfg.Camera["name"])
+
 	lidarCfg, err := toLidarConfig(cfg.LidarConfig)
 	if err != nil {
 		return C.viam_carto_config{}, err
