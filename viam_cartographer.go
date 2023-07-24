@@ -193,7 +193,7 @@ func New(
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
-		sensors:                       svcConfig.Sensors,
+		camera:                        svcConfig.Camera,
 		mapRateSec:                    mapRateSec,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
 		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
