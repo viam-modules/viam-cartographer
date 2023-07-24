@@ -354,13 +354,13 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc := C.viam_carto_config{}
 
 	// create pointer to bstring which can represent a list of sensors
-	sz := len(cfg.Sensors)
+	sz := 1
 	pSensor := C.alloc_bstring_array(C.size_t(sz))
 	if pSensor == nil {
 		return C.viam_carto_config{}, errors.New("unable to allocate memory for sensor list")
 	}
 	sensorSlice := unsafe.Slice(pSensor, sz)
-	for i, sensor := range cfg.Sensors {
+	for i, sensor := range cfg.Camera {
 		sensorSlice[i] = goStringToBstring(sensor)
 	}
 	lidarCfg, err := toLidarConfig(cfg.LidarConfig)

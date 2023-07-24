@@ -25,7 +25,7 @@ type Config struct {
 var errCameraMustHaveName = errors.New("\"camera[name]\" is required")
 
 // Validate creates the list of implicit dependencies.
-func (config *Config) Validate(path string) (map[string]string, error) {
+func (config *Config) Validate(path string) ([]string, error) {
 	_, ok := config.Camera["name"]
 	if !ok {
 		return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
@@ -54,7 +54,7 @@ func (config *Config) Validate(path string) (map[string]string, error) {
 		return nil, errors.New("cannot specify map_rate_sec less than zero")
 	}
 
-	deps := config.Camera
+	deps := []string{config.Camera["name"]}
 
 	return deps, nil
 }
