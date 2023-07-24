@@ -4,7 +4,6 @@ package sensors
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strconv"
 	"time"
 
@@ -79,11 +78,11 @@ func NewLidar(
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", name)
 	}
-	fmt.Println("properties are: ", properties)
-	fmt.Println("and support PCD is: ", properties.SupportsPCD)
+
+	logger.Debugf("properties are set")
 	if !properties.SupportsPCD {
-		return Lidar{}, errors.Errorf("configuring lidar camera error: " +
-			"'camera' must support PCD")
+		return Lidar{}, errors.Errorf("configuring lidar camera error: "+
+			"'camera' must support PCD but properties are %v", properties)
 	}
 
 	return Lidar{
