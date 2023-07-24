@@ -29,16 +29,18 @@ func SetupDeps(lidar map[string]string) resource.Dependencies {
 		deps[camera.Named(lidar["name"])] = getGoodLidar()
 	case "warming_up_lidar":
 		deps[camera.Named(lidar["name"])] = getWarmingUpLidar()
-	case "lidar_replay_sensor":
-		deps[camera.Named(lidar["name"])] = getReplaySensor(TestTime)
-	case "invalid_lidar_replay_sensor":
-		deps[camera.Named(lidar["name"])] = getReplaySensor(BadTime)
+	case "replay_lidar":
+		deps[camera.Named(lidar["name"])] = getReplayLidar(TestTime)
+	case "invalid_replay_lidar":
+		deps[camera.Named(lidar["name"])] = getReplayLidar(BadTime)
 	case "invalid_lidar":
-		deps[camera.Named(lidar["name"])] = getInvalidSensor()
+		deps[camera.Named(lidar["name"])] = getInvalidLidar()
+	case "np_pcd_camera":
+		deps[camera.Named(lidar["name"])] = getNoPCDCamera()
 	case "gibberish_lidar":
 		return deps
-	case "finished_lidar_replay_sensor":
-		deps[camera.Named(lidar["name"])] = getFinishedReplaySensor()
+	case "finished_replay_lidar":
+		deps[camera.Named(lidar["name"])] = getFinishedReplayLidar()
 	}
 
 	return deps
@@ -61,7 +63,7 @@ func getWarmingUpLidar() *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -78,12 +80,12 @@ func getGoodLidar() *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
 
-func getReplaySensor(testTime string) *inject.Camera {
+func getReplayLidar(testTime string) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
@@ -99,12 +101,12 @@ func getReplaySensor(testTime string) *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
 
-func getInvalidSensor() *inject.Camera {
+func getInvalidLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return nil, errors.New("invalid sensor")
@@ -115,10 +117,30 @@ func getInvalidSensor() *inject.Camera {
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{SupportsPCD: true}, nil
+	}
 	return cam
 }
 
-func getFinishedReplaySensor() *inject.Camera {
+func getNoPCDCamera() *inject.Camera {
+	cam := &inject.Camera{}
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		return nil, errors.New("invalid camera")
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		return nil, errors.New("invalid camera")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{SupportsPCD: false}, nil
+	}
+	return cam
+}
+
+func getFinishedReplayLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return nil, replaypcd.ErrEndOfDataset

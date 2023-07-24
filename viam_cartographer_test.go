@@ -25,7 +25,7 @@ import (
 
 const (
 	testExecutableName = "true" // the program "true", not the boolean value
-	testDataRateMsec   = 200
+	testDataFreqHz     = "5"
 )
 
 var (
@@ -49,7 +49,7 @@ func TestNew(t *testing.T) {
 			test.That(t, err, test.ShouldBeNil)
 		}()
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"lidar", "one-too-many"},
+			Camera:        map[string]string{"name": "lidar", "name2": "one-too-many"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -68,10 +68,9 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"gibberish"},
+			Camera:        map[string]string{"name": "gibberish", "data_freq_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -88,10 +87,9 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -109,10 +107,9 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"invalid_sensor"},
+			Camera:        map[string]string{"name": "invalid_sensor", "data_freq_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -129,7 +126,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &_zeroInt,
@@ -162,7 +159,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &testMapRateSec,
@@ -196,7 +193,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{},
+			Camera:        map[string]string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -214,7 +211,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"lidar", "one-too-many"},
+			Camera:        map[string]string{"name": "lidar", "name2": "one-too-many"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -233,10 +230,9 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"gibberish"},
+			Camera:        map[string]string{"name": "gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		_, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -253,10 +249,9 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -274,10 +269,9 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"invalid_sensor"},
+			Camera:        map[string]string{"name": "invalid_sensor", "data_freq_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		_, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -293,7 +287,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"replay_sensor"},
+			Camera:        map[string]string{"name": "replay_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &_zeroInt,
@@ -339,10 +333,9 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"good_lidar"},
+			Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -395,7 +388,7 @@ func TestClose(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"replay_sensor"},
+			Camera:        map[string]string{"name": "replay_sensor"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &testMapRateSec,
@@ -447,11 +440,10 @@ func TestDoCommand(t *testing.T) {
 
 	test.That(t, err, test.ShouldBeNil)
 	attrCfg := &vcConfig.Config{
-		Sensors:       []string{"good_lidar"},
+		Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDirectory,
 		MapRateSec:    &testMapRateSec,
-		DataRateMsec:  testDataRateMsec,
 	}
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 	test.That(t, err, test.ShouldBeNil)

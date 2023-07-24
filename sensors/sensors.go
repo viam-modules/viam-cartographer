@@ -79,10 +79,9 @@ func NewLidar(
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", name)
 	}
 
-	logger.Debugf("properties are set")
 	if !properties.SupportsPCD {
-		return Lidar{}, errors.Errorf("configuring lidar camera error: "+
-			"'camera' must support PCD but properties are %v", properties)
+		return Lidar{}, errors.Errorf("configuring lidar camera error: " +
+			"'camera' must support PCD")
 	}
 
 	return Lidar{
@@ -154,12 +153,4 @@ func (lidar Lidar) TimedSensorReading(ctx context.Context) (TimedSensorReadingRe
 		}
 	}
 	return TimedSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
-}
-
-// getName returns the name of the sensor based on its index in the sensor array.
-func getName(sensors []string, index int) (string, error) {
-	if index < 0 || index >= len(sensors) {
-		return "", errors.New("index out of bounds")
-	}
-	return sensors[index], nil
 }

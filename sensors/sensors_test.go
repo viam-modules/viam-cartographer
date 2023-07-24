@@ -4,6 +4,7 @@ package sensors_test
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -21,9 +22,13 @@ func TestValidateGetData(t *testing.T) {
 	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	lidar = map[string]string{"name": "invalid_sensor"}
+	lidar = map[string]string{"name": "invalid_lidar"}
 	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
+
+	lidar = map[string]string{"name": "np_pcd_camera"}
+	_, err = s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
 
 	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
 	sensorValidationInterval := time.Duration(10) * time.Millisecond
@@ -37,7 +42,7 @@ func TestValidateGetData(t *testing.T) {
 		lidar = map[string]string{"name": "warming_up_lidar"}
 		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 		test.That(t, err, test.ShouldBeNil)
-
+		fmt.Println("got to here")
 		err = s.ValidateGetData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
 		test.That(t, err, test.ShouldBeNil)
 	})
@@ -101,11 +106,11 @@ func TestTimedSensorReading(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	ctx := context.Background()
 
-	lidar := map[string]string{"name": "invalid_sensor"}
+	lidar := map[string]string{"name": "invalid_lidar"}
 	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	lidar = map[string]string{"name": "invalid_replay_sensor"}
+	lidar = map[string]string{"name": "invalid_replay_lidar"}
 	invalidReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
@@ -113,7 +118,7 @@ func TestTimedSensorReading(t *testing.T) {
 	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	lidar = map[string]string{"name": "replay_sensor"}
+	lidar = map[string]string{"name": "replay_lidar"}
 	goodReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
