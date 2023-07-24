@@ -359,7 +359,7 @@ func TestAddSensorReading(t *testing.T) {
 	})
 
 	t.Run("live sensor adds sensor reading once and ignores errors", func(t *testing.T) {
-		sensors := []string{"good_lidar"}
+		sensors := map[string]string{"name": "good_lidar"}
 		logger := golog.NewTestLogger(t)
 		liveSensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
 		test.That(t, err, test.ShouldBeNil)
