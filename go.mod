@@ -11,12 +11,12 @@ require (
 	github.com/rhysd/actionlint v1.6.24
 	github.com/viamrobotics/gostream v0.0.0-20230609200515-c5d67c29ed25
 	go.opencensus.io v0.24.0
+	go.uber.org/multierr v1.11.0
+	go.uber.org/zap v1.24.0
 	go.viam.com/api v0.1.156
 	go.viam.com/rdk v0.5.1-0.20230719205427-c10eab2aa624
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.38
-	google.golang.org/grpc v1.56.0
-	google.golang.org/protobuf v1.30.0
 )
 
 require (
@@ -278,8 +278,6 @@ require (
 	go.mongodb.org/mongo-driver v1.12.0-prerelease.0.20221109213319-d3466eeae7a7 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
 	goji.io v2.0.2+incompatible // indirect
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
@@ -300,6 +298,8 @@ require (
 	google.golang.org/genproto v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230530153820-e85fd2cbaebc // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230530153820-e85fd2cbaebc // indirect
+	google.golang.org/grpc v1.56.0 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.6.0 // indirect
 	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect

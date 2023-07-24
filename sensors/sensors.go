@@ -4,6 +4,7 @@ package sensors
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -60,7 +61,7 @@ func NewLidar(
 	dataFreqHz := defaultDataFreqHz
 	dataFreqHzIn, ok := cam["data_freq_hz"]
 	if !ok {
-		logger.Debugf("no data_freq_hz given, setting to default value of %d", defaultDataFreqHz)
+		logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", defaultDataFreqHz)
 	} else {
 		var err error
 		dataFreqHz, err = strconv.Atoi(dataFreqHzIn)
@@ -78,6 +79,8 @@ func NewLidar(
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", name)
 	}
+	fmt.Println("properties are: ", properties)
+	fmt.Println("and support PCD is: ", properties.SupportsPCD)
 	if !properties.SupportsPCD {
 		return Lidar{}, errors.Errorf("configuring lidar camera error: " +
 			"'camera' must support PCD")

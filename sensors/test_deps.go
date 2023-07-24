@@ -21,30 +21,26 @@ const (
 	BadTime = "NOT A TIME"
 )
 
-// SetupDeps returns the dependencies based on the sensors passed as arguments.
-func SetupDeps(sensors []string) resource.Dependencies {
+// SetupDeps returns the dependencies based on the lidar passed as argument.
+func SetupDeps(lidar map[string]string) resource.Dependencies {
 	deps := make(resource.Dependencies)
-
-	for _, sensor := range sensors {
-		switch sensor {
-		case "good_lidar":
-			deps[camera.Named(sensor)] = getGoodLidar()
-		case "warming_up_lidar":
-			deps[camera.Named(sensor)] = getWarmingUpLidar()
-		case "replay_sensor":
-			deps[camera.Named(sensor)] = getReplaySensor(TestTime)
-		case "invalid_replay_sensor":
-			deps[camera.Named(sensor)] = getReplaySensor(BadTime)
-		case "invalid_sensor":
-			deps[camera.Named(sensor)] = getInvalidSensor()
-		case "gibberish":
-			return deps
-		case "finished_replay_sensor":
-			deps[camera.Named(sensor)] = getFinishedReplaySensor()
-		default:
-			continue
-		}
+	switch lidar["name"] {
+	case "good_lidar":
+		deps[camera.Named(lidar["name"])] = getGoodLidar()
+	case "warming_up_lidar":
+		deps[camera.Named(lidar["name"])] = getWarmingUpLidar()
+	case "lidar_replay_sensor":
+		deps[camera.Named(lidar["name"])] = getReplaySensor(TestTime)
+	case "invalid_lidar_replay_sensor":
+		deps[camera.Named(lidar["name"])] = getReplaySensor(BadTime)
+	case "invalid_lidar":
+		deps[camera.Named(lidar["name"])] = getInvalidSensor()
+	case "gibberish_lidar":
+		return deps
+	case "finished_lidar_replay_sensor":
+		deps[camera.Named(lidar["name"])] = getFinishedReplaySensor()
 	}
+
 	return deps
 }
 
