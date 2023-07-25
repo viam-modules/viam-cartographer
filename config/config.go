@@ -30,16 +30,15 @@ func (config *Config) Validate(path string) ([]string, error) {
 	if !ok {
 		return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
 	}
-	data_freq_hz, ok := config.Camera["data_freq_hz"]
+	dataFreqHz, ok := config.Camera["data_freq_hz"]
 	if ok {
-		data_freq_hz, err := strconv.Atoi(data_freq_hz)
+		dataFreqHz, err := strconv.Atoi(dataFreqHz)
 		if err != nil {
 			return nil, errors.New("data_freq_hz must only contain digits")
 		}
-		if data_freq_hz < 0 {
+		if dataFreqHz < 0 {
 			return nil, errors.New("cannot specify data_freq_hz less than zero")
 		}
-
 	}
 
 	if config.ConfigParams["mode"] == "" {

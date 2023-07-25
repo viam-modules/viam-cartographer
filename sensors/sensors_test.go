@@ -4,7 +4,6 @@ package sensors_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 	"time"
 
@@ -42,7 +41,6 @@ func TestValidateGetData(t *testing.T) {
 		lidar = map[string]string{"name": "warming_up_lidar"}
 		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 		test.That(t, err, test.ShouldBeNil)
-		fmt.Println("got to here")
 		err = s.ValidateGetData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
 		test.That(t, err, test.ShouldBeNil)
 	})
