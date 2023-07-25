@@ -392,10 +392,9 @@ type CartographerService struct {
 	timedLidar        s.TimedSensor
 	subAlgo           SubAlgo
 
-	configParams   map[string]string
-	dataDirectory  string
-	camera         map[string]string
-	movementsensor map[string]string
+	configParams  map[string]string
+	dataDirectory string
+	camera        map[string]string
 
 	cartofacade        cartofacade.Interface
 	cartoFacadeTimeout time.Duration

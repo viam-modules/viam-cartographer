@@ -50,13 +50,13 @@ var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(camera_name string, t *testing.T) resource.Dependencies {
+func SetupStubDeps(cameraName string, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
-	switch camera_name {
+	switch cameraName {
 	case "stub_lidar":
-		deps[camera.Named(camera_name)] = getStubLidar(t)
+		deps[camera.Named(cameraName)] = getStubLidar(t)
 	default:
-		t.Errorf("SetupStubDeps called with unhandled camera: %s", camera_name)
+		t.Errorf("SetupStubDeps called with unhandled camera: %s", cameraName)
 	}
 
 	return deps

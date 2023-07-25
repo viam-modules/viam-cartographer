@@ -4,7 +4,6 @@ package sensorprocess
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -99,8 +98,6 @@ func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readi
 		}
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
-	fmt.Println(config.DataFreqHz)
-	data_rate_ms := 100 / config.DataFreqHz
-	fmt.Println(data_rate_ms)
-	return int(math.Max(0, float64(data_rate_ms-timeElapsedMs)))
+	dataRateMs := 100 / config.DataFreqHz
+	return int(math.Max(0, float64(dataRateMs-timeElapsedMs)))
 }

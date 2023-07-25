@@ -80,7 +80,7 @@ func NewLidar(
 	}
 
 	if !properties.SupportsPCD {
-		return Lidar{}, errors.Errorf("configuring lidar camera error: " +
+		return Lidar{}, errors.New("configuring lidar camera error: " +
 			"'camera' must support PCD")
 	}
 

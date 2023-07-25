@@ -50,7 +50,6 @@ func TestValidate(t *testing.T) {
 		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
-
 	})
 
 	t.Run("Config without camera name", func(t *testing.T) {
@@ -146,12 +145,10 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["camera"] = map[string]string{"name": "a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		dataFreqHz, mapRateSec := GetOptionalParameters(
+		mapRateSec := GetOptionalParameters(
 			cfg,
 			1001,
-			1002,
 			logger)
-		test.That(t, dataFreqHz, test.ShouldEqual, 1001)
 		test.That(t, mapRateSec, test.ShouldEqual, 1002)
 	})
 
@@ -165,12 +162,10 @@ func TestGetOptionalParameters(t *testing.T) {
 		two := 2
 		cfg.MapRateSec = &two
 		test.That(t, err, test.ShouldBeNil)
-		dataFreqHz, mapRateSec := GetOptionalParameters(
+		mapRateSec := GetOptionalParameters(
 			cfg,
 			1001,
-			1002,
 			logger)
-		test.That(t, dataFreqHz, test.ShouldEqual, 1)
 		test.That(t, mapRateSec, test.ShouldEqual, 2)
 	})
 }
