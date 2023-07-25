@@ -777,9 +777,17 @@ void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
                 << " measurement.ranges.size(): " << measurement.ranges.size();
         map_builder.AddSensorData(measurement);
-        tmp_global_pose = map_builder.GetGlobalPose();
+        auto local_poses = map_builder.GetLocalSlamResultPoses();
+        VLOG(1) << "local_poses.size(): " << local_poses.size();
+        // NOTE: The first time local_poses.size() goes positive will
+        // be the second time that map_builder.AddSensorData() succeeds.
+        // At that time the pose will still be zeroed out.
+        if (local_poses.size() > 0) {
+            update_latest_global_pose = true;
+            tmp_global_pose = map_builder.GetGlobalPose(local_poses.back());
+        }
         map_builder_mutex.unlock();
-        {
+        if (update_latest_global_pose) {
             std::lock_guard<std::mutex> lk(viam_response_mutex);
             latest_global_pose = tmp_global_pose;
         }
