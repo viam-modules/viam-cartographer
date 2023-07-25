@@ -99,7 +99,7 @@ const (
 
 // CartoConfig contains config values from app
 type CartoConfig struct {
-	Camera             map[string]string
+	Camera             string
 	MapRateSecond      int
 	DataDir            string
 	ComponentReference string
@@ -361,7 +361,7 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	}
 	sensorSlice := unsafe.Slice(pSensor, sz)
 
-	sensorSlice[0] = goStringToBstring(cfg.Camera["name"])
+	sensorSlice[0] = goStringToBstring(cfg.Camera)
 
 	lidarCfg, err := toLidarConfig(cfg.LidarConfig)
 	if err != nil {

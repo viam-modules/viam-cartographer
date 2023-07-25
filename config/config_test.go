@@ -72,27 +72,27 @@ func TestValidate(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run("Config with invalid camera data_freq_hz", func(t *testing.T) {
+	t.Run("Config with invalid camera data_frequency_hz", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["camera"] = map[string]string{
-			"name":         "a",
-			"data_freq_hz": "twenty",
+			"name":              "a",
+			"data_frequency_hz": "twenty",
 		}
 		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("data_freq_hz must only contain digits"))
+		test.That(t, err, test.ShouldBeError, newError("data_frequency_hz must only contain digits"))
 	})
 
 	t.Run("Config with out of range values", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["camera"] = map[string]string{
-			"name":         "a",
-			"data_freq_hz": "-1",
+			"name":              "a",
+			"data_frequency_hz": "-1",
 		}
 		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("cannot specify data_freq_hz less than zero"))
+		test.That(t, err, test.ShouldBeError, newError("cannot specify data_frequency_hz less than zero"))
 		cfgService.Attributes["camera"] = map[string]string{
-			"name":         "a",
-			"data_freq_hz": "1",
+			"name":              "a",
+			"data_frequency_hz": "1",
 		}
 		cfgService.Attributes["map_rate_sec"] = -1
 		_, err = newConfig(cfgService)
@@ -102,8 +102,8 @@ func TestValidate(t *testing.T) {
 	t.Run("All parameters e2e", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["camera"] = map[string]string{
-			"name":         "a",
-			"data_freq_hz": "20",
+			"name":              "a",
+			"data_frequency_hz": "20",
 		}
 		cfgService.Attributes["map_rate_sec"] = 1002
 
@@ -131,8 +131,8 @@ func makeCfgService() resource.Config {
 	}
 	cfgService.Attributes["data_dir"] = "path"
 	cfgService.Attributes["camera"] = map[string]string{
-		"name":         "a",
-		"data_freq_hz": "20",
+		"name":              "a",
+		"data_frequency_hz": "20",
 	}
 	return cfgService
 }
@@ -155,8 +155,8 @@ func TestGetOptionalParameters(t *testing.T) {
 	t.Run("Return overrides", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["camera"] = map[string]string{
-			"name":         "a",
-			"data_freq_hz": "1",
+			"name":              "a",
+			"data_frequency_hz": "1",
 		}
 		cfg, err := newConfig(cfgService)
 		two := 2

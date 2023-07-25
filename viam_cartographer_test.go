@@ -68,7 +68,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "gibberish", "data_freq_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "gibberish", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -87,7 +87,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -107,7 +107,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "invalid_sensor", "data_freq_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "invalid_sensor", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -249,7 +249,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -269,7 +269,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "invalid_sensor", "data_freq_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "invalid_sensor", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -333,7 +333,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -440,7 +440,7 @@ func TestDoCommand(t *testing.T) {
 
 	test.That(t, err, test.ShouldBeNil)
 	attrCfg := &vcConfig.Config{
-		Camera:        map[string]string{"name": "good_lidar", "data_freq_hz": testDataFreqHz},
+		Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDirectory,
 		MapRateSec:    &testMapRateSec,

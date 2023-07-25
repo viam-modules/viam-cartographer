@@ -58,14 +58,14 @@ func NewLidar(
 	}
 	name := cam["name"]
 	dataFreqHz := defaultDataFreqHz
-	dataFreqHzIn, ok := cam["data_freq_hz"]
+	dataFreqHzIn, ok := cam["data_frequency_hz"]
 	if !ok {
 		logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", defaultDataFreqHz)
 	} else {
 		var err error
 		dataFreqHz, err = strconv.Atoi(dataFreqHzIn)
 		if err != nil {
-			logger.Debug("data_freq_hz must only contain digits, setting to default value of %d", defaultDataFreqHz)
+			return Lidar{}, errors.New("camera[data_frequency_hz] must only contain digits")
 		}
 	}
 
