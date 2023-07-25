@@ -164,7 +164,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		mapRateSec := GetOptionalParameters(
 			cfg,
-			1001,
+			1002,
 			logger)
 		test.That(t, mapRateSec, test.ShouldEqual, 2)
 	})
