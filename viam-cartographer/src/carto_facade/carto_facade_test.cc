@@ -28,9 +28,10 @@ const auto tol = tt::tolerance(0.001);
 
 namespace viam {
 namespace carto_facade {
-viam_carto_config viam_carto_config_setup(
-    int map_rate_sec, viam_carto_LIDAR_CONFIG lidar_config,
-    std::string data_dir, std::string camera) {
+viam_carto_config viam_carto_config_setup(int map_rate_sec,
+                                          viam_carto_LIDAR_CONFIG lidar_config,
+                                          std::string data_dir,
+                                          std::string camera) {
     struct viam_carto_config vcc;
     vcc.map_rate_sec = map_rate_sec;
     vcc.lidar_config = lidar_config;
@@ -120,7 +121,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
                VIAM_CARTO_DATA_DIR_NOT_PROVIDED);
 
     std::string camera2 = "";
-    
+
     struct viam_carto_config vcc_empty_component_ref = viam_carto_config_setup(
         1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera2);
 
@@ -133,9 +134,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_map_rate_sec, ac) ==
                VIAM_CARTO_MAP_RATE_SEC_INVALID);
 
-    struct viam_carto_config vcc_invalid_lidar_config =
-        viam_carto_config_setup(1, static_cast<viam_carto_LIDAR_CONFIG>(-1),
-                                tmp_dir.string(), camera);
+    struct viam_carto_config vcc_invalid_lidar_config = viam_carto_config_setup(
+        1, static_cast<viam_carto_LIDAR_CONFIG>(-1), tmp_dir.string(), camera);
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_lidar_config, ac) ==
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
@@ -151,9 +151,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     fs::path invalid_path = tmp_dir / fs::path(bfs::unique_path().string()) /
                             fs::path(bfs::unique_path().string());
 
-    struct viam_carto_config vcc_invalid_path =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, invalid_path.string(),
-                                camera);
+    struct viam_carto_config vcc_invalid_path = viam_carto_config_setup(
+        1, VIAM_CARTO_THREE_D, invalid_path.string(), camera);
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_path, ac) ==
                VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR);
 

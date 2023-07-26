@@ -18,15 +18,15 @@ func TestValidateGetData(t *testing.T) {
 	ctx := context.Background()
 
 	lidar := map[string]string{"name": "good_lidar"}
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidar = map[string]string{"name": "invalid_lidar"}
-	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidar = map[string]string{"name": "np_pcd_camera"}
-	_, err = s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	_, err = s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
 
 	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
@@ -39,7 +39,7 @@ func TestValidateGetData(t *testing.T) {
 
 	t.Run("returns nil if a lidar reading succeeds within the timeout", func(t *testing.T) {
 		lidar = map[string]string{"name": "warming_up_lidar"}
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 		test.That(t, err, test.ShouldBeNil)
 		err = s.ValidateGetData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -55,7 +55,7 @@ func TestValidateGetData(t *testing.T) {
 		cancelFunc()
 
 		lidar = map[string]string{"name": "warming_up_lidar"}
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		err = s.ValidateGetData(cancelledCtx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
@@ -68,8 +68,8 @@ func TestNewLidar(t *testing.T) {
 
 	t.Run("No sensor provided", func(t *testing.T) {
 		lidar := map[string]string{}
-		deps := s.SetupDeps(lidar)
-		actualLidar, err := s.NewLidar(context.Background(), deps, lidar, logger)
+		deps := s.SetupDeps(lidar["name"])
+		actualLidar, err := s.NewLidar(context.Background(), deps, lidar["name"], logger)
 		expectedLidar := s.Lidar{}
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
 		test.That(t, err, test.ShouldBeNil)
@@ -77,8 +77,8 @@ func TestNewLidar(t *testing.T) {
 
 	t.Run("Failed lidar creation with non-existing sensor", func(t *testing.T) {
 		lidar := map[string]string{"name": "gibberish"}
-		deps := s.SetupDeps(lidar)
-		actualLidar, err := s.NewLidar(context.Background(), deps, lidar, logger)
+		deps := s.SetupDeps(lidar["name"])
+		actualLidar, err := s.NewLidar(context.Background(), deps, lidar["name"], logger)
 		expectedLidar := s.Lidar{}
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
 		test.That(t, err, test.ShouldBeError,
@@ -89,8 +89,8 @@ func TestNewLidar(t *testing.T) {
 	t.Run("Successful lidar creation", func(t *testing.T) {
 		lidar := map[string]string{"name": "good_lidar"}
 		ctx := context.Background()
-		deps := s.SetupDeps(lidar)
-		actualLidar, err := s.NewLidar(ctx, deps, lidar, logger)
+		deps := s.SetupDeps(lidar["name"])
+		actualLidar, err := s.NewLidar(ctx, deps, lidar["name"], logger)
 		test.That(t, actualLidar.Name, test.ShouldEqual, lidar["name"])
 		test.That(t, err, test.ShouldBeNil)
 
@@ -105,19 +105,19 @@ func TestTimedSensorReading(t *testing.T) {
 	ctx := context.Background()
 
 	lidar := map[string]string{"name": "invalid_lidar"}
-	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidar = map[string]string{"name": "invalid_replay_lidar"}
-	invalidReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	invalidReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidar = map[string]string{"name": "good_lidar"}
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidar = map[string]string{"name": "replay_lidar"}
-	goodReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	goodReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("when the lidar returns an error, returns that error", func(t *testing.T) {

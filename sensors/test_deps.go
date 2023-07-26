@@ -22,25 +22,25 @@ const (
 )
 
 // SetupDeps returns the dependencies based on the lidar passed as argument.
-func SetupDeps(lidar map[string]string) resource.Dependencies {
+func SetupDeps(lidarName string) resource.Dependencies {
 	deps := make(resource.Dependencies)
-	switch lidar["name"] {
+	switch lidarName {
 	case "good_lidar":
-		deps[camera.Named(lidar["name"])] = getGoodLidar()
+		deps[camera.Named(lidarName)] = getGoodLidar()
 	case "warming_up_lidar":
-		deps[camera.Named(lidar["name"])] = getWarmingUpLidar()
+		deps[camera.Named(lidarName)] = getWarmingUpLidar()
 	case "replay_lidar":
-		deps[camera.Named(lidar["name"])] = getReplayLidar(TestTime)
+		deps[camera.Named(lidarName)] = getReplayLidar(TestTime)
 	case "invalid_replay_lidar":
-		deps[camera.Named(lidar["name"])] = getReplayLidar(BadTime)
+		deps[camera.Named(lidarName)] = getReplayLidar(BadTime)
 	case "invalid_lidar":
-		deps[camera.Named(lidar["name"])] = getInvalidLidar()
+		deps[camera.Named(lidarName)] = getInvalidLidar()
 	case "np_pcd_camera":
-		deps[camera.Named(lidar["name"])] = getNoPCDCamera()
+		deps[camera.Named(lidarName)] = getNoPCDCamera()
 	case "gibberish_lidar":
 		return deps
 	case "finished_replay_lidar":
-		deps[camera.Named(lidar["name"])] = getFinishedReplayLidar()
+		deps[camera.Named(lidarName)] = getFinishedReplayLidar()
 	}
 
 	return deps

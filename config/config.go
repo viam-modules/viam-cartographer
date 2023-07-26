@@ -63,11 +63,11 @@ func (config *Config) Validate(path string) ([]string, error) {
 func GetOptionalParameters(config *Config, defaultLidarDataRateMSec, defaultMapRateSec int, logger golog.Logger,
 ) (int, int, error) {
 	lidarDataRateMSec := defaultLidarDataRateMSec
-	strDataFreq, ok := config.Camera["data_frequency_hz"]
+	strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
 	if !ok {
 		logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", 1000/defaultLidarDataRateMSec)
 	} else {
-		lidarDataFreqHz, err := strconv.Atoi(strDataFreq)
+		lidarDataFreqHz, err := strconv.Atoi(strCameraDataFreqHz)
 		if err != nil {
 			return 0, 0, errors.New("camera[data_frequency_hz] must only contain digits")
 		}

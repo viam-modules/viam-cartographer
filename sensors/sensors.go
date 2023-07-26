@@ -16,15 +16,10 @@ import (
 	goutils "go.viam.com/utils"
 )
 
-const (
-	defaultDataFreqHz = 20
-)
-
 // Lidar represents a LIDAR sensor.
 type Lidar struct {
-	Name       string
-	lidar      camera.Camera
-	dataFreqHz int
+	Name  string
+	lidar camera.Camera
 }
 
 // TimedSensorReadingResponse represents a sensor reading with a time & allows the caller to know if the reading is from a replay sensor.

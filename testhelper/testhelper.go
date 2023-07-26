@@ -237,7 +237,7 @@ func CreateSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
-	deps := s.SetupDeps(cfg.Camera)
+	deps := s.SetupDeps(cfg.Camera["name"])
 
 	sensorDeps, err := cfg.Validate("path")
 	if err != nil {

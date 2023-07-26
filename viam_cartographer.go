@@ -37,7 +37,7 @@ var (
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
 	DefaultExecutableName                = "carto_grpc_server"
-	defaultLidarDataFreqHz               = 5
+	defaultLidarDataRateMSec             = 200
 	defaultMapRateSec                    = 60
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
@@ -160,14 +160,18 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	mapRateSec := vcConfig.GetOptionalParameters(
+	lidarDataRateMSec, mapRateSec, err := vcConfig.GetOptionalParameters(
 		svcConfig,
+		defaultLidarDataRateMSec,
 		defaultMapRateSec,
 		logger,
 	)
+	if err != nil {
+		return nil, err
+	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := s.NewLidar(ctx, deps, svcConfig.Camera, logger)
+	lidar, err := s.NewLidar(ctx, deps, svcConfig.Camera["name"], logger)
 	if err != nil {
 		return nil, err
 	}
@@ -189,11 +193,11 @@ func New(
 		Named:                         c.ResourceName().AsNamed(),
 		lidarName:                     lidar.Name,
 		lidar:                         lidar,
+		lidarDataRateMSec:             lidarDataRateMSec,
 		timedLidar:                    timedSensor,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
-		camera:                        svcConfig.Camera,
 		mapRateSec:                    mapRateSec,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
 		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
