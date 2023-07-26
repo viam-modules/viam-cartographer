@@ -79,7 +79,7 @@ func TestValidate(t *testing.T) {
 			"data_frequency_hz": "twenty",
 		}
 		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("data_frequency_hz must only contain digits"))
+		test.That(t, err, test.ShouldBeError, newError("camera[data_frequency_hz] must only contain digits"))
 	})
 
 	t.Run("Config with out of range values", func(t *testing.T) {
@@ -89,7 +89,7 @@ func TestValidate(t *testing.T) {
 			"data_frequency_hz": "-1",
 		}
 		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("cannot specify data_frequency_hz less than zero"))
+		test.That(t, err, test.ShouldBeError, newError("cannot specify camera[data_frequency_hz] less than zero"))
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "1",
@@ -152,7 +152,7 @@ func TestGetOptionalParameters(t *testing.T) {
 			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 1002)
-		test.That(t, lidarDataRateMSec, test.ShouldEqual, 1)
+		test.That(t, lidarDataRateMSec, test.ShouldEqual, 1000)
 	})
 
 	t.Run("Return overrides", func(t *testing.T) {
@@ -164,7 +164,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfg, err := newConfig(cfgService)
 		two := 2
 		cfg.MapRateSec = &two
-		cfg.Camera["data_frequency_hz"] = "2000"
+		cfg.Camera["data_frequency_hz"] = "20"
 		test.That(t, err, test.ShouldBeNil)
 		lidarDataRateMSec, mapRateSec, err := GetOptionalParameters(
 			cfg,
@@ -173,7 +173,7 @@ func TestGetOptionalParameters(t *testing.T) {
 			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 2)
-		test.That(t, lidarDataRateMSec, test.ShouldEqual, 2)
+		test.That(t, lidarDataRateMSec, test.ShouldEqual, 50)
 	})
 }
 

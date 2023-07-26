@@ -199,27 +199,8 @@ func TestNew(t *testing.T) {
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
-		test.That(t, err, test.ShouldBeError, errors.New("error validating \"path\": \"sensors\" must not be empty"))
+		test.That(t, err, test.ShouldBeError, errors.New("error validating \"path\": \"camera\" must not be empty"))
 		test.That(t, svc, test.ShouldBeNil)
-	})
-
-	t.Run("Failed creation of cartographer slam service with more than one sensor when feature flag enabled", func(t *testing.T) {
-		termFunc := testhelper.InitTestCL(t, logger)
-		defer termFunc()
-
-		dataDirectory, fsCleanupFunc := testhelper.InitInternalState(t)
-		defer fsCleanupFunc()
-
-		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "lidar", "name2": "one-too-many"},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-		}
-
-		_, err := testhelper.CreateSLAMService(t, attrCfg, logger)
-		test.That(t, err, test.ShouldBeError,
-			errors.New("configuring lidar camera error: 'sensors' must contain only one "+
-				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
 	})
 
 	t.Run("Failed creation of cartographer slam service with non-existing sensor when feature flag enabled", func(t *testing.T) {

@@ -69,10 +69,10 @@ func TestNewLidar(t *testing.T) {
 	t.Run("No sensor provided", func(t *testing.T) {
 		lidar := map[string]string{}
 		deps := s.SetupDeps(lidar["name"])
-		actualLidar, err := s.NewLidar(context.Background(), deps, lidar["name"], logger)
-		expectedLidar := s.Lidar{}
-		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
-		test.That(t, err, test.ShouldBeNil)
+		_, err := s.NewLidar(context.Background(), deps, lidar["name"], logger)
+		test.That(t, err, test.ShouldBeError,
+			errors.New("error getting lidar camera "+
+				" for slam service: \"rdk:component:camera/\" missing from dependencies"))
 	})
 
 	t.Run("Failed lidar creation with non-existing sensor", func(t *testing.T) {
