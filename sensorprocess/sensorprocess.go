@@ -17,12 +17,12 @@ import (
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	CartoFacade cartofacade.Interface
-	Lidar       sensors.TimedSensor
-	LidarName   string
-	DataFreqHz  int
-	Timeout     time.Duration
-	Logger      golog.Logger
+	CartoFacade       cartofacade.Interface
+	Lidar             sensors.TimedSensor
+	LidarName         string
+	LidarDataRateMSec int
+	Timeout           time.Duration
+	Logger            golog.Logger
 }
 
 // Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -98,6 +98,5 @@ func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readi
 		}
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
-	dataRateMs := 100 / config.DataFreqHz
-	return int(math.Max(0, float64(dataRateMs-timeElapsedMs)))
+	return int(math.Max(0, float64(config.LidarDataRateMSec-timeElapsedMs)))
 }

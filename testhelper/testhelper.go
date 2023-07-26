@@ -320,6 +320,6 @@ func InitInternalState(t *testing.T) (string, func()) {
 
 // CreateTimestampFilename creates an absolute filename with a primary sensor name and timestamp written
 // into the filename.
-func CreateTimestampFilename(dataDirectory, primarySensorName, fileType string, timeStamp time.Time) string {
-	return filepath.Join(dataDirectory, primarySensorName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
+func CreateTimestampFilename(dataDirectory, lidarName, fileType string, timeStamp time.Time) string {
+	return filepath.Join(dataDirectory, lidarName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
 }

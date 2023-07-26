@@ -145,11 +145,13 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["camera"] = map[string]string{"name": "a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		mapRateSec := GetOptionalParameters(
+		lidarDataRateMSec, mapRateSec, err := GetOptionalParameters(
 			cfg,
-			1001,
+			1000,
+			1002,
 			logger)
 		test.That(t, mapRateSec, test.ShouldEqual, 1002)
+		test.That(t, mapRateSec, test.ShouldEqual, 1)
 	})
 
 	t.Run("Return overrides", func(t *testing.T) {
@@ -161,9 +163,11 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfg, err := newConfig(cfgService)
 		two := 2
 		cfg.MapRateSec = &two
+		cfg.lidarDataRateMSec = &two
 		test.That(t, err, test.ShouldBeNil)
-		mapRateSec := GetOptionalParameters(
+		lidarDataRateMSec, mapRateSec, err := GetOptionalParameters(
 			cfg,
+			1000,
 			1002,
 			logger)
 		test.That(t, mapRateSec, test.ShouldEqual, 2)

@@ -117,12 +117,12 @@ func TerminateCartoLib() error {
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
-		CartoFacade: cartoSvc.cartofacade,
-		Lidar:       cartoSvc.timedLidar,
-		LidarName:   cartoSvc.primarySensorName,
-		DataFreqHz:  cartoSvc.dataFreqHz,
-		Timeout:     cartoSvc.cartoFacadeTimeout,
-		Logger:      cartoSvc.logger,
+		CartoFacade:       cartoSvc.cartofacade,
+		Lidar:             cartoSvc.timedLidar,
+		LidarName:         cartoSvc.lidarName,
+		LidarDataRateMSec: cartoSvc.lidarDataRateMSec,
+		Timeout:           cartoSvc.cartoFacadeTimeout,
+		Logger:            cartoSvc.logger,
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
@@ -187,7 +187,7 @@ func New(
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
 		Named:                         c.ResourceName().AsNamed(),
-		primarySensorName:             lidar.Name,
+		lidarName:                     lidar.Name,
 		lidar:                         lidar,
 		timedLidar:                    timedSensor,
 		subAlgo:                       subAlgo,
@@ -332,10 +332,10 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	}
 
 	cartoCfg := cartofacade.CartoConfig{
-		Camera:             cartoSvc.camera,
+		Camera:             cartoSvc.camera["name"],
 		MapRateSecond:      cartoSvc.mapRateSec,
 		DataDir:            cartoSvc.dataDirectory,
-		ComponentReference: cartoSvc.primarySensorName,
+		ComponentReference: cartoSvc.lidarName,
 		LidarConfig:        cartofacade.TwoD,
 	}
 
@@ -387,7 +387,8 @@ type CartographerService struct {
 	mu                sync.Mutex
 	SlamMode          cartofacade.SlamMode
 	closed            bool
-	primarySensorName string
+	lidarName         string
+	lidarDataRateMSec int
 	lidar             s.Lidar
 	timedLidar        s.TimedSensor
 	subAlgo           SubAlgo
@@ -399,7 +400,6 @@ type CartographerService struct {
 	cartofacade        cartofacade.Interface
 	cartoFacadeTimeout time.Duration
 
-	dataFreqHz int
 	mapRateSec int
 
 	cancelSensorProcessFunc func()
@@ -438,7 +438,7 @@ func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialma
 			"kmag": pos.Kmag,
 		},
 	}
-	return CheckQuaternionFromClientAlgo(pose, cartoSvc.primarySensorName, returnedExt)
+	return CheckQuaternionFromClientAlgo(pose, cartoSvc.lidarName, returnedExt)
 }
 
 // GetPointCloudMap creates a request, recording the time, calls the slam algorithms GetPointCloudMap endpoint and returns a callback

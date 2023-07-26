@@ -4,7 +4,6 @@ package sensors
 import (
 	"bytes"
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -44,39 +43,20 @@ type TimedSensor interface {
 func NewLidar(
 	ctx context.Context,
 	deps resource.Dependencies,
-	cam map[string]string,
+	cameraName string,
 	logger golog.Logger,
 ) (Lidar, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
 
-	// An empty camera field is allowed in offline mode.
-	_, ok := cam["name"]
-	if !ok {
-		logger.Debug("no camera provided in 'camera' config parameter")
-		return Lidar{}, nil
-	}
-	name := cam["name"]
-	dataFreqHz := defaultDataFreqHz
-	dataFreqHzIn, ok := cam["data_frequency_hz"]
-	if !ok {
-		logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", defaultDataFreqHz)
-	} else {
-		var err error
-		dataFreqHz, err = strconv.Atoi(dataFreqHzIn)
-		if err != nil {
-			return Lidar{}, errors.New("camera[data_frequency_hz] must only contain digits")
-		}
-	}
-
-	newLidar, err := camera.FromDependencies(deps, name)
+	newLidar, err := camera.FromDependencies(deps, cameraName)
 	if err != nil {
-		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", name)
+		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
 	}
 	// If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
 	properties, err := newLidar.Properties(ctx)
 	if err != nil {
-		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", name)
+		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", cameraName)
 	}
 
 	if !properties.SupportsPCD {
@@ -85,9 +65,8 @@ func NewLidar(
 	}
 
 	return Lidar{
-		Name:       name,
-		lidar:      newLidar,
-		dataFreqHz: dataFreqHz,
+		Name:  cameraName,
+		lidar: newLidar,
 	}, nil
 }
 
