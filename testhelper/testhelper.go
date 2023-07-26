@@ -145,7 +145,7 @@ func IntegrationLidarTimedSensor(
 
 	ts.TimedSensorReadingFunc = func(ctx context.Context) (s.TimedSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
-		t.Logf("TimedSenorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
 		if i >= NumPointClouds {
 			// communicate to the test that all lidar readings have been written
 			if !closed {
@@ -157,19 +157,19 @@ func IntegrationLidarTimedSensor(
 
 		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 		if err != nil {
-			t.Error("TimedSenorReading Mock failed to open pcd file")
+			t.Error("TimedSensorReading Mock failed to open pcd file")
 			return s.TimedSensorReadingResponse{}, err
 		}
 		readingPc, err := pointcloud.ReadPCD(file)
 		if err != nil {
-			t.Error("TimedSenorReading Mock failed to read pcd")
+			t.Error("TimedSensorReading Mock failed to read pcd")
 			return s.TimedSensorReadingResponse{}, err
 		}
 
 		buf := new(bytes.Buffer)
 		err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
 		if err != nil {
-			t.Error("TimedSenorReading Mock failed to parse pcd")
+			t.Error("TimedSensorReading Mock failed to parse pcd")
 			return s.TimedSensorReadingResponse{}, err
 		}
 
