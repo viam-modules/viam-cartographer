@@ -455,10 +455,6 @@ func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func
 		return nil, ErrClosed
 	}
 
-	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
-		cartoSvc.mapTimestamp = time.Now().UTC()
-	}
-
 	pc, err := cartoSvc.cartofacade.GetPointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, err
@@ -509,6 +505,10 @@ func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetLatestMapInfo called after closed")
 		return time.Time{}, ErrClosed
+	}
+
+	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
+		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
 
 	return cartoSvc.mapTimestamp, nil
