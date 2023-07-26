@@ -347,7 +347,7 @@ func toLidarConfig(lidarConfig LidarConfig) (C.viam_carto_LIDAR_CONFIG, error) {
 
 func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc := C.viam_carto_config{}
-	vcc.Camera = goStringToBstring(cfg.Camera)
+	vcc.camera = goStringToBstring(cfg.Camera)
 
 	lidarCfg, err := toLidarConfig(cfg.LidarConfig)
 	if err != nil {

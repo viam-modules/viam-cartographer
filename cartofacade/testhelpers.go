@@ -5,14 +5,14 @@ import (
 )
 
 // GetTestConfig gets a sample config for testing purposes.
-func GetTestConfig(sensor string) (CartoConfig, string, error) {
+func GetTestConfig(cameraName string) (CartoConfig, string, error) {
 	dir, err := os.MkdirTemp("", "slam-test")
 	if err != nil {
 		return CartoConfig{}, "", err
 	}
 
 	return CartoConfig{
-		Camera:             "test_lidar",
+		Camera:             cameraName,
 		MapRateSecond:      5,
 		DataDir:            dir,
 		ComponentReference: "component",
