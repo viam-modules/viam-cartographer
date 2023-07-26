@@ -179,11 +179,6 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 		return Carto{}, err
 	}
 
-	status = C.free_bstring_array(vcc.sensors, C.size_t(1))
-	if status != C.BSTR_OK {
-		return Carto{}, errors.New("unable to free memory for sensor list")
-	}
-
 	carto := Carto{value: pVc, SlamMode: toSlamMode(pVc.slam_mode)}
 	return carto, nil
 }
@@ -352,24 +347,13 @@ func toLidarConfig(lidarConfig LidarConfig) (C.viam_carto_LIDAR_CONFIG, error) {
 
 func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc := C.viam_carto_config{}
-
-	// create pointer to bstring which can represent a list of sensors
-	sz := 1
-	pSensor := C.alloc_bstring_array(C.size_t(sz))
-	if pSensor == nil {
-		return C.viam_carto_config{}, errors.New("unable to allocate memory for sensor list")
-	}
-	sensorSlice := unsafe.Slice(pSensor, sz)
-
-	sensorSlice[0] = goStringToBstring(cfg.Camera)
+	vcc.Camera = goStringToBstring(cfg.Camera)
 
 	lidarCfg, err := toLidarConfig(cfg.LidarConfig)
 	if err != nil {
 		return C.viam_carto_config{}, err
 	}
 
-	vcc.sensors = pSensor
-	vcc.sensors_len = C.int(sz)
 	vcc.map_rate_sec = C.int(cfg.MapRateSecond)
 	vcc.data_dir = goStringToBstring(cfg.DataDir)
 	vcc.lidar_config = lidarCfg
@@ -450,8 +434,6 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_LIB_INVALID")
 	case C.VIAM_CARTO_LIB_NOT_INITIALIZED:
 		return errors.New("VIAM_CARTO_LIB_NOT_INITIALIZED")
-	case C.VIAM_CARTO_SENSORS_LIST_EMPTY:
-		return errors.New("VIAM_CARTO_SENSORS_LIST_EMPTY")
 	case C.VIAM_CARTO_UNKNOWN_ERROR:
 		return errors.New("VIAM_CARTO_UNKNOWN_ERROR")
 	case C.VIAM_CARTO_DATA_DIR_NOT_PROVIDED:
