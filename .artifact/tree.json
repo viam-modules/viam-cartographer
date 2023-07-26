@@ -2,64 +2,64 @@
   "viam-cartographer": {
     "mock_lidar": {
       "0.pcd": {
-        "hash": "fc063341f9586fcddc69df23f2870de7",
-        "size": 14515
+        "hash": "ff60d0b3ae61004a1ba2031eb7c6b832",
+        "size": 39791
       },
       "1.pcd": {
-        "hash": "6224fee6b391f47065bfa47888d45653",
-        "size": 14608
+        "hash": "db5bd806efd2bbb61c161d7c609395f9",
+        "size": 39772
       },
       "10.pcd": {
-        "hash": "7e88a8c8f2984a2f80e7520750ef8ed6",
-        "size": 11819
+        "hash": "ae63f9547ae2811edbad8fe09249dc41",
+        "size": 39848
       },
       "11.pcd": {
-        "hash": "920a7d31cc9e0d0ed653e324cd7b9c0b",
-        "size": 11504
+        "hash": "b63f819b53bf30461513e20fec59d370",
+        "size": 40302
       },
       "12.pcd": {
-        "hash": "b93d4aeca9afeeaa8d957a064046d038",
-        "size": 13046
+        "hash": "d5b1504da753c256648bf12cc290c449",
+        "size": 39988
       },
       "13.pcd": {
-        "hash": "20c64154436219e02cf46c78d5bc957b",
-        "size": 12886
+        "hash": "3a928b03dbe1f805e2865ae1c8824058",
+        "size": 40042
       },
       "14.pcd": {
-        "hash": "52e7b47d219eeebd376144d194cb1ef6",
-        "size": 13145
+        "hash": "dc0e197912d86ae4222eae2875482885",
+        "size": 40270
       },
       "2.pcd": {
-        "hash": "dd2b53df2ecbdb82a947a46181c97d81",
-        "size": 14533
+        "hash": "2a13f11e8e855f9b4c03acdee8cc64f9",
+        "size": 40001
       },
       "3.pcd": {
-        "hash": "ceac62444e263fa56bb28ebe385f5e39",
-        "size": 14321
+        "hash": "12556c1a825b34f835b65c13dd037bc9",
+        "size": 40060
       },
       "4.pcd": {
-        "hash": "fa68ea21466139291050757db6f659f8",
-        "size": 12505
+        "hash": "f56068feb87e1f6e9b4e9ee3da1bf2a9",
+        "size": 39755
       },
       "5.pcd": {
-        "hash": "b23a38abda5a5a2ca8f3d984ec5ad485",
-        "size": 12907
+        "hash": "c0b725cf8a6aeebd0f03fb2c7d8d6c80",
+        "size": 39754
       },
       "6.pcd": {
-        "hash": "1038efa3cfc505c8267b396294b4e7ba",
-        "size": 12843
+        "hash": "a0f6bd9c9732a84a0be19fbc49c03dfe",
+        "size": 39720
       },
       "7.pcd": {
-        "hash": "026577760a5dc6140340a427b521de46",
-        "size": 13084
+        "hash": "c716a579022d25f6f92c8a80659a420c",
+        "size": 39947
       },
       "8.pcd": {
-        "hash": "94c7f4aac73e4f95fb1e450d782952b3",
-        "size": 13164
+        "hash": "0f990165d2b1a9b6fed12dae7580c898",
+        "size": 39989
       },
       "9.pcd": {
-        "hash": "21142d5fae5a707da9f7c36dac3ead54",
-        "size": 10709
+        "hash": "9b30a870e4ffb599b5213165a5cb44cb",
+        "size": 39853
       }
     },
     "outputs": {
