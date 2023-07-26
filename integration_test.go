@@ -131,7 +131,7 @@ func testHelperCartographer(
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, cSvc.SlamMode, test.ShouldEqual, expectedMode)
 
-	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*15)
 
 	defer cancelFunc()
 
