@@ -443,9 +443,8 @@ func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialma
 	return CheckQuaternionFromClientAlgo(pose, cartoSvc.primarySensorName, returnedExt)
 }
 
-// GetPointCloudMap creates a request, recording the time, calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+// GetPointCloudMap creates a request calls the slam algorithms GetPointCloudMap endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
-// If startup is in localization mode, the timestamp is NOT updated.
 func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetPointCloudMap")
 	defer span.End()
@@ -453,10 +452,6 @@ func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
 		return nil, ErrClosed
-	}
-
-	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
-		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
 
 	pc, err := cartoSvc.cartofacade.GetPointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
@@ -500,8 +495,8 @@ func toChunkedFunc(b []byte) func() ([]byte, error) {
 	return f
 }
 
-// GetLatestMapInfo returns the timestamp  associated with the latest call to GetPointCloudMap,
-// unless you are localizing; in which case the timestamp returned is the timestamp of the session.
+// GetLatestMapInfo returns a new timestamp every time it is called when in mapping mode, to signal
+// that the map should be updated. In localizing, the timestamp returned is the timestamp of the session.
 func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetLatestMapInfo")
 	defer span.End()
@@ -509,6 +504,10 @@ func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetLatestMapInfo called after closed")
 		return time.Time{}, ErrClosed
+	}
+
+	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
+		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
 
 	return cartoSvc.mapTimestamp, nil
