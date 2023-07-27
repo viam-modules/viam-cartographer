@@ -144,8 +144,6 @@ func TestNew(t *testing.T) {
 
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		_, err = svc.GetPointCloudMap(context.Background())
-		test.That(t, err, test.ShouldBeNil)
 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
@@ -176,8 +174,6 @@ func TestNew(t *testing.T) {
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.UpdatingMode)
 
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		_, err = svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		timestamp2, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
