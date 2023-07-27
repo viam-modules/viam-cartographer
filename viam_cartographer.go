@@ -496,7 +496,7 @@ func toChunkedFunc(b []byte) func() ([]byte, error) {
 	return f
 }
 
-// GetLatestMapInfo returns the timestamp  associated with the latest call to GetPointCloudMap,
+// GetLatestMapInfo returns the timestamp associated with the latest call to GetPointCloudMap,
 // unless you are localizing; in which case the timestamp returned is the timestamp of the session.
 func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetLatestMapInfo")
