@@ -183,9 +183,9 @@ func New(
 	// use the override in testing if non nil
 	// otherwise use the lidar from deps as the
 	// timed sensor
-	timedSensor := testTimedSensorOverride
-	if timedSensor == nil {
-		timedSensor = lidar
+	timedLidar := testTimedSensorOverride
+	if timedLidar == nil {
+		timedLidar = lidar
 	}
 
 	// Cartographer SLAM Service Object
@@ -194,7 +194,7 @@ func New(
 		lidarName:                     lidar.Name,
 		lidar:                         lidar,
 		lidarDataRateMSec:             lidarDataRateMSec,
-		timedLidar:                    timedSensor,
+		timedLidar:                    timedLidar,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
@@ -218,7 +218,7 @@ func New(
 	}()
 	if err = s.ValidateGetData(
 		cancelSensorProcessCtx,
-		timedSensor,
+		timedLidar,
 		time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
 		time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
 		cartoSvc.logger); err != nil {
@@ -398,7 +398,6 @@ type CartographerService struct {
 
 	configParams  map[string]string
 	dataDirectory string
-	camera        map[string]string
 
 	cartofacade        cartofacade.Interface
 	cartoFacadeTimeout time.Duration
