@@ -48,19 +48,17 @@ const (
 
 var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
 
-// SetupStubDeps returns stubbed dependencies based on the sensors
+// SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(sensors []string, t *testing.T) resource.Dependencies {
+func SetupStubDeps(cameraName string, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
-
-	for _, sensor := range sensors {
-		switch sensor {
-		case "stub_lidar":
-			deps[camera.Named(sensor)] = getStubLidar(t)
-		default:
-			t.Errorf("SetupStubDeps calld with unhandled sensor sensors: %s, %v", sensor, sensors)
-		}
+	switch cameraName {
+	case "stub_lidar":
+		deps[camera.Named(cameraName)] = getStubLidar(t)
+	default:
+		t.Errorf("SetupStubDeps called with unhandled camera: %s", cameraName)
 	}
+
 	return deps
 }
 
@@ -77,6 +75,10 @@ func getStubLidar(t *testing.T) *inject.Camera {
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		t.Error("stub lidar Projector called")
 		return nil, transform.NewNoIntrinsicsError("")
+	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		t.Error("stub lidar Properties called")
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -204,8 +206,8 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
-	deps := SetupStubDeps(cfg.Sensors, t)
+	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
+	deps := SetupStubDeps(cfg.Camera["name"], t)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -239,13 +241,13 @@ func CreateSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
-	deps := s.SetupDeps(cfg.Sensors)
+	deps := s.SetupDeps(cfg.Camera["name"])
 
 	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
+	test.That(t, sensorDeps, test.ShouldResemble, cfg.Camera)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -322,6 +324,6 @@ func InitInternalState(t *testing.T) (string, func()) {
 
 // CreateTimestampFilename creates an absolute filename with a primary sensor name and timestamp written
 // into the filename.
-func CreateTimestampFilename(dataDirectory, primarySensorName, fileType string, timeStamp time.Time) string {
-	return filepath.Join(dataDirectory, primarySensorName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
+func CreateTimestampFilename(dataDirectory, lidarName, fileType string, timeStamp time.Time) string {
+	return filepath.Join(dataDirectory, lidarName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
 }
