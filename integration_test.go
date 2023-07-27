@@ -132,15 +132,12 @@ func testHelperCartographer(
 	sensorReadingInterval := time.Millisecond * 200
 	timedSensor, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
 	test.That(t, err, test.ShouldBeNil)
-
 	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedSensor, logger)
 	test.That(t, err, test.ShouldBeNil)
 	start := time.Now()
-
 	cSvc, ok := svc.(*viamcartographer.CartographerService)
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, cSvc.SlamMode, test.ShouldEqual, expectedMode)
-
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancelFunc()

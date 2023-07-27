@@ -5,6 +5,7 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -216,7 +217,7 @@ func New(
 			}
 		}
 	}()
-
+	fmt.Println("1")
 	if err = s.ValidateGetData(
 		cancelSensorProcessCtx,
 		timedSensor,
@@ -226,13 +227,15 @@ func New(
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
 	}
+	fmt.Println("2")
 
 	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Println("1")
 	initSensorProcess(cancelSensorProcessCtx, cartoSvc)
+	fmt.Println("2")
 	return cartoSvc, nil
 }
 
@@ -334,7 +337,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Println("3")
 	cartoCfg := cartofacade.CartoConfig{
 		Camera:             cartoSvc.camera["name"],
 		MapRateSecond:      cartoSvc.mapRateSec,
@@ -342,9 +345,12 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		ComponentReference: cartoSvc.lidarName,
 		LidarConfig:        cartofacade.TwoD,
 	}
+	fmt.Println("4")
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
+	fmt.Println("4.5")
 	slamMode, err := cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
+	fmt.Println("5")
 	if err != nil {
 		cartoSvc.logger.Errorw("cartofacade initialize failed", "error", err)
 		return err
