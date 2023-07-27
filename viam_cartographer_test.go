@@ -184,7 +184,7 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	t.Run("Fails to create cartographer slam service with no sensor when feature flag enabled", func(t *testing.T) {
+	t.Run("Fails to create cartographer slam service with no sensor", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -202,7 +202,7 @@ func TestNew(t *testing.T) {
 		test.That(t, svc, test.ShouldBeNil)
 	})
 
-	t.Run("Failed creation of cartographer slam service with more than one sensor when feature flag enabled", func(t *testing.T) {
+	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -221,7 +221,7 @@ func TestNew(t *testing.T) {
 				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
 	})
 
-	t.Run("Failed creation of cartographer slam service with non-existing sensor when feature flag enabled", func(t *testing.T) {
+	t.Run("Failed creation of cartographer slam service with non-existing sensor", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -241,7 +241,7 @@ func TestNew(t *testing.T) {
 				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
 	})
 
-	t.Run("Successful creation of cartographer slam service with good lidar when feature flag enabled", func(t *testing.T) {
+	t.Run("Successful creation of cartographer slam service with good lidar", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -262,7 +262,7 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
-		"that errors during call to NextPointCloud when feature flag enabled", func(t *testing.T) {
+		"that errors during call to NextPointCloud when", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -281,7 +281,7 @@ func TestNew(t *testing.T) {
 			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid sensor"))
 	})
 
-	t.Run("Successful creation of cartographer slam service in localization mode when feature flag enabled", func(t *testing.T) {
+	t.Run("Successful creation of cartographer slam service in localization mode", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -327,7 +327,7 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	t.Run("Successful creation of cartographer slam service in non localization mode when feature flag enabled", func(t *testing.T) {
+	t.Run("Successful creation of cartographer slam service in non localization mode", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -379,7 +379,7 @@ func TestClose(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	ctx := context.Background()
 
-	t.Run("is idempotent and makes all endpoints return closed errors when feature flag enabled", func(t *testing.T) {
+	t.Run("is idempotent and makes all endpoints return closed errors", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
