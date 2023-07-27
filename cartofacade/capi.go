@@ -28,7 +28,6 @@ import "C"
 
 import (
 	"errors"
-	"fmt"
 	"time"
 	"unsafe"
 )
@@ -161,29 +160,25 @@ func toSlamMode(cSlamMode C.int) SlamMode {
 
 // NewCarto calls viam_carto_init and returns a pointer to a viam carto object. vcl is only an interface to facilitate testing & that the only type vcl it is actually expected to have is a CartoLib
 func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, error) {
-	fmt.Println("alls not good here")
 	var pVc *C.viam_carto
 
 	vcc, err := getConfig(cfg)
 	if err != nil {
 		return Carto{}, err
 	}
-	fmt.Println("1")
 	vcac := toAlgoConfig(acfg)
-	fmt.Println("2")
 	cl, ok := vcl.(*CartoLib)
 	if !ok {
 		return Carto{}, errors.New("cannot cast provided library to a CartoLib")
 	}
-	fmt.Println("3")
 	status := C.viam_carto_init(&pVc, cl.value, vcc, vcac)
-	fmt.Println("3.5")
+
 	if err := toError(status); err != nil {
 		return Carto{}, err
 	}
-	fmt.Println("4")
+
 	carto := Carto{value: pVc, SlamMode: toSlamMode(pVc.slam_mode)}
-	fmt.Println("alls good here")
+
 	return carto, nil
 }
 
