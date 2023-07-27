@@ -147,7 +147,7 @@ func IntegrationLidarTimedSensor(
 
 	ts.TimedSensorReadingFunc = func(ctx context.Context) (s.TimedSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
-		t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		//t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
 		if i >= NumPointClouds {
 			// communicate to the test that all lidar readings have been written
 			if !closed {
@@ -247,7 +247,7 @@ func CreateSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, cfg.Camera)
+	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
 
 	svc, err := viamcartographer.New(
 		ctx,
