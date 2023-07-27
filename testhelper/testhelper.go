@@ -65,19 +65,18 @@ func SetupStubDeps(cameraName string, t *testing.T) resource.Dependencies {
 func getStubLidar(t *testing.T) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		t.Error("stub lidar NextPointCloud called")
+		t.Error("TEST FAILED stub lidar NextPointCloud called")
 		return nil, errors.New("invalid sensor")
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		t.Error("stub lidar Stream called")
+		t.Error("TEST FAILED stub lidar Stream called")
 		return nil, errors.New("invalid sensor")
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		t.Error("stub lidar Projector called")
+		t.Error("TEST FAILED stub lidar Projector called")
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		t.Error("stub lidar Properties called")
 		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
@@ -129,7 +128,7 @@ func mockLidarReadingsValid() error {
 // ensure test outputs of cartographer are determanistic.
 func IntegrationLidarTimedSensor(
 	t *testing.T,
-	sensor string,
+	lidar string,
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
@@ -147,7 +146,7 @@ func IntegrationLidarTimedSensor(
 
 	ts.TimedSensorReadingFunc = func(ctx context.Context) (s.TimedSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
-		//t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		// t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
 		if i >= NumPointClouds {
 			// communicate to the test that all lidar readings have been written
 			if !closed {
@@ -159,19 +158,19 @@ func IntegrationLidarTimedSensor(
 
 		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 		if err != nil {
-			t.Error("TimedSensorReading Mock failed to open pcd file")
+			t.Error("TEST FAILED TimedSensorReading Mock failed to open pcd file")
 			return s.TimedSensorReadingResponse{}, err
 		}
 		readingPc, err := pointcloud.ReadPCD(file)
 		if err != nil {
-			t.Error("TimedSensorReading Mock failed to read pcd")
+			t.Error("TEST FAILED TimedSensorReading Mock failed to read pcd")
 			return s.TimedSensorReadingResponse{}, err
 		}
 
 		buf := new(bytes.Buffer)
 		err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
 		if err != nil {
-			t.Error("TimedSensorReading Mock failed to parse pcd")
+			t.Error("TEST FAILED TimedSensorReading Mock failed to parse pcd")
 			return s.TimedSensorReadingResponse{}, err
 		}
 
@@ -195,7 +194,7 @@ func ClearDirectory(t *testing.T, path string) {
 func CreateIntegrationSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	timedSensor s.TimedSensor,
+	timedLidar s.TimedSensor,
 	logger golog.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
@@ -217,7 +216,7 @@ func CreateIntegrationSLAMService(
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
-		timedSensor,
+		timedLidar,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)

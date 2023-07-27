@@ -317,7 +317,6 @@ func (cf *CartoFacade) request(
 
 	// wait until work can call into C (and timeout if needed)
 	select {
-
 	case cf.requestChan <- req:
 		select {
 		case response := <-req.responseChan:

@@ -76,7 +76,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 		test.That(t, actualPos.Y, test.ShouldBeBetween, expectedPosLinux.Y-tolerancePos, expectedPosLinux.Y+tolerancePos)
 		test.That(t, actualPos.Z, test.ShouldBeBetween, expectedPosLinux.Z-tolerancePos, expectedPosLinux.Z+tolerancePos)
 	} else {
-		t.Error("Position is outside of expected platform range")
+		t.Error("TEST FAILED Position is outside of expected platform range")
 	}
 
 	actualOri := position.Orientation().AxisAngles()
@@ -91,7 +91,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 		test.That(t, actualOri.RY, test.ShouldBeBetween, expectedOriLinux.RY-toleranceOri, expectedOriLinux.RY+toleranceOri)
 		test.That(t, actualOri.RZ, test.ShouldBeBetween, expectedOriLinux.RZ-toleranceOri, expectedOriLinux.RZ+toleranceOri)
 	} else {
-		t.Error("Orientation is outside of expected platform range")
+		t.Error("TEST FAILED Orientation is outside of expected platform range")
 	}
 }
 
@@ -99,11 +99,11 @@ func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
 	timeStamp := time.Now()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
 	if err := os.Mkdir(internalStateDir, 0o755); err != nil {
-		t.Error("failed to create test internal state directory")
+		t.Error("TEST FAILED failed to create test internal state directory")
 	}
 	filename := filepath.Join(internalStateDir, "map_data_"+timeStamp.UTC().Format(testhelper.SlamTimeFormat)+".pbstream")
 	if err := os.WriteFile(filename, internalState, 0o644); err != nil {
-		t.Error("failed to write test internal state")
+		t.Error("TEST FAILED failed to write test internal state")
 	}
 }
 
