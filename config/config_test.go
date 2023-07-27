@@ -18,7 +18,7 @@ func TestValidate(t *testing.T) {
 		model := resource.DefaultModelFamily.WithModel("test")
 		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"sensors\" must not be empty"))
+		test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"camera[name]\" is required"))
 	})
 
 	t.Run("Simplest valid config", func(t *testing.T) {
@@ -28,13 +28,13 @@ func TestValidate(t *testing.T) {
 	})
 
 	t.Run("Config without required fields", func(t *testing.T) {
-		requiredFields := []string{"data_dir", "sensors"}
+		requiredFields := []string{"data_dir", "camera"}
 		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
-		sensorsErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
+		cameraErr := utils.NewConfigValidationError(testCfgPath, errCameraMustHaveName)
 
 		expectedErrors := []error{
 			newError(dataDirErr.Error()),
-			newError(sensorsErr.Error()),
+			newError(cameraErr.Error()),
 		}
 		for i, requiredField := range requiredFields {
 			logger.Debugf("Testing SLAM config without %s\n", requiredField)
@@ -52,6 +52,15 @@ func TestValidate(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
 	})
 
+	t.Run("Config without camera name", func(t *testing.T) {
+		// Test for missing camera name attribute
+		logger.Debug("Testing SLAM config without camera[name]")
+		cfgService := makeCfgService()
+		delete(cfgService.Attributes["camera"].(map[string]string), "name")
+		_, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "camera[name]").Error()))
+	})
+
 	t.Run("Config with invalid parameter type", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["data_dir"] = true
@@ -63,12 +72,28 @@ func TestValidate(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
+	t.Run("Config with invalid camera data_frequency_hz", func(t *testing.T) {
+		cfgService := makeCfgService()
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "a",
+			"data_frequency_hz": "twenty",
+		}
+		_, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeError, newError("camera[data_frequency_hz] must only contain digits"))
+	})
+
 	t.Run("Config with out of range values", func(t *testing.T) {
 		cfgService := makeCfgService()
-		cfgService.Attributes["data_rate_msec"] = -1
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "a",
+			"data_frequency_hz": "-1",
+		}
 		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("cannot specify data_rate_msec less than zero"))
-		cfgService.Attributes["data_rate_msec"] = 1
+		test.That(t, err, test.ShouldBeError, newError("cannot specify camera[data_frequency_hz] less than zero"))
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "a",
+			"data_frequency_hz": "1",
+		}
 		cfgService.Attributes["map_rate_sec"] = -1
 		_, err = newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
@@ -76,8 +101,10 @@ func TestValidate(t *testing.T) {
 
 	t.Run("All parameters e2e", func(t *testing.T) {
 		cfgService := makeCfgService()
-		cfgService.Attributes["sensors"] = []string{"a", "b"}
-		cfgService.Attributes["data_rate_msec"] = 1001
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "a",
+			"data_frequency_hz": "20",
+		}
 		cfgService.Attributes["map_rate_sec"] = 1002
 
 		cfgService.Attributes["config_params"] = map[string]string{
@@ -88,8 +115,7 @@ func TestValidate(t *testing.T) {
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
-		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
-		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
+		test.That(t, cfg.Camera, test.ShouldResemble, cfgService.Attributes["camera"])
 		test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
 		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
 	})
@@ -104,7 +130,10 @@ func makeCfgService() resource.Config {
 		"mode": "test mode",
 	}
 	cfgService.Attributes["data_dir"] = "path"
-	cfgService.Attributes["sensors"] = []string{"a"}
+	cfgService.Attributes["camera"] = map[string]string{
+		"name":              "a",
+		"data_frequency_hz": "20",
+	}
 	return cfgService
 }
 
@@ -113,33 +142,38 @@ func TestGetOptionalParameters(t *testing.T) {
 
 	t.Run("Pass default parameters", func(t *testing.T) {
 		cfgService := makeCfgService()
-		cfgService.Attributes["sensors"] = []string{"a"}
+		cfgService.Attributes["camera"] = map[string]string{"name": "a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		dataRateMsec, mapRateSec := GetOptionalParameters(
+		lidarDataRateMSec, mapRateSec, err := GetOptionalParameters(
 			cfg,
-			1001,
+			1000,
 			1002,
 			logger)
-		test.That(t, dataRateMsec, test.ShouldEqual, 1001)
+		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 1002)
+		test.That(t, lidarDataRateMSec, test.ShouldEqual, 1000)
 	})
 
 	t.Run("Return overrides", func(t *testing.T) {
 		cfgService := makeCfgService()
-		cfgService.Attributes["sensors"] = []string{"a"}
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "a",
+			"data_frequency_hz": "1",
+		}
 		cfg, err := newConfig(cfgService)
 		two := 2
-		cfg.DataRateMsec = 1
 		cfg.MapRateSec = &two
+		cfg.Camera["data_frequency_hz"] = "20"
 		test.That(t, err, test.ShouldBeNil)
-		dataRateMsec, mapRateSec := GetOptionalParameters(
+		lidarDataRateMSec, mapRateSec, err := GetOptionalParameters(
 			cfg,
-			1001,
+			1000,
 			1002,
 			logger)
-		test.That(t, dataRateMsec, test.ShouldEqual, 1)
+		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 2)
+		test.That(t, lidarDataRateMSec, test.ShouldEqual, 50)
 	})
 }
 

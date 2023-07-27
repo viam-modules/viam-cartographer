@@ -20,17 +20,19 @@ var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 func (cf *CartoFacade) Initialize(ctx context.Context, timeout time.Duration, activeBackgroundWorkers *sync.WaitGroup) (SlamMode, error) {
 	cf.startCGoroutine(ctx, activeBackgroundWorkers)
 	untyped, err := cf.request(ctx, initialize, emptyRequestParams, timeout)
+	fmt.Println("6.5")
 	if err != nil {
+		fmt.Println("6.6")
 		return UnknownMode, err
 	}
-
+	fmt.Println("7")
 	carto, ok := untyped.(Carto)
 	if !ok {
 		return UnknownMode, errors.New("unable to cast response from cartofacade to a carto struct")
 	}
 
 	cf.carto = &carto
-
+	fmt.Println("8")
 	return carto.SlamMode, nil
 }
 
@@ -317,11 +319,14 @@ func (cf *CartoFacade) request(
 
 	// wait until work can call into C (and timeout if needed)
 	select {
+
 	case cf.requestChan <- req:
 		select {
 		case response := <-req.responseChan:
+			fmt.Println("6.3")
 			return response.result, response.err
 		case <-ctx.Done():
+			fmt.Println("6.4")
 			msg := "timeout has occurred while trying to read request from cartofacade"
 			return nil, multierr.Combine(errors.New(msg), ctx.Err())
 		}

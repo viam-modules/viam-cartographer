@@ -4,7 +4,7 @@ package sensors
 import (
 	"bytes"
 	"context"
-	"strings"
+	"fmt"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -15,13 +15,6 @@ import (
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
-)
-
-const (
-	// The Lidar is expected to be located at the first
-	// index in the provided `sensors` array in the slam
-	// service configuration.
-	lidarIndex = 0
 )
 
 // Lidar represents a LIDAR sensor.
@@ -46,37 +39,32 @@ type TimedSensor interface {
 func NewLidar(
 	ctx context.Context,
 	deps resource.Dependencies,
-	sensors []string,
+	cameraName string,
 	logger golog.Logger,
 ) (Lidar, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
-
-	// An empty `sensors: []` array is allowed in offline mode.
-	if len(sensors) == 0 {
-		logger.Debug("no sensor provided in 'sensors' config parameter")
-		return Lidar{}, nil
-	}
-	// If there is a sensor provided in the 'sensors' array, we enforce that only one
-	// sensor has to be provided.
-	if len(sensors) != 1 {
-		return Lidar{}, errors.Errorf("configuring lidar camera error: "+
-			"'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
-			strings.Join(sensors, ", "))
-	}
-
-	name, err := getName(sensors, lidarIndex)
+	fmt.Println(cameraName)
+	newLidar, err := camera.FromDependencies(deps, cameraName)
 	if err != nil {
-		return Lidar{}, err
+		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
+	}
+	fmt.Println("am here")
+	fmt.Println(newLidar)
+	// If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
+	properties, err := newLidar.Properties(ctx)
+	fmt.Println("got here")
+	if err != nil {
+		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", cameraName)
 	}
 
-	newLidar, err := camera.FromDependencies(deps, name)
-	if err != nil {
-		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", name)
+	if !properties.SupportsPCD {
+		return Lidar{}, errors.New("configuring lidar camera error: " +
+			"'camera' must support PCD")
 	}
 
 	return Lidar{
-		Name:  name,
+		Name:  cameraName,
 		lidar: newLidar,
 	}, nil
 }
@@ -143,12 +131,4 @@ func (lidar Lidar) TimedSensorReading(ctx context.Context) (TimedSensorReadingRe
 		}
 	}
 	return TimedSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
-}
-
-// getName returns the name of the sensor based on its index in the sensor array.
-func getName(sensors []string, index int) (string, error) {
-	if index < 0 || index >= len(sensors) {
-		return "", errors.New("index out of bounds")
-	}
-	return sensors[index], nil
 }
