@@ -118,10 +118,10 @@ build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=T
 build-debug: build
 
 # Linux only
-setup-cpp: 
+setup-cpp-debug: 
 	sudo apt install -y valgrind gdb
 
-test-cpp: build-debug
+test-cpp:
 	viam-cartographer/build/unit_tests -p -l all
 
 # Linux only
