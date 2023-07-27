@@ -37,29 +37,6 @@ var (
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
-	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
-		termFunc := testhelper.InitTestCL(t, logger)
-		defer termFunc()
-
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "lidar", "name2": "one-too-many"},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-		}
-
-		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
-		test.That(t, err, test.ShouldBeError,
-			errors.New("configuring lidar camera error: 'sensors' must contain only one "+
-				"lidar camera, but is 'sensors: [lidar, one-too-many]'"))
-	})
-
 	t.Run("Failed creation of cartographer slam service with non-existing sensor", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
@@ -107,7 +84,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "invalid_sensor", "data_frequency_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "invalid_lidar", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -195,7 +172,7 @@ func TestNew(t *testing.T) {
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
-		test.That(t, err, test.ShouldBeError, errors.New("error validating \"path\": \"camera\" must not be empty"))
+		test.That(t, err, test.ShouldBeError, errors.New("error validating \"path\": \"camera[name]\" is required"))
 		test.That(t, svc, test.ShouldBeNil)
 	})
 
@@ -246,7 +223,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "invalid_sensor", "data_frequency_hz": testDataFreqHz},
+			Camera:        map[string]string{"name": "invalid_lidar", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 		}
@@ -264,7 +241,7 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "replay_sensor"},
+			Camera:        map[string]string{"name": "replay_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &_zeroInt,
@@ -275,7 +252,7 @@ func TestNew(t *testing.T) {
 
 		_, componentReference, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "replay_sensor")
+		test.That(t, componentReference, test.ShouldEqual, "replay_lidar")
 
 		timestamp1, err := svc.GetLatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -365,7 +342,7 @@ func TestClose(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "replay_sensor"},
+			Camera:        map[string]string{"name": "replay_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &testMapRateSec,

@@ -882,21 +882,17 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     if (ppVC == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
-    LOG(INFO) << "am here";
     if (pVCL == nullptr) {
         return VIAM_CARTO_LIB_INVALID;
     }
-    LOG(INFO) << "got here";
     // allocate viam_carto struct
     viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));
     if (vc == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
     viam::carto_facade::CartoFacade *cf;
-    LOG(INFO) << "also here";
     try {
         cf = new viam::carto_facade::CartoFacade(pVCL, c, ac);
-        LOG(INFO) << "failed here";
     } catch (int err) {
         free(vc);
         return err;
