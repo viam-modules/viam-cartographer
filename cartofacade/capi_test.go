@@ -62,15 +62,11 @@ func TestGetConfig(t *testing.T) {
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
-		sensors := bStringToGoStringSlice(vcc.sensors, int(vcc.sensors_len))
-		test.That(t, sensors[0], test.ShouldResemble, "mysensor")
-		test.That(t, sensors[1], test.ShouldResemble, "imu")
-		test.That(t, vcc.sensors_len, test.ShouldEqual, 2)
+		camera := bstringToGoString(vcc.camera)
+		test.That(t, camera, test.ShouldResemble, "mysensor")
 
 		dataDir := bstringToGoString(vcc.data_dir)
 		test.That(t, dataDir, test.ShouldResemble, dir)
-
-		freeBstringArray(vcc.sensors, vcc.sensors_len)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})

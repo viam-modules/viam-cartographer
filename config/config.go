@@ -2,6 +2,8 @@
 package config
 
 import (
+	"strconv"
+
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.viam.com/utils"
@@ -14,19 +16,29 @@ func newError(configError string) error {
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Sensors       []string          `json:"sensors"`
+	Camera        map[string]string `json:"camera"`
 	ConfigParams  map[string]string `json:"config_params"`
 	DataDirectory string            `json:"data_dir"`
-	DataRateMsec  int               `json:"data_rate_msec"`
 	MapRateSec    *int              `json:"map_rate_sec"`
 }
 
-var errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
+var errCameraMustHaveName = errors.New("\"camera[name]\" is required")
 
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
-	if config.Sensors == nil || len(config.Sensors) < 1 {
-		return nil, utils.NewConfigValidationError(path, errSensorsMustNotBeEmpty)
+	cameraName, ok := config.Camera["name"]
+	if !ok {
+		return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
+	}
+	dataFreqHz, ok := config.Camera["data_frequency_hz"]
+	if ok {
+		dataFreqHz, err := strconv.Atoi(dataFreqHz)
+		if err != nil {
+			return nil, errors.New("camera[data_frequency_hz] must only contain digits")
+		}
+		if dataFreqHz < 0 {
+			return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
+		}
 	}
 
 	if config.ConfigParams["mode"] == "" {
@@ -37,28 +49,29 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
 	}
 
-	if config.DataRateMsec < 0 {
-		return nil, errors.New("cannot specify data_rate_msec less than zero")
-	}
-
 	if config.MapRateSec != nil && *config.MapRateSec < 0 {
 		return nil, errors.New("cannot specify map_rate_sec less than zero")
 	}
 
-	deps := config.Sensors
+	deps := []string{cameraName}
 
 	return deps, nil
 }
 
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
-func GetOptionalParameters(config *Config,
-	defaultDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (int, int) {
-	dataRateMsec := config.DataRateMsec
-	if config.DataRateMsec == 0 {
-		dataRateMsec = defaultDataRateMsec
-		logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultDataRateMsec)
+func GetOptionalParameters(config *Config, defaultLidarDataRateMSec, defaultMapRateSec int, logger golog.Logger,
+) (int, int, error) {
+	lidarDataRateMSec := defaultLidarDataRateMSec
+	strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
+	if !ok {
+		logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", 1000/defaultLidarDataRateMSec)
+	} else {
+		lidarDataFreqHz, err := strconv.Atoi(strCameraDataFreqHz)
+		if err != nil {
+			return 0, 0, errors.New("camera[data_frequency_hz] must only contain digits")
+		}
+		lidarDataRateMSec = 1000 / lidarDataFreqHz
 	}
 
 	mapRateSec := 0
@@ -69,5 +82,5 @@ func GetOptionalParameters(config *Config,
 		mapRateSec = *config.MapRateSec
 	}
 
-	return dataRateMsec, mapRateSec
+	return lidarDataRateMSec, mapRateSec, nil
 }
