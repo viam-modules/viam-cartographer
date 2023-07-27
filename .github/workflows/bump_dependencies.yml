@@ -41,3 +41,20 @@ jobs:
           base: main
           title: Automated Go Dependencies Update
           body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging.
+
+  slack-workflow-status:
+      if: ${{ failure() }} 
+      name: Post Workflow Status To Slack
+      needs:
+        - bump-versions
+      runs-on: ubuntu-latest
+      permissions:
+        actions: 'read'
+      steps:
+        - name: Slack Workflow Notification
+          uses: Gamesight/slack-workflow-status@master
+          with:
+            repo_token: ${{secrets.GITHUB_TOKEN}}
+            slack_webhook_url: ${{secrets.SLACK_WEBHOOK_URL}}
+            channel: '#team-slam-github-notifs'
+            name: 'Workflow Status'
