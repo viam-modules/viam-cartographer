@@ -117,28 +117,22 @@ build-asan: build-debug
 build-debug: EXTRA_CMAKE_FLAGS += -DCMAKE_BUILD_TYPE=Debug -DFORCE_DEBUG_BUILD=True
 build-debug: build
 
-test-cpp:
+# Linux only
+setup-cpp: 
+	sudo apt install -y valgrind gdb
+
+test-cpp: build-debug
 	viam-cartographer/build/unit_tests -p -l all
 
 # Linux only
-setup-cpp-full-mod: 
-	sudo apt install -y valgrind gdb
-
-setup-cpp-debug: 
-	sudo apt install -y valgrind gdb
-
-# Linux only
-test-cpp-full-mod-asan: build-asan
-	viam-cartographer/build/unit_tests -p -l all
-
-test-cpp-full-mod-valgrind: build-debug
+test-cpp-valgrind: build-debug
 	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all
 
 # Linux only
-test-cpp-full-mod-gdb: build-debug
+test-cpp-gdb: build-debug
 	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all
 
-test-cpp-full-mod: build-debug
+test-cpp-asan: build-asan
 	viam-cartographer/build/unit_tests -p -l all
 
 test-go:
