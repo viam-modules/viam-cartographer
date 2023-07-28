@@ -20,7 +20,7 @@ type Config struct {
 	CartoFacade       cartofacade.Interface
 	Lidar             sensors.TimedSensor
 	LidarName         string
-	LidarDataRateMSec int
+	LidarDataRateMsec int
 	Timeout           time.Duration
 	Logger            golog.Logger
 }
@@ -98,5 +98,5 @@ func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readi
 		}
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
-	return int(math.Max(0, float64(config.LidarDataRateMSec-timeElapsedMs)))
+	return int(math.Max(0, float64(config.LidarDataRateMsec-timeElapsedMs)))
 }

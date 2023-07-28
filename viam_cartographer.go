@@ -37,7 +37,7 @@ var (
 const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
 	DefaultExecutableName                = "carto_grpc_server"
-	defaultLidarDataRateMSec             = 200
+	defaultLidarDataRateMsec             = 200
 	defaultMapRateSec                    = 60
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
@@ -120,7 +120,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 		CartoFacade:       cartoSvc.cartofacade,
 		Lidar:             cartoSvc.timedLidar,
 		LidarName:         cartoSvc.lidarName,
-		LidarDataRateMSec: cartoSvc.lidarDataRateMSec,
+		LidarDataRateMsec: cartoSvc.lidarDataRateMsec,
 		Timeout:           cartoSvc.cartoFacadeTimeout,
 		Logger:            cartoSvc.logger,
 	}
@@ -160,9 +160,9 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	lidarDataRateMSec, mapRateSec, err := vcConfig.GetOptionalParameters(
+	lidarDataRateMsec, mapRateSec, err := vcConfig.GetOptionalParameters(
 		svcConfig,
-		defaultLidarDataRateMSec,
+		defaultLidarDataRateMsec,
 		defaultMapRateSec,
 		logger,
 	)
@@ -170,8 +170,16 @@ func New(
 		return nil, err
 	}
 
+	// feature flag for new config
+	name := ""
+	if *svcConfig.IMUIntegrationEnabled {
+		name = svcConfig.Camera["name"]
+	} else {
+		name = svcConfig.Sensors[0]
+	}
+
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := s.NewLidar(ctx, deps, svcConfig.Camera["name"], logger)
+	lidar, err := s.NewLidar(ctx, deps, name, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +201,7 @@ func New(
 		Named:                         c.ResourceName().AsNamed(),
 		lidarName:                     lidar.Name,
 		lidar:                         lidar,
-		lidarDataRateMSec:             lidarDataRateMSec,
+		lidarDataRateMsec:             lidarDataRateMsec,
 		timedLidar:                    timedLidar,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
@@ -391,7 +399,7 @@ type CartographerService struct {
 	SlamMode          cartofacade.SlamMode
 	closed            bool
 	lidarName         string
-	lidarDataRateMSec int
+	lidarDataRateMsec int
 	lidar             s.Lidar
 	timedLidar        s.TimedSensor
 	subAlgo           SubAlgo

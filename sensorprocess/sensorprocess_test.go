@@ -44,7 +44,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 		Logger:            logger,
 		CartoFacade:       &cf,
 		LidarName:         "good_lidar",
-		LidarDataRateMSec: 200,
+		LidarDataRateMsec: 200,
 		Timeout:           10 * time.Second,
 	}
 	t.Run("When addSensorReading returns successfully, no infinite loop", func(t *testing.T) {
@@ -141,7 +141,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		Logger:            logger,
 		CartoFacade:       &cf,
 		LidarName:         "good_lidar",
-		LidarDataRateMSec: 200,
+		LidarDataRateMsec: 200,
 		Timeout:           10 * time.Second,
 	}
 
@@ -206,7 +206,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 
 		timeToSleep := addSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMSec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
 	t.Run("AddSensorReading faster than the DataFreqHz and returns lock error, time to sleep is <= DataFreqHz", func(t *testing.T) {
@@ -222,7 +222,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 
 		timeToSleep := addSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMSec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
 	t.Run("AddSensorReading faster than DataFreqHz and returns unexpected error, time to sleep is <= DataFreqHz", func(t *testing.T) {
@@ -238,7 +238,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 
 		timeToSleep := addSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMSec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 }
 
@@ -285,7 +285,7 @@ func TestAddSensorReading(t *testing.T) {
 	config := Config{
 		Logger:            logger,
 		CartoFacade:       &cf,
-		LidarDataRateMSec: 200,
+		LidarDataRateMsec: 200,
 		Timeout:           10 * time.Second,
 	}
 	ctx := context.Background()
@@ -434,7 +434,7 @@ func TestStart(t *testing.T) {
 	config := Config{
 		Logger:            logger,
 		CartoFacade:       &cf,
-		LidarDataRateMSec: 200,
+		LidarDataRateMsec: 200,
 		Timeout:           10 * time.Second,
 	}
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
