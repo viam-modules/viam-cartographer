@@ -168,7 +168,6 @@ func TestNew(t *testing.T) {
 			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -225,6 +224,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, errors.New("error validating \"path\": \"camera[name]\" is required"))
 		test.That(t, svc, test.ShouldBeNil)
 	})
+}
 
 func TestClose(t *testing.T) {
 	logger := golog.NewTestLogger(t)
