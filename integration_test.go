@@ -126,7 +126,7 @@ func testHelperCartographer(
 		},
 		MapRateSec:    &mapRateSec,
 		DataDirectory: dataDirectory,
-		UseNewConfig:  "true",
+		UseNewConfig:  true,
 	}
 
 	done := make(chan struct{})
