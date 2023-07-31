@@ -240,13 +240,22 @@ func CreateSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
-	deps := s.SetupDeps(cfg.Camera["name"])
+	// feature flag for IMU Integration
+	cameraName := ""
+	if cfg.UseNewConfig {
+		cameraName = cfg.Camera["name"]
+	} else {
+		fmt.Println("using old config")
+		cameraName = cfg.Sensors[0]
+	}
+
+	deps := s.SetupDeps(cameraName)
 
 	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
+	test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
 
 	svc, err := viamcartographer.New(
 		ctx,

@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/edaniels/golog"
@@ -16,22 +17,24 @@ func newError(configError string) error {
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Camera                map[string]string `json:"camera"`
-	ConfigParams          map[string]string `json:"config_params"`
-	DataDirectory         string            `json:"data_dir"`
-	MapRateSec            *int              `json:"map_rate_sec"`
-	IMUIntegrationEnabled *bool             `json:"imu_integration_enabled"`
-	Sensors               []string          `json:"sensors"`
-	DataRateMsec          int               `json:"data_rate_ms"`
+	Camera        map[string]string `json:"camera"`
+	ConfigParams  map[string]string `json:"config_params"`
+	DataDirectory string            `json:"data_dir"`
+	MapRateSec    *int              `json:"map_rate_sec"`
+	UseNewConfig  bool              `json:"use_new_config"`
+	Sensors       []string          `json:"sensors"`
+	DataRateMsec  int               `json:"data_rate_msec"`
 }
 
 var errCameraMustHaveName = errors.New("\"camera[name]\" is required")
+var errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
 
 // feature flag
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
-	if *config.IMUIntegrationEnabled {
+	if config.UseNewConfig {
+		fmt.Println("using new config")
 		ok := true
 		cameraName, ok = config.Camera["name"]
 		if !ok {
@@ -48,10 +51,15 @@ func (config *Config) Validate(path string) ([]string, error) {
 			}
 		}
 	} else {
+		fmt.Println("using old config")
 		if config.Sensors == nil || len(config.Sensors) < 1 {
 			return nil, utils.NewConfigValidationError(path, errors.New("\"sensors\" must not be empty"))
 		}
 		cameraName = config.Sensors[0]
+
+		if config.DataRateMsec < 0 {
+			return nil, errors.New("cannot specify data_rate_msec less than zero")
+		}
 	}
 
 	if config.ConfigParams["mode"] == "" {
@@ -75,10 +83,11 @@ func (config *Config) Validate(path string) ([]string, error) {
 // and returns them.
 func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (int, int, error) {
+
 	lidarDataRateMsec := defaultLidarDataRateMsec
 
 	// feature flag for new config
-	if *config.IMUIntegrationEnabled {
+	if config.UseNewConfig {
 		strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
 		if !ok {
 			logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", 1000/defaultLidarDataRateMsec)

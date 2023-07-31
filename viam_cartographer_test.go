@@ -26,6 +26,7 @@ import (
 const (
 	testExecutableName = "true" // the program "true", not the boolean value
 	testDataFreqHz     = "5"
+	testDataRateMsec   = 200
 )
 
 var (
@@ -49,9 +50,10 @@ func TestNew(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "gibberish", "data_frequency_hz": testDataFreqHz},
+			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
+			DataRateMsec:  testDataRateMsec,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -75,6 +77,7 @@ func TestNew(t *testing.T) {
 			Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
+			UseNewConfig:  true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -99,6 +102,7 @@ func TestNew(t *testing.T) {
 			Camera:        map[string]string{"name": "invalid_lidar", "data_frequency_hz": testDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
+			UseNewConfig:  true,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -119,6 +123,7 @@ func TestNew(t *testing.T) {
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &_zeroInt,
+			UseNewConfig:  true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -133,7 +138,7 @@ func TestNew(t *testing.T) {
 
 		_, componentReference, err := svc.GetPosition(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "replay_sensor")
+		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
 
 		pcmFunc, err := svc.GetPointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -168,6 +173,7 @@ func TestNew(t *testing.T) {
 			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
+			UseNewConfig:  true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -218,6 +224,7 @@ func TestNew(t *testing.T) {
 			Camera:        map[string]string{},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
+			UseNewConfig:  true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -246,6 +253,7 @@ func TestClose(t *testing.T) {
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			MapRateSec:    &testMapRateSec,
+			UseNewConfig:  true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -298,6 +306,7 @@ func TestDoCommand(t *testing.T) {
 		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory: dataDirectory,
 		MapRateSec:    &testMapRateSec,
+		UseNewConfig:  true,
 	}
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 	test.That(t, err, test.ShouldBeNil)

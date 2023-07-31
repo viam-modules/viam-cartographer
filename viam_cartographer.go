@@ -172,14 +172,14 @@ func New(
 
 	// feature flag for new config
 	name := ""
-	if *svcConfig.IMUIntegrationEnabled {
+	if svcConfig.UseNewConfig {
 		name = svcConfig.Camera["name"]
 	} else {
 		name = svcConfig.Sensors[0]
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := s.NewLidar(ctx, deps, name, logger)
+	lidar, err := s.NewLidar(ctx, deps, name, logger, svcConfig.UseNewConfig)
 	if err != nil {
 		return nil, err
 	}
