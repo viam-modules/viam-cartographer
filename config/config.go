@@ -25,15 +25,16 @@ type Config struct {
 	DataRateMsec  int               `json:"data_rate_msec"`
 }
 
-var errCameraMustHaveName = errors.New("\"camera[name]\" is required")
-var errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
+var (
+	errCameraMustHaveName    = errors.New("\"camera[name]\" is required")
+	errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
+)
 
-// feature flag
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
 	if config.UseNewConfig {
-		ok := true
+		var ok bool
 		cameraName, ok = config.Camera["name"]
 		if !ok {
 			return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
@@ -80,7 +81,6 @@ func (config *Config) Validate(path string) ([]string, error) {
 // and returns them.
 func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (int, int, error) {
-
 	lidarDataRateMsec := defaultLidarDataRateMsec
 
 	// feature flag for new config

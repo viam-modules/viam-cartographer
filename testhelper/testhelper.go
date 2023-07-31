@@ -245,7 +245,6 @@ func CreateSLAMService(
 	if cfg.UseNewConfig {
 		cameraName = cfg.Camera["name"]
 	} else {
-		fmt.Println("using old config")
 		cameraName = cfg.Sensors[0]
 	}
 

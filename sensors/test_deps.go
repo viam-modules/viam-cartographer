@@ -35,7 +35,7 @@ func SetupDeps(lidarName string) resource.Dependencies {
 		deps[camera.Named(lidarName)] = getReplayLidar(BadTime)
 	case "invalid_lidar":
 		deps[camera.Named(lidarName)] = getInvalidLidar()
-	case "np_pcd_camera":
+	case "no_pcd_camera":
 		deps[camera.Named(lidarName)] = getNoPCDCamera()
 	case "gibberish_lidar":
 		return deps

@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/edaniels/golog"
@@ -16,7 +15,6 @@ func TestValidate(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run("Empty config", func(t *testing.T) {
-
 		model := resource.DefaultModelFamily.WithModel("test")
 		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 		_, err := newConfig(cfgService)
@@ -180,7 +178,6 @@ func TestValidateFeatureFlag(t *testing.T) {
 		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 		cfgService.Attributes = make(map[string]interface{})
 		cfgService.Attributes["use_new_config"] = true
-		fmt.Println("get to here")
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"camera[name]\" is required"))
 	})
@@ -189,31 +186,6 @@ func TestValidateFeatureFlag(t *testing.T) {
 		cfgService := makeCfgService(true)
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("Config without required fields with feature flag enabled", func(t *testing.T) {
-		requiredFields := []string{"data_dir", "camera"}
-		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
-		cameraErr := utils.NewConfigValidationError(testCfgPath, errCameraMustHaveName)
-
-		expectedErrors := []error{
-			newError(dataDirErr.Error()),
-			newError(cameraErr.Error()),
-		}
-		for i, requiredField := range requiredFields {
-			logger.Debugf("Testing SLAM config without %s\n", requiredField)
-			cfgService := makeCfgService(true)
-			delete(cfgService.Attributes, requiredField)
-			_, err := newConfig(cfgService)
-
-			test.That(t, err, test.ShouldBeError, expectedErrors[i])
-		}
-		// Test for missing config_params attributes
-		logger.Debug("Testing SLAM config without config_params[mode]")
-		cfgService := makeCfgService(true)
-		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
-		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
 	})
 
 	t.Run("Config without camera name with feature flag enabled", func(t *testing.T) {

@@ -25,9 +25,10 @@ func TestValidateGetData(t *testing.T) {
 	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	lidar = map[string]string{"name": "np_pcd_camera"}
-	_, err = s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
-	test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
+	// test not relevant until replay camera supports Properties
+	// lidar = map[string]string{"name": "no_pcd_camera"}
+	// _, err = s.NewLidar(ctx, s.SetupDeps(lidar["name"]), lidar["name"], logger)
+	// test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
 
 	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
 	sensorValidationInterval := time.Duration(10) * time.Millisecond
