@@ -2,7 +2,6 @@
 package config
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/edaniels/golog"
@@ -34,7 +33,6 @@ var errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
 	if config.UseNewConfig {
-		fmt.Println("using new config")
 		ok := true
 		cameraName, ok = config.Camera["name"]
 		if !ok {
@@ -51,7 +49,6 @@ func (config *Config) Validate(path string) ([]string, error) {
 			}
 		}
 	} else {
-		fmt.Println("using old config")
 		if config.Sensors == nil || len(config.Sensors) < 1 {
 			return nil, utils.NewConfigValidationError(path, errors.New("\"sensors\" must not be empty"))
 		}
