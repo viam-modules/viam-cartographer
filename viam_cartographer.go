@@ -179,7 +179,7 @@ func New(
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := s.NewLidar(ctx, deps, name, logger, svcConfig.UseNewConfig)
+	lidar, err := s.NewLidar(ctx, deps, name, logger)
 	if err != nil {
 		return nil, err
 	}

@@ -40,7 +40,6 @@ func NewLidar(
 	deps resource.Dependencies,
 	cameraName string,
 	logger golog.Logger,
-	useNewConfig bool,
 ) (Lidar, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
@@ -48,18 +47,18 @@ func NewLidar(
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
 	}
-	if useNewConfig {
-		// If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
-		properties, err := newLidar.Properties(ctx)
-		if err != nil {
-			return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", cameraName)
-		}
 
-		if !properties.SupportsPCD {
-			return Lidar{}, errors.New("configuring lidar camera error: " +
-				"'camera' must support PCD")
-		}
-	}
+	// To be implemented once replay camera supports Properties
+	// // If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
+	// properties, err := newLidar.Properties(ctx)
+	// if err != nil {
+	// 	return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", cameraName)
+	// }
+
+	// if !properties.SupportsPCD {
+	// 	return Lidar{}, errors.New("configuring lidar camera error: " +
+	// 		"'camera' must support PCD")
+	// }
 
 	return Lidar{
 		Name:  cameraName,
