@@ -159,9 +159,7 @@ func TestGetOptionalParameters(t *testing.T) {
 }
 
 func newConfig(conf resource.Config) (*Config, error) {
-	fmt.Println(conf.Attributes["use_new_config"])
 	slamConf, err := resource.TransformAttributeMap[*Config](conf.Attributes)
-	fmt.Println(slamConf.UseNewConfig)
 	if err != nil {
 		return &Config{}, newError(err.Error())
 	}
