@@ -172,7 +172,7 @@ func New(
 
 	// feature flag for new config
 	name := ""
-	if svcConfig.UseNewConfig == "true" {
+	if svcConfig.UseNewConfig {
 		name = svcConfig.Camera["name"]
 	} else {
 		name = svcConfig.Sensors[0]

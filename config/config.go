@@ -21,7 +21,7 @@ type Config struct {
 	ConfigParams  map[string]string `json:"config_params"`
 	DataDirectory string            `json:"data_dir"`
 	MapRateSec    *int              `json:"map_rate_sec"`
-	UseNewConfig  string            `json:"use_new_config"`
+	UseNewConfig  bool              `json:"use_new_config"`
 	Sensors       []string          `json:"sensors"`
 	DataRateMsec  int               `json:"data_rate_msec"`
 }
@@ -33,7 +33,7 @@ var errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
-	if config.UseNewConfig == "true" {
+	if config.UseNewConfig {
 		fmt.Println("using new config")
 		ok := true
 		cameraName, ok = config.Camera["name"]
@@ -87,7 +87,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapR
 	lidarDataRateMsec := defaultLidarDataRateMsec
 
 	// feature flag for new config
-	if config.UseNewConfig == "true" {
+	if config.UseNewConfig {
 		strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
 		if !ok {
 			logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", 1000/defaultLidarDataRateMsec)
