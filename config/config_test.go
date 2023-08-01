@@ -124,7 +124,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
@@ -145,7 +145,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfg.MapRateSec = &two
 		cfg.DataRateMsec = 50
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
@@ -265,7 +265,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		cfgService.Attributes["camera"] = map[string]string{"name": "a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
@@ -286,7 +286,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		cfg.MapRateSec = &two
 		cfg.Camera["data_frequency_hz"] = "20"
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
