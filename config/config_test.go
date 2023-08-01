@@ -96,7 +96,7 @@ func TestValidate(t *testing.T) {
 }
 
 // makeCfgService creates the simplest possible config that can pass validation.
-func makeCfgService(useNewConfig bool) resource.Config {
+func makeCfgService(IMUIntegrationEnabled bool) resource.Config {
 	model := resource.DefaultModelFamily.WithModel("test")
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 	cfgService.Attributes = make(map[string]interface{})
@@ -104,8 +104,8 @@ func makeCfgService(useNewConfig bool) resource.Config {
 		"mode": "test mode",
 	}
 	cfgService.Attributes["data_dir"] = "path"
-	if useNewConfig {
-		cfgService.Attributes["use_new_config"] = true
+	if IMUIntegrationEnabled {
+		cfgService.Attributes["imu_integration_enabled"] = true
 		cfgService.Attributes["camera"] = map[string]string{
 			"name": "a",
 		}
@@ -177,7 +177,7 @@ func TestValidateFeatureFlag(t *testing.T) {
 		model := resource.DefaultModelFamily.WithModel("test")
 		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 		cfgService.Attributes = make(map[string]interface{})
-		cfgService.Attributes["use_new_config"] = true
+		cfgService.Attributes["imu_integration_enabled"] = true
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"camera[name]\" is required"))
 	})

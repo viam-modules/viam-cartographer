@@ -74,10 +74,10 @@ func TestNew(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-			UseNewConfig:  true,
+			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			IMUIntegrationEnabled: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -99,10 +99,10 @@ func TestNew(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "invalid_lidar", "data_frequency_hz": testDataFreqHz},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-			UseNewConfig:  true,
+			Camera:                map[string]string{"name": "invalid_lidar", "data_frequency_hz": testDataFreqHz},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			IMUIntegrationEnabled: true,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -119,11 +119,11 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "good_lidar"},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-			MapRateSec:    &_zeroInt,
-			UseNewConfig:  true,
+			Camera:                map[string]string{"name": "good_lidar"},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			MapRateSec:            &_zeroInt,
+			IMUIntegrationEnabled: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -170,10 +170,10 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "good_lidar"},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-			UseNewConfig:  true,
+			Camera:                map[string]string{"name": "good_lidar"},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			IMUIntegrationEnabled: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -221,10 +221,10 @@ func TestNew(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-			UseNewConfig:  true,
+			Camera:                map[string]string{},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			IMUIntegrationEnabled: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -249,11 +249,11 @@ func TestClose(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": "replay_lidar"},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			DataDirectory: dataDirectory,
-			MapRateSec:    &testMapRateSec,
-			UseNewConfig:  true,
+			Camera:                map[string]string{"name": "replay_lidar"},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			MapRateSec:            &testMapRateSec,
+			IMUIntegrationEnabled: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -302,11 +302,11 @@ func TestDoCommand(t *testing.T) {
 
 	test.That(t, err, test.ShouldBeNil)
 	attrCfg := &vcConfig.Config{
-		Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
-		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
-		DataDirectory: dataDirectory,
-		MapRateSec:    &testMapRateSec,
-		UseNewConfig:  true,
+		Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
+		ConfigParams:          map[string]string{"mode": "2d", "test_param": "viam"},
+		DataDirectory:         dataDirectory,
+		MapRateSec:            &testMapRateSec,
+		IMUIntegrationEnabled: true,
 	}
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 	test.That(t, err, test.ShouldBeNil)

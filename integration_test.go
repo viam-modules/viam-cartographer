@@ -124,9 +124,9 @@ func testHelperCartographer(
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
-		MapRateSec:    &mapRateSec,
-		DataDirectory: dataDirectory,
-		UseNewConfig:  true,
+		MapRateSec:            &mapRateSec,
+		DataDirectory:         dataDirectory,
+		IMUIntegrationEnabled: true,
 	}
 
 	done := make(chan struct{})

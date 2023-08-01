@@ -242,7 +242,7 @@ func CreateSLAMService(
 
 	// feature flag for IMU Integration
 	cameraName := ""
-	if cfg.UseNewConfig {
+	if cfg.IMUIntegrationEnabled {
 		cameraName = cfg.Camera["name"]
 	} else {
 		cameraName = cfg.Sensors[0]

@@ -16,13 +16,13 @@ func newError(configError string) error {
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Camera        map[string]string `json:"camera"`
-	ConfigParams  map[string]string `json:"config_params"`
-	DataDirectory string            `json:"data_dir"`
-	MapRateSec    *int              `json:"map_rate_sec"`
-	UseNewConfig  bool              `json:"use_new_config"`
-	Sensors       []string          `json:"sensors"`
-	DataRateMsec  int               `json:"data_rate_msec"`
+	Camera                map[string]string `json:"camera"`
+	ConfigParams          map[string]string `json:"config_params"`
+	DataDirectory         string            `json:"data_dir"`
+	MapRateSec            *int              `json:"map_rate_sec"`
+	IMUIntegrationEnabled bool              `json:"imu_integration_enabled"`
+	Sensors               []string          `json:"sensors"`
+	DataRateMsec          int               `json:"data_rate_msec"`
 }
 
 var (
@@ -33,7 +33,7 @@ var (
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
-	if config.UseNewConfig {
+	if config.IMUIntegrationEnabled {
 		var ok bool
 		cameraName, ok = config.Camera["name"]
 		if !ok {
@@ -84,7 +84,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapR
 	lidarDataRateMsec := defaultLidarDataRateMsec
 
 	// feature flag for new config
-	if config.UseNewConfig {
+	if config.IMUIntegrationEnabled {
 		strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
 		if !ok {
 			logger.Debugf("config did not provide camera[data_frequency_hz], setting to default value of %d", 1000/defaultLidarDataRateMsec)
