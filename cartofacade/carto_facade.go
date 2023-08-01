@@ -326,7 +326,7 @@ func (cf *CartoFacade) request(
 			return nil, multierr.Combine(errors.New(msg), ctx.Err())
 		}
 	case <-ctx.Done():
-		msg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
+		msg := "timeout has occurred while trying to write request to cartofacade."
 		return nil, multierr.Combine(errors.New(msg), ctx.Err())
 	}
 }

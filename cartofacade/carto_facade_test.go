@@ -99,7 +99,7 @@ func TestRequest(t *testing.T) {
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
-		errMsg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
+		errMsg := "timeout has occurred while trying to write request to cartofacade."
 		expectedErr := multierr.Combine(errors.New(errMsg), context.Canceled)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
