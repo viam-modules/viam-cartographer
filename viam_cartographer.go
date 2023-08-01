@@ -160,7 +160,7 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	lidarDataRateMsec, mapRateSec, err := vcConfig.GetOptionalParameters(
+	lidarDataRateMsec, mapRateSec := vcConfig.GetOptionalParameters(
 		svcConfig,
 		defaultLidarDataRateMsec,
 		defaultMapRateSec,
