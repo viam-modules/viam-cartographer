@@ -124,7 +124,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
@@ -145,7 +145,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfg.MapRateSec = &two
 		cfg.DataRateMsec = 50
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
@@ -265,7 +265,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		cfgService.Attributes["camera"] = map[string]string{"name": "a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
@@ -286,7 +286,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		cfg.MapRateSec = &two
 		cfg.Camera["data_frequency_hz"] = "20"
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec := GetOptionalParameters(
+		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1002,
@@ -295,4 +295,29 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		test.That(t, mapRateSec, test.ShouldEqual, 2)
 		test.That(t, lidarDataRateMsec, test.ShouldEqual, 50)
 	})
+
+	t.Run("Unit test return error if lidar data frequency is invalid", func(t *testing.T) {
+		cfgService := makeCfgService(true)
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "a",
+			"data_frequency_hz": "b",
+		}
+		cfg, err := newConfigWithoutValidate(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		_, _, err = GetOptionalParameters(
+			cfg,
+			1000,
+			1002,
+			logger)
+		test.That(t, err, test.ShouldBeError, newError("camera[data_frequency_hz] must only contain digits"))
+	})
+}
+
+func newConfigWithoutValidate(conf resource.Config) (*Config, error) {
+	slamConf, err := resource.TransformAttributeMap[*Config](conf.Attributes)
+	if err != nil {
+		return &Config{}, newError(err.Error())
+	}
+
+	return slamConf, nil
 }
