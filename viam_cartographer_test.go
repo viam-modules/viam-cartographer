@@ -85,7 +85,7 @@ func TestNew(t *testing.T) {
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("error getting camera "+
+			errors.New("error getting lidar camera "+
 				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
 	})
 
@@ -135,7 +135,7 @@ func TestNew(t *testing.T) {
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
 
-			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid lidar"))
+			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid sensor"))
 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode", func(t *testing.T) {
@@ -307,7 +307,7 @@ func TestNewFeatureFlag(t *testing.T) {
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
 
-			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid lidar"))
+			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid sensor"))
 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode with feature flag enabled", func(t *testing.T) {
