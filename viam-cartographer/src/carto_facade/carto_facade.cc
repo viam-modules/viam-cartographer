@@ -121,7 +121,6 @@ config from_viam_carto_config(viam_carto_config vcc) {
     if (vcc.map_rate_sec < 0) {
         throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
     }
-    LOG(INFO) << "camera name is " << c.camera;
     if (c.camera.empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
     }
