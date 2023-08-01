@@ -146,7 +146,7 @@ func IntegrationLidarTimedSensor(
 
 	ts.TimedSensorReadingFunc = func(ctx context.Context) (s.TimedSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
-		// t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
 		if i >= NumPointClouds {
 			// communicate to the test that all lidar readings have been written
 			if !closed {
