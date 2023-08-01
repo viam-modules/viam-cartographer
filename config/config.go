@@ -80,19 +80,16 @@ func (config *Config) Validate(path string) ([]string, error) {
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
 func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (int, int, error) {
+) (int, int) {
 	lidarDataRateMsec := defaultLidarDataRateMsec
 
 	// feature flag for new config
 	if config.UseNewConfig {
 		strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
 		if !ok {
-			logger.Debugf("problem retrieving lidar data frequency, setting to default value of %d", 1000/defaultLidarDataRateMsec)
+			logger.Debugf("config did not provide camera[data_frequency_hz], setting to default value of %d", 1000/defaultLidarDataRateMsec)
 		} else {
-			lidarDataFreqHz, err := strconv.Atoi(strCameraDataFreqHz)
-			if err != nil {
-				return 0, 0, errors.New("camera[data_frequency_hz] must only contain digits")
-			}
+			lidarDataFreqHz, _ := strconv.Atoi(strCameraDataFreqHz)
 			lidarDataRateMsec = 1000 / lidarDataFreqHz
 		}
 	} else {
@@ -111,5 +108,5 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapR
 		mapRateSec = *config.MapRateSec
 	}
 
-	return lidarDataRateMsec, mapRateSec, nil
+	return lidarDataRateMsec, mapRateSec
 }
