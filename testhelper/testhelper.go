@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -75,9 +76,6 @@ func getStubLidar(t *testing.T) *inject.Camera {
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		t.Error("TEST FAILED stub lidar Projector called")
 		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -240,21 +238,26 @@ func CreateSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
+	sensorDeps, err := cfg.Validate("path")
+	if err != nil {
+		return nil, err
+	}
+
 	// feature flag for IMU Integration
 	cameraName := ""
 	if cfg.IMUIntegrationEnabled {
 		cameraName = cfg.Camera["name"]
 	} else {
+		if len(cfg.Sensors) > 1 {
+			return nil, errors.Errorf("configuring lidar camera error: "+
+				"'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
+				strings.Join(cfg.Sensors, ", "))
+		}
 		cameraName = cfg.Sensors[0]
 	}
+	test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
 
 	deps := s.SetupDeps(cameraName)
-
-	sensorDeps, err := cfg.Validate("path")
-	if err != nil {
-		return nil, err
-	}
-	test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
 
 	svc, err := viamcartographer.New(
 		ctx,
