@@ -10,19 +10,6 @@ package cartofacade
 	#cgo LDFLAGS: -L../viam-cartographer/build -L../viam-cartographer/build/cartographer -lviam-cartographer  -lcartographer -ldl -lm -labsl_hash  -labsl_city -labsl_bad_optional_access -labsl_strerror  -labsl_str_format_internal -labsl_synchronization -labsl_strings -labsl_throw_delegate -lcairo -llua5.3 -lstdc++ -lceres -lprotobuf -lglog -lboost_filesystem -lboost_iostreams -lpcl_io -lpcl_common -labsl_raw_hash_set
 
 	#include "../viam-cartographer/src/carto_facade/carto_facade.h"
-
-	bstring* alloc_bstring_array(size_t len) { return (bstring*) malloc(len * sizeof(bstring)); }
-	int free_bstring_array(bstring* p, size_t len) {
-		int result;
-		for (size_t i = 0; i < len; i++) {
-			result = bdestroy(p[i]);
-			if (result != BSTR_OK) {
-				return result;
-			};
-		}
-		free(p);
-		return BSTR_OK;
-	}
 */
 import "C"
 
@@ -294,17 +281,6 @@ func (vc *Carto) getInternalState() ([]byte, error) {
 }
 
 // this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
-func bStringToGoStringSlice(bstr *C.bstring, length int) []string {
-	bStrings := (*[1 << 28]C.bstring)(unsafe.Pointer(bstr))[:length:length]
-
-	goStrings := []string{}
-	for _, bString := range bStrings {
-		goStrings = append(goStrings, bstringToGoString(bString))
-	}
-	return goStrings
-}
-
-// this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
 func getTestGetPositionResponse() C.viam_carto_get_position_response {
 	gpr := C.viam_carto_get_position_response{}
 
@@ -407,12 +383,6 @@ func toSensorReading(sensor string, readings []byte, timestamp time.Time) C.viam
 
 func bstringToByteSlice(bstr C.bstring) []byte {
 	return C.GoBytes(unsafe.Pointer(bstr.data), bstr.slen)
-}
-
-// freeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
-func freeBstringArray(arr *C.bstring, length C.int) {
-	lengthSizeT := C.size_t(length)
-	C.free_bstring_array(arr, lengthSizeT)
 }
 
 func toError(status C.int) error {
