@@ -348,6 +348,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 
 	cartoCfg := cartofacade.CartoConfig{
 		Camera:             cartoSvc.lidarName,
+		MovementSensor:     cartoSvc.imuName,
 		MapRateSecond:      cartoSvc.mapRateSec,
 		DataDir:            cartoSvc.dataDirectory,
 		ComponentReference: cartoSvc.lidarName,

@@ -112,6 +112,7 @@ void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
 config from_viam_carto_config(viam_carto_config vcc) {
     struct config c;
     c.camera = to_std_string(vcc.camera);
+    c.movement_sensor = to_std_string(vcc.movement_sensor);
     c.data_dir = to_std_string(vcc.data_dir);
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.lidar_config = vcc.lidar_config;

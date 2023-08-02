@@ -55,7 +55,7 @@ func testAddSensorReading(t *testing.T, vc Carto, pcdPath string, timestamp time
 
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go", func(t *testing.T) {
-		cfg, dir, err := GetTestConfig("mysensor")
+		cfg, dir, err := GetTestConfig("mysensor", "")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -64,6 +64,28 @@ func TestGetConfig(t *testing.T) {
 
 		camera := bstringToGoString(vcc.camera)
 		test.That(t, camera, test.ShouldResemble, "mysensor")
+
+		dataDir := bstringToGoString(vcc.data_dir)
+		test.That(t, dataDir, test.ShouldResemble, dir)
+
+		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
+	})
+}
+
+func TestGetConfigWithMovementSensor(t *testing.T) {
+	t.Run("config properly converted between C and go", func(t *testing.T) {
+		cfg, dir, err := GetTestConfig("mylidar", "myIMU")
+		defer os.RemoveAll(dir)
+		test.That(t, err, test.ShouldBeNil)
+
+		vcc, err := getConfig(cfg)
+		test.That(t, err, test.ShouldBeNil)
+
+		camera := bstringToGoString(vcc.camera)
+		test.That(t, camera, test.ShouldResemble, "mylidar")
+
+		movementSensor := bstringToGoString(vcc.movement_sensor)
+		test.That(t, movementSensor, test.ShouldResemble, "myIMU")
 
 		dataDir := bstringToGoString(vcc.data_dir)
 		test.That(t, dataDir, test.ShouldResemble, dir)
@@ -114,7 +136,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg, dir, err := GetTestConfig("mysensor")
+		cfg, dir, err := GetTestConfig("mysensor", "")
 		defer os.RemoveAll(dir)
 
 		test.That(t, err, test.ShouldBeNil)

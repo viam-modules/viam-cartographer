@@ -5,7 +5,7 @@ import (
 )
 
 // GetTestConfig gets a sample config for testing purposes.
-func GetTestConfig(cameraName string) (CartoConfig, string, error) {
+func GetTestConfig(cameraName, movementSensorName string) (CartoConfig, string, error) {
 	dir, err := os.MkdirTemp("", "slam-test")
 	if err != nil {
 		return CartoConfig{}, "", err
@@ -13,6 +13,7 @@ func GetTestConfig(cameraName string) (CartoConfig, string, error) {
 
 	return CartoConfig{
 		Camera:             cameraName,
+		MovementSensor:     movementSensorName,
 		MapRateSecond:      5,
 		DataDir:            dir,
 		ComponentReference: "component",
