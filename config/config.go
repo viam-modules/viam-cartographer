@@ -98,8 +98,9 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 			}
 			lidarDataRateMsec = 1000 / lidarDataFreqHz
 		}
-		imuName, ok = config.MovementSensor["name"]
-		if ok {
+		exists := false
+		imuName, exists = config.MovementSensor["name"]
+		if exists {
 			strMovementSensorDataFreqHz, ok := config.MovementSensor["data_frequency_hz"]
 			if !ok {
 				logger.Debugf("config did not provide movement_sensor[data_frequency_hz], setting to default value of %d", 1000/defaultIMUDataRateMsec)
@@ -111,7 +112,6 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 				imuDataRateMsec = 1000 / imuDataFreqHz
 			}
 		}
-		// should IMU data rate be set to 0 if no IMU is configured?
 	} else {
 		lidarDataRateMsec = config.DataRateMsec
 		if config.DataRateMsec == 0 {
