@@ -130,6 +130,7 @@ typedef struct viam_carto_algo_config {
 
 typedef struct viam_carto_config {
     bstring camera;
+    bstring movement_sensor;
     int map_rate_sec;
     bstring data_dir;
     viam_carto_LIDAR_CONFIG lidar_config;
@@ -291,6 +292,7 @@ static const double resolutionMeters = 0.05;
 
 typedef struct config {
     std::string camera;
+    std::string movement_sensor;
     std::chrono::seconds map_rate_sec;
     std::string data_dir;
     bstring component_reference;

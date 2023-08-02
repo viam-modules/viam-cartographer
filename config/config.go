@@ -17,6 +17,7 @@ func newError(configError string) error {
 // Config describes how to configure the SLAM service.
 type Config struct {
 	Camera                map[string]string `json:"camera"`
+	MovementSensor        map[string]string `json:"movement_sensor"`
 	ConfigParams          map[string]string `json:"config_params"`
 	DataDirectory         string            `json:"data_dir"`
 	MapRateSec            *int              `json:"map_rate_sec"`
@@ -51,7 +52,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 		}
 	} else {
 		if config.Sensors == nil || len(config.Sensors) < 1 {
-			return nil, utils.NewConfigValidationError(path, errors.New("\"sensors\" must not be empty"))
+			return nil, utils.NewConfigValidationError(path, errSensorsMustNotBeEmpty)
 		}
 		cameraName = config.Sensors[0]
 
@@ -79,9 +80,11 @@ func (config *Config) Validate(path string) ([]string, error) {
 
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
-func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (int, int, error) {
+func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUDataRateMsec, defaultMapRateSec int, logger golog.Logger,
+) (int, string, int, int, error) {
 	lidarDataRateMsec := defaultLidarDataRateMsec
+	imuName := ""
+	imuDataRateMsec := defaultIMUDataRateMsec
 
 	// feature flag for new config
 	if config.IMUIntegrationEnabled {
@@ -91,9 +94,23 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapR
 		} else {
 			lidarDataFreqHz, err := strconv.Atoi(strCameraDataFreqHz)
 			if err != nil {
-				return 0, 0, newError("camera[data_frequency_hz] must only contain digits")
+				return 0, "", 0, 0, newError("camera[data_frequency_hz] must only contain digits")
 			}
 			lidarDataRateMsec = 1000 / lidarDataFreqHz
+		}
+		exists := false
+		imuName, exists = config.MovementSensor["name"]
+		if exists {
+			strMovementSensorDataFreqHz, ok := config.MovementSensor["data_frequency_hz"]
+			if !ok {
+				logger.Debugf("config did not provide movement_sensor[data_frequency_hz], setting to default value of %d", 1000/defaultIMUDataRateMsec)
+			} else {
+				imuDataFreqHz, err := strconv.Atoi(strMovementSensorDataFreqHz)
+				if err != nil {
+					return 0, "", 0, 0, newError("movement_sensor[data_frequency_hz] must only contain digits")
+				}
+				imuDataRateMsec = 1000 / imuDataFreqHz
+			}
 		}
 	} else {
 		lidarDataRateMsec = config.DataRateMsec
@@ -111,5 +128,5 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultMapR
 		mapRateSec = *config.MapRateSec
 	}
 
-	return lidarDataRateMsec, mapRateSec, nil
+	return lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, nil
 }

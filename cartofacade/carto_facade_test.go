@@ -28,7 +28,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor", "")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -54,7 +54,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor", "")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -80,7 +80,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor", "")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -108,7 +108,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor")
+		config, dir, err := GetTestConfig("mysensor", "")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -144,7 +144,7 @@ func TestInitialize(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
@@ -171,7 +171,7 @@ func TestStart(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
@@ -222,7 +222,7 @@ func TestStop(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
@@ -273,7 +273,7 @@ func TestTerminate(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
@@ -324,7 +324,7 @@ func TestAddSensorReading(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
@@ -386,7 +386,7 @@ func TestGetPosition(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
@@ -441,7 +441,7 @@ func TestGetInternalState(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
@@ -494,7 +494,7 @@ func TestGetPointCloudMap(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor")
+	cfg, dir, err := GetTestConfig("mysensor", "")
 	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
