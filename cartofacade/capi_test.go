@@ -53,8 +53,8 @@ func testAddSensorReading(t *testing.T, vc Carto, pcdPath string, timestamp time
 	test.That(t, err, test.ShouldBeNil)
 }
 
-func TestGetConfig(t *testing.T) {
-	t.Run("config properly converted between C and go", func(t *testing.T) {
+func TestGetConfigWithoutMovementSensor(t *testing.T) {
+	t.Run("config properly converted between C and go with no IMU specified", func(t *testing.T) {
 		cfg, dir, err := GetTestConfig("mysensor", "")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
@@ -73,7 +73,7 @@ func TestGetConfig(t *testing.T) {
 }
 
 func TestGetConfigWithMovementSensor(t *testing.T) {
-	t.Run("config properly converted between C and go", func(t *testing.T) {
+	t.Run("config properly converted between C and go with an IMU specified", func(t *testing.T) {
 		cfg, dir, err := GetTestConfig("mylidar", "myIMU")
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
