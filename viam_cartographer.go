@@ -38,6 +38,7 @@ const (
 	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
 	DefaultExecutableName                = "carto_grpc_server"
 	defaultLidarDataRateMsec             = 200
+	defaultIMUDataRateMsec               = 50
 	defaultMapRateSec                    = 60
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
@@ -160,9 +161,10 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	lidarDataRateMsec, mapRateSec, err := vcConfig.GetOptionalParameters(
+	lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		defaultLidarDataRateMsec,
+		defaultIMUDataRateMsec,
 		defaultMapRateSec,
 		logger,
 	)
@@ -203,6 +205,8 @@ func New(
 		lidar:                         lidar,
 		lidarDataRateMsec:             lidarDataRateMsec,
 		timedLidar:                    timedLidar,
+		imuName:                       imuName,
+		imuDataRateMsec:               imuDataRateMsec,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
@@ -402,6 +406,8 @@ type CartographerService struct {
 	lidarDataRateMsec int
 	lidar             s.Lidar
 	timedLidar        s.TimedSensor
+	imuName           string
+	imuDataRateMsec   int
 	subAlgo           SubAlgo
 
 	configParams  map[string]string

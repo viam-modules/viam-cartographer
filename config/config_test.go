@@ -124,8 +124,9 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, _, _, mapRateSec, err := GetOptionalParameters(
 			cfg,
+			1000,
 			1000,
 			1002,
 			logger)
@@ -145,8 +146,9 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfg.MapRateSec = &two
 		cfg.DataRateMsec = 50
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, _, _, mapRateSec, err := GetOptionalParameters(
 			cfg,
+			1000,
 			1000,
 			1002,
 			logger)
@@ -263,37 +265,47 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 	t.Run("Pass default parameters with feature flag enabled", func(t *testing.T) {
 		cfgService := makeCfgService(true)
 		cfgService.Attributes["camera"] = map[string]string{"name": "a"}
+		cfgService.Attributes["movement_sensor"] = map[string]string{"name": "b"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, err := GetOptionalParameters(
 			cfg,
+			1000,
 			1000,
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 1002)
 		test.That(t, lidarDataRateMsec, test.ShouldEqual, 1000)
+		test.That(t, imuName, test.ShouldEqual, "b")
+		test.That(t, imuDataRateMsec, test.ShouldEqual, 1000)
 	})
 
 	t.Run("Return overrides with feature flag enabled", func(t *testing.T) {
 		cfgService := makeCfgService(true)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
-			"data_frequency_hz": "1",
+			"data_frequency_hz": "5",
+		}
+		cfgService.Attributes["movement_sensor"] = map[string]string{
+			"name":              "b",
+			"data_frequency_hz": "20",
 		}
 		cfg, err := newConfig(cfgService)
 		two := 2
 		cfg.MapRateSec = &two
-		cfg.Camera["data_frequency_hz"] = "20"
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, err := GetOptionalParameters(
 			cfg,
+			1000,
 			1000,
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 2)
-		test.That(t, lidarDataRateMsec, test.ShouldEqual, 50)
+		test.That(t, lidarDataRateMsec, test.ShouldEqual, 200)
+		test.That(t, imuName, test.ShouldEqual, "b")
+		test.That(t, imuDataRateMsec, test.ShouldEqual, 50)
 	})
 
 	t.Run("Unit test return error if lidar data frequency is invalid", func(t *testing.T) {
@@ -304,12 +316,34 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		}
 		cfg, err := newConfigWithoutValidate(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		_, _, err = GetOptionalParameters(
+		_, _, _, _, err = GetOptionalParameters(
 			cfg,
+			1000,
 			1000,
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeError, newError("camera[data_frequency_hz] must only contain digits"))
+	})
+
+	t.Run("Unit test return error if imu data frequency is invalid", func(t *testing.T) {
+		cfgService := makeCfgService(true)
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "a",
+			"data_frequency_hz": "1",
+		}
+		cfgService.Attributes["movement_sensor"] = map[string]string{
+			"name":              "b",
+			"data_frequency_hz": "c",
+		}
+		cfg, err := newConfigWithoutValidate(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		_, _, _, _, err = GetOptionalParameters(
+			cfg,
+			1000,
+			1000,
+			1002,
+			logger)
+		test.That(t, err, test.ShouldBeError, newError("movement_sensor[data_frequency_hz] must only contain digits"))
 	})
 }
 
