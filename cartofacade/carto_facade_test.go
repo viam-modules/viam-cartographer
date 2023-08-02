@@ -16,7 +16,7 @@ import (
 	"go.viam.com/utils/artifact"
 )
 
-const timeoutErrMessage = "timeout has occurred while trying to read request from cartofacade"
+const timeoutErrMessage = "timeout reading from cartographer"
 
 func TestRequest(t *testing.T) {
 	cartoLib := CartoLibMock{}
@@ -99,7 +99,7 @@ func TestRequest(t *testing.T) {
 
 		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
-		errMsg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
+		errMsg := "timeout writing to cartographer"
 		expectedErr := multierr.Combine(errors.New(errMsg), context.Canceled)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
