@@ -130,7 +130,7 @@ func IntegrationLidarTimedSensor(
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
-) (s.TimedSensor, error) {
+) (s.TimedLidarSensor, error) {
 	err := mockLidarReadingsValid()
 	if err != nil {
 		return nil, err
@@ -142,7 +142,7 @@ func IntegrationLidarTimedSensor(
 	ts := &s.TimedSensorMock{}
 	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
-	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedSensorReadingResponse, error) {
+	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
 		t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
 		if i >= NumPointClouds {
@@ -151,29 +151,29 @@ func IntegrationLidarTimedSensor(
 				done <- struct{}{}
 				closed = true
 			}
-			return s.TimedSensorReadingResponse{}, errors.New("end of dataset")
+			return s.TimedLidarSensorReadingResponse{}, errors.New("end of dataset")
 		}
 
 		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 		if err != nil {
 			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to open pcd file")
-			return s.TimedSensorReadingResponse{}, err
+			return s.TimedLidarSensorReadingResponse{}, err
 		}
 		readingPc, err := pointcloud.ReadPCD(file)
 		if err != nil {
 			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to read pcd")
-			return s.TimedSensorReadingResponse{}, err
+			return s.TimedLidarSensorReadingResponse{}, err
 		}
 
 		buf := new(bytes.Buffer)
 		err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
 		if err != nil {
 			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to parse pcd")
-			return s.TimedSensorReadingResponse{}, err
+			return s.TimedLidarSensorReadingResponse{}, err
 		}
 
 		i++
-		return s.TimedSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+		return s.TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
 	}
 
 	return ts, nil
@@ -192,7 +192,7 @@ func ClearDirectory(t *testing.T, path string) {
 func CreateIntegrationSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	timedLidar s.TimedSensor,
+	timedLidar s.TimedLidarSensor,
 	logger golog.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()

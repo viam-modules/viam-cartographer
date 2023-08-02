@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
+	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/components/camera"
@@ -29,16 +30,29 @@ type IMU struct {
 	imu  movementsensor.MovementSensor
 }
 
-// TimedSensorReadingResponse represents a sensor reading with a time & allows the caller to know if the reading is from a replay sensor.
-type TimedSensorReadingResponse struct {
+// TimedLidarSensorReadingResponse represents a lidar sensor reading with a time & allows the caller to know if the reading is from a replay camera sensor.
+type TimedLidarSensorReadingResponse struct {
 	Reading     []byte
 	ReadingTime time.Time
 	Replay      bool
 }
 
-// TimedSensor desribes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
-type TimedSensor interface {
-	TimedLidarSensorReading(ctx context.Context) (TimedSensorReadingResponse, error)
+// TimedLidarSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
+type TimedLidarSensor interface {
+	TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error)
+}
+
+// TimedIMUSensorReadingResponse represents an IMU sensor reading with a time & allows the caller to know if the reading is from a replay movement sensor.
+type TimedIMUSensorReadingResponse struct {
+	LinearAcceleration r3.Vector
+	AngularVelocity    r3.Vector
+	ReadingTime        time.Time
+	Replay             bool
+}
+
+// TimedIMUSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
+type TimedIMUSensor interface {
+	TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error)
 }
 
 // NewLidar returns a new Lidar.
@@ -83,6 +97,10 @@ func NewIMU(
 ) (IMU, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewIMU")
 	defer span.End()
+	if imuName == "" {
+		logger.Info("no movement sensor configured, proceeding without IMU")
+		return IMU{}, nil
+	}
 	newIMU, err := movementsensor.FromDependencies(deps, imuName)
 	if err != nil {
 		return IMU{}, errors.Wrapf(err, "error getting imu movement sensor %v for slam service", imuName)
@@ -110,7 +128,7 @@ func NewIMU(
 // returns an error if no valid lidar readings were returned.
 func ValidateGetData(
 	ctx context.Context,
-	sensor TimedSensor,
+	sensor TimedLidarSensor,
 	sensorValidationMaxTimeout time.Duration,
 	sensorValidationInterval time.Duration,
 	logger golog.Logger,
@@ -139,13 +157,13 @@ func ValidateGetData(
 }
 
 // TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether it was a replay sensor or not.
-func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedSensorReadingResponse, error) {
+func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error) {
 	replay := false
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	readingPc, err := lidar.lidar.NextPointCloud(ctxWithMetadata)
 	if err != nil {
 		msg := "NextPointCloud error"
-		return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
+		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
 	}
 	readingTime := time.Now().UTC()
 
@@ -153,7 +171,7 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedSensorRead
 	err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
 	if err != nil {
 		msg := "ToPCD error"
-		return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
+		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
 	}
 
 	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
@@ -162,35 +180,26 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedSensorRead
 		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 		if err != nil {
 			msg := "replay sensor timestamp parse RFC3339Nano error"
-			return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
+			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
 		}
 	}
-	return TimedSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
 }
 
 // TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.
 // IMU Sensors currently do not support replay capabilities.
-func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedSensorReadingResponse, error) {
+func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error) {
 	replay := false
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	linAcc, err := imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
 	if err != nil {
 		msg := "LinearAcceleration error"
-		return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
+		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 	}
 	angVel, err := imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
 	if err != nil {
 		msg := "AngularVelocity error"
-		return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
-	}
-	imuData := [linAcc, angVel]
-	readingTime := time.Now().UTC()
-
-	buf := new(bytes.Buffer)
-	err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
-	if err != nil {
-		msg := "ToPCD error"
-		return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
+		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 	}
 
 	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
@@ -199,8 +208,8 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedSensorReadingRes
 		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 		if err != nil {
 			msg := "replay sensor timestamp parse RFC3339Nano error"
-			return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
+			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
 		}
 	}
-	return TimedSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
 }

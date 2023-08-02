@@ -145,7 +145,7 @@ func New(
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
-	testTimedSensorOverride s.TimedSensor,
+	testTimedSensorOverride s.TimedLidarSensor,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -186,6 +186,12 @@ func New(
 		return nil, err
 	}
 
+	// Get the IMU if one is configured
+	imu, err := s.NewIMU(ctx, deps, name, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	// Need to be able to shut down the sensor process before the cartoFacade
 	cancelSensorProcessCtx, cancelSensorProcessFunc := context.WithCancel(context.Background())
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
@@ -206,6 +212,7 @@ func New(
 		lidarDataRateMsec:             lidarDataRateMsec,
 		timedLidar:                    timedLidar,
 		imuName:                       imuName,
+		imu:                           imu,
 		imuDataRateMsec:               imuDataRateMsec,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
@@ -430,8 +437,9 @@ type CartographerService struct {
 	lidarName         string
 	lidarDataRateMsec int
 	lidar             s.Lidar
-	timedLidar        s.TimedSensor
+	timedLidar        s.TimedLidarSensor
 	imuName           string
+	imu               s.IMU
 	imuDataRateMsec   int
 	subAlgo           SubAlgo
 

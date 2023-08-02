@@ -127,7 +127,7 @@ func TestTimedSensorReading(t *testing.T) {
 		msg := "invalid sensor"
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, msg)
-		test.That(t, tsr, test.ShouldResemble, s.TimedSensorReadingResponse{})
+		test.That(t, tsr, test.ShouldResemble, s.TimedLidarSensorReadingResponse{})
 	})
 
 	t.Run("when the replay lidar succeeds but the timestamp is invalid, returns an error", func(t *testing.T) {
@@ -135,7 +135,7 @@ func TestTimedSensorReading(t *testing.T) {
 		msg := "parsing time \"NOT A TIME\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"NOT A TIME\" as \"2006\""
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, msg)
-		test.That(t, tsr, test.ShouldResemble, s.TimedSensorReadingResponse{})
+		test.That(t, tsr, test.ShouldResemble, s.TimedLidarSensorReadingResponse{})
 	})
 
 	t.Run("when a live lidar succeeds, returns current time in UTC and the reading", func(t *testing.T) {

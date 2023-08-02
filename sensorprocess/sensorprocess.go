@@ -18,7 +18,7 @@ import (
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
 	CartoFacade       cartofacade.Interface
-	Lidar             sensors.TimedSensor
+	Lidar             sensors.TimedLidarSensor
 	LidarName         string
 	LidarDataRateMsec int
 	Timeout           time.Duration
