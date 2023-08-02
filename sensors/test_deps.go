@@ -62,9 +62,6 @@ func getWarmingUpLidar() *inject.Camera {
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{SupportsPCD: true}, nil
-	}
 	return cam
 }
 
@@ -78,9 +75,6 @@ func getGoodLidar() *inject.Camera {
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -114,9 +108,6 @@ func getInvalidLidar() *inject.Camera {
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{SupportsPCD: true}, nil
-	}
 	return cam
 }
 
@@ -130,9 +121,6 @@ func getNoPCDCamera() *inject.Camera {
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
-	}
-	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{SupportsPCD: false}, nil
 	}
 	return cam
 }
