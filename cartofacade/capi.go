@@ -10,19 +10,6 @@ package cartofacade
 	#cgo LDFLAGS: -L../viam-cartographer/build -L../viam-cartographer/build/cartographer -lviam-cartographer  -lcartographer -ldl -lm -labsl_hash  -labsl_city -labsl_bad_optional_access -labsl_strerror  -labsl_str_format_internal -labsl_synchronization -labsl_strings -labsl_throw_delegate -lcairo -llua5.3 -lstdc++ -lceres -lprotobuf -lglog -lboost_filesystem -lboost_iostreams -lpcl_io -lpcl_common -labsl_raw_hash_set
 
 	#include "../viam-cartographer/src/carto_facade/carto_facade.h"
-
-	bstring* alloc_bstring_array(size_t len) { return (bstring*) malloc(len * sizeof(bstring)); }
-	int free_bstring_array(bstring* p, size_t len) {
-		int result;
-		for (size_t i = 0; i < len; i++) {
-			result = bdestroy(p[i]);
-			if (result != BSTR_OK) {
-				return result;
-			};
-		}
-		free(p);
-		return BSTR_OK;
-	}
 */
 import "C"
 
@@ -99,7 +86,7 @@ const (
 
 // CartoConfig contains config values from app
 type CartoConfig struct {
-	Sensors            []string
+	Camera             string
 	MapRateSecond      int
 	DataDir            string
 	ComponentReference string
@@ -166,25 +153,19 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 	if err != nil {
 		return Carto{}, err
 	}
-
 	vcac := toAlgoConfig(acfg)
-
 	cl, ok := vcl.(*CartoLib)
 	if !ok {
 		return Carto{}, errors.New("cannot cast provided library to a CartoLib")
 	}
-
 	status := C.viam_carto_init(&pVc, cl.value, vcc, vcac)
+
 	if err := toError(status); err != nil {
 		return Carto{}, err
 	}
 
-	status = C.free_bstring_array(vcc.sensors, C.size_t(len(cfg.Sensors)))
-	if status != C.BSTR_OK {
-		return Carto{}, errors.New("unable to free memory for sensor list")
-	}
-
 	carto := Carto{value: pVc, SlamMode: toSlamMode(pVc.slam_mode)}
+
 	return carto, nil
 }
 
@@ -300,17 +281,6 @@ func (vc *Carto) getInternalState() ([]byte, error) {
 }
 
 // this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
-func bStringToGoStringSlice(bstr *C.bstring, length int) []string {
-	bStrings := (*[1 << 28]C.bstring)(unsafe.Pointer(bstr))[:length:length]
-
-	goStrings := []string{}
-	for _, bString := range bStrings {
-		goStrings = append(goStrings, bstringToGoString(bString))
-	}
-	return goStrings
-}
-
-// this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
 func getTestGetPositionResponse() C.viam_carto_get_position_response {
 	gpr := C.viam_carto_get_position_response{}
 
@@ -352,24 +322,13 @@ func toLidarConfig(lidarConfig LidarConfig) (C.viam_carto_LIDAR_CONFIG, error) {
 
 func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc := C.viam_carto_config{}
+	vcc.camera = goStringToBstring(cfg.Camera)
 
-	// create pointer to bstring which can represent a list of sensors
-	sz := len(cfg.Sensors)
-	pSensor := C.alloc_bstring_array(C.size_t(sz))
-	if pSensor == nil {
-		return C.viam_carto_config{}, errors.New("unable to allocate memory for sensor list")
-	}
-	sensorSlice := unsafe.Slice(pSensor, sz)
-	for i, sensor := range cfg.Sensors {
-		sensorSlice[i] = goStringToBstring(sensor)
-	}
 	lidarCfg, err := toLidarConfig(cfg.LidarConfig)
 	if err != nil {
 		return C.viam_carto_config{}, err
 	}
 
-	vcc.sensors = pSensor
-	vcc.sensors_len = C.int(sz)
 	vcc.map_rate_sec = C.int(cfg.MapRateSecond)
 	vcc.data_dir = goStringToBstring(cfg.DataDir)
 	vcc.lidar_config = lidarCfg
@@ -426,12 +385,6 @@ func bstringToByteSlice(bstr C.bstring) []byte {
 	return C.GoBytes(unsafe.Pointer(bstr.data), bstr.slen)
 }
 
-// freeBstringArray used to cleanup a bstring array (needs to be a go func so it can be used in tests)
-func freeBstringArray(arr *C.bstring, length C.int) {
-	lengthSizeT := C.size_t(length)
-	C.free_bstring_array(arr, lengthSizeT)
-}
-
 func toError(status C.int) error {
 	switch int(status) {
 	case C.VIAM_CARTO_SUCCESS:
@@ -450,8 +403,6 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_LIB_INVALID")
 	case C.VIAM_CARTO_LIB_NOT_INITIALIZED:
 		return errors.New("VIAM_CARTO_LIB_NOT_INITIALIZED")
-	case C.VIAM_CARTO_SENSORS_LIST_EMPTY:
-		return errors.New("VIAM_CARTO_SENSORS_LIST_EMPTY")
 	case C.VIAM_CARTO_UNKNOWN_ERROR:
 		return errors.New("VIAM_CARTO_UNKNOWN_ERROR")
 	case C.VIAM_CARTO_DATA_DIR_NOT_PROVIDED:

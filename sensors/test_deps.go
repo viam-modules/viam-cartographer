@@ -21,30 +21,26 @@ const (
 	BadTime = "NOT A TIME"
 )
 
-// SetupDeps returns the dependencies based on the sensors passed as arguments.
-func SetupDeps(sensors []string) resource.Dependencies {
+// SetupDeps returns the dependencies based on the lidar passed as argument.
+func SetupDeps(lidarName string) resource.Dependencies {
 	deps := make(resource.Dependencies)
-
-	for _, sensor := range sensors {
-		switch sensor {
-		case "good_lidar":
-			deps[camera.Named(sensor)] = getGoodLidar()
-		case "warming_up_lidar":
-			deps[camera.Named(sensor)] = getWarmingUpLidar()
-		case "replay_sensor":
-			deps[camera.Named(sensor)] = getReplaySensor(TestTime)
-		case "invalid_replay_sensor":
-			deps[camera.Named(sensor)] = getReplaySensor(BadTime)
-		case "invalid_sensor":
-			deps[camera.Named(sensor)] = getInvalidSensor()
-		case "gibberish":
-			return deps
-		case "finished_replay_sensor":
-			deps[camera.Named(sensor)] = getFinishedReplaySensor()
-		default:
-			continue
-		}
+	switch lidarName {
+	case "good_lidar":
+		deps[camera.Named(lidarName)] = getGoodLidar()
+	case "warming_up_lidar":
+		deps[camera.Named(lidarName)] = getWarmingUpLidar()
+	case "replay_lidar":
+		deps[camera.Named(lidarName)] = getReplayLidar(TestTime)
+	case "invalid_replay_lidar":
+		deps[camera.Named(lidarName)] = getReplayLidar(BadTime)
+	case "invalid_lidar":
+		deps[camera.Named(lidarName)] = getInvalidLidar()
+	case "gibberish_lidar":
+		return deps
+	case "finished_replay_lidar":
+		deps[camera.Named(lidarName)] = getFinishedReplayLidar()
 	}
+
 	return deps
 }
 
@@ -87,7 +83,7 @@ func getGoodLidar() *inject.Camera {
 	return cam
 }
 
-func getReplaySensor(testTime string) *inject.Camera {
+func getReplayLidar(testTime string) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
@@ -108,7 +104,7 @@ func getReplaySensor(testTime string) *inject.Camera {
 	return cam
 }
 
-func getInvalidSensor() *inject.Camera {
+func getInvalidLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return nil, errors.New("invalid sensor")
@@ -119,10 +115,13 @@ func getInvalidSensor() *inject.Camera {
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{}, nil
+	}
 	return cam
 }
 
-func getFinishedReplaySensor() *inject.Camera {
+func getFinishedReplayLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return nil, replaypcd.ErrEndOfDataset
