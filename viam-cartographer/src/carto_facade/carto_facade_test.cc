@@ -47,7 +47,6 @@ void viam_carto_config_teardown(viam_carto_config vcc) {
     BOOST_TEST(bdestroy(vcc.camera) == BSTR_OK);
     BOOST_TEST(bdestroy(vcc.movement_sensor) == BSTR_OK);
 }
-}
 viam_carto_sensor_reading new_test_sensor_reading(
     std::string sensor, std::string pcd_path,
     int64_t sensor_reading_time_unix_milli) {
