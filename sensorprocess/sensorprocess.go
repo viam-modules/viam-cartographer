@@ -48,7 +48,7 @@ func addSensorReading(
 	ctx context.Context,
 	config Config,
 ) bool {
-	tsr, err := config.Lidar.TimedSensorReading(ctx)
+	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode

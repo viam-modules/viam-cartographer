@@ -96,7 +96,7 @@ func TestNewLidar(t *testing.T) {
 		test.That(t, actualLidar.Name, test.ShouldEqual, lidar)
 		test.That(t, err, test.ShouldBeNil)
 
-		tsr, err := actualLidar.TimedSensorReading(ctx)
+		tsr, err := actualLidar.TimedLidarSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, len(tsr.Reading), test.ShouldBeGreaterThan, 0)
 	})
@@ -123,7 +123,7 @@ func TestTimedSensorReading(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("when the lidar returns an error, returns that error", func(t *testing.T) {
-		tsr, err := invalidLidar.TimedSensorReading(ctx)
+		tsr, err := invalidLidar.TimedLidarSensorReading(ctx)
 		msg := "invalid sensor"
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, msg)
@@ -131,7 +131,7 @@ func TestTimedSensorReading(t *testing.T) {
 	})
 
 	t.Run("when the replay lidar succeeds but the timestamp is invalid, returns an error", func(t *testing.T) {
-		tsr, err := invalidReplayLidar.TimedSensorReading(ctx)
+		tsr, err := invalidReplayLidar.TimedLidarSensorReading(ctx)
 		msg := "parsing time \"NOT A TIME\" as \"2006-01-02T15:04:05.999999999Z07:00\": cannot parse \"NOT A TIME\" as \"2006\""
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, msg)
@@ -140,7 +140,7 @@ func TestTimedSensorReading(t *testing.T) {
 
 	t.Run("when a live lidar succeeds, returns current time in UTC and the reading", func(t *testing.T) {
 		beforeReading := time.Now().UTC()
-		tsr, err := goodLidar.TimedSensorReading(ctx)
+		tsr, err := goodLidar.TimedLidarSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, tsr.Reading, test.ShouldNotBeNil)
 		result := "VERSION .7\nFIELDS x y z\n" +
@@ -155,7 +155,7 @@ func TestTimedSensorReading(t *testing.T) {
 	})
 
 	t.Run("when a replay lidar succeeds, returns the replay sensor time and the reading", func(t *testing.T) {
-		tsr, err := goodReplayLidar.TimedSensorReading(ctx)
+		tsr, err := goodReplayLidar.TimedLidarSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, tsr.Reading, test.ShouldNotBeNil)
 		test.That(t, tsr.ReadingTime, test.ShouldEqual, time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC))
