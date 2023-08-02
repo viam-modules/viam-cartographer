@@ -35,8 +35,6 @@ func SetupDeps(lidarName string) resource.Dependencies {
 		deps[camera.Named(lidarName)] = getReplayLidar(BadTime)
 	case "invalid_lidar":
 		deps[camera.Named(lidarName)] = getInvalidLidar()
-	case "no_pcd_camera":
-		deps[camera.Named(lidarName)] = getNoPCDCamera()
 	case "gibberish_lidar":
 		return deps
 	case "finished_replay_lidar":
@@ -104,20 +102,6 @@ func getInvalidLidar() *inject.Camera {
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
 		return nil, errors.New("invalid sensor")
-	}
-	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		return nil, transform.NewNoIntrinsicsError("")
-	}
-	return cam
-}
-
-func getNoPCDCamera() *inject.Camera {
-	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, errors.New("invalid camera")
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("invalid camera")
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
