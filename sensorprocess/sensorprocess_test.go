@@ -276,6 +276,8 @@ func onlineModeTestHelper(
 		}
 		return nil
 	}
+
+	config.CartoFacade = &cf
 	config.Lidar = liveSensor
 	config.LidarName = liveSensor.Name
 
@@ -293,14 +295,23 @@ func onlineModeTestHelper(
 
 	for i, call := range calls {
 		t.Logf("call %d", i)
-		test.That(t, call.sensorName, test.ShouldResemble, "good_lidar")
+		test.That(t, call.sensorName, test.ShouldResemble, cam)
 		// the lidar test fixture happens to always return the same pcd currently
 		// in reality it could be a new pcd every time
 		test.That(t, call.currentReading, test.ShouldResemble, expectedPCD)
 		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
 	}
-	test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
-	test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
+
+	if cam == "good_lidar" {
+		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
+		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
+	} else if cam == "replay_lidar" {
+		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTime)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, calls[0].readingTimestamp.Equal(readingTime), test.ShouldBeTrue)
+	} else {
+		t.Errorf("no timestamp tests provided for %v", cam)
+	}
 }
 
 func invalidSensorTestHelper(
@@ -423,11 +434,11 @@ func TestAddSensorReading(t *testing.T) {
 	})
 
 	t.Run("online replay lidar adds sensor reading once and ignores errors", func(t *testing.T) {
-		onlineModeTestHelper(ctx, t, config, cf, "good_lidar")
+		onlineModeTestHelper(ctx, t, config, cf, "replay_lidar")
 	})
 
 	t.Run("online lidar adds sensor reading once and ignores errors", func(t *testing.T) {
-		onlineModeTestHelper(ctx, t, config, cf, "replay_lidar")
+		onlineModeTestHelper(ctx, t, config, cf, "good_lidar")
 	})
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset", func(t *testing.T) {
