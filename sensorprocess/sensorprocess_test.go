@@ -57,7 +57,7 @@ func TestAddSensorReadingOffline(t *testing.T) {
 		) error {
 			return nil
 		}
-		addSensorReadingOffline(context.Background(), reading, readingTimestamp, config)
+		tryAddSensorReadingUntilSuccess(context.Background(), reading, readingTimestamp, config)
 	})
 
 	t.Run("AddSensorReading returns UNABLE_TO_ACQUIRE_LOCK error and the context is cancelled, no infinite loop", func(t *testing.T) {
@@ -73,7 +73,7 @@ func TestAddSensorReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		addSensorReadingOffline(cancelCtx, reading, readingTimestamp, config)
+		tryAddSensorReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
 	})
 
 	t.Run("When AddSensorReading returns a different error and the context is cancelled, no infinite loop", func(t *testing.T) {
@@ -89,7 +89,7 @@ func TestAddSensorReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		addSensorReadingOffline(cancelCtx, reading, readingTimestamp, config)
+		tryAddSensorReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
 	})
 
 	t.Run("When AddSensorReading hits errors a few times, retries, and then succeeds", func(t *testing.T) {
@@ -119,7 +119,7 @@ func TestAddSensorReadingOffline(t *testing.T) {
 			}
 			return nil
 		}
-		addSensorReadingOffline(cancelCtx, reading, readingTimestamp, config)
+		tryAddSensorReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
 		test.That(t, len(calls), test.ShouldEqual, 4)
 		for i, args := range calls {
 			t.Logf("addSensorReadingArgsHistory %d", i)
@@ -157,7 +157,7 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := addSensorReadingOnline(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -173,7 +173,7 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := addSensorReadingOnline(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -189,7 +189,7 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := addSensorReadingOnline(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -204,7 +204,7 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := addSensorReadingOnline(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
@@ -220,7 +220,7 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := addSensorReadingOnline(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
@@ -236,7 +236,7 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := addSensorReadingOnline(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})

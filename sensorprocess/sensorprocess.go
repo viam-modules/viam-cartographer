@@ -55,23 +55,22 @@ func addSensorReading(
 		// config.LidarDataRateMsec == 0 means we are in offline mode
 		if config.LidarDataRateMsec == 0 {
 			return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
-		} else {
-			return false
 		}
+		return false
 	}
 	// config.LidarDataRateMsec == 0 means we are in offline mode
 	if config.LidarDataRateMsec == 0 {
-		addSensorReadingOffline(ctx, tsr.Reading, tsr.ReadingTime, config)
+		tryAddSensorReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
-		timeToSleep := addSensorReadingOnline(ctx, tsr.Reading, tsr.ReadingTime, config)
+		timeToSleep := tryAddSensorReading(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	}
 	return false
 }
 
-// addSensorReadingOffline adds a reading to the cartofacade
-// retries on error.
-func addSensorReadingOffline(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
+// tryAddSensorReadingUntilSuccess adds a reading to the cartofacade
+// retries on error (offline mode).
+func tryAddSensorReadingUntilSuccess(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode
 		we want to process each reading so if we cannot acquire the lock we should try again
@@ -92,9 +91,9 @@ func addSensorReadingOffline(ctx context.Context, reading []byte, readingTime ti
 	}
 }
 
-// addSensorReadingOnline adds a reading to the carto facade
-// does not retry.
-func addSensorReadingOnline(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
+// tryAddSensorReading adds a reading to the carto facade
+// does not retry (online).
+func tryAddSensorReading(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
 	startTime := time.Now()
 	err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {

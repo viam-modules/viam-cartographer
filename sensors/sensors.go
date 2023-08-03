@@ -122,7 +122,7 @@ func (lidar Lidar) TimedSensorReading(ctx context.Context) (TimedSensorReadingRe
 	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 	if ok {
 		replay = true
-		p
+		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 		if err != nil {
 			msg := "replay sensor timestamp parse RFC3339Nano error"
 			return TimedSensorReadingResponse{}, errors.Wrap(err, msg)
