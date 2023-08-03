@@ -30,7 +30,6 @@ type Config struct {
 func Start(
 	ctx context.Context,
 	config Config,
-	isOnline bool,
 ) bool {
 	for {
 		select {

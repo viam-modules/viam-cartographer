@@ -127,11 +127,10 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
-	isOnline := cartoSvc.lidarDataRateMsec != 0
 
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := sensorprocess.Start(cancelCtx, spConfig, isOnline); jobDone {
+		if jobDone := sensorprocess.Start(cancelCtx, spConfig); jobDone {
 			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
