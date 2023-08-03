@@ -111,26 +111,22 @@ void validate_lidar_config(viam_carto_LIDAR_CONFIG lidar_config) {
 
 config from_viam_carto_config(viam_carto_config vcc) {
     struct config c;
-    for (int i = 0; i < vcc.sensors_len; i++) {
-        c.sensors.push_back(to_std_string(vcc.sensors[i]));
-    }
+    c.camera = to_std_string(vcc.camera);
+    c.movement_sensor = to_std_string(vcc.movement_sensor);
     c.data_dir = to_std_string(vcc.data_dir);
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.lidar_config = vcc.lidar_config;
-    if (c.sensors.size() == 0) {
-        throw VIAM_CARTO_SENSORS_LIST_EMPTY;
-    }
     if (c.data_dir.size() == 0) {
         throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
     }
     if (vcc.map_rate_sec < 0) {
         throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
     }
-    if (c.sensors[0].empty()) {
+    if (c.camera.empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
     }
     validate_lidar_config(c.lidar_config);
-    c.component_reference = bstrcpy(vcc.sensors[0]);
+    c.component_reference = bstrcpy(vcc.camera);
 
     return c;
 };
@@ -886,18 +882,15 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     if (ppVC == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
-
     if (pVCL == nullptr) {
         return VIAM_CARTO_LIB_INVALID;
     }
-
     // allocate viam_carto struct
     viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));
     if (vc == nullptr) {
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
     viam::carto_facade::CartoFacade *cf;
-
     try {
         cf = new viam::carto_facade::CartoFacade(pVCL, c, ac);
     } catch (int err) {

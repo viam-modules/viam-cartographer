@@ -87,7 +87,6 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_LIB_PLATFORM_INVALID 5
 #define VIAM_CARTO_LIB_INVALID 6
 #define VIAM_CARTO_LIB_NOT_INITIALIZED 7
-#define VIAM_CARTO_SENSORS_LIST_EMPTY 8
 #define VIAM_CARTO_UNKNOWN_ERROR 9
 #define VIAM_CARTO_DATA_DIR_NOT_PROVIDED 10
 #define VIAM_CARTO_SLAM_MODE_INVALID 11
@@ -130,8 +129,8 @@ typedef struct viam_carto_algo_config {
 } viam_carto_algo_config;
 
 typedef struct viam_carto_config {
-    bstring *sensors;
-    int sensors_len;
+    bstring camera;
+    bstring movement_sensor;
     int map_rate_sec;
     bstring data_dir;
     viam_carto_LIDAR_CONFIG lidar_config;
@@ -292,7 +291,8 @@ static const int checkForShutdownIntervalMicroseconds = 1e5;
 static const double resolutionMeters = 0.05;
 
 typedef struct config {
-    std::vector<std::string> sensors;
+    std::string camera;
+    std::string movement_sensor;
     std::chrono::seconds map_rate_sec;
     std::string data_dir;
     bstring component_reference;

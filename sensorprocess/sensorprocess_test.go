@@ -41,11 +41,11 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		LidarName:   "good_lidar",
-		DataRateMs:  200,
-		Timeout:     10 * time.Second,
+		Logger:            logger,
+		CartoFacade:       &cf,
+		LidarName:         "good_lidar",
+		LidarDataRateMsec: 200,
+		Timeout:           10 * time.Second,
 	}
 	t.Run("When addSensorReading returns successfully, no infinite loop", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
@@ -138,14 +138,14 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		LidarName:   "good_lidar",
-		DataRateMs:  200,
-		Timeout:     10 * time.Second,
+		Logger:            logger,
+		CartoFacade:       &cf,
+		LidarName:         "good_lidar",
+		LidarDataRateMsec: 200,
+		Timeout:           10 * time.Second,
 	}
 
-	t.Run("When AddSensorReading blocks for more than the DataRateMs and succeeds, time to sleep is 0", func(t *testing.T) {
+	t.Run("When AddSensorReading blocks for more than the DataFreqHz and succeeds, time to sleep is 0", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -161,7 +161,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddSensorReading slower than DataRateMs and returns lock error, time to sleep is 0", func(t *testing.T) {
+	t.Run("AddSensorReading slower than DataFreqHz and returns lock error, time to sleep is 0", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -177,7 +177,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("When AddSensorReading blocks for more than the DataRateMs and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+	t.Run("When AddSensorReading blocks for more than the DataFreqHz and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -193,7 +193,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddSensorReading faster than the DataRateMs and succeeds, time to sleep is <= DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than the DataFreqHz and succeeds, time to sleep is <= DataFreqHz", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -206,10 +206,10 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 
 		timeToSleep := addSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.DataRateMs)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
-	t.Run("AddSensorReading faster than the DataRateMs and returns lock error, time to sleep is <= DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than the DataFreqHz and returns lock error, time to sleep is <= DataFreqHz", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -222,10 +222,10 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 
 		timeToSleep := addSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.DataRateMs)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
-	t.Run("AddSensorReading faster than DataRateMs and returns unexpected error, time to sleep is <= DataRateMs", func(t *testing.T) {
+	t.Run("AddSensorReading faster than DataFreqHz and returns unexpected error, time to sleep is <= DataFreqHz", func(t *testing.T) {
 		cf.AddSensorReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -238,7 +238,7 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 
 		timeToSleep := addSensorReadingFromLiveReadings(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.DataRateMs)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 }
 
@@ -247,10 +247,10 @@ func invalidSensorTestHelper(
 	t *testing.T,
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
-	sensors []string,
+	cameraName string,
 ) {
 	logger := golog.NewTestLogger(t)
-	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
+	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName), cameraName, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addSensorReadingArgs
@@ -283,39 +283,39 @@ func TestAddSensorReading(t *testing.T) {
 	cf := cartofacade.Mock{}
 
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		DataRateMs:  200,
-		Timeout:     10 * time.Second,
+		Logger:            logger,
+		CartoFacade:       &cf,
+		LidarDataRateMsec: 200,
+		Timeout:           10 * time.Second,
 	}
 	ctx := context.Background()
 
 	t.Run("returns error when lidar GetData returns error, doesn't try to add sensor data", func(t *testing.T) {
-		sensors := []string{"invalid_sensor"}
+		cam := "invalid_lidar"
 		invalidSensorTestHelper(
 			ctx,
 			t,
 			cf,
 			config,
-			sensors,
+			cam,
 		)
 	})
 
 	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-		sensors := []string{"invalid_replay_sensor"}
+		cam := "invalid_replay_lidar"
 		invalidSensorTestHelper(
 			ctx,
 			t,
 			cf,
 			config,
-			sensors,
+			cam,
 		)
 	})
 
 	t.Run("replay sensor adds sensor data until success", func(t *testing.T) {
-		sensors := []string{"replay_sensor"}
+		cam := "replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addSensorReadingArgs
@@ -351,7 +351,7 @@ func TestAddSensorReading(t *testing.T) {
 		firstTimestamp := calls[0].readingTimestamp
 		for i, call := range calls {
 			t.Logf("call %d", i)
-			test.That(t, call.sensorName, test.ShouldResemble, "replay_sensor")
+			test.That(t, call.sensorName, test.ShouldResemble, "replay_lidar")
 			test.That(t, call.currentReading, test.ShouldResemble, expectedPCD)
 			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
 			test.That(t, call.readingTimestamp, test.ShouldEqual, firstTimestamp)
@@ -359,9 +359,9 @@ func TestAddSensorReading(t *testing.T) {
 	})
 
 	t.Run("live sensor adds sensor reading once and ignores errors", func(t *testing.T) {
-		sensors := []string{"good_lidar"}
+		cam := "good_lidar"
 		logger := golog.NewTestLogger(t)
-		liveSensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
+		liveSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addSensorReadingArgs
@@ -415,9 +415,9 @@ func TestAddSensorReading(t *testing.T) {
 	})
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset", func(t *testing.T) {
-		sensors := []string{"finished_replay_sensor"}
+		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
@@ -432,17 +432,17 @@ func TestStart(t *testing.T) {
 	cf := cartofacade.Mock{}
 
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		DataRateMs:  200,
-		Timeout:     10 * time.Second,
+		Logger:            logger,
+		CartoFacade:       &cf,
+		LidarDataRateMsec: 200,
+		Timeout:           10 * time.Second,
 	}
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
-		sensors := []string{"finished_replay_sensor"}
+		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
@@ -452,9 +452,9 @@ func TestStart(t *testing.T) {
 	})
 
 	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
-		sensors := []string{"finished_replay_sensor"}
+		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(sensors), sensors, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor

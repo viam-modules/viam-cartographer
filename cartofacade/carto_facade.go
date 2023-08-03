@@ -322,11 +322,11 @@ func (cf *CartoFacade) request(
 		case response := <-req.responseChan:
 			return response.result, response.err
 		case <-ctx.Done():
-			msg := "timeout has occurred while trying to read request from cartofacade"
+			msg := "timeout reading from cartographer"
 			return nil, multierr.Combine(errors.New(msg), ctx.Err())
 		}
 	case <-ctx.Done():
-		msg := "timeout has occurred while trying to write request to cartofacade. Did you forget to call Start()?"
+		msg := "timeout writing to cartographer"
 		return nil, multierr.Combine(errors.New(msg), ctx.Err())
 	}
 }

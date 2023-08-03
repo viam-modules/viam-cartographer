@@ -17,13 +17,19 @@ func TestValidateGetData(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	ctx := context.Background()
 
-	sensors := []string{"good_lidar"}
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+	lidar := "good_lidar"
+	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	sensors = []string{"invalid_sensor"}
-	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+	lidar = "invalid_lidar"
+	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
+
+	// https://viam.atlassian.net/browse/RSDK-4306
+	// test not relevant until replay camera supports Properties
+	// lidar = map[string]string{"name": "no_pcd_camera"}
+	// _, err = s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
+	// test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
 
 	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
 	sensorValidationInterval := time.Duration(10) * time.Millisecond
@@ -34,10 +40,9 @@ func TestValidateGetData(t *testing.T) {
 	})
 
 	t.Run("returns nil if a lidar reading succeeds within the timeout", func(t *testing.T) {
-		sensors = []string{"warming_up_lidar"}
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+		lidar = "warming_up_lidar"
+		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 		test.That(t, err, test.ShouldBeNil)
-
 		err = s.ValidateGetData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
 		test.That(t, err, test.ShouldBeNil)
 	})
@@ -51,8 +56,8 @@ func TestValidateGetData(t *testing.T) {
 		cancelledCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
 
-		sensors = []string{"warming_up_lidar"}
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+		lidar = "warming_up_lidar"
+		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		err = s.ValidateGetData(cancelledCtx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
@@ -64,28 +69,18 @@ func TestNewLidar(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run("No sensor provided", func(t *testing.T) {
-		sensors := []string{}
-		deps := s.SetupDeps(sensors)
-		actualLidar, err := s.NewLidar(context.Background(), deps, sensors, logger)
-		expectedLidar := s.Lidar{}
-		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("Failed lidar creation due to more than one sensor provided", func(t *testing.T) {
-		sensors := []string{"lidar", "one-too-many"}
-		deps := s.SetupDeps(sensors)
-		actualLidar, err := s.NewLidar(context.Background(), deps, sensors, logger)
-		expectedLidar := s.Lidar{}
-		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
+		lidar := ""
+		deps := s.SetupDeps(lidar)
+		_, err := s.NewLidar(context.Background(), deps, lidar, logger)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("configuring lidar camera error: 'sensors' must contain only one lidar camera, but is 'sensors: [lidar, one-too-many]'"))
+			errors.New("error getting lidar camera "+
+				" for slam service: \"rdk:component:camera/\" missing from dependencies"))
 	})
 
 	t.Run("Failed lidar creation with non-existing sensor", func(t *testing.T) {
-		sensors := []string{"gibberish"}
-		deps := s.SetupDeps(sensors)
-		actualLidar, err := s.NewLidar(context.Background(), deps, sensors, logger)
+		lidar := "gibberish"
+		deps := s.SetupDeps(lidar)
+		actualLidar, err := s.NewLidar(context.Background(), deps, lidar, logger)
 		expectedLidar := s.Lidar{}
 		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
 		test.That(t, err, test.ShouldBeError,
@@ -94,11 +89,11 @@ func TestNewLidar(t *testing.T) {
 	})
 
 	t.Run("Successful lidar creation", func(t *testing.T) {
-		sensors := []string{"good_lidar"}
+		lidar := "good_lidar"
 		ctx := context.Background()
-		deps := s.SetupDeps(sensors)
-		actualLidar, err := s.NewLidar(ctx, deps, sensors, logger)
-		test.That(t, actualLidar.Name, test.ShouldEqual, sensors[0])
+		deps := s.SetupDeps(lidar)
+		actualLidar, err := s.NewLidar(ctx, deps, lidar, logger)
+		test.That(t, actualLidar.Name, test.ShouldEqual, lidar)
 		test.That(t, err, test.ShouldBeNil)
 
 		tsr, err := actualLidar.TimedSensorReading(ctx)
@@ -111,20 +106,20 @@ func TestTimedSensorReading(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	ctx := context.Background()
 
-	sensors := []string{"invalid_sensor"}
-	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+	lidar := "invalid_lidar"
+	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	sensors = []string{"invalid_replay_sensor"}
-	invalidReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+	lidar = "invalid_replay_lidar"
+	invalidReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	sensors = []string{"good_lidar"}
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+	lidar = "good_lidar"
+	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	sensors = []string{"replay_sensor"}
-	goodReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(sensors), sensors, logger)
+	lidar = "replay_lidar"
+	goodReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("when the lidar returns an error, returns that error", func(t *testing.T) {

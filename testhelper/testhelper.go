@@ -9,6 +9,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,34 +49,32 @@ const (
 
 var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
 
-// SetupStubDeps returns stubbed dependencies based on the sensors
+// SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(sensors []string, t *testing.T) resource.Dependencies {
+func SetupStubDeps(cameraName string, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
-
-	for _, sensor := range sensors {
-		switch sensor {
-		case "stub_lidar":
-			deps[camera.Named(sensor)] = getStubLidar(t)
-		default:
-			t.Errorf("SetupStubDeps calld with unhandled sensor sensors: %s, %v", sensor, sensors)
-		}
+	switch cameraName {
+	case "stub_lidar":
+		deps[camera.Named(cameraName)] = getStubLidar(t)
+	default:
+		t.Errorf("SetupStubDeps called with unhandled camera: %s", cameraName)
 	}
+
 	return deps
 }
 
 func getStubLidar(t *testing.T) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		t.Error("stub lidar NextPointCloud called")
+		t.Error("TEST FAILED stub lidar NextPointCloud called")
 		return nil, errors.New("invalid sensor")
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		t.Error("stub lidar Stream called")
+		t.Error("TEST FAILED stub lidar Stream called")
 		return nil, errors.New("invalid sensor")
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
-		t.Error("stub lidar Projector called")
+		t.Error("TEST FAILED stub lidar Projector called")
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	return cam
@@ -127,7 +126,7 @@ func mockLidarReadingsValid() error {
 // ensure test outputs of cartographer are determanistic.
 func IntegrationLidarTimedSensor(
 	t *testing.T,
-	sensor string,
+	lidar string,
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
@@ -157,19 +156,19 @@ func IntegrationLidarTimedSensor(
 
 		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 		if err != nil {
-			t.Error("TimedSensorReading Mock failed to open pcd file")
+			t.Error("TEST FAILED TimedSensorReading Mock failed to open pcd file")
 			return s.TimedSensorReadingResponse{}, err
 		}
 		readingPc, err := pointcloud.ReadPCD(file)
 		if err != nil {
-			t.Error("TimedSensorReading Mock failed to read pcd")
+			t.Error("TEST FAILED TimedSensorReading Mock failed to read pcd")
 			return s.TimedSensorReadingResponse{}, err
 		}
 
 		buf := new(bytes.Buffer)
 		err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
 		if err != nil {
-			t.Error("TimedSensorReading Mock failed to parse pcd")
+			t.Error("TEST FAILED TimedSensorReading Mock failed to parse pcd")
 			return s.TimedSensorReadingResponse{}, err
 		}
 
@@ -193,7 +192,7 @@ func ClearDirectory(t *testing.T, path string) {
 func CreateIntegrationSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	timedSensor s.TimedSensor,
+	timedLidar s.TimedSensor,
 	logger golog.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
@@ -204,8 +203,8 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
-	deps := SetupStubDeps(cfg.Sensors, t)
+	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
+	deps := SetupStubDeps(cfg.Camera["name"], t)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -215,7 +214,7 @@ func CreateIntegrationSLAMService(
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
-		timedSensor,
+		timedLidar,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
@@ -239,13 +238,26 @@ func CreateSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
-	deps := s.SetupDeps(cfg.Sensors)
-
 	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, cfg.Sensors)
+
+	// feature flag for IMU Integration
+	cameraName := ""
+	if cfg.IMUIntegrationEnabled {
+		cameraName = cfg.Camera["name"]
+	} else {
+		if len(cfg.Sensors) > 1 {
+			return nil, errors.Errorf("configuring lidar camera error: "+
+				"'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
+				strings.Join(cfg.Sensors, ", "))
+		}
+		cameraName = cfg.Sensors[0]
+	}
+	test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
+
+	deps := s.SetupDeps(cameraName)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -322,6 +334,6 @@ func InitInternalState(t *testing.T) (string, func()) {
 
 // CreateTimestampFilename creates an absolute filename with a primary sensor name and timestamp written
 // into the filename.
-func CreateTimestampFilename(dataDirectory, primarySensorName, fileType string, timeStamp time.Time) string {
-	return filepath.Join(dataDirectory, primarySensorName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
+func CreateTimestampFilename(dataDirectory, lidarName, fileType string, timeStamp time.Time) string {
+	return filepath.Join(dataDirectory, lidarName+"_data_"+timeStamp.UTC().Format(SlamTimeFormat)+fileType)
 }

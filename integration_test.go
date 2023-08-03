@@ -76,7 +76,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 		test.That(t, actualPos.Y, test.ShouldBeBetween, expectedPosLinux.Y-tolerancePos, expectedPosLinux.Y+tolerancePos)
 		test.That(t, actualPos.Z, test.ShouldBeBetween, expectedPosLinux.Z-tolerancePos, expectedPosLinux.Z+tolerancePos)
 	} else {
-		t.Error("Position is outside of expected platform range")
+		t.Error("TEST FAILED Position is outside of expected platform range")
 	}
 
 	actualOri := position.Orientation().AxisAngles()
@@ -91,7 +91,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 		test.That(t, actualOri.RY, test.ShouldBeBetween, expectedOriLinux.RY-toleranceOri, expectedOriLinux.RY+toleranceOri)
 		test.That(t, actualOri.RZ, test.ShouldBeBetween, expectedOriLinux.RZ-toleranceOri, expectedOriLinux.RZ+toleranceOri)
 	} else {
-		t.Error("Orientation is outside of expected platform range")
+		t.Error("TEST FAILED Orientation is outside of expected platform range")
 	}
 }
 
@@ -99,11 +99,11 @@ func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
 	timeStamp := time.Now()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
 	if err := os.Mkdir(internalStateDir, 0o755); err != nil {
-		t.Error("failed to create test internal state directory")
+		t.Error("TEST FAILED failed to create test internal state directory")
 	}
 	filename := filepath.Join(internalStateDir, "map_data_"+timeStamp.UTC().Format(testhelper.SlamTimeFormat)+".pbstream")
 	if err := os.WriteFile(filename, internalState, 0o644); err != nil {
-		t.Error("failed to write test internal state")
+		t.Error("TEST FAILED failed to write test internal state")
 	}
 }
 
@@ -120,27 +120,26 @@ func testHelperCartographer(
 	defer termFunc()
 
 	attrCfg := &vcConfig.Config{
-		Sensors: []string{"stub_lidar"},
+		Camera: map[string]string{"name": "stub_lidar"},
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
-		MapRateSec:    &mapRateSec,
-		DataDirectory: dataDirectory,
+		MapRateSec:            &mapRateSec,
+		DataDirectory:         dataDirectory,
+		IMUIntegrationEnabled: true,
 	}
 
 	done := make(chan struct{})
 	sensorReadingInterval := time.Millisecond * 200
-	timedSensor, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Sensors[0], replaySensor, sensorReadingInterval, done)
+	timedSensor, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
 	test.That(t, err, test.ShouldBeNil)
-
 	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedSensor, logger)
 	test.That(t, err, test.ShouldBeNil)
-	start := time.Now()
 
+	start := time.Now()
 	cSvc, ok := svc.(*viamcartographer.CartographerService)
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, cSvc.SlamMode, test.ShouldEqual, expectedMode)
-
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancelFunc()
@@ -150,7 +149,7 @@ func testHelperCartographer(
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
 
-	testCartographerPosition(t, svc, attrCfg.Sensors[0])
+	testCartographerPosition(t, svc, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
 
 	internalState, err := slam.GetInternalStateFull(context.Background(), svc)
