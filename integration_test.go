@@ -131,9 +131,9 @@ func testHelperCartographer(
 
 	done := make(chan struct{})
 	sensorReadingInterval := time.Millisecond * 200
-	timedSensor, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
+	timedLidar, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
 	test.That(t, err, test.ShouldBeNil)
-	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedSensor, logger)
+	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedLidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	start := time.Now()

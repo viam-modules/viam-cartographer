@@ -88,6 +88,7 @@ func init() {
 				defaultSensorValidationIntervalSec,
 				defaultCartoFacadeTimeout,
 				nil,
+				nil,
 			)
 		},
 	})
@@ -145,7 +146,8 @@ func New(
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
-	testTimedSensorOverride s.TimedLidarSensor,
+	testTimedLidarSensorOverride s.TimedLidarSensor,
+	testTimedIMUSensorOverride s.TimedIMUSensor,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -187,7 +189,7 @@ func New(
 	}
 
 	// Get the IMU if one is configured
-	imu, err := s.NewIMU(ctx, deps, name, logger)
+	imu, err := s.NewIMU(ctx, deps, imuName, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -197,11 +199,15 @@ func New(
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
 
 	// use the override in testing if non nil
-	// otherwise use the lidar from deps as the
-	// timed sensor
-	timedLidar := testTimedSensorOverride
+	// otherwise use the sensors from deps as the
+	// timed sensors
+	timedLidar := testTimedLidarSensorOverride
+	timedIMU := testTimedIMUSensorOverride
 	if timedLidar == nil {
 		timedLidar = lidar
+	}
+	if timedIMU == nil {
+		timedIMU = imu
 	}
 
 	// Cartographer SLAM Service Object
@@ -214,6 +220,7 @@ func New(
 		imuName:                       imuName,
 		imu:                           imu,
 		imuDataRateMsec:               imuDataRateMsec,
+		timedIMU:                      timedIMU,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
@@ -235,7 +242,7 @@ func New(
 			}
 		}
 	}()
-	if err = s.ValidateGetData(
+	if err = s.ValidateGetLidarData(
 		cancelSensorProcessCtx,
 		timedLidar,
 		time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
@@ -243,6 +250,17 @@ func New(
 		cartoSvc.logger); err != nil {
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
+	}
+	if cartoSvc.imuName != "" {
+		if err = s.ValidateGetIMUData(
+			cancelSensorProcessCtx,
+			timedIMU,
+			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
+			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+			cartoSvc.logger); err != nil {
+			err = errors.Wrap(err, "failed to get data from IMU")
+			return nil, err
+		}
 	}
 
 	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
@@ -441,6 +459,7 @@ type CartographerService struct {
 	imuName           string
 	imu               s.IMU
 	imuDataRateMsec   int
+	timedIMU          s.TimedIMUSensor
 	subAlgo           SubAlgo
 
 	configParams  map[string]string

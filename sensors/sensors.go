@@ -14,6 +14,7 @@ import (
 	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
+	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
 )
@@ -45,7 +46,7 @@ type TimedLidarSensor interface {
 // TimedIMUSensorReadingResponse represents an IMU sensor reading with a time & allows the caller to know if the reading is from a replay movement sensor.
 type TimedIMUSensorReadingResponse struct {
 	LinearAcceleration r3.Vector
-	AngularVelocity    r3.Vector
+	AngularVelocity    spatialmath.AngularVelocity
 	ReadingTime        time.Time
 	Replay             bool
 }
@@ -103,7 +104,7 @@ func NewIMU(
 	}
 	newIMU, err := movementsensor.FromDependencies(deps, imuName)
 	if err != nil {
-		return IMU{}, errors.Wrapf(err, "error getting imu movement sensor %v for slam service", imuName)
+		return IMU{}, errors.Wrapf(err, "error getting IMU movement sensor %v for slam service", imuName)
 	}
 
 	// A movement_sensor used as an IMU must support LinearAcceleration and Angular Velocity.
@@ -112,7 +113,7 @@ func NewIMU(
 		return IMU{}, errors.Wrapf(err, "error getting movement sensor properties %v for slam service", imuName)
 	}
 	if !(properties.LinearAccelerationSupported && properties.AngularVelocitySupported) {
-		return IMU{}, errors.New("configuring imu movement sensor error: " +
+		return IMU{}, errors.New("configuring IMU movement sensor error: " +
 			"'movement_sensor' must support both LinearAcceleration and AngularVelocity")
 	}
 
@@ -122,31 +123,65 @@ func NewIMU(
 	}, nil
 }
 
-// ValidateGetData checks every sensorValidationIntervalSec if the provided lidar
-// returned a valid timed lidar readings every sensorValidationIntervalSec
+// ValidateGetLidarData checks every sensorValidationIntervalSec if the provided lidar
+// returned a valid timed readings every sensorValidationIntervalSec
 // until either success or sensorValidationMaxTimeoutSec has elapsed.
-// returns an error if no valid lidar readings were returned.
-func ValidateGetData(
+// returns an error no valid reading was returned.
+func ValidateGetLidarData(
 	ctx context.Context,
-	sensor TimedLidarSensor,
+	lidar TimedLidarSensor,
 	sensorValidationMaxTimeout time.Duration,
 	sensorValidationInterval time.Duration,
 	logger golog.Logger,
 ) error {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::sensor::ValidateGetData")
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::sensor::ValidateGetLidarData")
 	defer span.End()
 
 	startTime := time.Now().UTC()
 
 	for {
-		_, err := sensor.TimedLidarSensorReading(ctx)
+		_, err := lidar.TimedLidarSensorReading(ctx)
 		if err == nil {
 			break
 		}
 
-		logger.Debugw("ValidateGetData hit error: ", "error", err)
+		logger.Debugw("ValidateGetLidarData hit error: ", "error", err)
 		if time.Since(startTime) >= sensorValidationMaxTimeout {
-			return errors.Wrap(err, "ValidateGetData timeout")
+			return errors.Wrap(err, "ValidateGetLidarData timeout")
+		}
+		if !goutils.SelectContextOrWait(ctx, sensorValidationInterval) {
+			return ctx.Err()
+		}
+	}
+
+	return nil
+}
+
+// ValidateGetIMUData checks every sensorValidationIntervalSec if the provided IMU
+// returned valid timed readings every sensorValidationIntervalSec
+// until either success or sensorValidationMaxTimeoutSec has elapsed.
+// returns an error if at least one invalid reading was returned.
+func ValidateGetIMUData(
+	ctx context.Context,
+	imu TimedIMUSensor,
+	sensorValidationMaxTimeout time.Duration,
+	sensorValidationInterval time.Duration,
+	logger golog.Logger,
+) error {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::sensor::ValidateGetIMUData")
+	defer span.End()
+
+	startTime := time.Now().UTC()
+
+	for {
+		_, err := imu.TimedIMUSensorReading(ctx)
+		if err == nil {
+			break
+		}
+
+		logger.Debugw("ValidateGetIMUData hit error: ", "error", err)
+		if time.Since(startTime) >= sensorValidationMaxTimeout {
+			return errors.Wrap(err, "ValidateGetIMUData timeout")
 		}
 		if !goutils.SelectContextOrWait(ctx, sensorValidationInterval) {
 			return ctx.Err()
@@ -201,6 +236,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 		msg := "AngularVelocity error"
 		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 	}
+	readingTime := time.Now().UTC()
 
 	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 	if ok {
@@ -208,8 +244,10 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 		if err != nil {
 			msg := "replay sensor timestamp parse RFC3339Nano error"
-			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
+			return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 		}
 	}
-	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+
+	return TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel,
+		ReadingTime: readingTime, Replay: replay}, nil
 }

@@ -117,13 +117,13 @@ func mockLidarReadingsValid() error {
 // It validates that all required mock lidar reading files are able to be found.
 // When the mock is called, it returns the next mock lidar reading, with the
 // ReadingTime incremented by the sensorReadingInterval.
-// The Replay sensor field of the mock readings will match the replay paramenter.
+// The Replay sensor field of the mock readings will match the replay parameter.
 // When the end of the mock lidar readings is reached, the done channel
 // is written to once so the caller can detect all lidar readings have been emitted
 // from the mock. This is intended to match the same "end of dataset" behavior of a
 // replay sensor.
-// It is imporntant to provide determanistic time information to cartographer to
-// ensure test outputs of cartographer are determanistic.
+// It is important to provide deterministic time information to cartographer to
+// ensure test outputs of cartographer are deterministic.
 func IntegrationLidarTimedSensor(
 	t *testing.T,
 	lidar string,
@@ -139,7 +139,7 @@ func IntegrationLidarTimedSensor(
 	var i uint64
 	closed := false
 
-	ts := &s.TimedSensorMock{}
+	ts := &s.TimedLidarSensorMock{}
 	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
 	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
@@ -215,6 +215,7 @@ func CreateIntegrationSLAMService(
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
 		timedLidar,
+		nil,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
@@ -237,16 +238,18 @@ func CreateSLAMService(
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
-
-	sensorDeps, err := cfg.Validate("path")
+	fmt.Println("def failing here")
+	lidarDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
 
 	// feature flag for IMU Integration
 	cameraName := ""
+	imuName := ""
 	if cfg.IMUIntegrationEnabled {
 		cameraName = cfg.Camera["name"]
+		imuName = cfg.MovementSensor["name"]
 	} else {
 		if len(cfg.Sensors) > 1 {
 			return nil, errors.Errorf("configuring lidar camera error: "+
@@ -255,9 +258,9 @@ func CreateSLAMService(
 		}
 		cameraName = cfg.Sensors[0]
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
-
-	deps := s.SetupDeps(cameraName)
+	test.That(t, lidarDeps, test.ShouldResemble, []string{cameraName})
+	fmt.Println("here")
+	deps := s.SetupDeps(cameraName, imuName)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -268,7 +271,9 @@ func CreateSLAMService(
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
 		nil,
+		nil,
 	)
+	fmt.Println("also here")
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
 		return nil, err

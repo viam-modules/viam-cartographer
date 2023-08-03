@@ -324,7 +324,7 @@ func invalidSensorTestHelper(
 	lidarDataRateMsec int,
 ) {
 	logger := golog.NewTestLogger(t)
-	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName), cameraName, logger)
+	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addSensorReadingArgs
@@ -392,7 +392,7 @@ func TestAddSensorReading(t *testing.T) {
 	t.Run("replay sensor adds sensor data until success in offline mode", func(t *testing.T) {
 		cam := "replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addSensorReadingArgs
@@ -447,7 +447,7 @@ func TestAddSensorReading(t *testing.T) {
 	t.Run("returns true when lidar returns an error that it reached end of dataset", func(t *testing.T) {
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
@@ -473,7 +473,7 @@ func TestStart(t *testing.T) {
 	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
@@ -486,7 +486,7 @@ func TestStart(t *testing.T) {
 	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
