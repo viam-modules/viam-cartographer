@@ -364,18 +364,6 @@ func TestAddSensorReading(t *testing.T) {
 		)
 	})
 
-	t.Run("returns error in online mode when replay lidar GetData returns error, doesn't try to add sensor data", func(t *testing.T) {
-		cam := "invalid_replay_lidar"
-		invalidSensorTestHelper(
-			ctx,
-			t,
-			cf,
-			config,
-			cam,
-			true,
-		)
-	})
-
 	t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
 		cam := "invalid_replay_lidar"
 		invalidSensorTestHelper(
