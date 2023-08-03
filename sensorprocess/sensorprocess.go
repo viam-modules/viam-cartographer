@@ -30,14 +30,14 @@ type Config struct {
 func Start(
 	ctx context.Context,
 	config Config,
-	isLive bool,
+	isOnline bool,
 ) bool {
 	for {
 		select {
 		case <-ctx.Done():
 			return false
 		default:
-			if jobDone := addSensorReading(ctx, config, isLive); jobDone {
+			if jobDone := addSensorReading(ctx, config, isOnline); jobDone {
 				return true
 			}
 		}
@@ -48,14 +48,14 @@ func Start(
 func addSensorReading(
 	ctx context.Context,
 	config Config,
-	isLive bool,
+	isOnline bool,
 ) bool {
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 	}
-	if isLive {
+	if isOnline {
 		timeToSleep := addSensorReadingOnline(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	} else {

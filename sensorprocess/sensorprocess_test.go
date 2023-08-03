@@ -309,7 +309,7 @@ func invalidSensorTestHelper(
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
 	cameraName string,
-	isLive bool,
+	isOnline bool,
 ) {
 	logger := golog.NewTestLogger(t)
 	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName), cameraName, logger)
@@ -335,7 +335,7 @@ func invalidSensorTestHelper(
 	config.Lidar = sensor
 	config.LidarName = sensor.Name
 
-	jobDone := addSensorReading(ctx, config, isLive)
+	jobDone := addSensorReading(ctx, config, isOnline)
 	test.That(t, len(calls), test.ShouldEqual, 0)
 	test.That(t, jobDone, test.ShouldBeFalse)
 }
