@@ -54,7 +54,7 @@ func addSensorReading(
 	if err != nil {
 		config.Logger.Warn(err)
 		isEndOfDataset := strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
-		jobDone := !isOnline && isEndOfDataset
+		jobDone := isEndOfDataset && !isOnline
 		return jobDone
 	}
 	if isOnline {
