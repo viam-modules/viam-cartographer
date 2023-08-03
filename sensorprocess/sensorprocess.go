@@ -53,7 +53,9 @@ func addSensorReading(
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
+		isEndOfDataset := strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
+		jobDone := !isOnline && isEndOfDataset
+		return jobDone
 	}
 	if isOnline {
 		timeToSleep := addSensorReadingOnline(ctx, tsr.Reading, tsr.ReadingTime, config)
