@@ -37,7 +37,7 @@ func Start(
 		case <-ctx.Done():
 			return false
 		default:
-			if jobDone := addSensorReading(ctx, config, isOnline); jobDone {
+			if jobDone := addSensorReading(ctx, config); jobDone {
 				return true
 			}
 		}
@@ -48,20 +48,23 @@ func Start(
 func addSensorReading(
 	ctx context.Context,
 	config Config,
-	isOnline bool,
 ) bool {
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		isEndOfDataset := strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
-		jobDone := isEndOfDataset && !isOnline
-		return jobDone
+		// config.LidarDataRateMsec == 0 means we are in offline mode
+		if config.LidarDataRateMsec == 0 {
+			return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
+		} else {
+			return false
+		}
 	}
-	if isOnline {
+	// config.LidarDataRateMsec == 0 means we are in offline mode
+	if config.LidarDataRateMsec == 0 {
+		addSensorReadingOffline(ctx, tsr.Reading, tsr.ReadingTime, config)
+	} else {
 		timeToSleep := addSensorReadingOnline(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-	} else {
-		addSensorReadingOffline(ctx, tsr.Reading, tsr.ReadingTime, config)
 	}
 	return false
 }

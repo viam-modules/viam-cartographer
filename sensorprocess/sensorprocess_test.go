@@ -280,16 +280,17 @@ func onlineModeTestHelper(
 	config.CartoFacade = &cf
 	config.Lidar = onlineSensor
 	config.LidarName = onlineSensor.Name
+	config.LidarDataRateMsec = 10
 
-	jobDone := addSensorReading(ctx, config, true)
+	jobDone := addSensorReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 1)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addSensorReading(ctx, config, true)
+	jobDone = addSensorReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 2)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addSensorReading(ctx, config, true)
+	jobDone = addSensorReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 3)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
@@ -320,7 +321,7 @@ func invalidSensorTestHelper(
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
 	cameraName string,
-	isOnline bool,
+	lidarDataRateMsec int,
 ) {
 	logger := golog.NewTestLogger(t)
 	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName), cameraName, logger)
@@ -345,8 +346,9 @@ func invalidSensorTestHelper(
 	}
 	config.Lidar = sensor
 	config.LidarName = sensor.Name
+	config.LidarDataRateMsec = lidarDataRateMsec
 
-	jobDone := addSensorReading(ctx, config, isOnline)
+	jobDone := addSensorReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 0)
 	test.That(t, jobDone, test.ShouldBeFalse)
 }
@@ -371,7 +373,7 @@ func TestAddSensorReading(t *testing.T) {
 			cf,
 			config,
 			cam,
-			true,
+			10,
 		)
 	})
 
@@ -383,7 +385,7 @@ func TestAddSensorReading(t *testing.T) {
 			cf,
 			config,
 			cam,
-			true,
+			10,
 		)
 	})
 
@@ -418,8 +420,9 @@ func TestAddSensorReading(t *testing.T) {
 		}
 		config.Lidar = replaySensor
 		config.LidarName = replaySensor.Name
+		config.LidarDataRateMsec = 0
 
-		jobDone := addSensorReading(ctx, config, false)
+		jobDone := addSensorReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 		test.That(t, jobDone, test.ShouldBeFalse)
 
@@ -448,8 +451,9 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
+		config.LidarDataRateMsec = 0
 
-		jobDone := addSensorReading(ctx, config, false)
+		jobDone := addSensorReading(ctx, config)
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 }
