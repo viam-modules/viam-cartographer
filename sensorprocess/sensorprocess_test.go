@@ -420,7 +420,7 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = replaySensor
 		config.LidarName = replaySensor.Name
 
-		jobDone := addSensorReading(ctx, config, true)
+		jobDone := addSensorReading(ctx, config, false)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 		test.That(t, jobDone, test.ShouldBeFalse)
 
