@@ -30,13 +30,14 @@ type Config struct {
 func Start(
 	ctx context.Context,
 	config Config,
+	isLive bool,
 ) bool {
 	for {
 		select {
 		case <-ctx.Done():
 			return false
 		default:
-			if jobDone := addSensorReading(ctx, config); jobDone {
+			if jobDone := addSensorReading(ctx, config, isLive); jobDone {
 				return true
 			}
 		}
@@ -47,24 +48,25 @@ func Start(
 func addSensorReading(
 	ctx context.Context,
 	config Config,
+	isLive bool,
 ) bool {
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 	}
-	if tsr.Replay {
-		addSensorReadingFromReplaySensor(ctx, tsr.Reading, tsr.ReadingTime, config)
-	} else {
-		timeToSleep := addSensorReadingFromLiveReadings(ctx, tsr.Reading, tsr.ReadingTime, config)
+	if isLive {
+		timeToSleep := addSensorReadingOnline(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+	} else {
+		addSensorReadingOffline(ctx, tsr.Reading, tsr.ReadingTime, config)
 	}
 	return false
 }
 
-// addSensorReadingFromReplaySensor adds a reading from a replay sensor to the cartofacade
+// addSensorReadingOffline adds a reading to the cartofacade
 // retries on error.
-func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
+func addSensorReadingOffline(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode
 		we want to process each reading so if we cannot acquire the lock we should try again
@@ -85,9 +87,9 @@ func addSensorReadingFromReplaySensor(ctx context.Context, reading []byte, readi
 	}
 }
 
-// addSensorReadingFromLiveReadings adds a reading from a live lidar to the carto facade
+// addSensorReadingOnline adds a reading to the carto facade
 // does not retry.
-func addSensorReadingFromLiveReadings(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
+func addSensorReadingOnline(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
 	startTime := time.Now()
 	err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {

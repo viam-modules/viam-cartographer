@@ -126,9 +126,11 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
+	isLive := cartoSvc.dataRateMs != 0
+
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := sensorprocess.Start(cancelCtx, spConfig); jobDone {
+		if jobDone := sensorprocess.Start(cancelCtx, spConfig, isLive); jobDone {
 			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
