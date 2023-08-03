@@ -35,7 +35,7 @@ DATA binary
 	errUnknown = errors.New("unknown error")
 )
 
-func TestAddSensorReadingReplaySensor(t *testing.T) {
+func TestAddSensorReadingOffline(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
@@ -132,7 +132,7 @@ func TestAddSensorReadingReplaySensor(t *testing.T) {
 	})
 }
 
-func TestAddSensorReadingLiveReadings(t *testing.T) {
+func TestAddSensorReadingOnline(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 	reading := []byte("12345")
@@ -242,16 +242,15 @@ func TestAddSensorReadingLiveReadings(t *testing.T) {
 	})
 }
 
-func offlineModeTestHelper(
+func onlineModeTestHelper(
 	ctx context.Context,
 	t *testing.T,
 	config Config,
 	cf cartofacade.Mock,
-	isLive bool,
+	cam string,
 ) {
-	cam := "replay_lidar"
 	logger := golog.NewTestLogger(t)
-	replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
+	liveSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addSensorReadingArgs
@@ -277,21 +276,31 @@ func offlineModeTestHelper(
 		}
 		return nil
 	}
-	config.Lidar = replaySensor
-	config.LidarName = replaySensor.Name
+	config.Lidar = liveSensor
+	config.LidarName = liveSensor.Name
 
-	jobDone := addSensorReading(ctx, config, isLive)
+	jobDone := addSensorReading(ctx, config, true)
+	test.That(t, len(calls), test.ShouldEqual, 1)
+	test.That(t, jobDone, test.ShouldBeFalse)
+
+	jobDone = addSensorReading(ctx, config, true)
+	test.That(t, len(calls), test.ShouldEqual, 2)
+	test.That(t, jobDone, test.ShouldBeFalse)
+
+	jobDone = addSensorReading(ctx, config, true)
 	test.That(t, len(calls), test.ShouldEqual, 3)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	firstTimestamp := calls[0].readingTimestamp
 	for i, call := range calls {
 		t.Logf("call %d", i)
-		test.That(t, call.sensorName, test.ShouldResemble, "replay_lidar")
+		test.That(t, call.sensorName, test.ShouldResemble, "good_lidar")
+		// the lidar test fixture happens to always return the same pcd currently
+		// in reality it could be a new pcd every time
 		test.That(t, call.currentReading, test.ShouldResemble, expectedPCD)
 		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
-		test.That(t, call.readingTimestamp, test.ShouldEqual, firstTimestamp)
 	}
+	test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
+	test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 }
 
 func invalidSensorTestHelper(
@@ -342,7 +351,6 @@ func TestAddSensorReading(t *testing.T) {
 		Timeout:           10 * time.Second,
 	}
 	ctx := context.Background()
-	isLive := true
 
 	t.Run("returns error when lidar GetData returns error, doesn't try to add sensor data", func(t *testing.T) {
 		cam := "invalid_lidar"
@@ -352,11 +360,11 @@ func TestAddSensorReading(t *testing.T) {
 			cf,
 			config,
 			cam,
-			isLive,
+			true,
 		)
 	})
 
-	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
+	t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
 		cam := "invalid_replay_lidar"
 		invalidSensorTestHelper(
 			ctx,
@@ -364,25 +372,26 @@ func TestAddSensorReading(t *testing.T) {
 			cf,
 			config,
 			cam,
-			isLive,
+			true,
 		)
 	})
 
-	t.Run("offline mode with a replay lidar adds sensor data until success", func(t *testing.T) {
-		isLive := false
-		offlineModeTestHelper(ctx, t, config, cf, isLive)
+	t.Run("returns error in offline mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
+		cam := "invalid_replay_lidar"
+		invalidSensorTestHelper(
+			ctx,
+			t,
+			cf,
+			config,
+			cam,
+			false,
+		)
 	})
 
-	t.Run("live lidar adds sensor reading once and ignores errors", func(t *testing.T) {
-		isLive := true
-		offlineModeTestHelper(ctx, t, config, cf, isLive)
-	})
-
-	t.Run("live replay lidar adds sensor reading once and ignores errors", func(t *testing.T) {
-		isLive := true
+	t.Run("replay sensor adds sensor data until success in offline mode", func(t *testing.T) {
 		cam := "replay_lidar"
 		logger := golog.NewTestLogger(t)
-		liveSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addSensorReadingArgs
@@ -408,34 +417,32 @@ func TestAddSensorReading(t *testing.T) {
 			}
 			return nil
 		}
-		config.Lidar = liveSensor
-		config.LidarName = liveSensor.Name
+		config.Lidar = replaySensor
+		config.LidarName = replaySensor.Name
 
-		jobDone := addSensorReading(ctx, config, isLive)
-		test.That(t, len(calls), test.ShouldEqual, 1)
-		test.That(t, jobDone, test.ShouldBeFalse)
-
-		jobDone = addSensorReading(ctx, config, isLive)
-		test.That(t, len(calls), test.ShouldEqual, 2)
-		test.That(t, jobDone, test.ShouldBeFalse)
-
-		jobDone = addSensorReading(ctx, config, isLive)
+		jobDone := addSensorReading(ctx, config, true)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 		test.That(t, jobDone, test.ShouldBeFalse)
 
+		firstTimestamp := calls[0].readingTimestamp
 		for i, call := range calls {
 			t.Logf("call %d", i)
-			test.That(t, call.sensorName, test.ShouldResemble, "good_lidar")
-			// the lidar test fixture happens to always return the same pcd currently
-			// in reality it could be a new pcd every time
+			test.That(t, call.sensorName, test.ShouldResemble, "replay_lidar")
 			test.That(t, call.currentReading, test.ShouldResemble, expectedPCD)
 			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+			test.That(t, call.readingTimestamp, test.ShouldEqual, firstTimestamp)
 		}
-		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
-		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 	})
 
-	t.Run("returns true when sensor returns an error that it reached end of dataset", func(t *testing.T) {
+	t.Run("online replay lidar adds sensor reading once and ignores errors", func(t *testing.T) {
+		onlineModeTestHelper(ctx, t, config, cf, "good_lidar")
+	})
+
+	t.Run("online lidar adds sensor reading once and ignores errors", func(t *testing.T) {
+		onlineModeTestHelper(ctx, t, config, cf, "replay_lidar")
+	})
+
+	t.Run("returns true when lidar returns an error that it reached end of dataset", func(t *testing.T) {
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
@@ -443,8 +450,7 @@ func TestAddSensorReading(t *testing.T) {
 
 		config.Lidar = replaySensor
 
-		isLive := false
-		jobDone := addSensorReading(ctx, config, isLive)
+		jobDone := addSensorReading(ctx, config, false)
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 }
@@ -461,7 +467,7 @@ func TestStart(t *testing.T) {
 	}
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
-	t.Run("returns true when sensor returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
+	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
@@ -469,12 +475,11 @@ func TestStart(t *testing.T) {
 
 		config.Lidar = replaySensor
 
-		isLive := false
-		jobDone := Start(context.Background(), config, isLive)
+		jobDone := Start(context.Background(), config, false)
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 
-	t.Run("returns false when sensor returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
+	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
@@ -484,8 +489,7 @@ func TestStart(t *testing.T) {
 
 		cancelFunc()
 
-		islive := false
-		jobDone := Start(cancelCtx, config, islive)
+		jobDone := Start(cancelCtx, config, false)
 		test.That(t, jobDone, test.ShouldBeFalse)
 	})
 }
