@@ -127,7 +127,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
-	isLive := cartoSvc.dataRateMs != 0
+	isLive := cartoSvc.lidarDataRateMsec != 0
 
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
