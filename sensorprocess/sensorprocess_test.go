@@ -477,6 +477,7 @@ func TestStart(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
+		config.LidarDataRateMsec = 0
 
 		jobDone := Start(context.Background(), config)
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -489,6 +490,7 @@ func TestStart(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
+		config.LidarDataRateMsec = 0
 
 		cancelFunc()
 
