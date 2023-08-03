@@ -52,13 +52,16 @@ func addSensorReading(
 	tsr, err := config.Lidar.TimedSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		// config.LidarDataRateMsec == 0 means we are in offline mode
+		// only end the sensor process if we are in offline mode
 		if config.LidarDataRateMsec == 0 {
 			return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 		}
 		return false
 	}
-	// config.LidarDataRateMsec == 0 means we are in offline mode
+	/*
+	 when the data rate msec is 0, we assume the user wants to be in "offline"
+	 mode and ensure every scan gets processed by cartographer
+	*/
 	if config.LidarDataRateMsec == 0 {
 		tryAddSensorReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
