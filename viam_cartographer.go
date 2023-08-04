@@ -267,6 +267,12 @@ func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (
 				return cartoAlgoCfg, err
 			}
 			cartoAlgoCfg.NumRangeData = iVal
+		case "missing_data_ray_length_meters":
+			fVal, err := strconv.ParseFloat(val, 32)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MissingDataRayLength = float32(fVal)
 		case "missing_data_ray_length":
 			fVal, err := strconv.ParseFloat(val, 32)
 			if err != nil {
@@ -279,7 +285,19 @@ func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (
 				return cartoAlgoCfg, err
 			}
 			cartoAlgoCfg.MaxRange = float32(fVal)
+		case "max_range_meters":
+			fVal, err := strconv.ParseFloat(val, 32)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MaxRange = float32(fVal)
 		case "min_range":
+			fVal, err := strconv.ParseFloat(val, 32)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MinRange = float32(fVal)
+		case "min_range_meters":
 			fVal, err := strconv.ParseFloat(val, 32)
 			if err != nil {
 				return cartoAlgoCfg, err
@@ -298,6 +316,12 @@ func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (
 			}
 			cartoAlgoCfg.FreshSubmapsCount = iVal
 		case "min_covered_area":
+			fVal, err := strconv.ParseFloat(val, 64)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
+			cartoAlgoCfg.MinCoveredArea = fVal
+		case "min_covered_area_meters_squared":
 			fVal, err := strconv.ParseFloat(val, 64)
 			if err != nil {
 				return cartoAlgoCfg, err
