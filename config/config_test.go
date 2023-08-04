@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/edaniels/golog"
@@ -9,6 +10,115 @@ import (
 	"go.viam.com/test"
 	"go.viam.com/utils"
 )
+
+func testValidateTesthelper(
+	t *testing.T,
+	logger golog.Logger,
+	testCfgPath string,
+	cloudStoryEnabled bool,
+) {
+	t.Run("Simplest valid config", func(t *testing.T) {
+		cfgService := makeCfgService(false, false)
+		_, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+	})
+
+	t.Run("Config without required fields", func(t *testing.T) {
+		var requiredFields []string
+		if cloudStoryEnabled {
+			requiredFields = []string{"existing_map", "sensors"}
+		} else {
+			requiredFields = []string{"data_dir", "sensors"}
+		}
+		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
+		cameraErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
+
+		expectedErrors := []error{
+			newError(dataDirErr.Error()),
+			newError(cameraErr.Error()),
+		}
+		for i, requiredField := range requiredFields {
+			logger.Debugf("Testing SLAM config without %s\n", requiredField)
+			cfgService := makeCfgService(false, cloudStoryEnabled)
+			delete(cfgService.Attributes, requiredField)
+			_, err := newConfig(cfgService)
+
+			test.That(t, err, test.ShouldBeError, expectedErrors[i])
+		}
+		// Test for missing config_params attributes
+		logger.Debug("Testing SLAM config without config_params[mode]")
+		cfgService := makeCfgService(false, cloudStoryEnabled)
+		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
+		_, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
+	})
+
+	t.Run("Config with invalid parameter type", func(t *testing.T) {
+		var key string
+		if cloudStoryEnabled {
+			key = "existing_map"
+		} else {
+			key = "data_dir"
+		}
+
+		cfgService := makeCfgService(false, cloudStoryEnabled)
+		cfgService.Attributes[key] = true
+
+		_, err := newConfig(cfgService)
+		msg := fmt.Sprintf("1 error(s) decoding:\n\n* '%s' expected type 'string', got unconvertible type 'bool', value: 'true'", key)
+		expE := newError(msg)
+		test.That(t, err, test.ShouldBeError, expE)
+
+		cfgService.Attributes[key] = "true"
+		_, err = newConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+	})
+
+	t.Run("Config with out of range values", func(t *testing.T) {
+		cfgService := makeCfgService(false, cloudStoryEnabled)
+		cfgService.Attributes["data_rate_msec"] = -1
+		_, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeError, newError("cannot specify data_rate_msec less than zero"))
+
+		cfgService.Attributes["data_rate_msec"] = 1
+		cfgService.Attributes["map_rate_sec"] = -1
+		_, err = newConfig(cfgService)
+
+		if !cloudStoryEnabled {
+			test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
+		} else {
+			test.That(t, err, test.ShouldBeNil)
+		}
+	})
+
+	t.Run("All parameters e2e", func(t *testing.T) {
+		cfgService := makeCfgService(false, cloudStoryEnabled)
+		cfgService.Attributes["sensors"] = []string{"a", "b"}
+		cfgService.Attributes["data_rate_msec"] = 1001
+		if !cloudStoryEnabled {
+			cfgService.Attributes["map_rate_sec"] = 1002
+		}
+
+		cfgService.Attributes["config_params"] = map[string]string{
+			"mode":    "test mode",
+			"value":   "0",
+			"value_2": "test",
+		}
+		cfg, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
+		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
+		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
+
+		if cloudStoryEnabled {
+			test.That(t, cfg.ExistingMap, test.ShouldEqual, cfgService.Attributes["existing_map"])
+			test.That(t, cfg.MapRateSec, test.ShouldBeNil)
+		} else {
+			test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
+			test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
+		}
+	})
+}
 
 func TestValidate(t *testing.T) {
 	testCfgPath := "services.slam.attributes.fake"
@@ -21,89 +131,18 @@ func TestValidate(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"sensors\" must not be empty"))
 	})
 
-	t.Run("Simplest valid config", func(t *testing.T) {
-		cfgService := makeCfgService(false)
-		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("Config without required fields", func(t *testing.T) {
-		requiredFields := []string{"data_dir", "sensors"}
-		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
-		cameraErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
-
-		expectedErrors := []error{
-			newError(dataDirErr.Error()),
-			newError(cameraErr.Error()),
-		}
-		for i, requiredField := range requiredFields {
-			logger.Debugf("Testing SLAM config without %s\n", requiredField)
-			cfgService := makeCfgService(false)
-			delete(cfgService.Attributes, requiredField)
-			_, err := newConfig(cfgService)
-
-			test.That(t, err, test.ShouldBeError, expectedErrors[i])
-		}
-		// Test for missing config_params attributes
-		logger.Debug("Testing SLAM config without config_params[mode]")
-		cfgService := makeCfgService(false)
-		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
-		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
-	})
-
-	t.Run("Config with invalid parameter type", func(t *testing.T) {
-		cfgService := makeCfgService(false)
-		cfgService.Attributes["data_dir"] = true
-		_, err := newConfig(cfgService)
-		expE := newError("1 error(s) decoding:\n\n* 'data_dir' expected type 'string', got unconvertible type 'bool', value: 'true'")
-		test.That(t, err, test.ShouldBeError, expE)
-		cfgService.Attributes["data_dir"] = "true"
-		_, err = newConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("Config with out of range values", func(t *testing.T) {
-		cfgService := makeCfgService(false)
-		cfgService.Attributes["data_rate_msec"] = -1
-		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("cannot specify data_rate_msec less than zero"))
-		cfgService.Attributes["data_rate_msec"] = 1
-		cfgService.Attributes["map_rate_sec"] = -1
-		_, err = newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
-	})
-
-	t.Run("All parameters e2e", func(t *testing.T) {
-		cfgService := makeCfgService(false)
-		cfgService.Attributes["sensors"] = []string{"a", "b"}
-		cfgService.Attributes["data_rate_msec"] = 1001
-		cfgService.Attributes["map_rate_sec"] = 1002
-
-		cfgService.Attributes["config_params"] = map[string]string{
-			"mode":    "test mode",
-			"value":   "0",
-			"value_2": "test",
-		}
-		cfg, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
-		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
-		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
-		test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
-		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
-	})
+	testValidateTesthelper(t, logger, testCfgPath, false)
+	testValidateTesthelper(t, logger, testCfgPath, true)
 }
 
 // makeCfgService creates the simplest possible config that can pass validation.
-func makeCfgService(IMUIntegrationEnabled bool) resource.Config {
+func makeCfgService(IMUIntegrationEnabled, cloudStoryEnabled bool) resource.Config {
 	model := resource.DefaultModelFamily.WithModel("test")
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
-	cfgService.Attributes = make(map[string]interface{})
-	cfgService.Attributes["config_params"] = map[string]string{
-		"mode": "test mode",
+	cfgService.Attributes = map[string]interface{}{
+		"config_params": map[string]string{"mode": "test mode"},
 	}
-	cfgService.Attributes["data_dir"] = "path"
+
 	if IMUIntegrationEnabled {
 		cfgService.Attributes["imu_integration_enabled"] = true
 		cfgService.Attributes["camera"] = map[string]string{
@@ -113,6 +152,13 @@ func makeCfgService(IMUIntegrationEnabled bool) resource.Config {
 		cfgService.Attributes["sensors"] = []string{"a"}
 	}
 
+	if cloudStoryEnabled {
+		cfgService.Attributes["cloud_story_enabled"] = true
+		cfgService.Attributes["existing_map"] = "path"
+	} else {
+		cfgService.Attributes["data_dir"] = "path"
+	}
+
 	return cfgService
 }
 
@@ -120,7 +166,7 @@ func TestGetOptionalParameters(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run("Pass default parameters", func(t *testing.T) {
-		cfgService := makeCfgService(false)
+		cfgService := makeCfgService(false, false)
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
@@ -136,7 +182,7 @@ func TestGetOptionalParameters(t *testing.T) {
 	})
 
 	t.Run("Return overrides", func(t *testing.T) {
-		cfgService := makeCfgService(false)
+		cfgService := makeCfgService(false, false)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "1",
@@ -185,7 +231,7 @@ func TestValidateFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("Simplest valid config with feature flag enabled", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
@@ -193,14 +239,14 @@ func TestValidateFeatureFlag(t *testing.T) {
 	t.Run("Config without camera name with feature flag enabled", func(t *testing.T) {
 		// Test for missing camera name attribute
 		logger.Debug("Testing SLAM config without camera[name]")
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		delete(cfgService.Attributes["camera"].(map[string]string), "name")
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "camera[name]").Error()))
 	})
 
 	t.Run("Config with invalid parameter type with feature flag enabled", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["data_dir"] = true
 		_, err := newConfig(cfgService)
 		expE := newError("1 error(s) decoding:\n\n* 'data_dir' expected type 'string', got unconvertible type 'bool', value: 'true'")
@@ -211,7 +257,7 @@ func TestValidateFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("Config with invalid camera data_frequency_hz with feature flag enabled", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "twenty",
@@ -221,7 +267,7 @@ func TestValidateFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("Config with out of range values with feature flag enabled", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "-1",
@@ -238,7 +284,7 @@ func TestValidateFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("All parameters e2e with feature flag enabled", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "20",
@@ -263,7 +309,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run("Pass default parameters with feature flag enabled", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["camera"] = map[string]string{"name": "a"}
 		cfgService.Attributes["movement_sensor"] = map[string]string{"name": "b"}
 		cfg, err := newConfig(cfgService)
@@ -282,7 +328,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("Return overrides with feature flag enabled", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "5",
@@ -309,7 +355,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("Unit test return error if lidar data frequency is invalid", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "b",
@@ -326,7 +372,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 	})
 
 	t.Run("Unit test return error if imu data frequency is invalid", func(t *testing.T) {
-		cfgService := makeCfgService(true)
+		cfgService := makeCfgService(true, false)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "1",
