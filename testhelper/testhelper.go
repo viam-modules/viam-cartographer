@@ -207,7 +207,7 @@ func IntegrationLidarTimedSensor(
 	return ts, nil
 }
 
-// IntegratioIMUTimedSensor returns a mock timed IMU sensor.
+// IntegrationIMUTimedSensor returns a mock timed IMU sensor.
 // When the mock is called, it returns the next mock IMU readings, with the
 // ReadingTime incremented by the sensorReadingInterval.
 // The Replay sensor field of the mock readings will match the replay parameter.
