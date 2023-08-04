@@ -365,6 +365,44 @@ func TestParseCartoAlgoConfig(t *testing.T) {
 		test.That(t, cartoAlgoConfig, test.ShouldResemble, overRidenCartoAlgoCfg)
 	})
 
+	t.Run("returns overrides when config is non empty for cloud story configs", func(t *testing.T) {
+		configParams := map[string]string{
+			"optimize_on_start":               "true",
+			"optimize_every_n_nodes":          "1",
+			"num_range_data":                  "2",
+			"missing_data_ray_length_meters":  "3.0",
+			"max_range_meters":                "4.0",
+			"min_range_meters":                "5.0",
+			"max_submaps_to_keep":             "6",
+			"fresh_submaps_count":             "7",
+			"min_covered_area_meters_squared": "8.0",
+			"min_added_submaps_count":         "9",
+			"occupied_space_weight":           "10.0",
+			"translation_weight":              "11.0",
+			"rotation_weight":                 "12.0",
+		}
+
+		overRidenCartoAlgoCfg := cartofacade.CartoAlgoConfig{
+			OptimizeOnStart:      true,
+			OptimizeEveryNNodes:  1,
+			NumRangeData:         2,
+			MissingDataRayLength: 3.0,
+			MaxRange:             4.0,
+			MinRange:             5.0,
+			MaxSubmapsToKeep:     6,
+			FreshSubmapsCount:    7,
+			MinCoveredArea:       8.0,
+			MinAddedSubmapsCount: 9,
+			OccupiedSpaceWeight:  10.0,
+			TranslationWeight:    11.0,
+			RotationWeight:       12.0,
+		}
+
+		cartoAlgoConfig, err := parseCartoAlgoConfig(configParams, logger)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, cartoAlgoConfig, test.ShouldResemble, overRidenCartoAlgoCfg)
+	})
+
 	t.Run("returns error when unsupported param provided", func(t *testing.T) {
 		configParams := map[string]string{
 			"optimize_on_start": "true",
