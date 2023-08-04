@@ -39,90 +39,50 @@ var (
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
+
+	if config.IMUIntegrationEnabled {
+		var ok bool
+		cameraName, ok = config.Camera["name"]
+		if !ok {
+			return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
+		}
+		dataFreqHz, ok := config.Camera["data_frequency_hz"]
+		if ok {
+			dataFreqHz, err := strconv.Atoi(dataFreqHz)
+			if err != nil {
+				return nil, errors.New("camera[data_frequency_hz] must only contain digits")
+			}
+			if dataFreqHz < 0 {
+				return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
+			}
+		}
+	} else {
+		if config.Sensors == nil || len(config.Sensors) < 1 {
+			return nil, utils.NewConfigValidationError(path, errSensorsMustNotBeEmpty)
+		}
+		cameraName = config.Sensors[0]
+
+		if config.DataRateMsec < 0 {
+			return nil, errors.New("cannot specify data_rate_msec less than zero")
+		}
+	}
+
+	if config.ConfigParams["mode"] == "" {
+		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
+	}
+
 	if config.CloudStoryEnabled {
-		return config.ValidateCloudStoryEnabled(path)
-	}
-
-	if config.IMUIntegrationEnabled {
-		var ok bool
-		cameraName, ok = config.Camera["name"]
-		if !ok {
-			return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
-		}
-		dataFreqHz, ok := config.Camera["data_frequency_hz"]
-		if ok {
-			dataFreqHz, err := strconv.Atoi(dataFreqHz)
-			if err != nil {
-				return nil, errors.New("camera[data_frequency_hz] must only contain digits")
-			}
-			if dataFreqHz < 0 {
-				return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
-			}
+		if config.ExistingMap == "" {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "existing_map")
 		}
 	} else {
-		if config.Sensors == nil || len(config.Sensors) < 1 {
-			return nil, utils.NewConfigValidationError(path, errSensorsMustNotBeEmpty)
+		if config.DataDirectory == "" {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
 		}
-		cameraName = config.Sensors[0]
 
-		if config.DataRateMsec < 0 {
-			return nil, errors.New("cannot specify data_rate_msec less than zero")
+		if config.MapRateSec != nil && *config.MapRateSec < 0 {
+			return nil, errors.New("cannot specify map_rate_sec less than zero")
 		}
-	}
-
-	if config.ConfigParams["mode"] == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
-	}
-
-	if config.DataDirectory == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
-	}
-
-	if config.MapRateSec != nil && *config.MapRateSec < 0 {
-		return nil, errors.New("cannot specify map_rate_sec less than zero")
-	}
-
-	deps := []string{cameraName}
-
-	return deps, nil
-}
-
-// ValidateCloudStoryEnabled creates the list of implicit dependencies.
-func (config *Config) ValidateCloudStoryEnabled(path string) ([]string, error) {
-	cameraName := ""
-	if config.IMUIntegrationEnabled {
-		var ok bool
-		cameraName, ok = config.Camera["name"]
-		if !ok {
-			return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
-		}
-		dataFreqHz, ok := config.Camera["data_frequency_hz"]
-		if ok {
-			dataFreqHz, err := strconv.Atoi(dataFreqHz)
-			if err != nil {
-				return nil, errors.New("camera[data_frequency_hz] must only contain digits")
-			}
-			if dataFreqHz < 0 {
-				return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
-			}
-		}
-	} else {
-		if config.Sensors == nil || len(config.Sensors) < 1 {
-			return nil, utils.NewConfigValidationError(path, errSensorsMustNotBeEmpty)
-		}
-		cameraName = config.Sensors[0]
-
-		if config.DataRateMsec < 0 {
-			return nil, errors.New("cannot specify data_rate_msec less than zero")
-		}
-	}
-
-	if config.ConfigParams["mode"] == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
-	}
-
-	if config.ExistingMap == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "existing_map")
 	}
 
 	deps := []string{cameraName}
