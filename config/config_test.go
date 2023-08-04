@@ -17,13 +17,17 @@ func testValidateTesthelper(
 	testCfgPath string,
 	cloudStoryEnabled bool,
 ) {
-	t.Run("Simplest valid config", func(t *testing.T) {
+	suffix := ""
+	if cloudStoryEnabled {
+		suffix = " with cloudStoryEnabled = true"
+	}
+	t.Run(fmt.Sprintf("Simplest valid config%s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(false, false)
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run("Config without required fields", func(t *testing.T) {
+	t.Run(fmt.Sprintf("Config without required fields%s", suffix), func(t *testing.T) {
 		var requiredFields []string
 		if cloudStoryEnabled {
 			requiredFields = []string{"existing_map", "sensors"}
@@ -53,7 +57,7 @@ func testValidateTesthelper(
 		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
 	})
 
-	t.Run("Config with invalid parameter type", func(t *testing.T) {
+	t.Run(fmt.Sprintf("Config with invalid parameter type%s", suffix), func(t *testing.T) {
 		var key string
 		if cloudStoryEnabled {
 			key = "existing_map"
@@ -74,7 +78,7 @@ func testValidateTesthelper(
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run("Config with out of range values", func(t *testing.T) {
+	t.Run(fmt.Sprintf("Config with out of range values%s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(false, cloudStoryEnabled)
 		cfgService.Attributes["data_rate_msec"] = -1
 		_, err := newConfig(cfgService)
@@ -91,7 +95,7 @@ func testValidateTesthelper(
 		}
 	})
 
-	t.Run("All parameters e2e", func(t *testing.T) {
+	t.Run(fmt.Sprintf("All parameters e2e%s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(false, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a", "b"}
 		cfgService.Attributes["data_rate_msec"] = 1001
