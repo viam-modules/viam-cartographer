@@ -31,7 +31,8 @@ type IMU struct {
 	imu  movementsensor.MovementSensor
 }
 
-// TimedLidarSensorReadingResponse represents a lidar sensor reading with a time & allows the caller to know if the reading is from a replay camera sensor.
+// TimedLidarSensorReadingResponse represents a lidar sensor reading with a time &
+// allows the caller to know if the reading is from a replay camera sensor.
 type TimedLidarSensorReadingResponse struct {
 	Reading     []byte
 	ReadingTime time.Time
@@ -43,7 +44,8 @@ type TimedLidarSensor interface {
 	TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error)
 }
 
-// TimedIMUSensorReadingResponse represents an IMU sensor reading with a time & allows the caller to know if the reading is from a replay movement sensor.
+// TimedIMUSensorReadingResponse represents an IMU sensor reading with a time & allows the caller to know if the reading is
+// from a replay movement sensor. Currently replay movement sensor are not yet supported.
 type TimedIMUSensorReadingResponse struct {
 	LinearAcceleration r3.Vector
 	AngularVelocity    spatialmath.AngularVelocity
@@ -248,6 +250,8 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 		}
 	}
 
-	return TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel,
-		ReadingTime: readingTime, Replay: replay}, nil
+	return TimedIMUSensorReadingResponse{
+		LinearAcceleration: linAcc, AngularVelocity: angVel,
+		ReadingTime: readingTime, Replay: replay,
+	}, nil
 }

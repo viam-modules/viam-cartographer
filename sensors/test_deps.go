@@ -25,7 +25,7 @@ const (
 )
 
 // SetupDeps returns the dependencies based on the lidar passed as argument.
-func SetupDeps(lidarName string, imuName string) resource.Dependencies {
+func SetupDeps(lidarName, imuName string) resource.Dependencies {
 	deps := make(resource.Dependencies)
 	switch lidarName {
 	case "good_lidar":

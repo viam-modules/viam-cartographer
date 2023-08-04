@@ -54,7 +54,7 @@ var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(cameraName string, movementSensorName string, t *testing.T) resource.Dependencies {
+func SetupStubDeps(cameraName, movementSensorName string, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
 	switch cameraName {
 	case "stub_lidar":
@@ -207,6 +207,17 @@ func IntegrationLidarTimedSensor(
 	return ts, nil
 }
 
+// IntegratioIMUTimedSensor returns a mock timed IMU sensor.
+// When the mock is called, it returns the next mock IMU readings, with the
+// ReadingTime incremented by the sensorReadingInterval.
+// The Replay sensor field of the mock readings will match the replay parameter.
+// When the end of the mock IMU readings is reached, the done channel
+// is written to once so the caller can detect all IMU readings have been emitted
+// from the mock. This is intended to match the same "end of dataset" behavior of a
+// replay sensor.
+// It is important to provide deterministic time information to cartographer to
+// ensure test outputs of cartographer are deterministic.
+// Note that IMU replay sensors are not yet fully supported.
 func IntegrationTimedIMUSensor(
 	t *testing.T,
 	imu string,
@@ -214,7 +225,6 @@ func IntegrationTimedIMUSensor(
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 ) (s.TimedIMUSensor, error) {
-
 	var i uint64
 	closed := false
 
