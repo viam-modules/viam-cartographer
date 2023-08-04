@@ -120,7 +120,8 @@ func testHelperCartographer(
 	defer termFunc()
 
 	attrCfg := &vcConfig.Config{
-		Camera: map[string]string{"name": "stub_lidar"},
+		Camera:         map[string]string{"name": "stub_lidar"},
+		MovementSensor: map[string]string{"name": "stub_imu"},
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
@@ -133,7 +134,9 @@ func testHelperCartographer(
 	sensorReadingInterval := time.Millisecond * 200
 	timedLidar, err := testhelper.IntegrationLidarTimedSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
 	test.That(t, err, test.ShouldBeNil)
-	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedLidar, logger)
+	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], false, sensorReadingInterval, done)
+	test.That(t, err, test.ShouldBeNil)
+	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedLidar, timedIMU, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	start := time.Now()
@@ -144,7 +147,7 @@ func testHelperCartographer(
 
 	defer cancelFunc()
 
-	// wait till all lidar readings have been read
+	// wait till all sensor readings have been read
 	if !utils.SelectContextOrWaitChan(ctx, done) {
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
