@@ -320,7 +320,6 @@ func CreateSLAMService(
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
-	fmt.Println("def failing here")
 	lidarDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
@@ -341,7 +340,6 @@ func CreateSLAMService(
 		cameraName = cfg.Sensors[0]
 	}
 	test.That(t, lidarDeps, test.ShouldResemble, []string{cameraName})
-	fmt.Println("here")
 	deps := s.SetupDeps(cameraName, imuName)
 
 	svc, err := viamcartographer.New(
@@ -355,7 +353,6 @@ func CreateSLAMService(
 		nil,
 		nil,
 	)
-	fmt.Println("also here")
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
 		return nil, err
