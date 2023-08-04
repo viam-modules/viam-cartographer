@@ -250,7 +250,7 @@ func onlineModeTestHelper(
 	cam string,
 ) {
 	logger := golog.NewTestLogger(t)
-	onlineSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam), cam, logger)
+	onlineSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addSensorReadingArgs
