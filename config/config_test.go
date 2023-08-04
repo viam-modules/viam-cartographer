@@ -17,9 +17,9 @@ func configWithoutRequiredFieldsTestHelper(
 	testCfgPath string,
 	logger golog.Logger,
 	cfgFunc func(bool) resource.Config,
+	requiredFields []string,
 ) {
 	t.Helper()
-	requiredFields := []string{"data_dir", "sensors"}
 	dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
 	cameraErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
 
@@ -61,7 +61,8 @@ func TestValidate(t *testing.T) {
 	})
 
 	t.Run("Config without required fields", func(t *testing.T) {
-		configWithoutRequiredFieldsTestHelper(t, testCfgPath, logger, makeCfgService)
+		requiredFields := []string{"data_dir", "sensors"}
+		configWithoutRequiredFieldsTestHelper(t, testCfgPath, logger, makeCfgService, requiredFields)
 	})
 
 	t.Run("Config with invalid parameter type", func(t *testing.T) {
@@ -119,7 +120,8 @@ func TestValidateCloudStoryEnabled(t *testing.T) {
 	})
 
 	t.Run("Config without required fields", func(t *testing.T) {
-		configWithoutRequiredFieldsTestHelper(t, testCfgPath, logger, makeCfgServiceCloudStoryEnabled)
+		requiredFields := []string{"existing_map", "sensors"}
+		configWithoutRequiredFieldsTestHelper(t, testCfgPath, logger, makeCfgServiceCloudStoryEnabled, requiredFields)
 	})
 
 	t.Run("Config with invalid parameter type", func(t *testing.T) {
