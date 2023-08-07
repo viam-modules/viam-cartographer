@@ -66,7 +66,6 @@ func SetupStubDeps(cameraName, movementSensorName string, t *testing.T) resource
 	case "stub_imu":
 		deps[movementsensor.Named(movementSensorName)] = getStubIMU(t)
 	case "":
-		return deps
 	default:
 		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", movementSensorName)
 	}
