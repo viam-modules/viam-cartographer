@@ -301,7 +301,12 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
+	if timedIMU == nil {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
+	} else {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"], cfg.MovementSensor["name"]})
+	}
+
 	deps := SetupStubDeps(cfg.Camera["name"], cfg.MovementSensor["name"], t)
 
 	svc, err := viamcartographer.New(
