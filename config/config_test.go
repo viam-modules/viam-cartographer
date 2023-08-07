@@ -111,7 +111,7 @@ func testValidateTesthelper(
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
-		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
+		test.That(t, *cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
 		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
 
 		if cloudStoryEnabled {
