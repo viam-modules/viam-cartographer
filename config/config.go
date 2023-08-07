@@ -144,6 +144,11 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		}
 	}
 
+	optionalConfigParams.MapRateSec = 0
+	if config.CloudStoryEnabled {
+		return optionalConfigParams, nil
+	}
+
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
 		optionalConfigParams.MapRateSec = defaultMapRateSec
