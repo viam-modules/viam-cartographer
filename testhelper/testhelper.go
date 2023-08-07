@@ -336,7 +336,7 @@ func CreateSLAMService(
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
-	lidarDeps, err := cfg.Validate("path")
+	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
@@ -355,7 +355,12 @@ func CreateSLAMService(
 		}
 		cameraName = cfg.Sensors[0]
 	}
-	test.That(t, lidarDeps, test.ShouldResemble, []string{cameraName})
+	if imuName == "" {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
+	} else {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName, imuName})
+	}
+
 	deps := s.SetupDeps(cameraName, imuName)
 
 	svc, err := viamcartographer.New(
