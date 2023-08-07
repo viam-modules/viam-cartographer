@@ -142,7 +142,7 @@ func mockLidarReadingsValid() error {
 	return nil
 }
 
-// IntegrationLidarTimedSensor returns a mock timed lidar sensor
+// IntegrationTimedLidarSensor returns a mock timed lidar sensor
 // or an error if preconditions to build the mock are not met.
 // It validates that all required mock lidar reading files are able to be found.
 // When the mock is called, it returns the next mock lidar reading, with the
@@ -154,7 +154,7 @@ func mockLidarReadingsValid() error {
 // replay sensor.
 // It is important to provide deterministic time information to cartographer to
 // ensure test outputs of cartographer are deterministic.
-func IntegrationLidarTimedSensor(
+func IntegrationTimedLidarSensor(
 	t *testing.T,
 	lidar string,
 	replay bool,
@@ -227,6 +227,9 @@ func IntegrationTimedIMUSensor(
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 ) (s.TimedIMUSensor, error) {
+	if imu == "" {
+		return nil, nil
+	}
 	var i uint64
 	closed := false
 

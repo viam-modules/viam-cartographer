@@ -201,7 +201,7 @@ func getBadIMU() *inject.MovementSensor {
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    false,
-			LinearAccelerationSupported: true,
+			LinearAccelerationSupported: false,
 		}, nil
 	}
 	return imu

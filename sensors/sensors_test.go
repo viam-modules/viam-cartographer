@@ -83,11 +83,11 @@ func TestNewLidar(t *testing.T) {
 		lidar := "gibberish"
 		deps := s.SetupDeps(lidar, "")
 		actualLidar, err := s.NewLidar(context.Background(), deps, lidar, logger)
-		expectedLidar := s.Lidar{}
-		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("error getting lidar camera "+
 				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
+		expectedLidar := s.Lidar{}
+		test.That(t, actualLidar, test.ShouldResemble, expectedLidar)
 	})
 
 	t.Run("Successful lidar creation", func(t *testing.T) {
@@ -120,11 +120,11 @@ func TestNewIMU(t *testing.T) {
 		imu := "gibberish"
 		deps := s.SetupDeps(lidar, imu)
 		actualIMU, err := s.NewIMU(context.Background(), deps, imu, logger)
-		expectedIMU := s.IMU{}
-		test.That(t, actualIMU, test.ShouldResemble, expectedIMU)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("error getting IMU movement sensor "+
 				"gibberish for slam service: \"rdk:component:movement_sensor/gibberish\" missing from dependencies"))
+		expectedIMU := s.IMU{}
+		test.That(t, actualIMU, test.ShouldResemble, expectedIMU)
 	})
 
 	t.Run("Failed IMU creation with sensor that does not support AngularVelocity", func(t *testing.T) {
@@ -132,11 +132,11 @@ func TestNewIMU(t *testing.T) {
 		imu := "bad_imu"
 		deps := s.SetupDeps(lidar, imu)
 		actualIMU, err := s.NewIMU(context.Background(), deps, imu, logger)
-		expectedIMU := s.IMU{}
-		test.That(t, actualIMU, test.ShouldResemble, expectedIMU)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring IMU movement sensor error: "+
 				"'movement_sensor' must support both LinearAcceleration and AngularVelocity"))
+		expectedIMU := s.IMU{}
+		test.That(t, actualIMU, test.ShouldResemble, expectedIMU)
 	})
 
 	t.Run("Successful IMU creation", func(t *testing.T) {
