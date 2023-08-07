@@ -196,6 +196,7 @@ func getOptionalParametersTestHelper(
 	t.Run(fmt.Sprintf("Pass default parameters %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a"}
+		cfgService.Attributes["cloud_story_enabled"] = cloudStoryEnabled
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		optionalConfigParams, err := GetOptionalParameters(
@@ -204,10 +205,16 @@ func getOptionalParametersTestHelper(
 			1000,
 			1002,
 			logger)
+
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
 		test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+		if cloudStoryEnabled {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
+		} else {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
+		}
 	})
 
 	t.Run(fmt.Sprintf("Return overrides %s", suffix), func(t *testing.T) {
@@ -244,7 +251,13 @@ func getOptionalParametersTestHelper(
 		} else {
 			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 50)
 		}
-		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+
+		if cloudStoryEnabled {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+		} else {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 2)
+		}
 	})
 
 	if imuIntegrationEnabled {
