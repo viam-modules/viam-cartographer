@@ -109,7 +109,7 @@ func NewIMU(
 		return IMU{}, errors.Wrapf(err, "error getting IMU movement sensor %v for slam service", imuName)
 	}
 
-	// A movement_sensor used as an IMU must support LinearAcceleration and Angular Velocity.
+	// A movement_sensor used as an IMU must support LinearAcceleration and AngularVelocity.
 	properties, err := newIMU.Properties(ctx, make(map[string]interface{}))
 	if err != nil {
 		return IMU{}, errors.Wrapf(err, "error getting movement sensor properties %v for slam service", imuName)
