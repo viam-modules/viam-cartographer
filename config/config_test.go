@@ -194,7 +194,8 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfg, err := newConfig(cfgService)
 		two := 2
 		cfg.MapRateSec = &two
-		cfg.DataRateMsec = 50
+		dataRate := 50
+		cfg.DataRateMsec = &dataRate
 		test.That(t, err, test.ShouldBeNil)
 		lidarDataRateMsec, _, _, mapRateSec, err := GetOptionalParameters(
 			cfg,

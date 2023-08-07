@@ -26,13 +26,13 @@ import (
 const (
 	testExecutableName = "true" // the program "true", not the boolean value
 	testDataFreqHz     = "5"
-	testDataRateMsec   = 200
 )
 
 var (
-	testMapRateSec = 200
-	_zeroInt       = 0
-	_zeroTime      = time.Time{}
+	testMapRateSec   = 200
+	_zeroInt         = 0
+	_zeroTime        = time.Time{}
+	testDataRateMsec = 200
 )
 
 func TestNew(t *testing.T) {
@@ -80,7 +80,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -104,7 +104,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -129,7 +129,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"invalid_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -199,7 +199,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)

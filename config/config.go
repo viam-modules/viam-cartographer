@@ -23,7 +23,7 @@ type Config struct {
 	MapRateSec            *int              `json:"map_rate_sec"`
 	IMUIntegrationEnabled bool              `json:"imu_integration_enabled"`
 	Sensors               []string          `json:"sensors"`
-	DataRateMsec          int               `json:"data_rate_msec"`
+	DataRateMsec          *int              `json:"data_rate_msec"`
 
 	CloudStoryEnabled bool   `json:"cloud_story_enabled"`
 	ExistingMap       string `json:"existing_map"`
@@ -62,7 +62,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 		}
 		cameraName = config.Sensors[0]
 
-		if config.DataRateMsec < 0 {
+		if config.DataRateMsec != nil && *config.DataRateMsec < 0 {
 			return nil, errors.New("cannot specify data_rate_msec less than zero")
 		}
 	}
@@ -125,10 +125,11 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 			}
 		}
 	} else {
-		lidarDataRateMsec = config.DataRateMsec
-		if config.DataRateMsec == 0 {
+		if config.DataRateMsec == nil {
 			lidarDataRateMsec = defaultLidarDataRateMsec
 			logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultLidarDataRateMsec)
+		} else {
+			lidarDataRateMsec = *config.DataRateMsec
 		}
 	}
 
