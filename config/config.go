@@ -24,6 +24,11 @@ type Config struct {
 	IMUIntegrationEnabled bool              `json:"imu_integration_enabled"`
 	Sensors               []string          `json:"sensors"`
 	DataRateMsec          int               `json:"data_rate_msec"`
+
+	CloudStoryEnabled bool   `json:"cloud_story_enabled"`
+	ExistingMap       string `json:"existing_map"`
+	EnableMapping     bool   `json:"enable_mapping"`
+	RunSlam           bool   `json:"run_slam"`
 }
 
 var (
@@ -34,6 +39,7 @@ var (
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
+
 	if config.IMUIntegrationEnabled {
 		var ok bool
 		cameraName, ok = config.Camera["name"]
@@ -65,12 +71,18 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
 
-	if config.DataDirectory == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
-	}
+	if config.CloudStoryEnabled {
+		if config.ExistingMap == "" {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "existing_map")
+		}
+	} else {
+		if config.DataDirectory == "" {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
+		}
 
-	if config.MapRateSec != nil && *config.MapRateSec < 0 {
-		return nil, errors.New("cannot specify map_rate_sec less than zero")
+		if config.MapRateSec != nil && *config.MapRateSec < 0 {
+			return nil, errors.New("cannot specify map_rate_sec less than zero")
+		}
 	}
 
 	deps := []string{cameraName}
