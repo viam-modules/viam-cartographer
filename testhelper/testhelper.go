@@ -231,31 +231,31 @@ func IntegrationTimedIMUSensor(
 	closed := false
 
 	ts := &s.TimedIMUSensorMock{}
-	ts.MockLinearAccelerationData = append(ts.MockLinearAccelerationData,
-		r3.Vector{X: 1, Y: 1, Z: 1},
-		r3.Vector{X: 2, Y: 1, Z: 1},
-		r3.Vector{X: 1, Y: 2, Z: 1},
-		r3.Vector{X: 1, Y: 1, Z: 2},
-		r3.Vector{X: 1, Y: 1, Z: 3},
-		r3.Vector{X: 1, Y: 3, Z: 1},
-		r3.Vector{X: 3, Y: 1, Z: 1},
-		r3.Vector{X: 2, Y: 1, Z: 1})
-	ts.MockAngularVelocityData = append(ts.MockAngularVelocityData,
-		spatialmath.AngularVelocity{X: 1, Y: 2, Z: 1},
-		spatialmath.AngularVelocity{X: 1, Y: 2, Z: 1},
-		spatialmath.AngularVelocity{X: 1, Y: 2, Z: 1},
-		spatialmath.AngularVelocity{X: 1, Y: 1, Z: 2},
-		spatialmath.AngularVelocity{X: 1, Y: 1, Z: 2},
-		spatialmath.AngularVelocity{X: 1, Y: 1, Z: 2},
-		spatialmath.AngularVelocity{X: 5, Y: 1, Z: 1},
-		spatialmath.AngularVelocity{X: 5, Y: 1, Z: 1})
+	mockLinearAccelerationData := []r3.Vector{
+		{X: 1, Y: 1, Z: 1},
+		{X: 2, Y: 1, Z: 1},
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 1, Z: 2},
+		{X: 1, Y: 1, Z: 3},
+		{X: 1, Y: 3, Z: 1},
+		{X: 3, Y: 1, Z: 1},
+		{X: 2, Y: 1, Z: 1}}
+	mockAngularVelocityData := []spatialmath.AngularVelocity{
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 1, Z: 2},
+		{X: 1, Y: 1, Z: 2},
+		{X: 1, Y: 1, Z: 2},
+		{X: 5, Y: 1, Z: 1},
+		{X: 5, Y: 1, Z: 1}}
 
 	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
 	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
 		t.Logf("TimedIMUSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
-		if int(i) >= len(ts.MockLinearAccelerationData) {
+		if int(i) >= len(mockLinearAccelerationData) {
 			// communicate to the test that all imu readings have been written
 			if !closed {
 				done <- struct{}{}
@@ -263,8 +263,8 @@ func IntegrationTimedIMUSensor(
 			}
 			return s.TimedIMUSensorReadingResponse{}, errors.New("end of dataset")
 		}
-		linAcc := ts.MockLinearAccelerationData[i]
-		angVel := ts.MockAngularVelocityData[i]
+		linAcc := mockLinearAccelerationData[i]
+		angVel := mockAngularVelocityData[i]
 		i++
 		return s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: readingTime, Replay: replay}, nil
 	}
