@@ -299,7 +299,6 @@ func CreateIntegrationSLAMService(
 	}
 	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
 	deps := SetupStubDeps(cfg.Camera["name"], cfg.MovementSensor["name"], t)
-	fmt.Println("success to here")
 
 	svc, err := viamcartographer.New(
 		ctx,
