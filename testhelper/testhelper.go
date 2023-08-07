@@ -242,7 +242,8 @@ func IntegrationTimedIMUSensor(
 		{X: 1, Y: 1, Z: 3},
 		{X: 1, Y: 3, Z: 1},
 		{X: 3, Y: 1, Z: 1},
-		{X: 2, Y: 1, Z: 1}}
+		{X: 2, Y: 1, Z: 1},
+	}
 	mockAngularVelocityData := []spatialmath.AngularVelocity{
 		{X: 1, Y: 2, Z: 1},
 		{X: 1, Y: 2, Z: 1},
@@ -251,7 +252,8 @@ func IntegrationTimedIMUSensor(
 		{X: 1, Y: 1, Z: 2},
 		{X: 1, Y: 1, Z: 2},
 		{X: 5, Y: 1, Z: 1},
-		{X: 5, Y: 1, Z: 1}}
+		{X: 5, Y: 1, Z: 1},
+	}
 
 	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
