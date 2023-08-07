@@ -102,8 +102,10 @@ func getStubIMU(t *testing.T) *inject.MovementSensor {
 		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
 	}
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
-		t.Error("TEST FAILED stub IMU Properties called")
-		return nil, errors.New("invalid sensor")
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			LinearAccelerationSupported: true,
+		}, nil
 	}
 	return imu
 }
@@ -207,7 +209,7 @@ func IntegrationLidarTimedSensor(
 	return ts, nil
 }
 
-// IntegrationIMUTimedSensor returns a mock timed IMU sensor.
+// IntegrationTimedIMUSensor returns a mock timed IMU sensor.
 // When the mock is called, it returns the next mock IMU readings, with the
 // ReadingTime incremented by the sensorReadingInterval.
 // The Replay sensor field of the mock readings will match the replay parameter.
@@ -297,6 +299,7 @@ func CreateIntegrationSLAMService(
 	}
 	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
 	deps := SetupStubDeps(cfg.Camera["name"], cfg.MovementSensor["name"], t)
+	fmt.Println("success to here")
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -307,7 +310,7 @@ func CreateIntegrationSLAMService(
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
 		timedLidar,
-		nil,
+		timedIMU,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
