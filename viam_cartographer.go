@@ -283,7 +283,7 @@ func New(
 		}
 	}
 
-	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc, svcConfig.CloudStoryEnabled)
+	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
 	if err != nil {
 		return nil, err
 	}
@@ -412,7 +412,6 @@ func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (
 func initCartoFacade(
 	ctx context.Context,
 	cartoSvc *CartographerService,
-	cloudStoryEnabled bool,
 ) error {
 	cartoAlgoConfig, err := parseCartoAlgoConfig(cartoSvc.configParams, cartoSvc.logger)
 	if err != nil {
