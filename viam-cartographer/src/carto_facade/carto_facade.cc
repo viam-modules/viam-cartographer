@@ -748,29 +748,29 @@ void CartoFacade::Stop() {
     StopSaveInternalState();
 };
 
-void CartoFacade::AddSensorReading(const viam_carto_sensor_reading *sr) {
+void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
     if (state != CartoFacadeState::STARTED) {
         LOG(ERROR) << "carto facade is in state: " << state
                    << " expected it to be in state: "
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
-    if (biseq(config.component_reference, sr->sensor) == false) {
-        VLOG(1) << "expected sensor: " << to_std_string(sr->sensor) << " to be "
+    if (biseq(config.component_reference, sr->lidar) == false) {
+        VLOG(1) << "expected sensor: " << to_std_string(sr->lidar) << " to be "
                 << config.component_reference;
         throw VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST;
     }
-    std::string sensor_reading = to_std_string(sr->sensor_reading);
-    if (sensor_reading.length() == 0) {
-        throw VIAM_CARTO_SENSOR_READING_EMPTY;
+    std::string lidar_reading = to_std_string(sr->lidar_reading);
+    if (lidar_reading.length() == 0) {
+        throw VIAM_CARTO_LIDAR_READING_EMPTY;
     }
 
-    int64_t sensor_reading_time_unix_milli = sr->sensor_reading_time_unix_milli;
+    int64_t lidar_reading_time_unix_milli = sr->lidar_reading_time_unix_milli;
     auto [success, measurement] =
         viam::carto_facade::util::carto_sensor_reading(
-            sensor_reading, sensor_reading_time_unix_milli);
+            lidar_reading, lidar_reading_time_unix_milli);
     if (!success) {
-        throw VIAM_CARTO_SENSOR_READING_INVALID;
+        throw VIAM_CARTO_LIDAR_READING_INVALID;
     }
 
     cartographer::transform::Rigid3d tmp_global_pose;
@@ -1025,20 +1025,20 @@ extern int viam_carto_terminate(viam_carto **ppVC) {
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_add_sensor_reading(viam_carto *vc,
-                                         const viam_carto_sensor_reading *sr) {
+extern int viam_carto_add_lidar_reading(viam_carto *vc,
+                                         const viam_carto_lidar_reading *sr) {
     if (vc == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
 
     if (sr == nullptr) {
-        return VIAM_CARTO_SENSOR_READING_INVALID;
+        return VIAM_CARTO_LIDAR_READING_INVALID;
     }
 
     try {
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-        cf->AddSensorReading(sr);
+        cf->AddLidarReading(sr);
     } catch (int err) {
         return err;
     } catch (std::exception &e) {
@@ -1048,26 +1048,26 @@ extern int viam_carto_add_sensor_reading(viam_carto *vc,
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_add_sensor_reading_destroy(
-    viam_carto_sensor_reading *sr) {
+extern int viam_carto_add_lidar_reading_destroy(
+    viam_carto_lidar_reading *sr) {
     if (sr == nullptr) {
-        return VIAM_CARTO_SENSOR_READING_INVALID;
+        return VIAM_CARTO_LIDAR_READING_INVALID;
     }
     int return_code = VIAM_CARTO_SUCCESS;
     int rc = BSTR_OK;
-    // destroy sensor_reading
-    rc = bdestroy(sr->sensor_reading);
+    // destroy lidar_reading
+    rc = bdestroy(sr->lidar_reading);
     if (rc != BSTR_OK) {
         return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
     }
-    sr->sensor_reading = nullptr;
+    sr->lidar_reading = nullptr;
 
     // destroy sensor
-    rc = bdestroy(sr->sensor);
+    rc = bdestroy(sr->lidar);
     if (rc != BSTR_OK) {
         return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
     }
-    sr->sensor = nullptr;
+    sr->lidar = nullptr;
 
     return return_code;
 };

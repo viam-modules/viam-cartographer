@@ -36,15 +36,15 @@ func Start(
 		case <-ctx.Done():
 			return false
 		default:
-			if jobDone := addSensorReading(ctx, config); jobDone {
+			if jobDone := addLidarReading(ctx, config); jobDone {
 				return true
 			}
 		}
 	}
 }
 
-// addSensorReading adds a lidar reading to the cartofacade.
-func addSensorReading(
+// addLidarReading adds a lidar reading to the cartofacade.
+func addLidarReading(
 	ctx context.Context,
 	config Config,
 ) bool {
@@ -62,18 +62,18 @@ func addSensorReading(
 	 mode and ensure every scan gets processed by cartographer
 	*/
 	if config.LidarDataRateMsec == 0 {
-		tryAddSensorReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, config)
+		tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
-		timeToSleep := tryAddSensorReading(ctx, tsr.Reading, tsr.ReadingTime, config)
+		timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
 	}
 	return false
 }
 
-// tryAddSensorReadingUntilSuccess adds a reading to the cartofacade
+// tryAddLidarReadingUntilSuccess adds a reading to the cartofacade
 // retries on error (offline mode).
-func tryAddSensorReadingUntilSuccess(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
+func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode
 		we want to process each reading so if we cannot acquire the lock we should try again
@@ -83,7 +83,7 @@ func tryAddSensorReadingUntilSuccess(ctx context.Context, reading []byte, readin
 		case <-ctx.Done():
 			return
 		default:
-			err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
+			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
 				return
 			}
@@ -94,11 +94,11 @@ func tryAddSensorReadingUntilSuccess(ctx context.Context, reading []byte, readin
 	}
 }
 
-// tryAddSensorReading adds a reading to the carto facade
+// tryAddLidarReading adds a reading to the carto facade
 // does not retry (online).
-func tryAddSensorReading(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
+func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
 	startTime := time.Now()
-	err := config.CartoFacade.AddSensorReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
+	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)

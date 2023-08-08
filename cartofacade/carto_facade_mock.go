@@ -51,7 +51,7 @@ type Mock struct {
 		ctx context.Context,
 		timeout time.Duration,
 	) error
-	AddSensorReadingFunc func(
+	AddLidarReadingFunc func(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
@@ -141,18 +141,18 @@ func (cf *Mock) Terminate(
 	return cf.TerminateFunc(ctx, timeout)
 }
 
-// AddSensorReading calls the injected AddSensorReadingFunc or the real version.
-func (cf *Mock) AddSensorReading(
+// AddLidarReading calls the injected AddLidarReadingFunc or the real version.
+func (cf *Mock) AddLidarReading(
 	ctx context.Context,
 	timeout time.Duration,
 	sensorName string,
 	currentReading []byte,
 	readingTimestamp time.Time,
 ) error {
-	if cf.AddSensorReadingFunc == nil {
-		return cf.CartoFacade.AddSensorReading(ctx, timeout, sensorName, currentReading, readingTimestamp)
+	if cf.AddLidarReadingFunc == nil {
+		return cf.CartoFacade.AddLidarReading(ctx, timeout, sensorName, currentReading, readingTimestamp)
 	}
-	return cf.AddSensorReadingFunc(ctx, timeout, sensorName, currentReading, readingTimestamp)
+	return cf.AddLidarReadingFunc(ctx, timeout, sensorName, currentReading, readingTimestamp)
 }
 
 // GetPosition calls the injected GetPositionFunc or the real version.
