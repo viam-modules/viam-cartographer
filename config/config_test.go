@@ -28,8 +28,7 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("Config without required fields%s", suffix), func(t *testing.T) {
-		var requiredFields []string
-		requiredFields = []string{"data_dir", "sensors"}
+		requiredFields := []string{"data_dir", "sensors"}
 
 		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
 		cameraErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
