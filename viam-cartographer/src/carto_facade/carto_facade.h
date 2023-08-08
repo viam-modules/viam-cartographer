@@ -316,8 +316,8 @@ const std::string configuration_update_basename = "updating_a_map.lua";
 carto_facade::SlamMode determine_slam_mode(std::string path_to_map,
                                            std::chrono::seconds map_rate_sec);
 
-carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(
-    std::string path_to_map, bool enable_mapping);
+carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(std::string path_to_map,
+                                                               bool enable_mapping);
 
 int slam_mode_to_vc_slam_mode(viam::carto_facade::SlamMode sm);
 
