@@ -173,7 +173,7 @@ func New(
 			c.Model.Name, svcConfig.ConfigParams["mode"])
 	}
 
-	lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, err := vcConfig.GetOptionalParameters(
+	lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, enableMapping, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		defaultLidarDataRateMsec,
 		defaultIMUDataRateMsec,
@@ -250,6 +250,8 @@ func New(
 		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
 		cartoFacadeTimeout:            cartoFacadeTimeout,
 		mapTimestamp:                  time.Now().UTC(),
+		cloudStoryEnabled:             svcConfig.CloudStoryEnabled,
+		enableMapping:                 enableMapping,
 	}
 
 	defer func() {
@@ -420,6 +422,8 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		DataDir:            cartoSvc.dataDirectory,
 		ComponentReference: cartoSvc.lidar.name,
 		LidarConfig:        cartofacade.TwoD,
+		CloudStoryEnabled:  cartoSvc.cloudStoryEnabled,
+		EnableMapping:      cartoSvc.enableMapping,
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
@@ -510,6 +514,9 @@ type CartographerService struct {
 	sensorValidationMaxTimeoutSec int
 	sensorValidationIntervalSec   int
 	jobDone                       atomic.Bool
+
+	cloudStoryEnabled bool
+	enableMapping     bool
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,

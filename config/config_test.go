@@ -29,11 +29,8 @@ func testValidateTesthelper(
 
 	t.Run(fmt.Sprintf("Config without required fields%s", suffix), func(t *testing.T) {
 		var requiredFields []string
-		if cloudStoryEnabled {
-			requiredFields = []string{"existing_map", "sensors"}
-		} else {
-			requiredFields = []string{"data_dir", "sensors"}
-		}
+		requiredFields = []string{"data_dir", "sensors"}
+
 		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
 		cameraErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
 
@@ -58,12 +55,7 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("Config with invalid parameter type%s", suffix), func(t *testing.T) {
-		var key string
-		if cloudStoryEnabled {
-			key = "existing_map"
-		} else {
-			key = "data_dir"
-		}
+		key := "data_dir"
 
 		cfgService := makeCfgService(false, cloudStoryEnabled)
 		cfgService.Attributes[key] = true
@@ -88,20 +80,14 @@ func testValidateTesthelper(
 		cfgService.Attributes["map_rate_sec"] = -1
 		_, err = newConfig(cfgService)
 
-		if !cloudStoryEnabled {
-			test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
-		} else {
-			test.That(t, err, test.ShouldBeNil)
-		}
+		test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
 	})
 
 	t.Run(fmt.Sprintf("All parameters e2e%s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(false, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a", "b"}
 		cfgService.Attributes["data_rate_msec"] = 1001
-		if !cloudStoryEnabled {
-			cfgService.Attributes["map_rate_sec"] = 1002
-		}
+		cfgService.Attributes["map_rate_sec"] = 1002
 
 		cfgService.Attributes["config_params"] = map[string]string{
 			"mode":    "test mode",
@@ -113,14 +99,8 @@ func testValidateTesthelper(
 		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
 		test.That(t, *cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
 		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
-
-		if cloudStoryEnabled {
-			test.That(t, cfg.ExistingMap, test.ShouldEqual, cfgService.Attributes["existing_map"])
-			test.That(t, cfg.MapRateSec, test.ShouldBeNil)
-		} else {
-			test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
-			test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
-		}
+		test.That(t, cfg.DataDirectory, test.ShouldEqual, cfgService.Attributes["data_dir"])
+		test.That(t, *cfg.MapRateSec, test.ShouldEqual, cfgService.Attributes["map_rate_sec"])
 	})
 }
 
@@ -145,6 +125,7 @@ func makeCfgService(IMUIntegrationEnabled, cloudStoryEnabled bool) resource.Conf
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 	cfgService.Attributes = map[string]interface{}{
 		"config_params": map[string]string{"mode": "test mode"},
+		"data_dir":      "path",
 	}
 
 	if IMUIntegrationEnabled {
@@ -158,9 +139,6 @@ func makeCfgService(IMUIntegrationEnabled, cloudStoryEnabled bool) resource.Conf
 
 	if cloudStoryEnabled {
 		cfgService.Attributes["cloud_story_enabled"] = true
-		cfgService.Attributes["existing_map"] = "path"
-	} else {
-		cfgService.Attributes["data_dir"] = "path"
 	}
 
 	return cfgService
@@ -174,7 +152,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, _, _, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, _, _, mapRateSec, enableMapping, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
@@ -183,6 +161,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 1002)
 		test.That(t, lidarDataRateMsec, test.ShouldEqual, 1000)
+		test.That(t, enableMapping, test.ShouldBeFalse)
 	})
 
 	t.Run("Return overrides", func(t *testing.T) {
@@ -197,7 +176,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		dataRate := 50
 		cfg.DataRateMsec = &dataRate
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, _, _, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, _, _, mapRateSec, enableMapping, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
@@ -206,6 +185,7 @@ func TestGetOptionalParameters(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, mapRateSec, test.ShouldEqual, 2)
 		test.That(t, lidarDataRateMsec, test.ShouldEqual, 50)
+		test.That(t, enableMapping, test.ShouldBeFalse)
 	})
 }
 
@@ -319,7 +299,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		cfgService.Attributes["movement_sensor"] = map[string]string{"name": "b"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, enableMapping, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
@@ -330,6 +310,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		test.That(t, lidarDataRateMsec, test.ShouldEqual, 1000)
 		test.That(t, imuName, test.ShouldEqual, "b")
 		test.That(t, imuDataRateMsec, test.ShouldEqual, 1000)
+		test.That(t, enableMapping, test.ShouldBeFalse)
 	})
 
 	t.Run("Return overrides with feature flag enabled", func(t *testing.T) {
@@ -346,7 +327,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		two := 2
 		cfg.MapRateSec = &two
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, err := GetOptionalParameters(
+		lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, enableMapping, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
@@ -357,6 +338,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		test.That(t, lidarDataRateMsec, test.ShouldEqual, 200)
 		test.That(t, imuName, test.ShouldEqual, "b")
 		test.That(t, imuDataRateMsec, test.ShouldEqual, 50)
+		test.That(t, enableMapping, test.ShouldBeFalse)
 	})
 
 	t.Run("Unit test return error if lidar data frequency is invalid", func(t *testing.T) {
@@ -367,7 +349,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		}
 		cfg, err := newConfigWithoutValidate(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		_, _, _, _, err = GetOptionalParameters(
+		_, _, _, _, _, err = GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
@@ -388,7 +370,7 @@ func TestGetOptionalParametersFeatureFlag(t *testing.T) {
 		}
 		cfg, err := newConfigWithoutValidate(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		_, _, _, _, err = GetOptionalParameters(
+		_, _, _, _, _, err = GetOptionalParameters(
 			cfg,
 			1000,
 			1000,

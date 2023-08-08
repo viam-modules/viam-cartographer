@@ -115,6 +115,8 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.movement_sensor = to_std_string(vcc.movement_sensor);
     c.data_dir = to_std_string(vcc.data_dir);
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
+    c.cloud_story_enabled = vcc.cloud_story_enabled;
+    c.enable_mapping = vcc.enable_mapping;
     c.lidar_config = vcc.lidar_config;
     if (c.data_dir.size() == 0) {
         throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
@@ -264,8 +266,15 @@ void CartoFacade::IOInit() {
     }
     // Setup file system for saving internal state
     setup_filesystem(config.data_dir, path_to_internal_state);
-    slam_mode =
-        determine_slam_mode(path_to_internal_state, config.map_rate_sec);
+    if (config.cloud_story_enabled == true) {
+        LOG(ERROR) << "KIM LOG: CLOUD STORY ENABLED";
+        slam_mode =
+            determine_slam_mode_cloud_story_enabled(path_to_internal_state, config.enable_mapping);
+    } else {
+        LOG(ERROR) << "KIM LOG: CLOUD STORY NOT ENABLED";
+        slam_mode =
+            determine_slam_mode(path_to_internal_state, config.map_rate_sec);
+    }
     VLOG(1) << "slam slam mode: " << slam_mode;
     // TODO: Make this API user configurable
     auto cd = find_lua_files();
@@ -819,6 +828,40 @@ viam::carto_facade::SlamMode determine_slam_mode(
     return viam::carto_facade::SlamMode::MAPPING;
 }
 
+viam::carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(
+    std::string path_to_internal_state, bool enable_mapping) {
+    // Check if there is an apriori map (internal state) in the
+    // path_to_internal_state directory
+    std::vector<std::string> internal_state_filenames =
+        list_sorted_files_in_directory(path_to_internal_state);
+
+    // Check if there is a *.pbstream internal state in the
+    // path_to_internal_state directory
+    for (auto filename : internal_state_filenames) {
+        if (filename.find(".pbstream") != std::string::npos) {
+            // There is an apriori map (internal state) present, so we're
+            // running either in updating or localization mode.
+            if (!enable_mapping) {
+                // This log line is needed by rdk integration tests.
+                LOG(INFO) << "Running in localization only mode";
+                return viam::carto_facade::SlamMode::LOCALIZING;
+            }
+            // This log line is needed by rdk integration tests.
+            LOG(INFO) << "Running in updating mode";
+            return viam::carto_facade::SlamMode::UPDATING;
+        }
+    }
+    if (!enable_mapping) {
+        LOG(ERROR)
+            << "set to localization mode (map_rate_sec = 0) but "
+               "couldn't find apriori map (internal state) to localize on";
+        throw VIAM_CARTO_SLAM_MODE_INVALID;
+    }
+    // This log line is needed by rdk integration tests.
+    LOG(INFO) << "Running in mapping mode";
+    return viam::carto_facade::SlamMode::MAPPING;
+}
+
 int slam_mode_to_vc_slam_mode(viam::carto_facade::SlamMode sm) {
     if (sm == viam::carto_facade::SlamMode::MAPPING) {
         return VIAM_CARTO_SLAM_MODE_MAPPING;
@@ -879,6 +922,7 @@ extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
 extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
                            const viam_carto_config c,
                            const viam_carto_algo_config ac) {
+    LOG(ERROR) << "KIM LOG" << c.cloud_story_enabled;
     if (ppVC == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
