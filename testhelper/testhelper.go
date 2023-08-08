@@ -14,13 +14,16 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
+	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
+	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
 	"go.viam.com/rdk/services/slam"
+	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/rdk/testutils/inject"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
@@ -51,13 +54,20 @@ var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(cameraName string, t *testing.T) resource.Dependencies {
+func SetupStubDeps(cameraName, movementSensorName string, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
 	switch cameraName {
 	case "stub_lidar":
 		deps[camera.Named(cameraName)] = getStubLidar(t)
 	default:
 		t.Errorf("SetupStubDeps called with unhandled camera: %s", cameraName)
+	}
+	switch movementSensorName {
+	case "stub_imu":
+		deps[movementsensor.Named(movementSensorName)] = getStubIMU(t)
+	case "":
+	default:
+		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", movementSensorName)
 	}
 
 	return deps
@@ -78,6 +88,25 @@ func getStubLidar(t *testing.T) *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	return cam
+}
+
+func getStubIMU(t *testing.T) *inject.MovementSensor {
+	imu := &inject.MovementSensor{}
+	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		t.Error("TEST FAILED stub IMU LinearAcceleration called")
+		return r3.Vector{}, errors.New("invalid sensor")
+	}
+	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		t.Error("TEST FAILED stub IMU AngularVelocity called")
+		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
+	}
+	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			LinearAccelerationSupported: true,
+		}, nil
+	}
+	return imu
 }
 
 func mockLidarReadingsValid() error {
@@ -112,25 +141,25 @@ func mockLidarReadingsValid() error {
 	return nil
 }
 
-// IntegrationLidarTimedSensor returns a mock timed lidar sensor
+// IntegrationTimedLidarSensor returns a mock timed lidar sensor
 // or an error if preconditions to build the mock are not met.
 // It validates that all required mock lidar reading files are able to be found.
 // When the mock is called, it returns the next mock lidar reading, with the
 // ReadingTime incremented by the sensorReadingInterval.
-// The Replay sensor field of the mock readings will match the replay paramenter.
+// The Replay sensor field of the mock readings will match the replay parameter.
 // When the end of the mock lidar readings is reached, the done channel
 // is written to once so the caller can detect all lidar readings have been emitted
 // from the mock. This is intended to match the same "end of dataset" behavior of a
 // replay sensor.
-// It is imporntant to provide determanistic time information to cartographer to
-// ensure test outputs of cartographer are determanistic.
-func IntegrationLidarTimedSensor(
+// It is important to provide deterministic time information to cartographer to
+// ensure test outputs of cartographer are deterministic.
+func IntegrationTimedLidarSensor(
 	t *testing.T,
 	lidar string,
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
-) (s.TimedSensor, error) {
+) (s.TimedLidarSensor, error) {
 	err := mockLidarReadingsValid()
 	if err != nil {
 		return nil, err
@@ -139,41 +168,109 @@ func IntegrationLidarTimedSensor(
 	var i uint64
 	closed := false
 
-	ts := &s.TimedSensorMock{}
+	ts := &s.TimedLidarSensorMock{}
 	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
-	ts.TimedSensorReadingFunc = func(ctx context.Context) (s.TimedSensorReadingResponse, error) {
+	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
-		t.Logf("TimedSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
 		if i >= NumPointClouds {
 			// communicate to the test that all lidar readings have been written
 			if !closed {
 				done <- struct{}{}
 				closed = true
 			}
-			return s.TimedSensorReadingResponse{}, errors.New("end of dataset")
+			return s.TimedLidarSensorReadingResponse{}, errors.New("end of dataset")
 		}
 
 		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 		if err != nil {
-			t.Error("TEST FAILED TimedSensorReading Mock failed to open pcd file")
-			return s.TimedSensorReadingResponse{}, err
+			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to open pcd file")
+			return s.TimedLidarSensorReadingResponse{}, err
 		}
 		readingPc, err := pointcloud.ReadPCD(file)
 		if err != nil {
-			t.Error("TEST FAILED TimedSensorReading Mock failed to read pcd")
-			return s.TimedSensorReadingResponse{}, err
+			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to read pcd")
+			return s.TimedLidarSensorReadingResponse{}, err
 		}
 
 		buf := new(bytes.Buffer)
 		err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
 		if err != nil {
-			t.Error("TEST FAILED TimedSensorReading Mock failed to parse pcd")
-			return s.TimedSensorReadingResponse{}, err
+			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to parse pcd")
+			return s.TimedLidarSensorReadingResponse{}, err
 		}
 
 		i++
-		return s.TimedSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+		return s.TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+	}
+
+	return ts, nil
+}
+
+// IntegrationTimedIMUSensor returns a mock timed IMU sensor.
+// When the mock is called, it returns the next mock IMU readings, with the
+// ReadingTime incremented by the sensorReadingInterval.
+// The Replay sensor field of the mock readings will match the replay parameter.
+// When the end of the mock IMU readings is reached, the done channel
+// is written to once so the caller can detect all IMU readings have been emitted
+// from the mock. This is intended to match the same "end of dataset" behavior of a
+// replay sensor.
+// It is important to provide deterministic time information to cartographer to
+// ensure test outputs of cartographer are deterministic.
+// Note that IMU replay sensors are not yet fully supported.
+func IntegrationTimedIMUSensor(
+	t *testing.T,
+	imu string,
+	replay bool,
+	sensorReadingInterval time.Duration,
+	done chan struct{},
+) (s.TimedIMUSensor, error) {
+	if imu == "" {
+		return nil, nil
+	}
+	var i uint64
+	closed := false
+
+	ts := &s.TimedIMUSensorMock{}
+	mockLinearAccelerationData := []r3.Vector{
+		{X: 1, Y: 1, Z: 1},
+		{X: 2, Y: 1, Z: 1},
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 1, Z: 2},
+		{X: 1, Y: 1, Z: 3},
+		{X: 1, Y: 3, Z: 1},
+		{X: 3, Y: 1, Z: 1},
+		{X: 2, Y: 1, Z: 1},
+	}
+	mockAngularVelocityData := []spatialmath.AngularVelocity{
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 2, Z: 1},
+		{X: 1, Y: 1, Z: 2},
+		{X: 1, Y: 1, Z: 2},
+		{X: 1, Y: 1, Z: 2},
+		{X: 5, Y: 1, Z: 1},
+		{X: 5, Y: 1, Z: 1},
+	}
+
+	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+
+	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
+		readingTime = readingTime.Add(sensorReadingInterval)
+		t.Logf("TimedIMUSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		if int(i) >= len(mockLinearAccelerationData) {
+			// communicate to the test that all imu readings have been written
+			if !closed {
+				done <- struct{}{}
+				closed = true
+			}
+			return s.TimedIMUSensorReadingResponse{}, errors.New("end of dataset")
+		}
+		linAcc := mockLinearAccelerationData[i]
+		angVel := mockAngularVelocityData[i]
+		i++
+		return s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: readingTime, Replay: replay}, nil
 	}
 
 	return ts, nil
@@ -192,7 +289,8 @@ func ClearDirectory(t *testing.T, path string) {
 func CreateIntegrationSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	timedLidar s.TimedSensor,
+	timedLidar s.TimedLidarSensor,
+	timedIMU s.TimedIMUSensor,
 	logger golog.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
@@ -203,8 +301,13 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
-	deps := SetupStubDeps(cfg.Camera["name"], t)
+	if timedIMU == nil {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
+	} else {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"], cfg.MovementSensor["name"]})
+	}
+
+	deps := SetupStubDeps(cfg.Camera["name"], cfg.MovementSensor["name"], t)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -215,6 +318,7 @@ func CreateIntegrationSLAMService(
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
 		timedLidar,
+		timedIMU,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
@@ -237,16 +341,17 @@ func CreateSLAMService(
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
-
 	sensorDeps, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
 
-	// feature flag for IMU Integration
+	// feature flag for IMU Integration sets whether to use the dictionary or list format for configuring sensors
 	cameraName := ""
+	imuName := ""
 	if cfg.IMUIntegrationEnabled {
 		cameraName = cfg.Camera["name"]
+		imuName = cfg.MovementSensor["name"]
 	} else {
 		if len(cfg.Sensors) > 1 {
 			return nil, errors.Errorf("configuring lidar camera error: "+
@@ -255,9 +360,13 @@ func CreateSLAMService(
 		}
 		cameraName = cfg.Sensors[0]
 	}
-	test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
+	if imuName == "" {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
+	} else {
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName, imuName})
+	}
 
-	deps := s.SetupDeps(cameraName)
+	deps := s.SetupDeps(cameraName, imuName)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -267,6 +376,7 @@ func CreateSLAMService(
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
+		nil,
 		nil,
 	)
 	if err != nil {

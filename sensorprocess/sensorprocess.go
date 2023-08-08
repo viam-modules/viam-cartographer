@@ -18,7 +18,7 @@ import (
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
 	CartoFacade       cartofacade.Interface
-	Lidar             sensors.TimedSensor
+	Lidar             sensors.TimedLidarSensor
 	LidarName         string
 	LidarDataRateMsec int
 	Timeout           time.Duration
@@ -48,7 +48,7 @@ func addSensorReading(
 	ctx context.Context,
 	config Config,
 ) bool {
-	tsr, err := config.Lidar.TimedSensorReading(ctx)
+	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode

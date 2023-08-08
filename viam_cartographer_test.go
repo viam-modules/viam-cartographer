@@ -24,9 +24,10 @@ import (
 )
 
 const (
-	testExecutableName = "true" // the program "true", not the boolean value
-	testDataFreqHz     = "5"
-	testDataRateMsec   = 200
+	testExecutableName  = "true" // the program "true", not the boolean value
+	testLidarDataFreqHz = "5"
+	testIMUDataFreqHz   = "20"
+	testDataRateMsec    = 200
 )
 
 var (
@@ -135,7 +136,7 @@ func TestNew(t *testing.T) {
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
 
-			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid sensor"))
+			errors.New("failed to get data from lidar: ValidateGetLidarData timeout: NextPointCloud error: invalid sensor"))
 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode", func(t *testing.T) {
@@ -261,7 +262,7 @@ func TestNew(t *testing.T) {
 func TestNewFeatureFlag(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
-	t.Run("Successful creation of cartographer slam service with good lidar with feature flag enabled", func(t *testing.T) {
+	t.Run("Successful creation of cartographer slam service with good lidar with feature flag enabled, without IMU", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -273,7 +274,7 @@ func TestNewFeatureFlag(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
+			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
 			ConfigParams:          map[string]string{"mode": "2d"},
 			DataDirectory:         dataDirectory,
 			IMUIntegrationEnabled: true,
@@ -285,7 +286,32 @@ func TestNewFeatureFlag(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	t.Run("Failed creation of cartographer slam service with invalid sensor "+
+	t.Run("Successful creation of cartographer slam service with good lidar with feature flag enabled, with IMU", func(t *testing.T) {
+		termFunc := testhelper.InitTestCL(t, logger)
+		defer termFunc()
+
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		attrCfg := &vcConfig.Config{
+			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			IMUIntegrationEnabled: true,
+			MovementSensor:        map[string]string{"name": "good_imu", "data_frequency_hz": testIMUDataFreqHz},
+		}
+
+		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
+		test.That(t, err, test.ShouldBeNil)
+
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
+
+	t.Run("Failed creation of cartographer slam service with invalid lidar sensor "+
 		"that errors during call to NextPointCloud with feature flag enabled", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
@@ -298,7 +324,7 @@ func TestNewFeatureFlag(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "invalid_lidar", "data_frequency_hz": testDataFreqHz},
+			Camera:                map[string]string{"name": "invalid_lidar", "data_frequency_hz": testLidarDataFreqHz},
 			ConfigParams:          map[string]string{"mode": "2d"},
 			DataDirectory:         dataDirectory,
 			IMUIntegrationEnabled: true,
@@ -307,7 +333,33 @@ func TestNewFeatureFlag(t *testing.T) {
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
 
-			errors.New("failed to get data from lidar: ValidateGetData timeout: NextPointCloud error: invalid sensor"))
+			errors.New("failed to get data from lidar: ValidateGetLidarData timeout: NextPointCloud error: invalid sensor"))
+	})
+
+	t.Run("Failed creation of cartographer slam service with invalid IMU sensor "+
+		"that errors during call to LinearAcceleration with feature flag enabled", func(t *testing.T) {
+		termFunc := testhelper.InitTestCL(t, logger)
+		defer termFunc()
+
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		attrCfg := &vcConfig.Config{
+			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+			ConfigParams:          map[string]string{"mode": "2d"},
+			DataDirectory:         dataDirectory,
+			IMUIntegrationEnabled: true,
+			MovementSensor:        map[string]string{"name": "invalid_imu", "data_frequency_hz": testIMUDataFreqHz},
+		}
+
+		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
+		test.That(t, err, test.ShouldBeError,
+
+			errors.New("failed to get data from IMU: ValidateGetIMUData timeout: LinearAcceleration error: invalid sensor"))
 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode with feature flag enabled", func(t *testing.T) {
@@ -501,7 +553,7 @@ func TestDoCommand(t *testing.T) {
 
 	test.That(t, err, test.ShouldBeNil)
 	attrCfg := &vcConfig.Config{
-		Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testDataFreqHz},
+		Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
 		ConfigParams:          map[string]string{"mode": "2d", "test_param": "viam"},
 		DataDirectory:         dataDirectory,
 		MapRateSec:            &testMapRateSec,
@@ -509,7 +561,7 @@ func TestDoCommand(t *testing.T) {
 	}
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 	test.That(t, err, test.ShouldBeNil)
-	t.Run("returns UnimplementedError when given other parmeters", func(t *testing.T) {
+	t.Run("returns UnimplementedError when given other parameters", func(t *testing.T) {
 		cmd := map[string]interface{}{"fake_flag": true}
 		resp, err := svc.DoCommand(context.Background(), cmd)
 		test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
