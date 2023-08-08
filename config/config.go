@@ -94,7 +94,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 // and returns them.
 func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (int, string, int, int, error) {
-	lidarDataRateMsec := defaultLidarDataRateMsec
+	lidarDataRateMsec := 0
 	imuName := ""
 	imuDataRateMsec := defaultIMUDataRateMsec
 
@@ -102,13 +102,18 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 	if config.IMUIntegrationEnabled {
 		strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
 		if !ok {
+			lidarDataRateMsec = defaultLidarDataRateMsec
 			logger.Debugf("config did not provide camera[data_frequency_hz], setting to default value of %d", 1000/defaultLidarDataRateMsec)
 		} else {
 			lidarDataFreqHz, err := strconv.Atoi(strCameraDataFreqHz)
 			if err != nil {
 				return 0, "", 0, 0, newError("camera[data_frequency_hz] must only contain digits")
 			}
-			lidarDataRateMsec = 1000 / lidarDataFreqHz
+			if lidarDataFreqHz == 0 {
+				lidarDataRateMsec = 0
+			} else {
+				lidarDataRateMsec = 1000 / lidarDataFreqHz
+			}
 		}
 		exists := false
 		imuName, exists = config.MovementSensor["name"]
