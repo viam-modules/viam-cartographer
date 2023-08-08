@@ -267,19 +267,11 @@ void CartoFacade::IOInit() {
     // Setup file system for saving internal state
     setup_filesystem(config.data_dir, path_to_internal_state);
     if (config.cloud_story_enabled == true) {
-<<<<<<< HEAD
         slam_mode = determine_slam_mode_cloud_story_enabled(
             path_to_internal_state, config.enable_mapping);
     } else {
-=======
-        LOG(ERROR) << "KIM LOG: CLOUD STORY ENABLED";
-        slam_mode =
-            determine_slam_mode_cloud_story_enabled(path_to_internal_state, config.enable_mapping);
-    } else {
-        LOG(ERROR) << "KIM LOG: CLOUD STORY NOT ENABLED";
->>>>>>> a69e64a (WIP: tests passing with enable mapping cloud story changes)
-        slam_mode =
-            determine_slam_mode(path_to_internal_state, config.map_rate_sec);
+    slam_mode = determine_slam_mode_cloud_story_enabled(
+            path_to_internal_state, config.enable_mapping);
     }
     VLOG(1) << "slam slam mode: " << slam_mode;
     // TODO: Make this API user configurable
@@ -928,7 +920,6 @@ extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
 extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
                            const viam_carto_config c,
                            const viam_carto_algo_config ac) {
-    LOG(ERROR) << "KIM LOG" << c.cloud_story_enabled;
     if (ppVC == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
