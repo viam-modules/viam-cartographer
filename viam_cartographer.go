@@ -32,6 +32,8 @@ var (
 	cartoLib cartofacade.CartoLib
 	// ErrClosed denotes that the slam service method was called on a closed slam resource.
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
+	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
+	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
 )
 
 const (
@@ -155,6 +157,14 @@ func New(
 	svcConfig, err := resource.NativeConfig[*vcConfig.Config](c)
 	if err != nil {
 		return nil, err
+	}
+
+	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
+		return &CartographerService{
+			Named:        c.ResourceName().AsNamed(),
+			useCloudSlam: true,
+			logger:       logger,
+		}, nil
 	}
 
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
@@ -480,6 +490,8 @@ type CartographerService struct {
 	imu      IMU
 	subAlgo  SubAlgo
 
+	useCloudSlam bool
+
 	configParams  map[string]string
 	dataDirectory string
 
@@ -505,6 +517,10 @@ type CartographerService struct {
 func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialmath.Pose, string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetPosition")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetPosition called with use_cloud_slam set to true")
+		return nil, "", ErrUseCloudSlamEnabled
+	}
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPosition called after closed")
 		return nil, "", ErrClosed
@@ -532,6 +548,10 @@ func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialma
 func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetPointCloudMap")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetPointCloudMap called with use_cloud_slam set to true")
+		return nil, ErrUseCloudSlamEnabled
+	}
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
@@ -550,6 +570,10 @@ func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func
 func (cartoSvc *CartographerService) GetInternalState(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetInternalState")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetInternalState called with use_cloud_slam set to true")
+		return nil, ErrUseCloudSlamEnabled
+	}
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetInternalState called after closed")
@@ -584,6 +608,10 @@ func toChunkedFunc(b []byte) func() ([]byte, error) {
 func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetLatestMapInfo")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetLatestMapInfo called with use_cloud_slam set to true")
+		return time.Time{}, ErrUseCloudSlamEnabled
+	}
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetLatestMapInfo called after closed")
@@ -599,6 +627,10 @@ func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time
 
 // DoCommand receives arbitrary commands.
 func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("DoCommand called with use_cloud_slam set to true")
+		return nil, ErrUseCloudSlamEnabled
+	}
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("DoCommand called after closed")
 		return nil, ErrClosed
@@ -614,6 +646,10 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 // Close out of all slam related processes.
 func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 	cartoSvc.mu.Lock()
+	if cartoSvc.useCloudSlam {
+		return nil
+	}
+
 	defer cartoSvc.mu.Unlock()
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("Close() called multiple times")

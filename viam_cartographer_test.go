@@ -34,10 +34,64 @@ var (
 	testMapRateSec = 200
 	_zeroInt       = 0
 	_zeroTime      = time.Time{}
+	_true          = true
 )
 
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
+
+	t.Run("Succeeds if use_cloud_slam is set to true. Causes all endpoints return errors.", func(t *testing.T) {
+		termFunc := testhelper.InitTestCL(t, logger)
+		defer termFunc()
+
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{"good_lidar"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			DataRateMsec:  testDataRateMsec,
+			UseCloudSlam:  &_true,
+		}
+
+		ctx := context.Background()
+
+		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
+		test.That(t, err, test.ShouldBeNil)
+
+		pose, componentRef, err := svc.GetPosition(ctx)
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		gpcmF, err := svc.GetPointCloudMap(ctx)
+		test.That(t, gpcmF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		gisF, err := svc.GetInternalState(ctx)
+		test.That(t, gisF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		mapTime, err := svc.GetLatestMapInfo(ctx)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+		test.That(t, mapTime, test.ShouldResemble, time.Time{})
+
+		cmd := map[string]interface{}{}
+		resp, err := svc.DoCommand(ctx, cmd)
+		test.That(t, resp, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
 
 	t.Run("Failed creation of cartographer slam service with more than one sensor", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
