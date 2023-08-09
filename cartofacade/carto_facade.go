@@ -319,7 +319,24 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, cf.carto.addLidarReading(lidar, reading, timestamp) // PATRICIA TO-DO
+		return nil, cf.carto.addLidarReading(lidar, reading, timestamp)
+	case addIMUReading:
+		imu, ok := r.requestParams[sensor].(string)
+		if !ok {
+			return nil, errors.New("could not cast inputted lidar name to string")
+		}
+
+		reading, ok := r.requestParams[reading].(imuReading)
+		if !ok {
+			return nil, errors.New("could not cast inputted byte to byte slice")
+		}
+
+		timestamp, ok := r.requestParams[timestamp].(time.Time)
+		if !ok {
+			return nil, errors.New("could not cast inputted timestamp to times.Time")
+		}
+
+		return nil, cf.carto.addIMUReading(imu, reading, timestamp)
 	case position:
 		return cf.carto.getPosition()
 	case internalState:

@@ -802,6 +802,7 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
 
     if (map_builder_mutex.try_lock()) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
+                << " Sensor type: Lidar "
                 << " measurement.ranges.size(): " << measurement.ranges.size();
         map_builder.AddSensorData(kRangeSensorId.id, measurement);
         tmp_global_pose = map_builder.GetGlobalPose();
@@ -823,28 +824,29 @@ void CartoFacade::AddIMUReading(const viam_carto_imu_reading *sr) {
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
-    if (biseq(tobstring(config.movement_sensor), sr->imu) == false) {
+    if (biseq(to_bstring(config.movement_sensor), sr->imu) == false) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->imu) << " to be "
                 << config.movement_sensor;
         throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
     }
 
     int64_t imu_reading_time_unix_milli = sr->imu_reading_time_unix_milli;
-    
-    cartographer::sensor::ImuData imu_data;
-    imu_data.time =
+
+    cartographer::sensor::ImuData measurement;
+    measurement.time =
         cartographer::common::FromUniversal(0) +
-        cartographer::common::FromMilliseconds(lidar_reading_time_unix_milli);
-    
+        cartographer::common::FromMilliseconds(imu_reading_time_unix_milli);
+    measurement.linear_acceleration =
+        Eigen::Vector3d(sr->lin_acc_x, sr->lin_acc_y, sr->lin_acc_z);
+    measurement.angular_velocity =
+        Eigen::Vector3d(sr->ang_vel_x, sr->ang_vel_y, sr->ang_vel_z);
 
     cartographer::transform::Rigid3d tmp_global_pose;
     bool update_latest_global_pose = false;
 
-    measurement
-
     if (map_builder_mutex.try_lock()) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
-                << " measurement.ranges.size(): " << measurement.ranges.size();
+                << " Sensor type: IMU ";
         map_builder.AddSensorData(kIMUSensorId.id, measurement);
         tmp_global_pose = map_builder.GetGlobalPose();
         map_builder_mutex.unlock();

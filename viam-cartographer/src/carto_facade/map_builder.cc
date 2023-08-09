@@ -95,20 +95,21 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     return ok;
 }
 
-void MapBuilder::AddSensorData(std::string& sensor_id,
+void MapBuilder::AddSensorData(
+    const std::string &sensor_id,
     cartographer::sensor::TimedPointCloudData measurement) {
     trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
 }
 
-void MapBuilder::AddSensorData(std::string& sensor_id,
-    cartographer::sensor::ImuData measurement) {
+void MapBuilder::AddSensorData(const std::string &sensor_id,
+                               cartographer::sensor::ImuData measurement) {
     trajectory_builder->AddSensorData(kIMUSensorId.id, measurement);
 }
 
 void MapBuilder::StartLidarTrajectoryBuilder() {
     VLOG(1) << "MapBuilder::StartLidarTrajectoryBuilder";
     trajectory_id = map_builder_->AddTrajectoryBuilder(
-        {kRangeSensorId}, trajectory_builder_options_,
+        {kRangeSensorId, kIMUSensorId}, trajectory_builder_options_,
         GetLocalSlamResultCallback());
     VLOG(1) << "Using trajectory ID: " << trajectory_id;
 
