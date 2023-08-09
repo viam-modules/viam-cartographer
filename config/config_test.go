@@ -111,7 +111,7 @@ func testValidateTesthelper(
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, cfg.Sensors, test.ShouldResemble, cfgService.Attributes["sensors"])
-		test.That(t, cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
+		test.That(t, *cfg.DataRateMsec, test.ShouldEqual, cfgService.Attributes["data_rate_msec"])
 		test.That(t, cfg.ConfigParams, test.ShouldResemble, cfgService.Attributes["config_params"])
 
 		if cloudStoryEnabled {
@@ -194,7 +194,8 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfg, err := newConfig(cfgService)
 		two := 2
 		cfg.MapRateSec = &two
-		cfg.DataRateMsec = 50
+		dataRate := 50
+		cfg.DataRateMsec = &dataRate
 		test.That(t, err, test.ShouldBeNil)
 		lidarDataRateMsec, _, _, mapRateSec, err := GetOptionalParameters(
 			cfg,

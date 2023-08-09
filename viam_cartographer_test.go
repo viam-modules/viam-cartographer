@@ -25,16 +25,17 @@ import (
 
 const (
 	testExecutableName  = "true" // the program "true", not the boolean value
-	testLidarDataFreqHz = "5"
+	testDataFreqHz      = "5"
 	testIMUDataFreqHz   = "20"
-	testDataRateMsec    = 200
+	testLidarDataFreqHz = "5"
 )
 
 var (
-	testMapRateSec = 200
-	_zeroInt       = 0
-	_zeroTime      = time.Time{}
-	_true          = true
+	testMapRateSec   = 200
+	_zeroInt         = 0
+	_zeroTime        = time.Time{}
+	testDataRateMsec = 200
+	_true            = true
 )
 
 func TestNew(t *testing.T) {
@@ -59,7 +60,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 			UseCloudSlam:  &_true,
 		}
 
@@ -135,7 +136,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"gibberish"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -159,7 +160,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -184,7 +185,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"invalid_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -254,7 +255,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
