@@ -57,7 +57,7 @@ class MapBuilder {
     // string if it fails.
     std::string TryFileClose(std::ifstream &file, std::string filename);
 
-    void StartLidarTrajectoryBuilder();
+    void StartTrajectoryBuilder();
 
     // SetStartTime sets the start_time to the time stamp from the first sensor
     // file that is being read in.
@@ -88,6 +88,7 @@ class MapBuilder {
     void OverwriteMissingDataRayLength(float value);
     void OverwriteMaxRange(float value);
     void OverwriteMinRange(float value);
+    void OverwriteUseIMUData(bool value);
     void OverwriteMaxSubmapsToKeep(int value);
     void OverwriteFreshSubmapsCount(int value);
     void OverwriteMinCoveredArea(double value);
@@ -102,6 +103,7 @@ class MapBuilder {
     float GetMissingDataRayLength();
     float GetMaxRange();
     float GetMinRange();
+    bool GetUseIMUData();
     int GetMaxSubmapsToKeep();
     int GetFreshSubmapsCount();
     double GetMinCoveredArea();

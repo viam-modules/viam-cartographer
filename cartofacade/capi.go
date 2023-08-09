@@ -117,6 +117,7 @@ type CartoAlgoConfig struct {
 	MissingDataRayLength float32
 	MaxRange             float32
 	MinRange             float32
+	UseIMUData           bool
 	MaxSubmapsToKeep     int
 	FreshSubmapsCount    int
 	MinCoveredArea       float64
@@ -383,6 +384,7 @@ func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac.missing_data_ray_length = C.float(acfg.MissingDataRayLength)
 	vcac.max_range = C.float(acfg.MaxRange)
 	vcac.min_range = C.float(acfg.MinRange)
+	vcac.use_imu_data = C.bool(acfg.UseIMUData)
 	vcac.max_submaps_to_keep = C.int(acfg.MaxSubmapsToKeep)
 	vcac.fresh_submaps_count = C.int(acfg.FreshSubmapsCount)
 	vcac.min_covered_area = C.double(acfg.MinCoveredArea)

@@ -40,6 +40,7 @@ func GetTestAlgoConfig() CartoAlgoConfig {
 		MissingDataRayLength: 25.0,
 		MaxRange:             25.0,
 		MinRange:             0.2,
+		UseIMUData:           false,
 		MaxSubmapsToKeep:     3,
 		FreshSubmapsCount:    3,
 		MinCoveredArea:       1.0,

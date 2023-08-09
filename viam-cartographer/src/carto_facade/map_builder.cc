@@ -106,11 +106,18 @@ void MapBuilder::AddSensorData(const std::string &sensor_id,
     trajectory_builder->AddSensorData(kIMUSensorId.id, measurement);
 }
 
-void MapBuilder::StartLidarTrajectoryBuilder() {
-    VLOG(1) << "MapBuilder::StartLidarTrajectoryBuilder";
-    trajectory_id = map_builder_->AddTrajectoryBuilder(
-        {kRangeSensorId, kIMUSensorId}, trajectory_builder_options_,
+void MapBuilder::StartTrajectoryBuilder(bool use_imu) {
+    VLOG(1) << "MapBuilder::StartTrajectoryBuilder";
+    if use_imu {
+        trajectory_id = map_builder_->AddTrajectoryBuilder(
+            {kRangeSensorId, kIMUSensorId}, trajectory_builder_options_,
+            GetLocalSlamResultCallback());
+    } else {
+        trajectory_id = map_builder_->AddTrajectoryBuilder(
+        {kRangeSensorId}, trajectory_builder_options_,
         GetLocalSlamResultCallback());
+    }
+
     VLOG(1) << "Using trajectory ID: " << trajectory_id;
 
     trajectory_builder = map_builder_->GetTrajectoryBuilder(trajectory_id);
@@ -188,6 +195,16 @@ void MapBuilder::OverwriteMinRange(float value) {
     auto mutable_trajectory_builder_2d_options =
         trajectory_builder_options_.mutable_trajectory_builder_2d_options();
     mutable_trajectory_builder_2d_options->set_min_range(value);
+}
+
+void MapBuilder::OverwriteUseIMUData(bool value) {
+    auto mutable_trajectory_builder_2d_options =
+        trajectory_builder_options_.mutable_trajectory_builder_2d_options();
+    if value {
+        mutable_trajectory_builder_2d_options->set_use_imu_data();
+    } else {
+        mutable_trajectory_builder_2d_options->clear_use_imu_data();
+    }
 }
 
 void MapBuilder::OverwriteMaxSubmapsToKeep(int value) {
@@ -272,6 +289,11 @@ float MapBuilder::GetMaxRange() {
 float MapBuilder::GetMinRange() {
     return trajectory_builder_options_.trajectory_builder_2d_options()
         .min_range();
+}
+
+bool MapBuilder::GetUseIMUData() {
+    return trajectory_builder_options_.trajectory_builder_2d_options()
+        .use_imu_data();
 }
 
 int MapBuilder::GetMaxSubmapsToKeep() {

@@ -302,6 +302,7 @@ void CartoFacade::IOInit() {
             algo_config.missing_data_ray_length);
         map_builder.OverwriteMaxRange(algo_config.max_range);
         map_builder.OverwriteMinRange(algo_config.min_range);
+        map_builder.OverwriteUseIMUData(algo_config.use_imu_data);
         if (slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
             map_builder.OverwriteMaxSubmapsToKeep(
                 algo_config.max_submaps_to_keep);
@@ -366,7 +367,7 @@ void CartoFacade::IOInit() {
 
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.StartLidarTrajectoryBuilder();
+        map_builder.StartTrajectoryBuilder(algo_config.use_imu_data);
     }
     state = CartoFacadeState::IO_INITIALIZED;
 };

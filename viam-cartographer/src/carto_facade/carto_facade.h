@@ -133,6 +133,7 @@ typedef struct viam_carto_algo_config {
     float missing_data_ray_length;
     float max_range;
     float min_range;
+    bool use_imu_data;
     int max_submaps_to_keep;
     int fresh_submaps_count;
     double min_covered_area;
