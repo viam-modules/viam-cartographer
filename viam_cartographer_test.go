@@ -24,10 +24,10 @@ import (
 )
 
 const (
-	testExecutableName = "true" // the program "true", not the boolean value
-	testDataFreqHz     = "5"
-  testIMUDataFreqHz   = "20"
-	testDataRateMsec    = 200
+	testExecutableName  = "true" // the program "true", not the boolean value
+	testDataFreqHz      = "5"
+	testIMUDataFreqHz   = "20"
+	testLidarDataFreqHz = "5"
 )
 
 var (
@@ -35,7 +35,7 @@ var (
 	_zeroInt         = 0
 	_zeroTime        = time.Time{}
 	testDataRateMsec = 200
-  _true          = true
+	_true            = true
 )
 
 func TestNew(t *testing.T) {
@@ -60,7 +60,7 @@ func TestNew(t *testing.T) {
 			Sensors:       []string{"good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
-			DataRateMsec:  testDataRateMsec,
+			DataRateMsec:  &testDataRateMsec,
 			UseCloudSlam:  &_true,
 		}
 
