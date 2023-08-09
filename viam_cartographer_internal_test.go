@@ -92,7 +92,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 	var inputQuat map[string]interface{}
 
 	t.Run("empty component reference success", func(t *testing.T) {
-		svc.lidarName = ""
+		svc.lidar.name = ""
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
@@ -100,7 +100,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 
 	t.Run("origin pose success", func(t *testing.T) {
-		svc.lidarName = "primarySensor1"
+		svc.lidar.name = "primarySensor1"
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
@@ -108,7 +108,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 
 	t.Run("non origin pose success", func(t *testing.T) {
-		svc.lidarName = "primarySensor2"
+		svc.lidar.name = "primarySensor2"
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
 
@@ -116,7 +116,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 
 	t.Run("error case", func(t *testing.T) {
-		svc.lidarName = "primarySensor3"
+		svc.lidar.name = "primarySensor3"
 		mockCartoFacade.GetPositionFunc = func(
 			ctx context.Context,
 			timeout time.Duration,

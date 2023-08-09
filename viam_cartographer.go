@@ -32,6 +32,8 @@ var (
 	cartoLib cartofacade.CartoLib
 	// ErrClosed denotes that the slam service method was called on a closed slam resource.
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
+	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
+	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
 )
 
 const (
@@ -88,6 +90,7 @@ func init() {
 				defaultSensorValidationIntervalSec,
 				defaultCartoFacadeTimeout,
 				nil,
+				nil,
 			)
 		},
 	})
@@ -119,9 +122,9 @@ func TerminateCartoLib() error {
 func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
 		CartoFacade:       cartoSvc.cartofacade,
-		Lidar:             cartoSvc.timedLidar,
-		LidarName:         cartoSvc.lidarName,
-		LidarDataRateMsec: cartoSvc.lidarDataRateMsec,
+		Lidar:             cartoSvc.lidar.testing,
+		LidarName:         cartoSvc.lidar.name,
+		LidarDataRateMsec: cartoSvc.lidar.dataRateMsec,
 		Timeout:           cartoSvc.cartoFacadeTimeout,
 		Logger:            cartoSvc.logger,
 	}
@@ -145,7 +148,8 @@ func New(
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
-	testTimedSensorOverride s.TimedSensor,
+	testTimedLidarSensorOverride s.TimedLidarSensor,
+	testTimedIMUSensorOverride s.TimedIMUSensor,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -153,6 +157,14 @@ func New(
 	svcConfig, err := resource.NativeConfig[*vcConfig.Config](c)
 	if err != nil {
 		return nil, err
+	}
+
+	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
+		return &CartographerService{
+			Named:        c.ResourceName().AsNamed(),
+			useCloudSlam: true,
+			logger:       logger,
+		}, nil
 	}
 
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
@@ -173,15 +185,21 @@ func New(
 	}
 
 	// feature flag for new config
-	name := ""
+	lidarName := ""
 	if svcConfig.IMUIntegrationEnabled {
-		name = svcConfig.Camera["name"]
+		lidarName = svcConfig.Camera["name"]
 	} else {
-		name = svcConfig.Sensors[0]
+		lidarName = svcConfig.Sensors[0]
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidar, err := s.NewLidar(ctx, deps, name, logger)
+	lidarObject, err := s.NewLidar(ctx, deps, lidarName, logger)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the IMU if one is configured
+	imuObject, err := s.NewIMU(ctx, deps, imuName, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -191,22 +209,36 @@ func New(
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
 
 	// use the override in testing if non nil
-	// otherwise use the lidar from deps as the
-	// timed sensor
-	timedLidar := testTimedSensorOverride
+	// otherwise use the sensors from deps as the
+	// timed sensors
+	timedLidar := testTimedLidarSensorOverride
+	timedIMU := testTimedIMUSensorOverride
 	if timedLidar == nil {
-		timedLidar = lidar
+		timedLidar = lidarObject
+	}
+	if timedIMU == nil {
+		timedIMU = imuObject
+	}
+
+	lidar := Lidar{
+		name:         lidarName,
+		dataRateMsec: lidarDataRateMsec,
+		actual:       lidarObject,
+		testing:      timedLidar,
+	}
+
+	imu := IMU{
+		name:         imuName,
+		dataRateMsec: imuDataRateMsec,
+		actual:       imuObject,
+		testing:      timedIMU,
 	}
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
 		Named:                         c.ResourceName().AsNamed(),
-		lidarName:                     lidar.Name,
 		lidar:                         lidar,
-		lidarDataRateMsec:             lidarDataRateMsec,
-		timedLidar:                    timedLidar,
-		imuName:                       imuName,
-		imuDataRateMsec:               imuDataRateMsec,
+		imu:                           imu,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		dataDirectory:                 svcConfig.DataDirectory,
@@ -228,7 +260,7 @@ func New(
 			}
 		}
 	}()
-	if err = s.ValidateGetData(
+	if err = s.ValidateGetLidarData(
 		cancelSensorProcessCtx,
 		timedLidar,
 		time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
@@ -236,6 +268,17 @@ func New(
 		cartoSvc.logger); err != nil {
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
+	}
+	if cartoSvc.imu.name != "" {
+		if err = s.ValidateGetIMUData(
+			cancelSensorProcessCtx,
+			timedIMU,
+			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
+			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+			cartoSvc.logger); err != nil {
+			err = errors.Wrap(err, "failed to get data from IMU")
+			return nil, err
+		}
 	}
 
 	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
@@ -371,11 +414,11 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	}
 
 	cartoCfg := cartofacade.CartoConfig{
-		Camera:             cartoSvc.lidarName,
-		MovementSensor:     cartoSvc.imuName,
+		Camera:             cartoSvc.lidar.name,
+		MovementSensor:     cartoSvc.imu.name,
 		MapRateSecond:      cartoSvc.mapRateSec,
 		DataDir:            cartoSvc.dataDirectory,
-		ComponentReference: cartoSvc.lidarName,
+		ComponentReference: cartoSvc.lidar.name,
 		LidarConfig:        cartofacade.TwoD,
 	}
 
@@ -420,20 +463,34 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 	return stopErr
 }
 
+// Lidar is the structure containing all field related to lidar.
+type Lidar struct {
+	name         string
+	dataRateMsec int
+	actual       s.Lidar
+	testing      s.TimedLidarSensor
+}
+
+// IMU is the structure containing all fields related to IMU.
+type IMU struct {
+	name         string
+	dataRateMsec int
+	actual       s.IMU
+	testing      s.TimedIMUSensor
+}
+
 // CartographerService is the structure of the slam service.
 type CartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
-	mu                sync.Mutex
-	SlamMode          cartofacade.SlamMode
-	closed            bool
-	lidarName         string
-	lidarDataRateMsec int
-	lidar             s.Lidar
-	timedLidar        s.TimedSensor
-	imuName           string
-	imuDataRateMsec   int
-	subAlgo           SubAlgo
+	mu       sync.Mutex
+	SlamMode cartofacade.SlamMode
+	closed   bool
+	lidar    Lidar
+	imu      IMU
+	subAlgo  SubAlgo
+
+	useCloudSlam bool
 
 	configParams  map[string]string
 	dataDirectory string
@@ -460,6 +517,10 @@ type CartographerService struct {
 func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialmath.Pose, string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetPosition")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetPosition called with use_cloud_slam set to true")
+		return nil, "", ErrUseCloudSlamEnabled
+	}
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPosition called after closed")
 		return nil, "", ErrClosed
@@ -479,7 +540,7 @@ func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialma
 			"kmag": pos.Kmag,
 		},
 	}
-	return CheckQuaternionFromClientAlgo(pose, cartoSvc.lidarName, returnedExt)
+	return CheckQuaternionFromClientAlgo(pose, cartoSvc.lidar.name, returnedExt)
 }
 
 // GetPointCloudMap creates a request calls the slam algorithms GetPointCloudMap endpoint and returns a callback
@@ -487,6 +548,10 @@ func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialma
 func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetPointCloudMap")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetPointCloudMap called with use_cloud_slam set to true")
+		return nil, ErrUseCloudSlamEnabled
+	}
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
@@ -505,6 +570,10 @@ func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func
 func (cartoSvc *CartographerService) GetInternalState(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetInternalState")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetInternalState called with use_cloud_slam set to true")
+		return nil, ErrUseCloudSlamEnabled
+	}
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetInternalState called after closed")
@@ -539,6 +608,10 @@ func toChunkedFunc(b []byte) func() ([]byte, error) {
 func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetLatestMapInfo")
 	defer span.End()
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("GetLatestMapInfo called with use_cloud_slam set to true")
+		return time.Time{}, ErrUseCloudSlamEnabled
+	}
 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("GetLatestMapInfo called after closed")
@@ -554,6 +627,10 @@ func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time
 
 // DoCommand receives arbitrary commands.
 func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warn("DoCommand called with use_cloud_slam set to true")
+		return nil, ErrUseCloudSlamEnabled
+	}
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("DoCommand called after closed")
 		return nil, ErrClosed
@@ -569,6 +646,10 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 // Close out of all slam related processes.
 func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 	cartoSvc.mu.Lock()
+	if cartoSvc.useCloudSlam {
+		return nil
+	}
+
 	defer cartoSvc.mu.Unlock()
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("Close() called multiple times")

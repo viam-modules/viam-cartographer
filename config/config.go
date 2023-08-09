@@ -28,7 +28,7 @@ type Config struct {
 	CloudStoryEnabled bool   `json:"cloud_story_enabled"`
 	ExistingMap       string `json:"existing_map"`
 	EnableMapping     bool   `json:"enable_mapping"`
-	RunSlam           bool   `json:"run_slam"`
+	UseCloudSlam      *bool  `json:"use_cloud_slam"`
 }
 
 var (
@@ -39,7 +39,8 @@ var (
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
-
+	imuName := ""
+	imuExists := false
 	if config.IMUIntegrationEnabled {
 		var ok bool
 		cameraName, ok = config.Camera["name"]
@@ -56,6 +57,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 				return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
 			}
 		}
+		imuName, imuExists = config.MovementSensor["name"]
 	} else {
 		if config.Sensors == nil || len(config.Sensors) < 1 {
 			return nil, utils.NewConfigValidationError(path, errSensorsMustNotBeEmpty)
@@ -86,7 +88,9 @@ func (config *Config) Validate(path string) ([]string, error) {
 	}
 
 	deps := []string{cameraName}
-
+	if imuExists {
+		deps = []string{cameraName, imuName}
+	}
 	return deps, nil
 }
 
