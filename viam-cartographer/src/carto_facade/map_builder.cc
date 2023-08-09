@@ -95,9 +95,14 @@ bool MapBuilder::SaveMapToFile(bool include_unfinished_submaps,
     return ok;
 }
 
-void MapBuilder::AddSensorData(
+void MapBuilder::AddSensorData(std::string& sensor_id,
     cartographer::sensor::TimedPointCloudData measurement) {
     trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
+}
+
+void MapBuilder::AddSensorData(std::string& sensor_id,
+    cartographer::sensor::ImuData measurement) {
+    trajectory_builder->AddSensorData(kIMUSensorId.id, measurement);
 }
 
 void MapBuilder::StartLidarTrajectoryBuilder() {

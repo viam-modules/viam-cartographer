@@ -72,8 +72,8 @@ class MapBuilder {
 
     // AddSensorData adds sensor data to cartographer's internal state
     // throws if adding sensor data fails.
-    // Currently assumes the sensor data is coming from the lidar
-    void AddSensorData(cartographer::sensor::TimedPointCloudData measurement);
+    void AddSensorData(std::string& sensor_id, cartographer::sensor::TimedPointCloudData measurement);
+    void AddSensorData(std::string& sensor_id, cartographer::sensor::ImuData measurement);
 
     // GetLocalSlamResultCallback saves the local pose in the
     // local_slam_result_poses array.

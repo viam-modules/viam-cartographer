@@ -78,6 +78,17 @@ typedef enum viam_carto_LIDAR_CONFIG {
     VIAM_CARTO_THREE_D = 1
 } viam_carto_LIDAR_CONFIG;
 
+typedef struct viam_carto_imu_reading {
+    bstring imu;
+    double lin_acc_x;
+    double lin_acc_y;
+    double lin_acc_z;
+    double ang_vel_x;
+    double ang_vel_y;
+    double ang_vel_z;
+    int64_t imu_reading_time_unix_milli;
+} viam_carto_imu_reading;
+
 // return codes
 #define VIAM_CARTO_SUCCESS 0
 #define VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK 1
@@ -97,7 +108,7 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE 16
 #define VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR 17
 #define VIAM_CARTO_MAP_CREATION_ERROR 18
-#define VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST 19
+#define VIAM_CARTO_UNKNOWN_SENSOR_NAME 19
 #define VIAM_CARTO_LIDAR_READING_EMPTY 20
 #define VIAM_CARTO_LIDAR_READING_INVALID 21
 #define VIAM_CARTO_GET_POSITION_RESPONSE_INVALID 22
@@ -111,6 +122,9 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE 30
 #define VIAM_CARTO_NOT_IN_STARTED_STATE 31
 #define VIAM_CARTO_NOT_IN_TERMINATABLE_STATE 32
+#define VIAM_CARTO_IMU_CONFIG_INVALID 33
+#define VIAM_CARTO_IMU_READING_EMPTY 34
+#define VIAM_CARTO_IMU_READING_INVALID 35
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -210,6 +224,27 @@ extern int viam_carto_add_lidar_reading(viam_carto *vc,                     //
 //
 // On success: Returns 0, frees the viam_carto_lidar_reading.
 extern int viam_carto_add_lidar_reading_destroy(viam_carto_lidar_reading *sr  //
+);
+
+// viam_carto_add_imu_reading/3 takes a viam_carto pointer, a
+// viam_carto_imu_reading
+//
+// On error: Returns a non 0 error code
+//
+// An expected error is VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK(1)
+//
+// On success: Returns 0, adds IMU reading to cartographer's data model
+extern int viam_carto_add_imu_reading(viam_carto *vc,                      //
+                                         const viam_carto_imu_reading *sr  //
+);
+
+// viam_carto_add_imu_reading_destroy/2 takes a viam_carto pointer
+//
+// On error: Returns a non 0 error code
+//
+// On success: Returns 0, frees the viam_carto_imu_reading.
+extern int viam_carto_add_imu_reading_destroy(
+    viam_carto_imu_reading *sr  //
 );
 
 // viam_carto_get_position/3 takes a viam_carto pointer, a
@@ -356,6 +391,8 @@ class CartoFacade {
     void GetInternalState(viam_carto_get_internal_state_response *r);
 
     void AddLidarReading(const viam_carto_lidar_reading *sr);
+
+    void AddIMUReading(const viam_carto_imu_reading *sr);
 
     void Start();
 

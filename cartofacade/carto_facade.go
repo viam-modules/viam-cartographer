@@ -73,12 +73,34 @@ func (cf *CartoFacade) AddLidarReading(
 	readingTimestamp time.Time,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
-		lidar:     lidarName,
+		sensor:    lidarName,
 		reading:   currentReading,
 		timestamp: readingTimestamp,
 	}
 
 	_, err := cf.request(ctx, addLidarReading, requestParams, timeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AddIMUReading calls into the cartofacade C code.
+func (cf *CartoFacade) AddIMUReading(
+	ctx context.Context,
+	timeout time.Duration,
+	imuName string,
+	currentReading imuReading,
+	readingTimestamp time.Time,
+) error {
+	requestParams := map[RequestParamType]interface{}{
+		sensor:    imuName,
+		reading:   currentReading,
+		timestamp: readingTimestamp,
+	}
+
+	_, err := cf.request(ctx, addIMUReading, requestParams, timeout)
 	if err != nil {
 		return err
 	}
@@ -145,6 +167,8 @@ const (
 	terminate
 	// addLidarReading represents the viam_carto_add_lidar_reading in c.
 	addLidarReading
+	// addIMUReading represents the viam_carto_add_imu_reading in c.
+	addIMUReading
 	// position represents the viam_carto_get_position call in c.
 	position
 	// internalState represents the viam_carto_get_internal_state call in c.
@@ -157,9 +181,9 @@ const (
 type RequestParamType int64
 
 const (
-	// lidar represents a lidar name input into c funcs.
-	lidar RequestParamType = iota
-	// reading represents a lidar reading input into c funcs.
+	// sensor represents a sensor name input into c funcs.
+	sensor RequestParamType = iota
+	// reading represents a sensor reading input into c funcs.
 	reading
 	// timestamp represents the timestamp input into c funcs.
 	timestamp
@@ -222,8 +246,15 @@ type Interface interface {
 	AddLidarReading(
 		ctx context.Context,
 		timeout time.Duration,
-		sensorName string,
+		lidarName string,
 		currentReading []byte,
+		readingTimestamp time.Time,
+	) error
+	AddIMUReading(
+		ctx context.Context,
+		timeout time.Duration,
+		imuName string,
+		currentReading imuReading,
 		readingTimestamp time.Time,
 	) error
 	GetPosition(
@@ -273,7 +304,7 @@ func (r *Request) doWork(
 	case terminate:
 		return nil, cf.carto.terminate()
 	case addLidarReading:
-		lidar, ok := r.requestParams[lidar].(string)
+		lidar, ok := r.requestParams[sensor].(string)
 		if !ok {
 			return nil, errors.New("could not cast inputted lidar name to string")
 		}
@@ -288,7 +319,7 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, cf.carto.addLidarReading(lidar, reading, timestamp)
+		return nil, cf.carto.addLidarReading(lidar, reading, timestamp) // PATRICIA TO-DO
 	case position:
 		return cf.carto.getPosition()
 	case internalState:

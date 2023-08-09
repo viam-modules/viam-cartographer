@@ -769,7 +769,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(sr.lidar_reading != nullptr);
         sr.lidar_reading_time_unix_milli = 1687899990420347;
         BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST);
+                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
                    VIAM_CARTO_SUCCESS);
     }
@@ -785,7 +785,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
         BOOST_TEST(sr.lidar_reading != nullptr);
         sr.lidar_reading_time_unix_milli = 1687900014152474;
         BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST);
+                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
                    VIAM_CARTO_SUCCESS);
     }

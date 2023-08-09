@@ -200,7 +200,7 @@ func TestCGoAPI(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 		err = vc.addLidarReading("not my sensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
+		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_UNKNOWN_SENSOR_NAME")
 
 		// test invalid addLidarReading: empty reading
 		timestamp = timestamp.Add(time.Second * 2)
