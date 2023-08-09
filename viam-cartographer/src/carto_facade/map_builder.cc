@@ -106,16 +106,16 @@ void MapBuilder::AddSensorData(const std::string &sensor_id,
     trajectory_builder->AddSensorData(kIMUSensorId.id, measurement);
 }
 
-void MapBuilder::StartTrajectoryBuilder(bool use_imu) {
+void MapBuilder::StartTrajectoryBuilder(bool use_imu_data) {
     VLOG(1) << "MapBuilder::StartTrajectoryBuilder";
-    if use_imu {
+    if (use_imu_data) {
         trajectory_id = map_builder_->AddTrajectoryBuilder(
             {kRangeSensorId, kIMUSensorId}, trajectory_builder_options_,
             GetLocalSlamResultCallback());
     } else {
         trajectory_id = map_builder_->AddTrajectoryBuilder(
-        {kRangeSensorId}, trajectory_builder_options_,
-        GetLocalSlamResultCallback());
+            {kRangeSensorId}, trajectory_builder_options_,
+            GetLocalSlamResultCallback());
     }
 
     VLOG(1) << "Using trajectory ID: " << trajectory_id;
@@ -200,11 +200,7 @@ void MapBuilder::OverwriteMinRange(float value) {
 void MapBuilder::OverwriteUseIMUData(bool value) {
     auto mutable_trajectory_builder_2d_options =
         trajectory_builder_options_.mutable_trajectory_builder_2d_options();
-    if value {
-        mutable_trajectory_builder_2d_options->set_use_imu_data();
-    } else {
-        mutable_trajectory_builder_2d_options->clear_use_imu_data();
-    }
+    mutable_trajectory_builder_2d_options->set_use_imu_data(value);
 }
 
 void MapBuilder::OverwriteMaxSubmapsToKeep(int value) {

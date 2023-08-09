@@ -122,9 +122,12 @@ func TerminateCartoLib() error {
 func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
 		CartoFacade:       cartoSvc.cartofacade,
-		Lidar:             cartoSvc.lidar.testing,
+		Lidar:             cartoSvc.lidar.timed,
 		LidarName:         cartoSvc.lidar.name,
 		LidarDataRateMsec: cartoSvc.lidar.dataRateMsec,
+		IMU:               cartoSvc.imu.timed,
+		IMUName:           cartoSvc.imu.name,
+		IMUDataRateMsec:   cartoSvc.imu.dataRateMsec,
 		Timeout:           cartoSvc.cartoFacadeTimeout,
 		Logger:            cartoSvc.logger,
 	}
@@ -132,11 +135,22 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := sensorprocess.Start(cancelCtx, spConfig); jobDone {
+		if jobDone := sensorprocess.StartLidar(cancelCtx, spConfig); jobDone {
 			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
 	}()
+
+	if spConfig.IMUName != "" {
+		cartoSvc.sensorProcessWorkers.Add(1)
+		go func() {
+			defer cartoSvc.sensorProcessWorkers.Done()
+			if jobDone := sensorprocess.StartIMU(cancelCtx, spConfig); jobDone {
+				cartoSvc.jobDone.Store(true)
+				cartoSvc.cancelSensorProcessFunc()
+			}
+		}()
+	}
 }
 
 // New returns a new slam service for the given robot.
@@ -224,14 +238,14 @@ func New(
 		name:         lidarName,
 		dataRateMsec: optionalConfigParams.LidarDataRateMsec,
 		actual:       lidarObject,
-		testing:      timedLidar,
+		timed:        timedLidar,
 	}
 
 	imu := IMU{
 		name:         optionalConfigParams.ImuName,
 		dataRateMsec: optionalConfigParams.ImuDataRateMsec,
 		actual:       imuObject,
-		testing:      timedIMU,
+		timed:        timedIMU,
 	}
 
 	// Cartographer SLAM Service Object
@@ -476,7 +490,7 @@ type Lidar struct {
 	name         string
 	dataRateMsec int
 	actual       s.Lidar
-	testing      s.TimedLidarSensor
+	timed        s.TimedLidarSensor
 }
 
 // IMU is the structure containing all fields related to IMU.
@@ -484,7 +498,7 @@ type IMU struct {
 	name         string
 	dataRateMsec int
 	actual       s.IMU
-	testing      s.TimedIMUSensor
+	timed        s.TimedIMUSensor
 }
 
 // CartographerService is the structure of the slam service.

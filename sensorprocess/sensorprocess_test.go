@@ -479,7 +479,7 @@ func TestStart(t *testing.T) {
 		config.Lidar = replaySensor
 		config.LidarDataRateMsec = 0
 
-		jobDone := Start(context.Background(), config)
+		jobDone := StartLidar(context.Background(), config)
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 
@@ -494,7 +494,7 @@ func TestStart(t *testing.T) {
 
 		cancelFunc()
 
-		jobDone := Start(cancelCtx, config)
+		jobDone := StartLidar(cancelCtx, config)
 		test.That(t, jobDone, test.ShouldBeFalse)
 	})
 }

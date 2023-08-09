@@ -1132,6 +1132,46 @@ extern int viam_carto_add_lidar_reading_destroy(viam_carto_lidar_reading *sr) {
     return return_code;
 };
 
+extern int viam_carto_add_imu_reading(viam_carto *vc,
+                                      const viam_carto_imu_reading *sr) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (sr == nullptr) {
+        return VIAM_CARTO_IMU_READING_INVALID;
+    }
+
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        cf->AddIMUReading(sr);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+    return VIAM_CARTO_SUCCESS;
+};
+
+extern int viam_carto_add_imu_reading_destroy(viam_carto_imu_reading *sr) {
+    if (sr == nullptr) {
+        return VIAM_CARTO_IMU_READING_INVALID;
+    }
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+
+    // destroy sensor
+    rc = bdestroy(sr->imu);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    sr->imu = nullptr;
+
+    return return_code;
+};
+
 extern int viam_carto_get_position(viam_carto *vc,
                                    viam_carto_get_position_response *r) {
     if (vc == nullptr) {

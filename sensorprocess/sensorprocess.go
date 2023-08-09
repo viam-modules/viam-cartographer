@@ -21,13 +21,16 @@ type Config struct {
 	Lidar             sensors.TimedLidarSensor
 	LidarName         string
 	LidarDataRateMsec int
+	IMU               sensors.TimedIMUSensor
+	IMUName           string
+	IMUDataRateMsec   int
 	Timeout           time.Duration
 	Logger            golog.Logger
 }
 
-// Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
+// StartLidar polls the lidar to get the next sensor reading and adds it to the cartofacade.
 // stops when the context is Done.
-func Start(
+func StartLidar(
 	ctx context.Context,
 	config Config,
 ) bool {
@@ -58,7 +61,7 @@ func addLidarReading(
 		return false
 	}
 	/*
-	 when the data rate msec is 0, we assume the user wants to be in "offline"
+	 when the lidar data rate msec is 0, we assume the user wants to be in "offline"
 	 mode and ensure every scan gets processed by cartographer
 	*/
 	if config.LidarDataRateMsec == 0 {
@@ -108,4 +111,97 @@ func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Ti
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(config.LidarDataRateMsec-timeElapsedMs)))
+}
+
+// StartIMU polls the IMU to get the next sensor reading and adds it to the cartofacade.
+// stops when the context is Done.
+func StartIMU(
+	ctx context.Context,
+	config Config,
+) bool {
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		default:
+			if jobDone := addIMUReading(ctx, config); jobDone {
+				return true
+			}
+		}
+	}
+}
+
+// addLidarReading adds a lidar reading to the cartofacade.
+func addIMUReading(
+	ctx context.Context,
+	config Config,
+) bool {
+	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
+	if err != nil {
+		config.Logger.Warn(err)
+		// only end the sensor process if we are in offline mode
+		if config.LidarDataRateMsec == 0 {
+			return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
+		}
+		return false
+	}
+
+	sr := cartofacade.IMUReading{
+		LinAccX: tsr.LinearAcceleration.X,
+		LinAccY: tsr.LinearAcceleration.Y,
+		LinAccZ: tsr.LinearAcceleration.Z,
+		AngVelX: tsr.AngularVelocity.X,
+		AngVelY: tsr.AngularVelocity.Y,
+		AngVelZ: tsr.AngularVelocity.Z,
+	}
+	/*
+	 when the lidar data rate msec is 0, we assume the user wants to be in "offline"
+	 mode and ensure every scan gets processed by cartographer
+	*/
+	if config.LidarDataRateMsec == 0 {
+		tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, config)
+	} else {
+		timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, config)
+		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+	}
+	return false
+}
+
+// tryAddIMUReadingUntilSuccess adds a reading to the cartofacade
+// retries on error (offline mode).
+func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time, config Config) {
+	/*
+		while add sensor reading fails, keep trying to add the same reading - in offline mode
+		we want to process each reading so if we cannot acquire the lock we should try again
+	*/
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
+			if err == nil {
+				return
+			}
+			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
+				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
+			}
+		}
+	}
+}
+
+// tryAddIMUReading adds a reading to the carto facade
+// does not retry (online).
+func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time, config Config) int {
+	startTime := time.Now()
+	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
+	if err != nil {
+		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
+			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)
+		} else {
+			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
+		}
+	}
+	timeElapsedMs := int(time.Since(startTime).Milliseconds())
+	return int(math.Max(0, float64(config.IMUDataRateMsec-timeElapsedMs)))
 }

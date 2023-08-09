@@ -57,7 +57,7 @@ class MapBuilder {
     // string if it fails.
     std::string TryFileClose(std::ifstream &file, std::string filename);
 
-    void StartTrajectoryBuilder();
+    void StartTrajectoryBuilder(bool use_imu_data);
 
     // SetStartTime sets the start_time to the time stamp from the first sensor
     // file that is being read in.

@@ -91,7 +91,7 @@ func (cf *CartoFacade) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
 	imuName string,
-	currentReading imuReading,
+	currentReading IMUReading,
 	readingTimestamp time.Time,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
@@ -254,7 +254,7 @@ type Interface interface {
 		ctx context.Context,
 		timeout time.Duration,
 		imuName string,
-		currentReading imuReading,
+		currentReading IMUReading,
 		readingTimestamp time.Time,
 	) error
 	GetPosition(
@@ -326,7 +326,7 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted lidar name to string")
 		}
 
-		reading, ok := r.requestParams[reading].(imuReading)
+		reading, ok := r.requestParams[reading].(IMUReading)
 		if !ok {
 			return nil, errors.New("could not cast inputted byte to byte slice")
 		}

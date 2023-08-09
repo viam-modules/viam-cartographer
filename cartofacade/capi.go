@@ -55,7 +55,7 @@ type CartoInterface interface {
 	stop() error
 	terminate() error
 	addLidarReading(string, []byte, time.Time) error
-	addIMUReading(string, imuReading, time.Time) error
+	addIMUReading(string, IMUReading, time.Time) error
 	getPosition() (GetPosition, error)
 	getPointCloudMap() ([]byte, error)
 	getInternalState() ([]byte, error)
@@ -75,8 +75,8 @@ type GetPosition struct {
 	ComponentReference string
 }
 
-// imuReading holds values for linear acceleration and angular velocity to be converted into c
-type imuReading struct {
+// IMUReading holds values for linear acceleration and angular velocity to be converted into c
+type IMUReading struct {
 	LinAccX float64
 	LinAccY float64
 	LinAccZ float64
@@ -238,7 +238,7 @@ func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.T
 }
 
 // AddIMUReading is a wrapper for viam_carto_add_imu_reading
-func (vc *Carto) addIMUReading(imu string, readings imuReading, timestamp time.Time) error {
+func (vc *Carto) addIMUReading(imu string, readings IMUReading, timestamp time.Time) error {
 	value := toIMUReading(imu, readings, timestamp)
 
 	status := C.viam_carto_add_imu_reading(vc.value, &value)
@@ -422,7 +422,7 @@ func toLidarReading(lidar string, readings []byte, timestamp time.Time) C.viam_c
 	return sr
 }
 
-func toIMUReading(imu string, readings imuReading, timestamp time.Time) C.viam_carto_imu_reading {
+func toIMUReading(imu string, readings IMUReading, timestamp time.Time) C.viam_carto_imu_reading {
 	sr := C.viam_carto_imu_reading{}
 	sensorCStr := C.CString(imu)
 	defer C.free(unsafe.Pointer(sensorCStr))
