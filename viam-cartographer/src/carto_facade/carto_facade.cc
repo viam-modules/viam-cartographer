@@ -767,7 +767,7 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
 
     int64_t lidar_reading_time_unix_milli = sr->lidar_reading_time_unix_milli;
     auto [success, measurement] =
-        viam::carto_facade::util::carto_sensor_reading(
+        viam::carto_facade::util::carto_lidar_reading(
             lidar_reading, lidar_reading_time_unix_milli);
     if (!success) {
         throw VIAM_CARTO_LIDAR_READING_INVALID;
