@@ -32,7 +32,7 @@ var (
 	cartoLib cartofacade.CartoLib
 	// ErrClosed denotes that the slam service method was called on a closed slam resource.
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
-	// ErrUseCloudSlamEnabled denotes that the slam service method was called while run_slam was set to false.
+	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
 )
 
