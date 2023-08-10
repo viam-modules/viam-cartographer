@@ -75,7 +75,6 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, enableMapping, test.ShouldBeFalse)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
-		test.That(t, vcc.cloud_story_enabled, test.ShouldBeFalse)
 	})
 
 	t.Run("config properly converted between C and go with an IMU specified", func(t *testing.T) {
@@ -95,14 +94,20 @@ func TestGetConfig(t *testing.T) {
 		dataDir := bstringToGoString(vcc.data_dir)
 		test.That(t, dataDir, test.ShouldResemble, dir)
 
+<<<<<<< HEAD
 		cloudStoryEnabled := bool(vcc.cloud_story_enabled)
 		test.That(t, cloudStoryEnabled, test.ShouldBeFalse)
 
 		enableMapping := bool(vcc.enable_mapping)
+=======
+		cloudStoryEnabled := cBoolToGoBool(vcc.cloud_story_enabled)
+		test.That(t, cloudStoryEnabled, test.ShouldBeFalse)
+
+		enableMapping := cBoolToGoBool(vcc.enable_mapping)
+>>>>>>> b136729 (test fix)
 		test.That(t, enableMapping, test.ShouldBeFalse)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
-		test.That(t, vcc.cloud_story_enabled, test.ShouldBeFalse)
 	})
 }
 
