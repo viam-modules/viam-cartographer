@@ -68,20 +68,6 @@ func (config *Config) Validate(path string) ([]string, error) {
 			}
 		}
 
-<<<<<<< HEAD
-=======
-		mapRateSec, ok := config.Camera["map_rate_sec"]
-		if ok {
-			mapRateSec, err := strconv.Atoi(mapRateSec)
-			if err != nil {
-				return nil, errors.New("camera[map_rate_sec] must only contain digits")
-			}
-			if mapRateSec < 0 {
-				return nil, errors.New("cannot specify map_rate_sec less than zero")
-			}
-		}
-
->>>>>>> ef56c5e (pulled in IMU integration tests)
 		imuName, imuExists = config.MovementSensor["name"]
 	} else {
 		if config.Sensors == nil || len(config.Sensors) < 1 {
