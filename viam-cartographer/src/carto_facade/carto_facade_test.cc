@@ -28,7 +28,6 @@ const auto tol = tt::tolerance(0.001);
 
 namespace viam {
 namespace carto_facade {
-
 viam_carto_config viam_carto_config_setup(
     int map_rate_sec, viam_carto_LIDAR_CONFIG lidar_config,
     std::string data_dir, std::string camera, std::string movement_sensor,
