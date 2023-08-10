@@ -303,13 +303,6 @@ func getTestGetPositionResponse() C.viam_carto_get_position_response {
 	return gpr
 }
 
-func cBoolToGoBool(val C.bool) bool {
-	if val {
-		return true
-	}
-	return false
-}
-
 func bstringToGoString(bstr C.bstring) string {
 	return C.GoStringN(C.bstr2cstr(bstr, 0), bstr.slen)
 }
