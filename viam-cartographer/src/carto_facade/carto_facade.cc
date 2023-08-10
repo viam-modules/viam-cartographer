@@ -987,6 +987,11 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     if (pVCL == nullptr) {
         return VIAM_CARTO_LIB_INVALID;
     }
+
+    if (ac.use_imu_data == true && biseq(c.movement_sensor,bstring("")) == true) {
+        return VIAM_CARTO_IMU_CONFIG_INVALID;
+    }
+
     // allocate viam_carto struct
     viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));
     if (vc == nullptr) {
@@ -1032,10 +1037,12 @@ extern int viam_carto_start(viam_carto *vc) {
         return VIAM_CARTO_VC_INVALID;
     }
     try {
+        std::cout << "this runs hahaha";
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->Start();
     } catch (int err) {
+        std::cout << "damn";
         return err;
     } catch (std::exception &e) {
         LOG(ERROR) << e.what();
@@ -1217,7 +1224,7 @@ extern int viam_carto_get_point_cloud_map(
     }
 
     if (r == nullptr) {
-        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID;
     }
     try {
         viam::carto_facade::CartoFacade *cf =
@@ -1236,7 +1243,7 @@ extern int viam_carto_get_point_cloud_map(
 extern int viam_carto_get_point_cloud_map_response_destroy(
     viam_carto_get_point_cloud_map_response *r) {
     if (r == nullptr) {
-        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID;
     }
     int return_code = VIAM_CARTO_SUCCESS;
     int rc = BSTR_OK;
@@ -1255,7 +1262,7 @@ extern int viam_carto_get_internal_state(
     }
 
     if (r == nullptr) {
-        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID;
     }
     try {
         viam::carto_facade::CartoFacade *cf =
@@ -1274,7 +1281,7 @@ extern int viam_carto_get_internal_state(
 extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r) {
     if (r == nullptr) {
-        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID;
     }
     int return_code = VIAM_CARTO_SUCCESS;
     int rc = BSTR_OK;
