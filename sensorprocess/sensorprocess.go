@@ -66,6 +66,7 @@ func addSensorReading(
 	} else {
 		timeToSleep := tryAddSensorReading(ctx, tsr.Reading, tsr.ReadingTime, config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
 	}
 	return false
 }
