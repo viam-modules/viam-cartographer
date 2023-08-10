@@ -212,16 +212,16 @@ func getOptionalParametersTestHelper(
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, _, _, mapRateSec, enableMapping, err := GetOptionalParameters(
+		optionalConfigParams, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, mapRateSec, test.ShouldEqual, 1002)
-		test.That(t, lidarDataRateMsec, test.ShouldEqual, 1000)
-		test.That(t, enableMapping, test.ShouldBeFalse)
+		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
+		test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
+		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 	})
 
 	t.Run(fmt.Sprintf("Return overrides%s", suffix), func(t *testing.T) {
@@ -243,22 +243,22 @@ func getOptionalParametersTestHelper(
 		dataRate := 50
 		cfg.DataRateMsec = &dataRate
 		test.That(t, err, test.ShouldBeNil)
-		lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, enableMapping, err := GetOptionalParameters(
+		optionalConfigParams, err := GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, mapRateSec, test.ShouldEqual, 2)
+		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 2)
 		if imuIntegrationEnabled {
-			test.That(t, imuName, test.ShouldEqual, "testNameSensor")
-			test.That(t, imuDataRateMsec, test.ShouldEqual, 500)
-			test.That(t, lidarDataRateMsec, test.ShouldEqual, 500)
+			test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "testNameSensor")
+			test.That(t, optionalConfigParams.ImuDataRateMsec, test.ShouldEqual, 500)
+			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 500)
 		} else {
-			test.That(t, lidarDataRateMsec, test.ShouldEqual, 50)
+			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 50)
 		}
-		test.That(t, enableMapping, test.ShouldBeFalse)
+		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 	})
 
 	if imuIntegrationEnabled {
@@ -280,7 +280,7 @@ func sensorAttributeTestHelper(
 		}
 		cfg, err := newConfigWithoutValidate(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		_, _, _, _, _, err = GetOptionalParameters(
+		_, err = GetOptionalParameters(
 			cfg,
 			1000,
 			1000,
@@ -301,7 +301,7 @@ func sensorAttributeTestHelper(
 		}
 		cfg, err := newConfigWithoutValidate(cfgService)
 		test.That(t, err, test.ShouldBeNil)
-		_, _, _, _, _, err = GetOptionalParameters(
+		_, err = GetOptionalParameters(
 			cfg,
 			1000,
 			1000,

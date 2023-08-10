@@ -31,6 +31,14 @@ type Config struct {
 	UseCloudSlam      *bool  `json:"use_cloud_slam"`
 }
 
+type OptionalConfigParams struct {
+	LidarDataRateMsec int
+	ImuName           string
+	ImuDataRateMsec   int
+	MapRateSec        int
+	EnableMapping     bool
+}
+
 var (
 	errCameraMustHaveName    = errors.New("\"camera[name]\" is required")
 	errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
@@ -104,67 +112,73 @@ func (config *Config) Validate(path string) ([]string, error) {
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
 func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUDataRateMsec, defaultMapRateSec int, logger golog.Logger,
-) (int, string, int, int, bool, error) {
-	lidarDataRateMsec := 0
-	imuName := ""
-	imuDataRateMsec := defaultIMUDataRateMsec
+) (OptionalConfigParams, error) {
+	optionalConfigParams := OptionalConfigParams{}
+	optionalConfigParams.LidarDataRateMsec = 0
+	optionalConfigParams.ImuName = ""
+	optionalConfigParams.ImuDataRateMsec = defaultIMUDataRateMsec
 
 	// feature flag for new config
 	if config.IMUIntegrationEnabled {
 		strCameraDataFreqHz, ok := config.Camera["data_frequency_hz"]
 		if !ok {
-			lidarDataRateMsec = defaultLidarDataRateMsec
+			optionalConfigParams.LidarDataRateMsec = defaultLidarDataRateMsec
 			logger.Debugf("config did not provide camera[data_frequency_hz], setting to default value of %d", 1000/defaultLidarDataRateMsec)
 		} else {
 			lidarDataFreqHz, err := strconv.Atoi(strCameraDataFreqHz)
 			if err != nil {
-				return 0, "", 0, 0, false, newError("camera[data_frequency_hz] must only contain digits")
+				return OptionalConfigParams{}, newError("camera[data_frequency_hz] must only contain digits")
 			}
 			if lidarDataFreqHz == 0 {
-				lidarDataRateMsec = 0
+				optionalConfigParams.LidarDataRateMsec = 0
 			} else {
-				lidarDataRateMsec = 1000 / lidarDataFreqHz
+				optionalConfigParams.LidarDataRateMsec = 1000 / lidarDataFreqHz
 			}
 		}
 		exists := false
-		imuName, exists = config.MovementSensor["name"]
+		imuName, exists := config.MovementSensor["name"]
 		if exists {
+			optionalConfigParams.ImuName = imuName
 			strMovementSensorDataFreqHz, ok := config.MovementSensor["data_frequency_hz"]
 			if !ok {
 				logger.Debugf("config did not provide movement_sensor[data_frequency_hz], setting to default value of %d", 1000/defaultIMUDataRateMsec)
 			} else {
 				imuDataFreqHz, err := strconv.Atoi(strMovementSensorDataFreqHz)
 				if err != nil {
-					return 0, "", 0, 0, false, newError("movement_sensor[data_frequency_hz] must only contain digits")
+					return OptionalConfigParams{}, newError("movement_sensor[data_frequency_hz] must only contain digits")
 				}
-				imuDataRateMsec = 1000 / imuDataFreqHz
+				optionalConfigParams.ImuDataRateMsec = 1000 / imuDataFreqHz
 			}
 		}
 	} else {
 		if config.DataRateMsec == nil {
-			lidarDataRateMsec = defaultLidarDataRateMsec
+			optionalConfigParams.LidarDataRateMsec = defaultLidarDataRateMsec
 			logger.Debugf("no data_rate_msec given, setting to default value of %d", defaultLidarDataRateMsec)
 		} else {
-			lidarDataRateMsec = *config.DataRateMsec
+			optionalConfigParams.LidarDataRateMsec = *config.DataRateMsec
 		}
 	}
 
-	mapRateSec := 0
+	optionalConfigParams.MapRateSec = 0
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
-		mapRateSec = defaultMapRateSec
+		optionalConfigParams.MapRateSec = defaultMapRateSec
 	} else {
-		mapRateSec = *config.MapRateSec
+		optionalConfigParams.MapRateSec = *config.MapRateSec
 	}
 
-	enableMapping := false
+	optionalConfigParams.EnableMapping = false
 	if config.CloudStoryEnabled {
 		if config.EnableMapping == nil {
 			logger.Debugf("no enable_mapping given, setting to default value of false", defaultMapRateSec)
 		} else {
-			enableMapping = config.CloudStoryEnabled
+			optionalConfigParams.EnableMapping = config.CloudStoryEnabled
+		}
+	} else {
+		if config.EnableMapping != nil && *config.EnableMapping == true {
+			logger.Warn("enable_mapping set to true while cloud_story_enabled = false will not change any behavior")
 		}
 	}
 
-	return lidarDataRateMsec, imuName, imuDataRateMsec, mapRateSec, enableMapping, nil
+	return optionalConfigParams, nil
 }
