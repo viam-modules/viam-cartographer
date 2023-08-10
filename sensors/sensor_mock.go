@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-// TimedLidarSensorMock represents a fake TimedLidarSensor. (temp)
+// TimedLidarSensorMock represents a fake TimedLidarSensor. (temp).
 type TimedLidarSensorMock struct {
 	TimedLidarSensorReadingFunc func(ctx context.Context) (TimedLidarSensorReadingResponse, error)
 }
