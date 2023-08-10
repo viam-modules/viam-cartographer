@@ -31,6 +31,7 @@ type Config struct {
 	UseCloudSlam      *bool  `json:"use_cloud_slam"`
 }
 
+// OptionalConfigParams holds the optional config parameters of SLAM.
 type OptionalConfigParams struct {
 	LidarDataRateMsec int
 	ImuName           string
