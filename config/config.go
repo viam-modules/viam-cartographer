@@ -47,6 +47,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 		if !ok {
 			return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
 		}
+
 		dataFreqHz, ok := config.Camera["data_frequency_hz"]
 		if ok {
 			dataFreqHz, err := strconv.Atoi(dataFreqHz)
@@ -57,6 +58,18 @@ func (config *Config) Validate(path string) ([]string, error) {
 				return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
 			}
 		}
+
+		mapRateSec, ok := config.Camera["map_rate_sec"]
+		if ok {
+			mapRateSec, err := strconv.Atoi(mapRateSec)
+			if err != nil {
+				return nil, errors.New("camera[map_rate_sec] must only contain digits")
+			}
+			if mapRateSec < 0 {
+				return nil, errors.New("cannot specify map_rate_sec less than zero")
+			}
+		}
+
 		imuName, imuExists = config.MovementSensor["name"]
 	} else {
 		if config.Sensors == nil || len(config.Sensors) < 1 {
