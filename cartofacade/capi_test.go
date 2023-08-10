@@ -68,10 +68,10 @@ func TestGetConfig(t *testing.T) {
 		dataDir := bstringToGoString(vcc.data_dir)
 		test.That(t, dataDir, test.ShouldResemble, dir)
 
-		cloudStoryEnabled := cBoolToGoBool(vcc.cloud_story_enabled)
+		cloudStoryEnabled := bool(vcc.cloud_story_enabled)
 		test.That(t, cloudStoryEnabled, test.ShouldBeFalse)
 
-		enableMapping := cBoolToGoBool(vcc.enable_mapping)
+		enableMapping := bool(vcc.enable_mapping)
 		test.That(t, enableMapping, test.ShouldBeFalse)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
@@ -94,10 +94,10 @@ func TestGetConfig(t *testing.T) {
 		dataDir := bstringToGoString(vcc.data_dir)
 		test.That(t, dataDir, test.ShouldResemble, dir)
 
-		cloudStoryEnabled := cBoolToGoBool(vcc.cloud_story_enabled)
+		cloudStoryEnabled := bool(vcc.cloud_story_enabled)
 		test.That(t, cloudStoryEnabled, test.ShouldBeFalse)
 
-		enableMapping := cBoolToGoBool(vcc.enable_mapping)
+		enableMapping := bool(vcc.enable_mapping)
 		test.That(t, enableMapping, test.ShouldBeFalse)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
