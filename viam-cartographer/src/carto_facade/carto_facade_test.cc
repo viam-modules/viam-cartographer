@@ -28,13 +28,10 @@ const auto tol = tt::tolerance(0.001);
 
 namespace viam {
 namespace carto_facade {
-viam_carto_config viam_carto_config_setup(int map_rate_sec,
-                                          viam_carto_LIDAR_CONFIG lidar_config,
-                                          std::string data_dir,
-                                          std::string camera,
-                                          std::string movement_sensor,
-                                          bool cloud_story_enabled,
-                                          bool enable_mapping) {
+viam_carto_config viam_carto_config_setup(
+    int map_rate_sec, viam_carto_LIDAR_CONFIG lidar_config,
+    std::string data_dir, std::string camera, std::string movement_sensor,
+    bool cloud_story_enabled, bool enable_mapping) {
     struct viam_carto_config vcc;
     vcc.map_rate_sec = map_rate_sec;
     vcc.lidar_config = lidar_config;
