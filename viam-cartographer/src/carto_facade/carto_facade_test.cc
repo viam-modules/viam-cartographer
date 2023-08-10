@@ -1107,7 +1107,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config) {
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
-                                camera, movement_sensor, false, false);
+                                camera, movement_sensor, true, false);
 
     struct config c = viam::carto_facade::from_viam_carto_config(vcc);
 
@@ -1117,6 +1117,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config) {
     BOOST_TEST(c.map_rate_sec.count() == 1);
     BOOST_TEST(c.camera == "lidar");
     BOOST_TEST(c.movement_sensor == "imu");
+    BOOST_TEST(c.cloud_story_enabled == true);
+    BOOST_TEST(c.enable_mapping == false);
 
     viam_carto_config_teardown(vcc);
     BOOST_TEST(bdestroy(c.component_reference) == BSTR_OK);
