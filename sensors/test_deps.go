@@ -75,7 +75,7 @@ func getWarmingUpLidar() *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -92,7 +92,7 @@ func getGoodLidar() *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -113,7 +113,7 @@ func getReplayLidar(testTime string) *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -130,7 +130,7 @@ func getInvalidLidar() *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }
@@ -147,7 +147,7 @@ func getFinishedReplayLidar() *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{}, nil
+		return camera.Properties{SupportsPCD: true}, nil
 	}
 	return cam
 }

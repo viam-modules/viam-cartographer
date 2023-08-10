@@ -87,6 +87,10 @@ func getStubLidar(t *testing.T) *inject.Camera {
 		t.Error("TEST FAILED stub lidar Projector called")
 		return nil, transform.NewNoIntrinsicsError("")
 	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		t.Error("TEST FAILED stub lidar Properties called")
+		return camera.Properties{}, camera.NewPropertiesError("stub")
+	}
 	return cam
 }
 
