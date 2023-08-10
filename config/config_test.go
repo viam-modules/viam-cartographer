@@ -207,7 +207,6 @@ func getOptionalParametersTestHelper(
 			logger)
 
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
 		test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 		if cloudStoryEnabled {
@@ -243,7 +242,6 @@ func getOptionalParametersTestHelper(
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 2)
 		if imuIntegrationEnabled {
 			test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "testNameSensor")
 			test.That(t, optionalConfigParams.ImuDataRateMsec, test.ShouldEqual, 500)
