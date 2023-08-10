@@ -88,7 +88,9 @@ func getStubLidar(t *testing.T) *inject.Camera {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
 	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
-		return camera.Properties{SupportsPCD: true}, nil
+		return camera.Properties{
+			SupportsPCD: true,
+		}, nil
 	}
 	return cam
 }
