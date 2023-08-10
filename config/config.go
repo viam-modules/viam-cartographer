@@ -29,7 +29,6 @@ type Config struct {
 	ExistingMap       string `json:"existing_map"`
 	EnableMapping     *bool  `json:"enable_mapping"`
 	UseCloudSlam      *bool  `json:"use_cloud_slam"`
-	RunSlam           bool   `json:"run_slam"`
 }
 
 var (
