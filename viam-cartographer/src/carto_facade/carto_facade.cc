@@ -920,7 +920,6 @@ extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
 extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
                            const viam_carto_config c,
                            const viam_carto_algo_config ac) {
-    LOG(ERROR) << "KIM LOG" << c.cloud_story_enabled;
     if (ppVC == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
