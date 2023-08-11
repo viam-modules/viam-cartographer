@@ -208,7 +208,6 @@ func getOptionalParametersTestHelper(
 			1000,
 			1002,
 			logger)
-
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
