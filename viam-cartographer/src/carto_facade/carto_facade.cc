@@ -270,8 +270,8 @@ void CartoFacade::IOInit() {
         slam_mode = determine_slam_mode_cloud_story_enabled(
             path_to_internal_state, config.enable_mapping);
     } else {
-        slam_mode = determine_slam_mode_cloud_story_enabled(
-            path_to_internal_state, config.enable_mapping);
+        slam_mode =
+            determine_slam_mode(path_to_internal_state, config.map_rate_sec);
     }
     VLOG(1) << "slam slam mode: " << slam_mode;
     // TODO: Make this API user configurable
