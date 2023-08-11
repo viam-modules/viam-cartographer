@@ -125,7 +125,6 @@ func testValidateTesthelper(
 			cfgService.Attributes["data_rate_msec"] = 1
 			cfgService.Attributes["map_rate_sec"] = -1
 			_, mapRateSecError = newConfig(cfgService)
-
 		}
 
 		if cloudStoryEnabled {
