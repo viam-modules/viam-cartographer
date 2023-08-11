@@ -112,8 +112,8 @@ func testValidateTesthelper(
 			cfgService.Attributes["camera"] = map[string]string{
 				"name":              "a",
 				"data_frequency_hz": "1",
-				"map_rate_sec":      "-1",
 			}
+			cfgService.Attributes["map_rate_sec"] = -1
 
 			_, err = newConfig(cfgService)
 			test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
