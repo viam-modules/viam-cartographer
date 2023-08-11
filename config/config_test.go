@@ -227,6 +227,7 @@ func getOptionalParametersTestHelper(
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 		if cloudStoryEnabled {
 			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
+			test.That(t, optionalConfigParams.ExistingMap, test.ShouldEqual, "")
 		} else {
 			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
 		}

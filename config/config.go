@@ -38,6 +38,7 @@ type OptionalConfigParams struct {
 	ImuDataRateMsec   int
 	MapRateSec        int
 	EnableMapping     bool
+	ExistingMap       string
 }
 
 var (
@@ -147,6 +148,12 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 	}
 
 	if config.CloudStoryEnabled {
+		if config.ExistingMap == "" {
+			logger.Debug("no existimg_map provided, entering mapping mode")
+		} else {
+			optionalConfigParams.ExistingMap = config.ExistingMap
+		}
+
 		if config.EnableMapping == nil {
 			logger.Debug("no enable_mapping given, setting to default value of false")
 		} else {
