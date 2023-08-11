@@ -227,10 +227,6 @@ func getOptionalParametersTestHelper(
 			}
 		}
 
-		if cloudStoryEnabled {
-			cfgService.Attributes["enable_mapping"] = true
-		}
-
 		cfg, err := newConfig(cfgService)
 		two := 2
 		cfg.MapRateSec = &two
