@@ -134,6 +134,8 @@ typedef struct viam_carto_config {
     int map_rate_sec;
     bstring data_dir;
     viam_carto_LIDAR_CONFIG lidar_config;
+    bool cloud_story_enabled;
+    bool enable_mapping;
 } viam_carto_config;
 
 // viam_carto_lib_init/4 takes an empty viam_carto_lib pointer to pointer
@@ -297,6 +299,8 @@ typedef struct config {
     std::string data_dir;
     bstring component_reference;
     viam_carto_LIDAR_CONFIG lidar_config;
+    bool cloud_story_enabled;
+    bool enable_mapping;
 } config;
 
 // function to convert viam_carto_config into  viam::carto_facade::config
@@ -311,6 +315,9 @@ const std::string configuration_update_basename = "updating_a_map.lua";
 
 carto_facade::SlamMode determine_slam_mode(std::string path_to_map,
                                            std::chrono::seconds map_rate_sec);
+
+carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(
+    std::string path_to_map, bool enable_mapping);
 
 int slam_mode_to_vc_slam_mode(viam::carto_facade::SlamMode sm);
 

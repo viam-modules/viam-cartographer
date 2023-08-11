@@ -18,6 +18,8 @@ func GetTestConfig(cameraName, movementSensorName string) (CartoConfig, string, 
 		DataDir:            dir,
 		ComponentReference: "component",
 		LidarConfig:        TwoD,
+		CloudStoryEnabled:  false,
+		EnableMapping:      false,
 	}, dir, nil
 }
 

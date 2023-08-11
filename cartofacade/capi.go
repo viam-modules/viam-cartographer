@@ -92,6 +92,9 @@ type CartoConfig struct {
 	DataDir            string
 	ComponentReference string
 	LidarConfig        LidarConfig
+
+	CloudStoryEnabled bool
+	EnableMapping     bool
 }
 
 // CartoAlgoConfig contains config values from app
@@ -334,6 +337,9 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc.map_rate_sec = C.int(cfg.MapRateSecond)
 	vcc.data_dir = goStringToBstring(cfg.DataDir)
 	vcc.lidar_config = lidarCfg
+
+	vcc.cloud_story_enabled = C.bool(cfg.CloudStoryEnabled)
+	vcc.enable_mapping = C.bool(cfg.EnableMapping)
 
 	return vcc, nil
 }
