@@ -196,7 +196,6 @@ func getOptionalParametersTestHelper(
 	t.Run(fmt.Sprintf("Pass default parameters %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a"}
-		cfgService.Attributes["cloud_story_enabled"] = cloudStoryEnabled
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		optionalConfigParams, err := GetOptionalParameters(
