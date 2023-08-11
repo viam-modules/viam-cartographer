@@ -270,7 +270,7 @@ void CartoFacade::IOInit() {
         slam_mode = determine_slam_mode_cloud_story_enabled(
             path_to_internal_state, config.enable_mapping);
     } else {
-    slam_mode = determine_slam_mode_cloud_story_enabled(
+        slam_mode = determine_slam_mode_cloud_story_enabled(
             path_to_internal_state, config.enable_mapping);
     }
     VLOG(1) << "slam slam mode: " << slam_mode;
