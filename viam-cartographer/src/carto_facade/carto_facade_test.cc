@@ -128,14 +128,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     std::string camera2 = "";
     std::string movement_sensor2 = "";
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-<<<<<<< HEAD
->>>>>>> a9eb88b (WIP: tests passing with enable mapping cloud story changes)
-=======
->>>>>>> a998679 (cpp tests)
     struct viam_carto_config vcc_empty_component_ref =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
                                 camera2, movement_sensor2, false, false);
@@ -149,18 +141,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_map_rate_sec, ac) ==
                VIAM_CARTO_MAP_RATE_SEC_INVALID);
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-<<<<<<< HEAD
->>>>>>> a9eb88b (WIP: tests passing with enable mapping cloud story changes)
-=======
->>>>>>> a998679 (cpp tests)
-    struct viam_carto_config vcc_invalid_lidar_config = viam_carto_config_setup(
-        1, static_cast<viam_carto_LIDAR_CONFIG>(-1), tmp_dir.string(), camera,
-        movement_sensor, false, false);
 
     struct viam_carto_config vcc_invalid_lidar_config = viam_carto_config_setup(
         1, static_cast<viam_carto_LIDAR_CONFIG>(-1), tmp_dir.string(), camera,
@@ -181,14 +161,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     fs::path invalid_path = tmp_dir / fs::path(bfs::unique_path().string()) /
                             fs::path(bfs::unique_path().string());
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-<<<<<<< HEAD
->>>>>>> a9eb88b (WIP: tests passing with enable mapping cloud story changes)
-=======
->>>>>>> a998679 (cpp tests)
     struct viam_carto_config vcc_invalid_path =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, invalid_path.string(),
                                 camera, movement_sensor, false, false);
@@ -645,18 +617,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
                                 movement_sensor, false, false);
-<<<<<<< HEAD
-<<<<<<< HEAD
-
-=======
-=======
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false);
->>>>>>> 716b385 (WIP: tests passing with enable mapping cloud story changes)
->>>>>>> a9eb88b (WIP: tests passing with enable mapping cloud story changes)
-=======
->>>>>>> a998679 (cpp tests)
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
