@@ -851,7 +851,7 @@ viam::carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(
     }
     if (!enable_mapping) {
         LOG(ERROR)
-            << "set to localization mode (map_rate_sec = 0) but "
+            << "set to localization mode (enable_mapping = false) but "
                "couldn't find apriori map (internal state) to localize on";
         throw VIAM_CARTO_SLAM_MODE_INVALID;
     }
