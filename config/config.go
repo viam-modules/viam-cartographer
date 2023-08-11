@@ -84,11 +84,11 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
 
-	if config.DataDirectory == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
-	}
-
 	if !config.CloudStoryEnabled {
+		if config.DataDirectory == "" {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
+		}
+
 		if config.MapRateSec != nil && *config.MapRateSec < 0 {
 			return nil, errors.New("cannot specify map_rate_sec less than zero")
 		}

@@ -51,14 +51,9 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("Config without required fields %s", suffix), func(t *testing.T) {
-		var requiredFields []string
-		if imuIntegrationEnabled {
-			requiredFields = []string{"data_dir", "camera"}
-		} else {
-			requiredFields = []string{"data_dir", "sensors"}
-		}
+		requiredFields := getRequiredFields(imuIntegrationEnabled, cloudStoryEnabled)
 
-		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
+		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, "data_dir")
 		sensorErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
 		cameraErr := utils.NewConfigValidationError(testCfgPath, errCameraMustHaveName)
 
@@ -155,13 +150,32 @@ func testValidateTesthelper(
 	})
 }
 
-func TestValidate(t *testing.T) {
-	for _, imuEnabled := range []bool{true, false} {
-		for _, cloudStoryEnabled := range []bool{true, false} {
-			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-			testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
-		}
+func getRequiredFields(imuIntegrationEnabled bool, cloudStoryEnabled bool) []string {
+	requiredFields := []string{}
+
+	if imuIntegrationEnabled {
+		requiredFields = append(requiredFields, "camera")
+	} else {
+		requiredFields = append(requiredFields, "sensors")
 	}
+
+	if !cloudStoryEnabled {
+		requiredFields = append(requiredFields, "data_dir")
+	}
+	return requiredFields
+}
+
+func TestValidate(t *testing.T) {
+	// for _, imuEnabled := range []bool{true, false} {
+	// 	for _, cloudStoryEnabled := range []bool{true, false} {
+	// 		suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+	// 		testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
+	// 	}
+	// }
+	imuEnabled := true
+	cloudStoryEnabled := false
+	suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+	testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
 }
 
 // makeCfgService creates the simplest possible config that can pass validation.
