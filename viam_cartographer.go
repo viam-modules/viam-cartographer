@@ -409,10 +409,7 @@ func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (
 // 1. creates a new initCartoFacade
 // 2. initializes it and starts it
 // 3. terminates it if start fails.
-func initCartoFacade(
-	ctx context.Context,
-	cartoSvc *CartographerService,
-) error {
+func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	cartoAlgoConfig, err := parseCartoAlgoConfig(cartoSvc.configParams, cartoSvc.logger)
 	if err != nil {
 		return err
