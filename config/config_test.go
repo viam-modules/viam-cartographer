@@ -152,26 +152,12 @@ func testValidateTesthelper(
 }
 
 func TestValidate(t *testing.T) {
-	testValidateTesthelper(
-		t,
-		false,
-		false,
-		"with imuIntegrationEnabled = false & cloudStoryEnabled = false")
-	testValidateTesthelper(
-		t,
-		false,
-		true,
-		"with imuIntegrationEnabled = false & cloudStoryEnabled = true")
-	testValidateTesthelper(
-		t,
-		true,
-		false,
-		"with imuIntegrationEnabled = true & cloudStoryEnabled = false")
-	testValidateTesthelper(
-		t,
-		true,
-		true,
-		"with imuIntegrationEnabled = true & cloudStoryEnabled = true")
+	for _, imuEnabled := range []bool{true, false} {
+		for _, cloudStoryEnabled := range []bool{true, false} {
+			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+			testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
+		}
+	}
 }
 
 // makeCfgService creates the simplest possible config that can pass validation.
@@ -312,10 +298,12 @@ func sensorAttributeTestHelper(
 }
 
 func TestGetOptionalParameters(t *testing.T) {
-	getOptionalParametersTestHelper(t, false, false, "with imuIntegrationEnabled = false & cloudStoryEnabled = false")
-	getOptionalParametersTestHelper(t, false, true, "with imuIntegrationEnabled = false & cloudStoryEnabled = true")
-	getOptionalParametersTestHelper(t, true, false, "with imuIntegrationEnabled = true & cloudStoryEnabled = false")
-	getOptionalParametersTestHelper(t, true, true, "with imuIntegrationEnabled = true & cloudStoryEnabled = true")
+	for _, imuEnabled := range []bool{true, false} {
+		for _, cloudStoryEnabled := range []bool{true, false} {
+			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+			getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
+		}
+	}
 }
 
 func newConfig(conf resource.Config) (*Config, error) {
