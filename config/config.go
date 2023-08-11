@@ -88,8 +88,10 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
 	}
 
-	if config.MapRateSec != nil && *config.MapRateSec < 0 {
-		return nil, errors.New("cannot specify map_rate_sec less than zero")
+	if !config.CloudStoryEnabled {
+		if config.MapRateSec != nil && *config.MapRateSec < 0 {
+			return nil, errors.New("cannot specify map_rate_sec less than zero")
+		}
 	}
 
 	deps := []string{cameraName}
@@ -144,23 +146,24 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		}
 	}
 
-	if config.MapRateSec == nil {
-		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
-		optionalConfigParams.MapRateSec = defaultMapRateSec
-	} else {
-		optionalConfigParams.MapRateSec = *config.MapRateSec
-	}
-
 	if config.CloudStoryEnabled {
 		if config.EnableMapping == nil {
 			logger.Debug("no enable_mapping given, setting to default value of false")
 		} else {
 			optionalConfigParams.EnableMapping = config.CloudStoryEnabled
 		}
+		return optionalConfigParams, nil
+	}
+
+	if config.EnableMapping != nil && *config.EnableMapping {
+		logger.Warn("enable_mapping set to true while cloud_story_enabled = false will not change any behavior")
+	}
+
+	if config.MapRateSec == nil {
+		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
+		optionalConfigParams.MapRateSec = defaultMapRateSec
 	} else {
-		if config.EnableMapping != nil && *config.EnableMapping {
-			logger.Warn("enable_mapping set to true while cloud_story_enabled = false will not change any behavior")
-		}
+		optionalConfigParams.MapRateSec = *config.MapRateSec
 	}
 
 	return optionalConfigParams, nil

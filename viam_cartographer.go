@@ -432,15 +432,18 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		cartoSvc.logger.Errorw("cartofacade initialize failed", "error", err)
 		return err
 	}
-	err = cf.Start(ctx, cartoSvc.cartoFacadeTimeout)
-	if err != nil {
-		cartoSvc.logger.Errorw("cartofacade start failed", "error", err)
-		termErr := cf.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
-		if termErr != nil {
-			cartoSvc.logger.Errorw("cartofacade terminate failed", "error", termErr)
-			return termErr
+
+	if !cartoSvc.cloudStoryEnabled {
+		err = cf.Start(ctx, cartoSvc.cartoFacadeTimeout)
+		if err != nil {
+			cartoSvc.logger.Errorw("cartofacade start failed", "error", err)
+			termErr := cf.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
+			if termErr != nil {
+				cartoSvc.logger.Errorw("cartofacade terminate failed", "error", termErr)
+				return termErr
+			}
+			return err
 		}
-		return err
 	}
 
 	cartoSvc.cartofacade = &cf
@@ -454,9 +457,13 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
 		return nil
 	}
-	stopErr := cartoSvc.cartofacade.Stop(ctx, cartoSvc.cartoFacadeTimeout)
-	if stopErr != nil {
-		cartoSvc.logger.Errorw("cartofacade stop failed", "error", stopErr)
+
+	var stopErr error
+	if !cartoSvc.cloudStoryEnabled {
+		stopErr := cartoSvc.cartofacade.Stop(ctx, cartoSvc.cartoFacadeTimeout)
+		if stopErr != nil {
+			cartoSvc.logger.Errorw("cartofacade stop failed", "error", stopErr)
+		}
 	}
 
 	err := cartoSvc.cartofacade.Terminate(ctx, cartoSvc.cartoFacadeTimeout)

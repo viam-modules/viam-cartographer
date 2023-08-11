@@ -100,6 +100,7 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("Config with out of range values %s", suffix), func(t *testing.T) {
+		var mapRateSecError error
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		if imuIntegrationEnabled {
 			cfgService.Attributes["camera"] = map[string]string{
@@ -115,8 +116,7 @@ func testValidateTesthelper(
 			}
 			cfgService.Attributes["map_rate_sec"] = -1
 
-			_, err = newConfig(cfgService)
-			test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
+			_, mapRateSecError = newConfig(cfgService)
 		} else {
 			cfgService.Attributes["data_rate_msec"] = -1
 			_, err := newConfig(cfgService)
@@ -124,9 +124,13 @@ func testValidateTesthelper(
 
 			cfgService.Attributes["data_rate_msec"] = 1
 			cfgService.Attributes["map_rate_sec"] = -1
-			_, err = newConfig(cfgService)
+			_, mapRateSecError = newConfig(cfgService)
+		}
 
-			test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
+		if cloudStoryEnabled {
+			test.That(t, mapRateSecError, test.ShouldBeNil)
+		} else {
+			test.That(t, mapRateSecError, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
 		}
 	})
 
@@ -205,9 +209,13 @@ func getOptionalParametersTestHelper(
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
 		test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+		if cloudStoryEnabled {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
+		} else {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
+		}
 	})
 
 	t.Run(fmt.Sprintf("Return overrides %s", suffix), func(t *testing.T) {
@@ -223,6 +231,10 @@ func getOptionalParametersTestHelper(
 			}
 		}
 
+		if cloudStoryEnabled {
+			cfgService.Attributes["enable_mapping"] = true
+		}
+
 		cfg, err := newConfig(cfgService)
 		two := 2
 		cfg.MapRateSec = &two
@@ -236,7 +248,6 @@ func getOptionalParametersTestHelper(
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 2)
 		if imuIntegrationEnabled {
 			test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "testNameSensor")
 			test.That(t, optionalConfigParams.ImuDataRateMsec, test.ShouldEqual, 500)
@@ -244,7 +255,14 @@ func getOptionalParametersTestHelper(
 		} else {
 			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 50)
 		}
-		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+
+		if cloudStoryEnabled {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeTrue)
+		} else {
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 2)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+		}
 	})
 
 	if imuIntegrationEnabled {
