@@ -127,9 +127,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 			if err != nil {
 				return OptionalConfigParams{}, newError("camera[data_frequency_hz] must only contain digits")
 			}
-			if lidarDataFreqHz == 0 {
-				optionalConfigParams.LidarDataRateMsec = 0
-			} else {
+			if lidarDataFreqHz != 0 {
 				optionalConfigParams.LidarDataRateMsec = 1000 / lidarDataFreqHz
 			}
 		}
@@ -157,7 +155,6 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		}
 	}
 
-	optionalConfigParams.MapRateSec = 0
 	if config.MapRateSec == nil {
 		logger.Debugf("no map_rate_sec given, setting to default value of %d", defaultMapRateSec)
 		optionalConfigParams.MapRateSec = defaultMapRateSec
@@ -165,7 +162,6 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		optionalConfigParams.MapRateSec = *config.MapRateSec
 	}
 
-	optionalConfigParams.EnableMapping = false
 	if config.CloudStoryEnabled {
 		if config.EnableMapping == nil {
 			logger.Debugf("no enable_mapping given, setting to default value of false", defaultMapRateSec)
