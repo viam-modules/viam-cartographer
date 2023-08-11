@@ -100,6 +100,7 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("Config with out of range values %s", suffix), func(t *testing.T) {
+		var mapRateSecError error
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		if imuIntegrationEnabled {
 			cfgService.Attributes["camera"] = map[string]string{
@@ -115,8 +116,7 @@ func testValidateTesthelper(
 			}
 			cfgService.Attributes["map_rate_sec"] = -1
 
-			_, err = newConfig(cfgService)
-			test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
+			_, mapRateSecError = newConfig(cfgService)
 		} else {
 			cfgService.Attributes["data_rate_msec"] = -1
 			_, err := newConfig(cfgService)
@@ -124,9 +124,14 @@ func testValidateTesthelper(
 
 			cfgService.Attributes["data_rate_msec"] = 1
 			cfgService.Attributes["map_rate_sec"] = -1
-			_, err = newConfig(cfgService)
+			_, mapRateSecError = newConfig(cfgService)
 
-			test.That(t, err, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
+		}
+
+		if cloudStoryEnabled {
+			test.That(t, mapRateSecError, test.ShouldBeNil)
+		} else {
+			test.That(t, mapRateSecError, test.ShouldBeError, newError("cannot specify map_rate_sec less than zero"))
 		}
 	})
 
