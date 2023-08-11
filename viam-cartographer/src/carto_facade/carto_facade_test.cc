@@ -166,7 +166,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
         1, static_cast<viam_carto_LIDAR_CONFIG>(-1), tmp_dir.string(), camera,
         movement_sensor, false, false);
 
-
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_lidar_config, ac) ==
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
 
@@ -651,8 +650,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate) {
 
 =======
 =======
-    struct viam_carto_config vcc = viam_carto_config_setup(
-        1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera, movement_sensor, false, false);
+    struct viam_carto_config vcc =
+        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
+                                movement_sensor, false, false);
 >>>>>>> 716b385 (WIP: tests passing with enable mapping cloud story changes)
 >>>>>>> a9eb88b (WIP: tests passing with enable mapping cloud story changes)
 =======
