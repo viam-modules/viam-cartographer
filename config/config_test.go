@@ -21,7 +21,7 @@ func testValidateTesthelper(
 	testCfgPath := "services.slam.attributes.fake"
 	logger := golog.NewTestLogger(t)
 
-	t.Run(fmt.Sprintf("Empty config%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("Empty config %s", suffix), func(t *testing.T) {
 		model := resource.DefaultModelFamily.WithModel("test")
 		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 		if imuIntegrationEnabled || cloudStoryEnabled {
@@ -44,13 +44,13 @@ func testValidateTesthelper(
 		}
 	})
 
-	t.Run(fmt.Sprintf("Simplest valid config%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("Simplest valid config %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run(fmt.Sprintf("Config without required fields%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("Config without required fields %s", suffix), func(t *testing.T) {
 		var requiredFields []string
 		if imuIntegrationEnabled {
 			requiredFields = []string{"data_dir", "camera"}
@@ -83,7 +83,7 @@ func testValidateTesthelper(
 		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
 	})
 
-	t.Run(fmt.Sprintf("Config with invalid parameter type%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("Config with invalid parameter type %s", suffix), func(t *testing.T) {
 		key := "data_dir"
 
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
@@ -99,7 +99,7 @@ func testValidateTesthelper(
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run(fmt.Sprintf("Config with out of range values%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("Config with out of range values %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		if imuIntegrationEnabled {
 			cfgService.Attributes["camera"] = map[string]string{
@@ -130,7 +130,7 @@ func testValidateTesthelper(
 		}
 	})
 
-	t.Run(fmt.Sprintf("All parameters e2e%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("All parameters e2e %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a", "b"}
 		cfgService.Attributes["data_rate_msec"] = 1001
@@ -156,7 +156,7 @@ func TestValidate(t *testing.T) {
 		t,
 		false,
 		false,
-		" with imuIntegrationEnabled = false & cloudStoryEnabled = false")
+		"with imuIntegrationEnabled = false & cloudStoryEnabled = false")
 	testValidateTesthelper(
 		t,
 		false,
@@ -166,7 +166,7 @@ func TestValidate(t *testing.T) {
 		t,
 		true,
 		false,
-		" with imuIntegrationEnabled = true & cloudStoryEnabled = false")
+		"with imuIntegrationEnabled = true & cloudStoryEnabled = false")
 	testValidateTesthelper(
 		t,
 		true,
@@ -207,7 +207,7 @@ func getOptionalParametersTestHelper(
 ) {
 	logger := golog.NewTestLogger(t)
 
-	t.Run(fmt.Sprintf("Pass default parameters%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("Pass default parameters %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
@@ -224,7 +224,7 @@ func getOptionalParametersTestHelper(
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 	})
 
-	t.Run(fmt.Sprintf("Return overrides%s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("Return overrides %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		if imuIntegrationEnabled {
 			cfgService.Attributes["camera"] = map[string]string{
@@ -312,10 +312,10 @@ func sensorAttributeTestHelper(
 }
 
 func TestGetOptionalParameters(t *testing.T) {
-	getOptionalParametersTestHelper(t, false, false, " with imuIntegrationEnabled = false & cloudStoryEnabled = false")
-	getOptionalParametersTestHelper(t, false, true, " with imuIntegrationEnabled = false & cloudStoryEnabled = true")
-	getOptionalParametersTestHelper(t, true, false, " with imuIntegrationEnabled = true & cloudStoryEnabled = false")
-	getOptionalParametersTestHelper(t, true, true, " with imuIntegrationEnabled = true & cloudStoryEnabled = true")
+	getOptionalParametersTestHelper(t, false, false, "with imuIntegrationEnabled = false & cloudStoryEnabled = false")
+	getOptionalParametersTestHelper(t, false, true, "with imuIntegrationEnabled = false & cloudStoryEnabled = true")
+	getOptionalParametersTestHelper(t, true, false, "with imuIntegrationEnabled = true & cloudStoryEnabled = false")
+	getOptionalParametersTestHelper(t, true, true, "with imuIntegrationEnabled = true & cloudStoryEnabled = true")
 }
 
 func newConfig(conf resource.Config) (*Config, error) {
