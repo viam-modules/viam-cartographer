@@ -150,11 +150,11 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		} else {
 			optionalConfigParams.EnableMapping = config.CloudStoryEnabled
 		}
+		return optionalConfigParams, nil
 	} else {
 		if config.EnableMapping != nil && *config.EnableMapping {
 			logger.Warn("enable_mapping set to true while cloud_story_enabled = false will not change any behavior")
 		}
-		return optionalConfigParams, nil
 	}
 
 	if config.MapRateSec == nil {

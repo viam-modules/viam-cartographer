@@ -204,7 +204,6 @@ func getOptionalParametersTestHelper(
 			1000,
 			1002,
 			logger)
-
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
@@ -226,6 +225,10 @@ func getOptionalParametersTestHelper(
 				"name":              "testNameSensor",
 				"data_frequency_hz": "2",
 			}
+		}
+
+		if cloudStoryEnabled {
+			cfgService.Attributes["enable_mapping"] = true
 		}
 
 		cfg, err := newConfig(cfgService)
@@ -251,9 +254,10 @@ func getOptionalParametersTestHelper(
 
 		if cloudStoryEnabled {
 			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
-			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeTrue)
 		} else {
 			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 2)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 		}
 	})
 
