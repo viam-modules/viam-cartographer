@@ -389,3 +389,6 @@ func TestCartographerIntegration2D(t *testing.T) {
 func TestCartographerIntegrationWithIMU2D(t *testing.T) {
 	integrationTestHelperCartographerWithIMU(t, viamcartographer.Dim2d)
 }
+
+// integration test with IMU will be added once mock data with IMU data is collected:
+// https://viam.atlassian.net/browse/RSDK-4495
