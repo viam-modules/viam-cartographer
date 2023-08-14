@@ -13,7 +13,7 @@ import (
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
 
-// ErrUnableToAcquireLock is the error returned from AddSensorReading when lock can't be acquired.
+// ErrUnableToAcquireLock is the error returned from AddLidarReading when lock can't be acquired.
 var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 
 // Initialize calls into the cartofacade C code.
@@ -64,21 +64,21 @@ func (cf *CartoFacade) Terminate(ctx context.Context, timeout time.Duration) err
 	return nil
 }
 
-// AddSensorReading calls into the cartofacade C code.
-func (cf *CartoFacade) AddSensorReading(
+// AddLidarReading calls into the cartofacade C code.
+func (cf *CartoFacade) AddLidarReading(
 	ctx context.Context,
 	timeout time.Duration,
-	sensorName string,
+	lidarName string,
 	currentReading []byte,
 	readingTimestamp time.Time,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
-		sensor:    sensorName,
+		lidar:     lidarName,
 		reading:   currentReading,
 		timestamp: readingTimestamp,
 	}
 
-	_, err := cf.request(ctx, addSensorReading, requestParams, timeout)
+	_, err := cf.request(ctx, addLidarReading, requestParams, timeout)
 	if err != nil {
 		return err
 	}
@@ -143,8 +143,8 @@ const (
 	stop
 	// terminate represents the viam_carto_terminate in c.
 	terminate
-	// addSensorReading represents the viam_carto_add_sensor_reading in c.
-	addSensorReading
+	// addLidarReading represents the viam_carto_add_lidar_reading in c.
+	addLidarReading
 	// position represents the viam_carto_get_position call in c.
 	position
 	// internalState represents the viam_carto_get_internal_state call in c.
@@ -157,8 +157,8 @@ const (
 type RequestParamType int64
 
 const (
-	// sensor represents a sensor name input into c funcs.
-	sensor RequestParamType = iota
+	// lidar represents a lidar name input into c funcs.
+	lidar RequestParamType = iota
 	// reading represents a lidar reading input into c funcs.
 	reading
 	// timestamp represents the timestamp input into c funcs.
@@ -219,7 +219,7 @@ type Interface interface {
 		ctx context.Context,
 		timeout time.Duration,
 	) error
-	AddSensorReading(
+	AddLidarReading(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
@@ -272,10 +272,10 @@ func (r *Request) doWork(
 		return nil, cf.carto.stop()
 	case terminate:
 		return nil, cf.carto.terminate()
-	case addSensorReading:
-		sensor, ok := r.requestParams[sensor].(string)
+	case addLidarReading:
+		lidar, ok := r.requestParams[lidar].(string)
 		if !ok {
-			return nil, errors.New("could not cast inputted sensor name to string")
+			return nil, errors.New("could not cast inputted lidar name to string")
 		}
 
 		reading, ok := r.requestParams[reading].([]byte)
@@ -288,7 +288,7 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted timestamp to times.Time")
 		}
 
-		return nil, cf.carto.addSensorReading(sensor, reading, timestamp)
+		return nil, cf.carto.addLidarReading(lidar, reading, timestamp)
 	case position:
 		return cf.carto.getPosition()
 	case internalState:

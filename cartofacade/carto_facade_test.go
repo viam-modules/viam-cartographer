@@ -331,13 +331,13 @@ func TestAddSensorReading(t *testing.T) {
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
-	carto.AddSensorReadingFunc = func(name string, reading []byte, time time.Time) error {
+	carto.AddLidarReadingFunc = func(name string, reading []byte, time time.Time) error {
 		return nil
 	}
 	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
-	t.Run("testing AddSensorReading", func(t *testing.T) {
+	t.Run("testing AddLidarReading", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
 		// read PCD
@@ -350,27 +350,27 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		// success case
-		err = cartoFacade.AddSensorReading(cancelCtx, 5*time.Second, "mysensor", buf.Bytes(), timestamp)
+		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeNil)
 
-		carto.AddSensorReadingFunc = func(name string, reading []byte, time time.Time) error {
+		carto.AddLidarReadingFunc = func(name string, reading []byte, time time.Time) error {
 			return errors.New("test error 4")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
-		err = cartoFacade.AddSensorReading(cancelCtx, 5*time.Second, "mysensor", buf.Bytes(), timestamp)
+		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("test error 4"))
 
-		carto.AddSensorReadingFunc = func(name string, reading []byte, timestamp time.Time) error {
+		carto.AddLidarReadingFunc = func(name string, reading []byte, timestamp time.Time) error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		err = cartoFacade.AddSensorReading(cancelCtx, 1*time.Millisecond, "mysensor", buf.Bytes(), timestamp)
+		err = cartoFacade.AddLidarReading(cancelCtx, 1*time.Millisecond, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)

@@ -54,7 +54,7 @@ type CartoInterface interface {
 	start() error
 	stop() error
 	terminate() error
-	addSensorReading(string, []byte, time.Time) error
+	addLidarReading(string, []byte, time.Time) error
 	getPosition() (GetPosition, error)
 	getPointCloudMap() ([]byte, error)
 	getInternalState() ([]byte, error)
@@ -207,17 +207,17 @@ func (vc *Carto) terminate() error {
 	return nil
 }
 
-// AddSensorReading is a wrapper for viam_carto_add_sensor_reading
-func (vc *Carto) addSensorReading(sensor string, readings []byte, timestamp time.Time) error {
-	value := toSensorReading(sensor, readings, timestamp)
+// AddLidarReading is a wrapper for viam_carto_add_lidar_reading
+func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.Time) error {
+	value := toLidarReading(lidar, readings, timestamp)
 
-	status := C.viam_carto_add_sensor_reading(vc.value, &value)
+	status := C.viam_carto_add_lidar_reading(vc.value, &value)
 
 	if err := toError(status); err != nil {
 		return err
 	}
 
-	status = C.viam_carto_add_sensor_reading_destroy(&value)
+	status = C.viam_carto_add_lidar_reading_destroy(&value)
 	if err := toError(status); err != nil {
 		return err
 	}
@@ -379,15 +379,15 @@ func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition
 	}
 }
 
-func toSensorReading(sensor string, readings []byte, timestamp time.Time) C.viam_carto_sensor_reading {
-	sr := C.viam_carto_sensor_reading{}
-	sensorCStr := C.CString(sensor)
+func toLidarReading(lidar string, readings []byte, timestamp time.Time) C.viam_carto_lidar_reading {
+	sr := C.viam_carto_lidar_reading{}
+	sensorCStr := C.CString(lidar)
 	defer C.free(unsafe.Pointer(sensorCStr))
-	sr.sensor = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(sensor)))
+	sr.lidar = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(lidar)))
 	readingsCBytes := C.CBytes(readings)
 	defer C.free(readingsCBytes)
-	sr.sensor_reading = C.blk2bstr(readingsCBytes, C.int(len(readings)))
-	sr.sensor_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
+	sr.lidar_reading = C.blk2bstr(readingsCBytes, C.int(len(readings)))
+	sr.lidar_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
 	return sr
 }
 
@@ -435,10 +435,10 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_MAP_CREATION_ERROR")
 	case C.VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST:
 		return errors.New("VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
-	case C.VIAM_CARTO_SENSOR_READING_EMPTY:
-		return errors.New("VIAM_CARTO_SENSOR_READING_EMPTY")
-	case C.VIAM_CARTO_SENSOR_READING_INVALID:
-		return errors.New("VIAM_CARTO_SENSOR_READING_INVALID")
+	case C.VIAM_CARTO_LIDAR_READING_EMPTY:
+		return errors.New("VIAM_CARTO_LIDAR_READING_EMPTY")
+	case C.VIAM_CARTO_LIDAR_READING_INVALID:
+		return errors.New("VIAM_CARTO_LIDAR_READING_INVALID")
 	case C.VIAM_CARTO_GET_POSITION_RESPONSE_INVALID:
 		return errors.New("VIAM_CARTO_GET_POSITION_RESPONSE_INVALID")
 	case C.VIAM_CARTO_POINTCLOUD_MAP_EMPTY:

@@ -47,8 +47,8 @@ func TestAddSensorReadingOffline(t *testing.T) {
 		LidarDataRateMsec: 200,
 		Timeout:           10 * time.Second,
 	}
-	t.Run("When addSensorReading returns successfully, no infinite loop", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("When addLidarReading returns successfully, no infinite loop", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -57,11 +57,11 @@ func TestAddSensorReadingOffline(t *testing.T) {
 		) error {
 			return nil
 		}
-		tryAddSensorReadingUntilSuccess(context.Background(), reading, readingTimestamp, config)
+		tryAddLidarReadingUntilSuccess(context.Background(), reading, readingTimestamp, config)
 	})
 
-	t.Run("AddSensorReading returns UNABLE_TO_ACQUIRE_LOCK error and the context is cancelled, no infinite loop", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("AddLidarReading returns UNABLE_TO_ACQUIRE_LOCK error and the context is cancelled, no infinite loop", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -73,11 +73,11 @@ func TestAddSensorReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		tryAddSensorReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
 	})
 
-	t.Run("When AddSensorReading returns a different error and the context is cancelled, no infinite loop", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("When AddLidarReading returns a different error and the context is cancelled, no infinite loop", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -89,15 +89,15 @@ func TestAddSensorReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		tryAddSensorReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
 	})
 
-	t.Run("When AddSensorReading hits errors a few times, retries, and then succeeds", func(t *testing.T) {
+	t.Run("When AddLidarReading hits errors a few times, retries, and then succeeds", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 		var calls []addSensorReadingArgs
 
-		cf.AddSensorReadingFunc = func(
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -119,7 +119,7 @@ func TestAddSensorReadingOffline(t *testing.T) {
 			}
 			return nil
 		}
-		tryAddSensorReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
 		test.That(t, len(calls), test.ShouldEqual, 4)
 		for i, args := range calls {
 			t.Logf("addSensorReadingArgsHistory %d", i)
@@ -145,8 +145,8 @@ func TestAddSensorReadingOnline(t *testing.T) {
 		Timeout:           10 * time.Second,
 	}
 
-	t.Run("When AddSensorReading blocks for more than the DataFreqHz and succeeds, time to sleep is 0", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("When AddLidarReading blocks for more than the DataFreqHz and succeeds, time to sleep is 0", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -157,12 +157,12 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddSensorReading slower than DataFreqHz and returns lock error, time to sleep is 0", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("AddLidarReading slower than DataFreqHz and returns lock error, time to sleep is 0", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -173,12 +173,12 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("When AddSensorReading blocks for more than the DataFreqHz and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("When AddLidarReading blocks for more than the DataFreqHz and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -189,12 +189,12 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddSensorReading faster than the DataFreqHz and succeeds, time to sleep is <= DataFreqHz", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("AddLidarReading faster than the DataFreqHz and succeeds, time to sleep is <= DataFreqHz", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -204,13 +204,13 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
-	t.Run("AddSensorReading faster than the DataFreqHz and returns lock error, time to sleep is <= DataFreqHz", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("AddLidarReading faster than the DataFreqHz and returns lock error, time to sleep is <= DataFreqHz", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -220,13 +220,13 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
-	t.Run("AddSensorReading faster than DataFreqHz and returns unexpected error, time to sleep is <= DataFreqHz", func(t *testing.T) {
-		cf.AddSensorReadingFunc = func(
+	t.Run("AddLidarReading faster than DataFreqHz and returns unexpected error, time to sleep is <= DataFreqHz", func(t *testing.T) {
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -236,7 +236,7 @@ func TestAddSensorReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := tryAddSensorReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
@@ -254,7 +254,7 @@ func onlineModeTestHelper(
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addSensorReadingArgs
-	cf.AddSensorReadingFunc = func(
+	cf.AddLidarReadingFunc = func(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
@@ -282,15 +282,15 @@ func onlineModeTestHelper(
 	config.LidarName = onlineSensor.Name
 	config.LidarDataRateMsec = 10
 
-	jobDone := addSensorReading(ctx, config)
+	jobDone := addLidarReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 1)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addSensorReading(ctx, config)
+	jobDone = addLidarReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 2)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addSensorReading(ctx, config)
+	jobDone = addLidarReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 3)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
@@ -324,11 +324,11 @@ func invalidSensorTestHelper(
 	lidarDataRateMsec int,
 ) {
 	logger := golog.NewTestLogger(t)
-	sensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, logger)
+	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addSensorReadingArgs
-	cartoFacadeMock.AddSensorReadingFunc = func(
+	cartoFacadeMock.AddLidarReadingFunc = func(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
@@ -344,11 +344,11 @@ func invalidSensorTestHelper(
 		calls = append(calls, args)
 		return nil
 	}
-	config.Lidar = sensor
-	config.LidarName = sensor.Name
+	config.Lidar = lidar
+	config.LidarName = lidar.Name
 	config.LidarDataRateMsec = lidarDataRateMsec
 
-	jobDone := addSensorReading(ctx, config)
+	jobDone := addLidarReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 0)
 	test.That(t, jobDone, test.ShouldBeFalse)
 }
@@ -365,7 +365,7 @@ func TestAddSensorReading(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	t.Run("returns error in online mode when lidar GetData returns error, doesn't try to add sensor data", func(t *testing.T) {
+	t.Run("returns error in online mode when lidar GetData returns error, doesn't try to add lidar data", func(t *testing.T) {
 		cam := "invalid_lidar"
 		invalidSensorTestHelper(
 			ctx,
@@ -396,7 +396,7 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addSensorReadingArgs
-		cf.AddSensorReadingFunc = func(
+		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
@@ -422,7 +422,7 @@ func TestAddSensorReading(t *testing.T) {
 		config.LidarName = replaySensor.Name
 		config.LidarDataRateMsec = 0
 
-		jobDone := addSensorReading(ctx, config)
+		jobDone := addLidarReading(ctx, config)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 		test.That(t, jobDone, test.ShouldBeFalse)
 
@@ -453,7 +453,7 @@ func TestAddSensorReading(t *testing.T) {
 		config.Lidar = replaySensor
 		config.LidarDataRateMsec = 0
 
-		jobDone := addSensorReading(ctx, config)
+		jobDone := addLidarReading(ctx, config)
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 }

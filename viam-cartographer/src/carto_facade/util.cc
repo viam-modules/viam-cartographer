@@ -159,16 +159,15 @@ int read_pcd(std::string pcd, pcl::PCLPointCloud2 &blob) {
     return res;
 }
 
-std::tuple<bool, cartographer::sensor::TimedPointCloudData>
-carto_sensor_reading(std::string sensor_reading,
-                     int64_t sensor_reading_time_unix_milli) {
+std::tuple<bool, cartographer::sensor::TimedPointCloudData> carto_lidar_reading(
+    std::string lidar_reading, int64_t lidar_reading_time_unix_milli) {
     cartographer::sensor::TimedPointCloudData point_cloud;
     cartographer::sensor::TimedPointCloud ranges;
 
     pcl::PCLPointCloud2 blob;
 
     try {
-        int err = read_pcd(sensor_reading, blob);
+        int err = read_pcd(lidar_reading, blob);
         if (err) {
             return {false, point_cloud};
         }
@@ -196,7 +195,7 @@ carto_sensor_reading(std::string sensor_reading,
 
     point_cloud.time =
         cartographer::common::FromUniversal(0) +
-        cartographer::common::FromMilliseconds(sensor_reading_time_unix_milli);
+        cartographer::common::FromMilliseconds(lidar_reading_time_unix_milli);
     point_cloud.origin = Eigen::Vector3f::Zero();
     point_cloud.ranges = ranges;
 
