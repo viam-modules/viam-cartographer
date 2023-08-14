@@ -199,8 +199,8 @@ extern int viam_carto_terminate(viam_carto **vc  //
 // An expected error is VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK(1)
 //
 // On success: Returns 0, adds lidar reading to cartographer's data model
-extern int viam_carto_add_lidar_reading(viam_carto *vc,                      //
-                                         const viam_carto_lidar_reading *sr  //
+extern int viam_carto_add_lidar_reading(viam_carto *vc,                     //
+                                        const viam_carto_lidar_reading *sr  //
 );
 
 // viam_carto_add_lidar_reading_destroy/2 takes a viam_carto pointer
@@ -208,8 +208,7 @@ extern int viam_carto_add_lidar_reading(viam_carto *vc,                      //
 // On error: Returns a non 0 error code
 //
 // On success: Returns 0, frees the viam_carto_lidar_reading.
-extern int viam_carto_add_lidar_reading_destroy(
-    viam_carto_lidar_reading *sr  //
+extern int viam_carto_add_lidar_reading_destroy(viam_carto_lidar_reading *sr  //
 );
 
 // viam_carto_get_position/3 takes a viam_carto pointer, a

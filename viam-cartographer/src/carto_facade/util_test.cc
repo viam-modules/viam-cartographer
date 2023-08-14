@@ -51,8 +51,8 @@ BOOST_AUTO_TEST_CASE(carto_lidar_reading_too_few_points_ascii_failure) {
     std::vector<std::vector<double>> too_few_points = {
         {0.007000, 0.006000, 0.001000, 16711938}};
 
-    auto [success, _] = carto_lidar_reading(help::ascii_pcd(too_few_points),
-                                             16409988000001121);
+    auto [success, _] =
+        carto_lidar_reading(help::ascii_pcd(too_few_points), 16409988000001121);
     BOOST_TEST(!success);
 }
 
@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(carto_lidar_reading_too_few_points_binary_failure) {
         {0.007000, 0.006000, 0.001000, 16711938}};
 
     auto [success, _] = carto_lidar_reading(help::binary_pcd(too_few_points),
-                                             16409988000001121);
+                                            16409988000001121);
     BOOST_TEST(!success);
 }
 
@@ -127,8 +127,8 @@ BOOST_AUTO_TEST_CASE(carto_lidar_reading_wrong_shape_binary_failure) {
         {0.007000, 0.006000, 0.001000},
         {0.007000, 0.006000, 0.001000}};
 
-    auto [success, _] = carto_lidar_reading(
-        help::binary_pcd(wrong_point_shape), 16409988000001121);
+    auto [success, _] = carto_lidar_reading(help::binary_pcd(wrong_point_shape),
+                                            16409988000001121);
     BOOST_TEST(!success);
 }
 

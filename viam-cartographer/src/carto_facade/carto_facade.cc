@@ -766,9 +766,8 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
     }
 
     int64_t lidar_reading_time_unix_milli = sr->lidar_reading_time_unix_milli;
-    auto [success, measurement] =
-        viam::carto_facade::util::carto_lidar_reading(
-            lidar_reading, lidar_reading_time_unix_milli);
+    auto [success, measurement] = viam::carto_facade::util::carto_lidar_reading(
+        lidar_reading, lidar_reading_time_unix_milli);
     if (!success) {
         throw VIAM_CARTO_LIDAR_READING_INVALID;
     }
@@ -1026,7 +1025,7 @@ extern int viam_carto_terminate(viam_carto **ppVC) {
 };
 
 extern int viam_carto_add_lidar_reading(viam_carto *vc,
-                                         const viam_carto_lidar_reading *sr) {
+                                        const viam_carto_lidar_reading *sr) {
     if (vc == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
@@ -1048,8 +1047,7 @@ extern int viam_carto_add_lidar_reading(viam_carto *vc,
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_add_lidar_reading_destroy(
-    viam_carto_lidar_reading *sr) {
+extern int viam_carto_add_lidar_reading_destroy(viam_carto_lidar_reading *sr) {
     if (sr == nullptr) {
         return VIAM_CARTO_LIDAR_READING_INVALID;
     }
