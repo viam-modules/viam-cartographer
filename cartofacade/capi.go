@@ -95,6 +95,7 @@ type CartoConfig struct {
 
 	CloudStoryEnabled bool
 	EnableMapping     bool
+	ExistingMap       string
 }
 
 // CartoAlgoConfig contains config values from app
@@ -340,6 +341,7 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 
 	vcc.cloud_story_enabled = C.bool(cfg.CloudStoryEnabled)
 	vcc.enable_mapping = C.bool(cfg.EnableMapping)
+	vcc.existing_map = goStringToBstring(cfg.ExistingMap)
 
 	return vcc, nil
 }

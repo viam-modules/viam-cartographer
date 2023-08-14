@@ -117,6 +117,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.cloud_story_enabled = vcc.cloud_story_enabled;
     c.enable_mapping = vcc.enable_mapping;
+    c.existing_map = to_std_string( vcc.existing_map);
     c.lidar_config = vcc.lidar_config;
     if (c.data_dir.size() == 0) {
         throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;

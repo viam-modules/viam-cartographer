@@ -136,6 +136,7 @@ typedef struct viam_carto_config {
     viam_carto_LIDAR_CONFIG lidar_config;
     bool cloud_story_enabled;
     bool enable_mapping;
+    bstring existing_map;
 } viam_carto_config;
 
 // viam_carto_lib_init/4 takes an empty viam_carto_lib pointer to pointer
@@ -301,6 +302,7 @@ typedef struct config {
     viam_carto_LIDAR_CONFIG lidar_config;
     bool cloud_story_enabled;
     bool enable_mapping;
+    std::string existing_map;
 } config;
 
 // function to convert viam_carto_config into  viam::carto_facade::config
