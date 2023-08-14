@@ -150,7 +150,7 @@ func testValidateTesthelper(
 	})
 }
 
-func getRequiredFields(imuIntegrationEnabled bool, cloudStoryEnabled bool) []string {
+func getRequiredFields(imuIntegrationEnabled, cloudStoryEnabled bool) []string {
 	requiredFields := []string{}
 
 	if imuIntegrationEnabled {

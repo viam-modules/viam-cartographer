@@ -117,7 +117,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
     c.cloud_story_enabled = vcc.cloud_story_enabled;
     c.enable_mapping = vcc.enable_mapping;
-    c.existing_map = to_std_string( vcc.existing_map);
+    c.existing_map = to_std_string(vcc.existing_map);
     c.lidar_config = vcc.lidar_config;
 
     if (!c.cloud_story_enabled) {
@@ -269,9 +269,10 @@ void CartoFacade::IOInit() {
     } else {
         // Detect if data_dir has deprecated format
         if (fs::is_directory(config.data_dir + "/data")) {
-            LOG(ERROR) << "data directory " << config.data_dir
-                    << " is invalid as it contains deprecated format i.e. /data "
-                        "subdirectory";
+            LOG(ERROR)
+                << "data directory " << config.data_dir
+                << " is invalid as it contains deprecated format i.e. /data "
+                   "subdirectory";
             throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
         }
         // Setup file system for saving internal state
@@ -330,8 +331,8 @@ void CartoFacade::IOInit() {
         if (config.cloud_story_enabled) {
             latest_internal_state_filename = config.existing_map;
         } else {
-        latest_internal_state_filename =
-            get_latest_internal_state_filename(path_to_internal_state);
+            latest_internal_state_filename =
+                get_latest_internal_state_filename(path_to_internal_state);
         }
 
         VLOG(1) << "latest_internal_state_filename: "
