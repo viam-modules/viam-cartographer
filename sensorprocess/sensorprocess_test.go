@@ -42,8 +42,8 @@ POINTS 0
 DATA binary
 `)
 	expectedIMUReading = cartofacade.IMUReading{
-		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
-		AngularVelocity:    spatialmath.AngularVelocity{X: 1, Y: 1, Z: 1},
+		LinearAcceleration: r3.Vector{X: 0.5773502691896258, Y: 0.5773502691896258, Z: 0.5773502691896258},
+		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
 	}
 	errUnknown = errors.New("unknown error")
 )
@@ -237,7 +237,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 		for i, args := range calls {
 			t.Logf("addIMUReadingArgsHistory %d", i)
 			test.That(t, args.timeout, test.ShouldEqual, config.Timeout)
-			test.That(t, args.sensorName, test.ShouldEqual, config.LidarName)
+			test.That(t, args.sensorName, test.ShouldEqual, config.IMUName)
 			test.That(t, args.currentReading, test.ShouldResemble, reading)
 			test.That(t, args.readingTimestamp, test.ShouldResemble, readingTimestamp)
 		}
@@ -364,11 +364,12 @@ func TestAddIMUReadingOnline(t *testing.T) {
 	}
 	readingTimestamp := time.Now().UTC()
 	config := Config{
-		Logger:          logger,
-		CartoFacade:     &cf,
-		IMUName:         "good_imu",
-		IMUDataRateMsec: 50,
-		Timeout:         10 * time.Second,
+		Logger:            logger,
+		CartoFacade:       &cf,
+		LidarDataRateMsec: 200,
+		IMUName:           "good_imu",
+		IMUDataRateMsec:   50,
+		Timeout:           10 * time.Second,
 	}
 
 	t.Run("When AddIMUReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
@@ -581,6 +582,9 @@ func onlineModeIMUTestHelper(
 	config.IMUName = onlineIMU.Name
 	config.IMUDataRateMsec = 10
 
+	// set lidar data rate to signify that we are in online mode
+	config.LidarDataRateMsec = 10
+
 	jobDone := addIMUReading(ctx, config)
 	test.That(t, len(calls), test.ShouldEqual, 1)
 	test.That(t, jobDone, test.ShouldBeFalse)
@@ -657,6 +661,7 @@ func invalidIMUTestHelper(
 	t *testing.T,
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
+	lidarDataRateMsec int,
 	movementSensorName string,
 	imuDataRateMsec int,
 ) {
@@ -681,6 +686,7 @@ func invalidIMUTestHelper(
 		calls = append(calls, args)
 		return nil
 	}
+	config.LidarDataRateMsec = lidarDataRateMsec
 	config.IMU = imu
 	config.IMUName = imu.Name
 	config.IMUDataRateMsec = imuDataRateMsec
@@ -814,6 +820,7 @@ func TestAddIMUReading(t *testing.T) {
 			t,
 			cf,
 			config,
+			10,
 			movementsensor,
 			10,
 		)
@@ -829,6 +836,7 @@ func TestAddIMUReading(t *testing.T) {
 	// 		t,
 	// 		cf,
 	// 		config,
+	// 		10,
 	// 		movementsensor,
 	// 		10,
 	// 	)

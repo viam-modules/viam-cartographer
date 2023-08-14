@@ -137,21 +137,19 @@ func addIMUReading(
 	config Config,
 ) bool {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
+
+	// Fully implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
 	if err != nil {
-		config.Logger.Warn("offline mode is not yet supported for IMU sensors")
+		config.Logger.Warn(err)
+		// only end the sensor process if we are in offline mode
+		if config.LidarDataRateMsec == 0 {
+			if config.IMUDataRateMsec != 0 {
+				config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
+			}
+			// return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
+		}
+		return false
 	}
-	// Implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
-	// if err != nil {
-	// 	config.Logger.Warn(err)
-	// 	// only end the sensor process if we are in offline mode
-	// 	if config.LidarDataRateMsec == 0 {
-	// 		if config.IMUDataRateMsec != 0 {
-	// 			config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
-	// 		}
-	// 		return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
-	// 	}
-	// 	return false
-	// }
 
 	sr := cartofacade.IMUReading{
 		LinearAcceleration: tsr.LinearAcceleration,
