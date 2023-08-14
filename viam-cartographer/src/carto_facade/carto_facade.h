@@ -371,6 +371,7 @@ class CartoFacade {
     viam::carto_facade::config config;
     viam_carto_algo_config algo_config;
     std::string path_to_internal_state;
+    std::string path_to_internal_state_file;
     std::atomic<CartoFacadeState> state{CartoFacadeState::INITIALIZED};
     std::string configuration_directory;
     SlamMode slam_mode = SlamMode::MAPPING;

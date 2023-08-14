@@ -119,12 +119,16 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.enable_mapping = vcc.enable_mapping;
     c.existing_map = to_std_string( vcc.existing_map);
     c.lidar_config = vcc.lidar_config;
-    if (c.data_dir.size() == 0) {
-        throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
+
+    if (!c.cloud_story_enabled) {
+        if (c.data_dir.size() == 0) {
+            throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
+        }
+        if (vcc.map_rate_sec < 0) {
+            throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
+        }
     }
-    if (vcc.map_rate_sec < 0) {
-        throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
-    }
+
     if (c.camera.empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
     }
@@ -186,6 +190,7 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     config = from_viam_carto_config(c);
     algo_config = ac;
     path_to_internal_state = config.data_dir + "/internal_state";
+    path_to_internal_state_file = config.existing_map;
 };
 
 CartoFacade::~CartoFacade() { bdestroy(config.component_reference); }
@@ -258,23 +263,24 @@ void CartoFacade::IOInit() {
                    << CartoFacadeState::INITIALIZED;
         throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
     }
-    // Detect if data_dir has deprecated format
-    if (fs::is_directory(config.data_dir + "/data")) {
-        LOG(ERROR) << "data directory " << config.data_dir
-                   << " is invalid as it contains deprecated format i.e. /data "
-                      "subdirectory";
-        throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
-    }
-    // Setup file system for saving internal state
-    setup_filesystem(config.data_dir, path_to_internal_state);
     if (config.cloud_story_enabled == true) {
         slam_mode = determine_slam_mode_cloud_story_enabled(
-            path_to_internal_state, config.enable_mapping);
+            path_to_internal_state_file, config.enable_mapping);
     } else {
+        // Detect if data_dir has deprecated format
+        if (fs::is_directory(config.data_dir + "/data")) {
+            LOG(ERROR) << "data directory " << config.data_dir
+                    << " is invalid as it contains deprecated format i.e. /data "
+                        "subdirectory";
+            throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
+        }
+        // Setup file system for saving internal state
+        setup_filesystem(config.data_dir, path_to_internal_state);
         slam_mode =
             determine_slam_mode(path_to_internal_state, config.map_rate_sec);
     }
-    VLOG(1) << "slam slam mode: " << slam_mode;
+
+    VLOG(1) << "slam mode: " << slam_mode;
     // TODO: Make this API user configurable
     auto cd = find_lua_files();
     if (cd.empty()) {
@@ -313,15 +319,21 @@ void CartoFacade::IOInit() {
         map_builder.BuildMapBuilder();
     }
 
-    // TODO: google cartographer will termiante the program if
+    // TODO: google cartographer will terminate the program if
     // the internal state is invalid
     // see https://viam.atlassian.net/browse/RSDK-3553
     if (slam_mode == viam::carto_facade::SlamMode::UPDATING ||
         slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
         // Check if there is an apriori map (internal state) in the
-        // path_to_internal_state directory
-        std::string latest_internal_state_filename =
+        // path_to_internal_state directory or existing_map path
+        std::string latest_internal_state_filename;
+        if (config.cloud_story_enabled) {
+            latest_internal_state_filename = config.existing_map;
+        } else {
+        latest_internal_state_filename =
             get_latest_internal_state_filename(path_to_internal_state);
+        }
+
         VLOG(1) << "latest_internal_state_filename: "
                 << latest_internal_state_filename;
         // load_frozen_trajectory has to be true for LOCALIZING slam mode,
@@ -828,27 +840,19 @@ viam::carto_facade::SlamMode determine_slam_mode(
 }
 
 viam::carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(
-    std::string path_to_internal_state, bool enable_mapping) {
-    // Check if there is an apriori map (internal state) in the
-    // path_to_internal_state directory
-    std::vector<std::string> internal_state_filenames =
-        list_sorted_files_in_directory(path_to_internal_state);
-
-    // Check if there is a *.pbstream internal state in the
-    // path_to_internal_state directory
-    for (auto filename : internal_state_filenames) {
-        if (filename.find(".pbstream") != std::string::npos) {
-            // There is an apriori map (internal state) present, so we're
-            // running either in updating or localization mode.
-            if (!enable_mapping) {
-                // This log line is needed by rdk integration tests.
-                LOG(INFO) << "Running in localization only mode";
-                return viam::carto_facade::SlamMode::LOCALIZING;
-            }
+    std::string path_to_internal_state_file, bool enable_mapping) {
+    // Check if an existing map has been provided
+    if (path_to_internal_state_file.size() != 0) {
+        // There is an apriori map (internal state) present, so we're
+        // running either in updating or localization mode.
+        if (!enable_mapping) {
             // This log line is needed by rdk integration tests.
-            LOG(INFO) << "Running in updating mode";
-            return viam::carto_facade::SlamMode::UPDATING;
+            LOG(INFO) << "Running in localization only mode";
+            return viam::carto_facade::SlamMode::LOCALIZING;
         }
+        // This log line is needed by rdk integration tests.
+        LOG(INFO) << "Running in updating mode";
+        return viam::carto_facade::SlamMode::UPDATING;
     }
     if (!enable_mapping) {
         LOG(ERROR)

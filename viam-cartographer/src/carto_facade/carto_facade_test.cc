@@ -211,17 +211,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
 
     std::string camera = "lidar";
     std::string movement_sensor = "imu";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
 
-    fs::create_directory(tmp_dir);
     {
         // mapping
         viam_carto *vc1;
-        auto mapping_dir = tmp_dir / fs::path("mapping_dir");
         struct viam_carto_config vcc_mapping =
-            viam_carto_config_setup(1, VIAM_CARTO_THREE_D, mapping_dir.string(),
+            viam_carto_config_setup(1, VIAM_CARTO_THREE_D, "",
                                     camera, movement_sensor, true, true, "");
         BOOST_TEST(viam_carto_init(&vc1, lib, vcc_mapping, ac) ==
                    VIAM_CARTO_SUCCESS);
@@ -250,7 +246,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         viam_carto_config_teardown(vcc_mapping);
     }
 
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
+    fs::create_directory(tmp_dir);
     auto updating_dir = tmp_dir / fs::path("updating_dir");
+    auto internal_state_file_path =
+            updating_dir /
+            fs::path("map_data_2022-02-11T01:44:53.1903Z.pbstream");
     // updating setup
     {
         auto internal_state_dir = updating_dir / fs::path("internal_state");
@@ -270,11 +272,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
                 << exists(internal_state_artifact_source);
         VLOG(1) << "internal_state_dir: " << internal_state_dir;
         VLOG(1) << "exists(internal_state_dir): " << exists(internal_state_dir);
-        auto internal_state_artifact_target =
-            internal_state_dir /
-            fs::path("map_data_2022-02-11T01:44:53.1903Z.pbstream");
         fs::copy_file(internal_state_artifact_source,
-                      internal_state_artifact_target);
+                      internal_state_file_path);
     }
 
     {
@@ -282,8 +281,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         viam_carto *vc2;
 
         struct viam_carto_config vcc_updating = viam_carto_config_setup(
-            1, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, true, true, "");
+            1, VIAM_CARTO_THREE_D, "", camera,
+            movement_sensor, true, true, internal_state_file_path);
         BOOST_TEST(viam_carto_init(&vc2, lib, vcc_updating, ac) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(vc2->slam_mode == VIAM_CARTO_SLAM_MODE_UPDATING);
@@ -323,8 +322,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         // updating optimize_on_start
         viam_carto *vc3;
         struct viam_carto_config vcc_updating = viam_carto_config_setup(
-            1, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, true, true, "");
+            1, VIAM_CARTO_THREE_D, "", camera,
+            movement_sensor, true, true, internal_state_file_path);
 
         BOOST_TEST(viam_carto_init(&vc3, lib, vcc_updating,
                                    ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
@@ -340,8 +339,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         // localizing
         viam_carto *vc4;
         struct viam_carto_config vcc_localizing = viam_carto_config_setup(
-            0, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, true, false, "");
+            0, VIAM_CARTO_THREE_D, "", camera,
+            movement_sensor, true, false, internal_state_file_path);
         BOOST_TEST(viam_carto_init(&vc4, lib, vcc_localizing, ac) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(vc4->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
@@ -374,8 +373,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         // localizing optimize_on_start
         viam_carto *vc5;
         struct viam_carto_config vcc_localizing = viam_carto_config_setup(
-            0, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, true, false, "");
+            0, VIAM_CARTO_THREE_D, "", camera,
+            movement_sensor, true, false, internal_state_file_path);
         BOOST_TEST(viam_carto_init(&vc5, lib, vcc_localizing,
                                    ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
         BOOST_TEST(vc5->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
@@ -393,7 +392,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         viam_carto *vc6;
         struct viam_carto_config vcc_invalid =
             viam_carto_config_setup(0, VIAM_CARTO_THREE_D, empty_dir.string(),
-                                    camera, movement_sensor, false, false, "");
+                                    camera, movement_sensor, false, false, "test.pbstream");
         BOOST_TEST(viam_carto_init(&vc6, lib, vcc_invalid, ac) ==
                    VIAM_CARTO_SLAM_MODE_INVALID);
         viam_carto_config_teardown(vcc_invalid);
