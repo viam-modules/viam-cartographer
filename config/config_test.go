@@ -166,16 +166,12 @@ func getRequiredFields(imuIntegrationEnabled bool, cloudStoryEnabled bool) []str
 }
 
 func TestValidate(t *testing.T) {
-	// for _, imuEnabled := range []bool{true, false} {
-	// 	for _, cloudStoryEnabled := range []bool{true, false} {
-	// 		suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-	// 		testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
-	// 	}
-	// }
-	imuEnabled := true
-	cloudStoryEnabled := false
-	suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-	testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
+	for _, imuEnabled := range []bool{true, false} {
+		for _, cloudStoryEnabled := range []bool{true, false} {
+			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+			testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
+		}
+	}
 }
 
 // makeCfgService creates the simplest possible config that can pass validation.
