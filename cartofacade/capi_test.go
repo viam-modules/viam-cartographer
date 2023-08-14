@@ -55,13 +55,13 @@ func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.
 	test.That(t, err, test.ShouldBeNil)
 }
 
-func testAddIMUReading(t *testing.T, vc Carto, readings IMUReading, timestamp time.Time) {
-	test_imu_reading := IMUReading{
+func testAddIMUReading(t *testing.T, vc Carto, timestamp time.Time) {
+	testIMUReading := IMUReading{
 		LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
 	}
 
-	err := vc.addIMUReading("myIMU", test_imu_reading, timestamp)
+	err := vc.addIMUReading("myIMU", testIMUReading, timestamp)
 	test.That(t, err, test.ShouldBeNil)
 }
 
@@ -143,13 +143,13 @@ func TestToLidarReading(t *testing.T) {
 }
 
 func TestToIMUReading(t *testing.T) {
-	test_imu_reading := IMUReading{
+	testIMUReading := IMUReading{
 		LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
 	}
 	t.Run("IMU reading properly converted between c and go", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		sr := toIMUReading("myIMU", test_imu_reading, timestamp)
+		sr := toIMUReading("myIMU", testIMUReading, timestamp)
 		test.That(t, bstringToGoString(sr.imu), test.ShouldResemble, "myIMU")
 		test.That(t, sr.lin_acc_x, test.ShouldEqual, 0.1)
 		test.That(t, sr.lin_acc_y, test.ShouldEqual, 0)
@@ -357,10 +357,11 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 }
+
 func TestCGoAPIWithIMU(t *testing.T) {
 	pvcl, err := NewLib(0, 1)
 
-	test_imu_reading := IMUReading{
+	testIMUReading := IMUReading{
 		LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
 	}
@@ -414,7 +415,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// test invalid addIMUReading: sensor name unknown
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		err = vc.addIMUReading("not my sensor", test_imu_reading, timestamp)
+		err = vc.addIMUReading("not my sensor", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_UNKNOWN_SENSOR_NAME")
 
@@ -430,14 +431,14 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		// As a result, these tests show best case behavior.
 
 		// 1. test valid addLidarReading: valid reading ascii
-		t_delta := time.Second * 5
+		tDelta := time.Second * 5
 		t.Log("lidar reading 1")
-		timestamp = timestamp.Add(t_delta)
+		timestamp = timestamp.Add(tDelta)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
 
 		// test valid addIMUReading with same timestamp
 		t.Log("IMU reading 1")
-		testAddIMUReading(t, vc, test_imu_reading, timestamp)
+		testAddIMUReading(t, vc, timestamp)
 
 		// test getPosition zeroed if not enough sensor data has been provided
 		position, err = vc.getPosition()
@@ -461,12 +462,12 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// 2. test valid addLidarReading: valid reading binary
 		t.Log("lidar reading 2")
-		timestamp = timestamp.Add(t_delta)
+		timestamp = timestamp.Add(tDelta)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDBinary)
 
 		// test valid addIMUReading with same timestamp
 		t.Log("IMU reading 2")
-		testAddIMUReading(t, vc, test_imu_reading, timestamp)
+		testAddIMUReading(t, vc, timestamp)
 
 		// test getPosition zeroed
 		position, err = vc.getPosition()
@@ -492,12 +493,12 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// third sensor reading populates the pointcloud map and the position
 		t.Log("lidar reading 3")
-		timestamp = timestamp.Add(t_delta)
+		timestamp = timestamp.Add(tDelta)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
 
 		// test valid addIMUReading with same timestamp
 		// t.Log("IMU reading 3")
-		// testAddIMUReading(t, vc, test_imu_reading, timestamp)
+		// testAddIMUReading(t, vc, testIMUReading, timestamp)
 
 		// test getPosition, is no longer zeroed
 		position, err = vc.getPosition()
@@ -543,5 +544,4 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		err = pvcl.Terminate()
 		test.That(t, err, test.ShouldBeNil)
 	})
-
 }

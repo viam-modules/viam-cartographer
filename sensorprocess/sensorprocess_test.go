@@ -290,7 +290,8 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("When AddLidarReading blocks for more than the DataRateMsec and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+	t.Run("When AddLidarReading blocks for more than the DataRateMsec"+
+		"and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,

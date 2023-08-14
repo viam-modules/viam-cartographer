@@ -988,12 +988,11 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         return VIAM_CARTO_LIB_INVALID;
     }
     // check that IMU is correctly set up
-    if (ac.use_imu_data == true &&
-        biseqcstr(c.movement_sensor, ("")) == true ||
-        ac.use_imu_data == false && 
-        biseqcstr(c.movement_sensor, ("")) == false) {
+    if (ac.use_imu_data == true && biseqcstr(c.movement_sensor, ("")) == true ||
+        ac.use_imu_data == false &&
+            biseqcstr(c.movement_sensor, ("")) == false) {
         return VIAM_CARTO_IMU_ENABLED_INVALID;
-    } 
+    }
 
     // allocate viam_carto struct
     viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));

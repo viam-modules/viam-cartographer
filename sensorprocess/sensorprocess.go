@@ -137,7 +137,6 @@ func addIMUReading(
 	config Config,
 ) bool {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
-
 	// Fully implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
 	if err != nil {
 		config.Logger.Warn(err)
@@ -146,6 +145,7 @@ func addIMUReading(
 			if config.IMUDataRateMsec != 0 {
 				config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
 			}
+			return true
 			// return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
 		}
 		return false

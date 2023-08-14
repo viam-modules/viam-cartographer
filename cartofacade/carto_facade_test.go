@@ -404,13 +404,13 @@ func TestAddIMUReading(t *testing.T) {
 
 	t.Run("testing AddIMUReading", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		test_imu_reading := IMUReading{
+		testIMUReading := IMUReading{
 			LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
 		}
 
 		// success case
-		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", test_imu_reading, timestamp)
+		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeNil)
 
 		carto.AddIMUReadingFunc = func(name string, reading IMUReading, time time.Time) error {
@@ -419,7 +419,7 @@ func TestAddIMUReading(t *testing.T) {
 		cartoFacade.carto = &carto
 
 		// returns error
-		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", test_imu_reading, timestamp)
+		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
 
@@ -430,7 +430,7 @@ func TestAddIMUReading(t *testing.T) {
 		cartoFacade.carto = &carto
 
 		// times out
-		err = cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "myIMU", test_imu_reading, timestamp)
+		err = cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
