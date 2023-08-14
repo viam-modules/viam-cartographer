@@ -17,6 +17,9 @@ import (
 	"errors"
 	"time"
 	"unsafe"
+
+	"github.com/golang/geo/r3"
+	"go.viam.com/rdk/spatialmath"
 )
 
 // CartoLib holds the c type viam_carto_lib
@@ -77,12 +80,8 @@ type GetPosition struct {
 
 // IMUReading holds values for linear acceleration and angular velocity to be converted into c
 type IMUReading struct {
-	LinAccX float64
-	LinAccY float64
-	LinAccZ float64
-	AngVelX float64
-	AngVelY float64
-	AngVelZ float64
+	LinearAcceleration r3.Vector
+	AngularVelocity    spatialmath.AngularVelocity
 }
 
 // LidarConfig represents the lidar configuration
@@ -219,7 +218,7 @@ func (vc *Carto) terminate() error {
 	return nil
 }
 
-// AddLidarReading is a wrapper for viam_carto_add_lidar_reading
+// addLidarReading is a wrapper for viam_carto_add_lidar_reading
 func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.Time) error {
 	value := toLidarReading(lidar, readings, timestamp)
 
@@ -237,7 +236,7 @@ func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.T
 	return nil
 }
 
-// AddIMUReading is a wrapper for viam_carto_add_imu_reading
+// addIMUReading is a wrapper for viam_carto_add_imu_reading
 func (vc *Carto) addIMUReading(imu string, readings IMUReading, timestamp time.Time) error {
 	value := toIMUReading(imu, readings, timestamp)
 
@@ -428,12 +427,12 @@ func toIMUReading(imu string, readings IMUReading, timestamp time.Time) C.viam_c
 	defer C.free(unsafe.Pointer(sensorCStr))
 	sr.imu = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(imu)))
 
-	sr.lin_acc_x = C.double(readings.LinAccX)
-	sr.lin_acc_y = C.double(readings.LinAccY)
-	sr.lin_acc_z = C.double(readings.LinAccZ)
-	sr.ang_vel_x = C.double(readings.AngVelX)
-	sr.ang_vel_y = C.double(readings.AngVelY)
-	sr.ang_vel_z = C.double(readings.AngVelZ)
+	sr.lin_acc_x = C.double(readings.LinearAcceleration.X)
+	sr.lin_acc_y = C.double(readings.LinearAcceleration.Y)
+	sr.lin_acc_z = C.double(readings.LinearAcceleration.Z)
+	sr.ang_vel_x = C.double(readings.AngularVelocity.X)
+	sr.ang_vel_y = C.double(readings.AngularVelocity.Y)
+	sr.ang_vel_z = C.double(readings.AngularVelocity.Z)
 
 	sr.imu_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
 	return sr
@@ -509,10 +508,8 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_NOT_IN_STARTED_STATE")
 	case C.VIAM_CARTO_NOT_IN_TERMINATABLE_STATE:
 		return errors.New("VIAM_CARTO_NOT_IN_TERMINATABLE_STATE")
-	case C.VIAM_CARTO_IMU_CONFIG_INVALID:
-		return errors.New("VIAM_CARTO_IMU_CONFIG_INVALID")
-	case C.VIAM_CARTO_IMU_READING_EMPTY:
-		return errors.New("VIAM_CARTO_IMU_READING_EMPTY")
+	case C.VIAM_CARTO_IMU_ENABLED_INVALID:
+		return errors.New("VIAM_CARTO_IMU_ENABLED_INVALID")
 	case C.VIAM_CARTO_IMU_READING_INVALID:
 		return errors.New("VIAM_CARTO_IMU_READING_INVALID")
 	default:

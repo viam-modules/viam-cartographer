@@ -58,6 +58,7 @@ var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
 	MissingDataRayLength: 25.0,
 	MaxRange:             25.0,
 	MinRange:             0.2,
+	UseIMUData:           false,
 	MaxSubmapsToKeep:     3,
 	FreshSubmapsCount:    3,
 	MinCoveredArea:       1.0,
@@ -119,7 +120,7 @@ func TerminateCartoLib() error {
 	return cartoLib.Terminate()
 }
 
-func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
+func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
 		CartoFacade:       cartoSvc.cartofacade,
 		Lidar:             cartoSvc.lidar.timed,
@@ -302,7 +303,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	initSensorProcess(cancelSensorProcessCtx, cartoSvc)
+	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
 }
@@ -440,6 +441,13 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		CloudStoryEnabled:  cartoSvc.cloudStoryEnabled,
 		EnableMapping:      cartoSvc.enableMapping,
 		ExistingMap:        cartoSvc.existingMap,
+	}
+
+	if cartoCfg.MovementSensor != "" {
+		cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
+		cartoAlgoConfig.UseIMUData = true
+	} else {
+		cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)

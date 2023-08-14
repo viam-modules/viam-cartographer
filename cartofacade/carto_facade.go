@@ -13,7 +13,7 @@ import (
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
 
-// ErrUnableToAcquireLock is the error returned from AddLidarReading when lock can't be acquired.
+// ErrUnableToAcquireLock is the error returned from AddLidarReading and/or AddIMUReading when lock can't be acquired.
 var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 
 // Initialize calls into the cartofacade C code.
@@ -316,24 +316,24 @@ func (r *Request) doWork(
 
 		timestamp, ok := r.requestParams[timestamp].(time.Time)
 		if !ok {
-			return nil, errors.New("could not cast inputted timestamp to times.Time")
+			return nil, errors.New("could not cast inputted timestamp to time.Time")
 		}
 
 		return nil, cf.carto.addLidarReading(lidar, reading, timestamp)
 	case addIMUReading:
 		imu, ok := r.requestParams[sensor].(string)
 		if !ok {
-			return nil, errors.New("could not cast inputted lidar name to string")
+			return nil, errors.New("could not cast inputted IMU name to string")
 		}
 
 		reading, ok := r.requestParams[reading].(IMUReading)
 		if !ok {
-			return nil, errors.New("could not cast inputted byte to byte slice")
+			return nil, errors.New("could not cast inputted reading to type IMUReading")
 		}
 
 		timestamp, ok := r.requestParams[timestamp].(time.Time)
 		if !ok {
-			return nil, errors.New("could not cast inputted timestamp to times.Time")
+			return nil, errors.New("could not cast inputted timestamp to time.Time")
 		}
 
 		return nil, cf.carto.addIMUReading(imu, reading, timestamp)

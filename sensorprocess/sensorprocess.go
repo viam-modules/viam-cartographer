@@ -91,7 +91,7 @@ func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, reading
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
+				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
 		}
 	}
@@ -131,34 +131,40 @@ func StartIMU(
 	}
 }
 
-// addLidarReading adds a lidar reading to the cartofacade.
+// addIMUReading adds an IMU reading to the cartofacade.
 func addIMUReading(
 	ctx context.Context,
 	config Config,
 ) bool {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
 	if err != nil {
-		config.Logger.Warn(err)
-		// only end the sensor process if we are in offline mode
-		if config.LidarDataRateMsec == 0 {
-			return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
-		}
-		return false
+		config.Logger.Warn("offline mode is not yet supported for IMU sensors")
 	}
+	// Implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
+	// if err != nil {
+	// 	config.Logger.Warn(err)
+	// 	// only end the sensor process if we are in offline mode
+	// 	if config.LidarDataRateMsec == 0 {
+	// 		if config.IMUDataRateMsec != 0 {
+	// 			config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
+	// 		}
+	// 		return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
+	// 	}
+	// 	return false
+	// }
 
 	sr := cartofacade.IMUReading{
-		LinAccX: tsr.LinearAcceleration.X,
-		LinAccY: tsr.LinearAcceleration.Y,
-		LinAccZ: tsr.LinearAcceleration.Z,
-		AngVelX: tsr.AngularVelocity.X,
-		AngVelY: tsr.AngularVelocity.Y,
-		AngVelZ: tsr.AngularVelocity.Z,
+		LinearAcceleration: tsr.LinearAcceleration,
+		AngularVelocity:    tsr.AngularVelocity,
 	}
 	/*
 	 when the lidar data rate msec is 0, we assume the user wants to be in "offline"
 	 mode and ensure every scan gets processed by cartographer
 	*/
 	if config.LidarDataRateMsec == 0 {
+		if config.IMUDataRateMsec != 0 {
+			config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
+		}
 		tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, config)
 	} else {
 		timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, config)
@@ -184,7 +190,7 @@ func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMURe
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-				config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
+				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
 		}
 	}

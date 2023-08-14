@@ -988,8 +988,9 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         return VIAM_CARTO_LIB_INVALID;
     }
 
-    if (ac.use_imu_data == true && biseq(c.movement_sensor,bstring("")) == true) {
-        return VIAM_CARTO_IMU_CONFIG_INVALID;
+    if (ac.use_imu_data == true &&
+        biseq(c.movement_sensor, bstring("")) == true) {
+        return VIAM_CARTO_IMU_ENABLED_INVALID;
     }
 
     // allocate viam_carto struct
@@ -1037,12 +1038,10 @@ extern int viam_carto_start(viam_carto *vc) {
         return VIAM_CARTO_VC_INVALID;
     }
     try {
-        std::cout << "this runs hahaha";
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         cf->Start();
     } catch (int err) {
-        std::cout << "damn";
         return err;
     } catch (std::exception &e) {
         LOG(ERROR) << e.what();

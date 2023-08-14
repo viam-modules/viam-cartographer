@@ -108,15 +108,12 @@ void MapBuilder::AddSensorData(const std::string &sensor_id,
 
 void MapBuilder::StartTrajectoryBuilder(bool use_imu_data) {
     VLOG(1) << "MapBuilder::StartTrajectoryBuilder";
+    std::set<SensorId> sensorList = {kRangeSensorId};
     if (use_imu_data) {
-        trajectory_id = map_builder_->AddTrajectoryBuilder(
-            {kRangeSensorId, kIMUSensorId}, trajectory_builder_options_,
-            GetLocalSlamResultCallback());
-    } else {
-        trajectory_id = map_builder_->AddTrajectoryBuilder(
-            {kRangeSensorId}, trajectory_builder_options_,
-            GetLocalSlamResultCallback());
+        sensorList.insert(kIMUSensorId);
     }
+    trajectory_id = map_builder_->AddTrajectoryBuilder(
+        sensorList, trajectory_builder_options_, GetLocalSlamResultCallback());
 
     VLOG(1) << "Using trajectory ID: " << trajectory_id;
 
