@@ -290,7 +290,8 @@ static const int checkForShutdownIntervalMicroseconds = 1e5;
 // The resolutionMeters variable defines the area in meters that each pixel
 // represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
-static const double resolutionMeters = 0.05;
+static const double cairoResolutionMeters = 0.05;
+static const int resolutionRatio = 2;
 
 typedef struct config {
     std::string camera;

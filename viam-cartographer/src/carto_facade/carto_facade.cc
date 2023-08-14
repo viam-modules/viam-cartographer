@@ -472,7 +472,7 @@ CartoFacade::GetLatestPaintedMapSlices() {
             &submap_slice.cairo_data);
     }
     cartographer::io::PaintSubmapSlicesResult painted_slices =
-        cartographer::io::PaintSubmapSlices(submap_slices, resolutionMeters);
+        cartographer::io::PaintSubmapSlices(submap_slices, cairoResolutionMeters);
 
     return painted_slices;
 }
@@ -517,36 +517,44 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
     // Iterate over image data and add to pointcloud buffer
     int num_points = 0;
     std::string pcd_data;
-    for (int pixel_y = 0; pixel_y < height; pixel_y++) {
-        for (int pixel_x = 0; pixel_x < width; pixel_x++) {
-            // Get byte index associated with pixel
-            int pixel_index = pixel_x + pixel_y * width;
-            int byte_index = pixel_index * bytesPerPixel;
+    for (int pixel_y = 0; pixel_y < height -resolutionRatio-1; pixel_y = pixel_y + resolutionRatio) {
+        for (int pixel_x = 0; pixel_x < width - resolutionRatio-1; pixel_x = pixel_x + resolutionRatio) {
 
-            // We assume we are running on a little-endian system, so the ARGB
-            // order is reversed
-            ColorARGB pixel_color;
-            pixel_color.A = image_data_ptr[byte_index + 3];
-            pixel_color.R = image_data_ptr[byte_index + 2];
-            pixel_color.G = image_data_ptr[byte_index + 1];
-            pixel_color.B = image_data_ptr[byte_index + 0];
+            int prob = 0;
+            for (int i = 0; i < resolutionRatio; i ++) {
+                for  (int j = 0; j < resolutionRatio; j ++) {
+                    // Get byte index associated with pixel
+                    int pixel_index = (pixel_x+i) + (pixel_y+j) * width;
+                    int byte_index = pixel_index * bytesPerPixel;
 
-            // Skip pixel if it contains empty data (default color)
-            if (check_if_empty_pixel(pixel_color)) {
-                continue;
+                    // We assume we are running on a little-endian system, so the ARGB
+                    // order is reversed
+                    ColorARGB pixel_color;
+                    pixel_color.A = image_data_ptr[byte_index + 3];
+                    pixel_color.R = image_data_ptr[byte_index + 2];
+                    pixel_color.G = image_data_ptr[byte_index + 1];
+                    pixel_color.B = image_data_ptr[byte_index + 0];  
+
+
+                    // Skip pixel if it contains empty data (default color)
+                    if (check_if_empty_pixel(pixel_color)) {
+                        continue;
+                    }
+
+                    // Determine probability based on the color of the pixel and skip if
+                    // it is 0
+                    prob = std::max(prob, calculate_probability_from_color_channels(pixel_color));
+                }
             }
 
-            // Determine probability based on the color of the pixel and skip if
-            // it is 0
-            int prob = calculate_probability_from_color_channels(pixel_color);
             if (prob == 0) {
                 continue;
-            }
+            }    
 
             // Convert pixel location to pointcloud point in meters
-            float x_pos = (pixel_x - origin_pixel_x) * resolutionMeters;
+            float x_pos = (pixel_x - origin_pixel_x) * cairoResolutionMeters;
             // Y is inverted to match output from getPosition()
-            float y_pos = -(pixel_y - origin_pixel_y) * resolutionMeters;
+            float y_pos = -(pixel_y - origin_pixel_y) * cairoResolutionMeters;
             float z_pos = 0;  // Z is 0 in 2D SLAM
 
             // Add point to buffer
