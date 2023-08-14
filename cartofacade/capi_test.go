@@ -196,7 +196,7 @@ func TestCGoAPI(t *testing.T) {
 		lastInternalState := internalState
 
 		// test invalid addLidarReading: not in sensor list
-		// PATRICIA REVISIT
+		// PATRICIA TODO: #242
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 		err = vc.addLidarReading("not my sensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)

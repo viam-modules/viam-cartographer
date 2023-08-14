@@ -75,7 +75,7 @@ func addLidarReading(
 // retries on error (offline mode).
 func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
-		while add sensor reading fails, keep trying to add the same reading - in offline mode
+		while add lidar reading fails, keep trying to add the same reading - in offline mode
 		we want to process each reading so if we cannot acquire the lock we should try again
 	*/
 	for {
@@ -101,9 +101,9 @@ func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Ti
 	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)
+			config.Logger.Debugw("Skipping lidar reading due to lock contention in cartofacade", "error", err)
 		} else {
-			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
+			config.Logger.Warnw("Skipping lidar reading due to error from cartofacade", "error", err)
 		}
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())

@@ -776,7 +776,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // PATRICIA REVISIT
+    // PATRICIA TODO: #242
     // non first sensor
     {
         viam_carto_lidar_reading sr;
@@ -792,7 +792,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // empty sensor reading
+    // empty lidar reading
     {
         viam_carto_lidar_reading sr;
         // must be they first sensor in the sensor list
