@@ -49,7 +49,7 @@ func testAddSensorReading(t *testing.T, vc Carto, pcdPath string, timestamp time
 	err = pointcloud.ToPCD(pc, buf, pcdType)
 	test.That(t, err, test.ShouldBeNil)
 
-	err = vc.addSensorReading("mysensor", buf.Bytes(), timestamp)
+	err = vc.addLidarReading("mysensor", buf.Bytes(), timestamp)
 	test.That(t, err, test.ShouldBeNil)
 }
 
@@ -121,12 +121,12 @@ func TestGetPositionResponse(t *testing.T) {
 }
 
 func TestToSensorReading(t *testing.T) {
-	t.Run("sensor reading properly converted between c and go", func(t *testing.T) {
+	t.Run("lidar reading properly converted between c and go", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		sr := toSensorReading("mysensor", []byte("he0llo"), timestamp)
-		test.That(t, bstringToGoString(sr.sensor), test.ShouldResemble, "mysensor")
-		test.That(t, bstringToGoString(sr.sensor_reading), test.ShouldResemble, "he0llo")
-		test.That(t, sr.sensor_reading_time_unix_milli, test.ShouldEqual, timestamp.UnixMilli())
+		sr := toLidarReading("mysensor", []byte("he0llo"), timestamp)
+		test.That(t, bstringToGoString(sr.lidar), test.ShouldResemble, "mysensor")
+		test.That(t, bstringToGoString(sr.lidar_reading), test.ShouldResemble, "he0llo")
+		test.That(t, sr.lidar_reading_time_unix_milli, test.ShouldEqual, timestamp.UnixMilli())
 	})
 }
 
@@ -195,23 +195,24 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
 		lastInternalState := internalState
 
-		// test invalid addSensorReading: not in sensor list
+		// test invalid addLidarReading: not in sensor list
+		// PATRICIA TODO: #242
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		err = vc.addSensorReading("not my sensor", []byte("he0llo"), timestamp)
+		err = vc.addLidarReading("not my sensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
 
-		// test invalid addSensorReading: empty reading
+		// test invalid addLidarReading: empty reading
 		timestamp = timestamp.Add(time.Second * 2)
-		err = vc.addSensorReading("mysensor", []byte(""), timestamp)
+		err = vc.addLidarReading("mysensor", []byte(""), timestamp)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_EMPTY")
+		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_LIDAR_READING_EMPTY")
 
-		// test invalid addSensorReading: invalid reading
+		// test invalid addLidarReading: invalid reading
 		timestamp = timestamp.Add(time.Second * 2)
-		err = vc.addSensorReading("mysensor", []byte("he0llo"), timestamp)
+		err = vc.addLidarReading("mysensor", []byte("he0llo"), timestamp)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_SENSOR_READING_INVALID")
+		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_LIDAR_READING_INVALID")
 
 		confirmBinaryCompressedUnsupported(t)
 
@@ -224,7 +225,7 @@ func TestCGoAPI(t *testing.T) {
 		// why or when it does / does not update the map.
 		// As a result, these tests show best case behavior.
 
-		// 1. test valid addSensorReading: valid reading ascii
+		// 1. test valid addLidarReading: valid reading ascii
 		t.Log("sensor reading 1")
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddSensorReading(t, vc, "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
@@ -249,7 +250,7 @@ func TestCGoAPI(t *testing.T) {
 		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
 		lastInternalState = internalState
 
-		// 2. test valid addSensorReading: valid reading binary
+		// 2. test valid addLidarReading: valid reading binary
 		t.Log("sensor reading 2")
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddSensorReading(t, vc, "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDBinary)

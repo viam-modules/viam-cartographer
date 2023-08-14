@@ -67,11 +67,11 @@ typedef struct viam_carto_get_internal_state_response {
     bstring internal_state;
 } viam_carto_get_internal_state_response;
 
-typedef struct viam_carto_sensor_reading {
-    bstring sensor;
-    bstring sensor_reading;
-    int64_t sensor_reading_time_unix_milli;
-} viam_carto_sensor_reading;
+typedef struct viam_carto_lidar_reading {
+    bstring lidar;
+    bstring lidar_reading;
+    int64_t lidar_reading_time_unix_milli;
+} viam_carto_lidar_reading;
 
 typedef enum viam_carto_LIDAR_CONFIG {
     VIAM_CARTO_TWO_D = 0,
@@ -98,8 +98,8 @@ typedef enum viam_carto_LIDAR_CONFIG {
 #define VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR 17
 #define VIAM_CARTO_MAP_CREATION_ERROR 18
 #define VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST 19
-#define VIAM_CARTO_SENSOR_READING_EMPTY 20
-#define VIAM_CARTO_SENSOR_READING_INVALID 21
+#define VIAM_CARTO_LIDAR_READING_EMPTY 20
+#define VIAM_CARTO_LIDAR_READING_INVALID 21
 #define VIAM_CARTO_GET_POSITION_RESPONSE_INVALID 22
 #define VIAM_CARTO_POINTCLOUD_MAP_EMPTY 23
 #define VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID 24
@@ -191,25 +191,24 @@ extern int viam_carto_stop(viam_carto *vc  // OUT
 extern int viam_carto_terminate(viam_carto **vc  //
 );
 
-// viam_carto_add_sensor_reading/3 takes a viam_carto pointer, a
-// viam_carto_sensor_reading
+// viam_carto_add_lidar_reading/3 takes a viam_carto pointer, a
+// viam_carto_lidar_reading
 //
 // On error: Returns a non 0 error code
 //
 // An expected error is VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK(1)
 //
 // On success: Returns 0, adds lidar reading to cartographer's data model
-extern int viam_carto_add_sensor_reading(viam_carto *vc,                      //
-                                         const viam_carto_sensor_reading *sr  //
+extern int viam_carto_add_lidar_reading(viam_carto *vc,                     //
+                                        const viam_carto_lidar_reading *sr  //
 );
 
-// viam_carto_add_sensor_reading_destroy/2 takes a viam_carto pointer
+// viam_carto_add_lidar_reading_destroy/2 takes a viam_carto pointer
 //
 // On error: Returns a non 0 error code
 //
-// On success: Returns 0, frees the viam_carto_sensor_reading.
-extern int viam_carto_add_sensor_reading_destroy(
-    viam_carto_sensor_reading *sr  //
+// On success: Returns 0, frees the viam_carto_lidar_reading.
+extern int viam_carto_add_lidar_reading_destroy(viam_carto_lidar_reading *sr  //
 );
 
 // viam_carto_get_position/3 takes a viam_carto pointer, a
@@ -354,7 +353,7 @@ class CartoFacade {
     // maximumGRPCByteChunkSize
     void GetInternalState(viam_carto_get_internal_state_response *r);
 
-    void AddSensorReading(const viam_carto_sensor_reading *sr);
+    void AddLidarReading(const viam_carto_lidar_reading *sr);
 
     void Start();
 
