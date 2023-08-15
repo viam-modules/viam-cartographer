@@ -366,7 +366,7 @@ func TestAddSensorReading(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("returns error in online mode when lidar GetData returns error, doesn't try to add lidar data", func(t *testing.T) {
-		cam := "invalid_lidar"
+		cam := "lidar_with_erroring_functions"
 		invalidSensorTestHelper(
 			ctx,
 			t,

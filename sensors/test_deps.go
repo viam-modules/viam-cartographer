@@ -36,8 +36,10 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 		deps[camera.Named(lidarName)] = getReplayLidar(TestTime)
 	case "invalid_replay_lidar":
 		deps[camera.Named(lidarName)] = getReplayLidar(BadTime)
-	case "invalid_lidar":
-		deps[camera.Named(lidarName)] = getInvalidLidar()
+	case "lidar_with_erroring_functions":
+		deps[camera.Named(lidarName)] = getLidarWithErroringFunctions()
+	case "lidar_with_invalid_properties":
+		deps[camera.Named(lidarName)] = getLidarWithInvalidProperties()
 	case "gibberish_lidar":
 		return deps
 	case "finished_replay_lidar":
@@ -47,10 +49,10 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 	switch imuName {
 	case "good_imu":
 		deps[movementsensor.Named(imuName)] = getGoodIMU()
-	case "invalid_imu":
-		deps[movementsensor.Named(imuName)] = getInvalidIMU()
-	case "bad_imu":
-		deps[movementsensor.Named(imuName)] = getBadIMU()
+	case "imu_with_erroring_functions":
+		deps[movementsensor.Named(imuName)] = getIMUWithErroringFunctions()
+	case "imu_with_invalid_properties":
+		deps[movementsensor.Named(imuName)] = getIMUWithInvalidProperties()
 	case "gibberish_imu":
 		return deps
 	}
@@ -118,7 +120,24 @@ func getReplayLidar(testTime string) *inject.Camera {
 	return cam
 }
 
-func getInvalidLidar() *inject.Camera {
+func getLidarWithInvalidProperties() *inject.Camera {
+	cam := &inject.Camera{}
+	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+		return pointcloud.New(), nil
+	}
+	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
+		return nil, errors.New("lidar not camera")
+	}
+	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
+		return nil, transform.NewNoIntrinsicsError("")
+	}
+	cam.PropertiesFunc = func(ctx context.Context) (camera.Properties, error) {
+		return camera.Properties{SupportsPCD: false}, nil
+	}
+	return cam
+}
+
+func getLidarWithErroringFunctions() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return nil, errors.New("invalid sensor")
@@ -171,7 +190,7 @@ func getGoodIMU() *inject.MovementSensor {
 	return imu
 }
 
-func getInvalidIMU() *inject.MovementSensor {
+func getIMUWithErroringFunctions() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
 		return r3.Vector{}, errors.New("invalid sensor")
@@ -188,7 +207,7 @@ func getInvalidIMU() *inject.MovementSensor {
 	return imu
 }
 
-func getBadIMU() *inject.MovementSensor {
+func getIMUWithInvalidProperties() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 	vec := r3.NewPreciseVector(1, 1, 1).Vector()
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
