@@ -692,7 +692,9 @@ void CartoFacade::Start() {
         throw VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE;
     }
     state = CartoFacadeState::STARTED;
-    StartSaveInternalState();
+    if (!config.cloud_story_enabled) {
+        StartSaveInternalState();
+    }
 };
 
 void CartoFacade::StartSaveInternalState() {
@@ -759,7 +761,9 @@ void CartoFacade::Stop() {
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     state = CartoFacadeState::IO_INITIALIZED;
-    StopSaveInternalState();
+    if (!config.cloud_story_enabled) {
+        StopSaveInternalState();
+    }
 };
 
 void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
