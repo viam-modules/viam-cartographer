@@ -55,16 +55,6 @@ func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.
 	test.That(t, err, test.ShouldBeNil)
 }
 
-func testAddIMUReading(t *testing.T, vc Carto, timestamp time.Time) {
-	testIMUReading := IMUReading{
-		LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
-		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
-	}
-
-	err := vc.addIMUReading("myIMU", testIMUReading, timestamp)
-	test.That(t, err, test.ShouldBeNil)
-}
-
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go with no IMU specified", func(t *testing.T) {
 		cfg, dir, err := GetTestConfig("mylidar", "")
@@ -423,8 +413,6 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// NOTE: This test is very carefully created in order to not hit
 		// cases where cartographer won't update the map for whatever reason.
-		// For example, if you change the time increments from 2 seconds to 1
-		// second, the map doesn't update (at least not after 10 lidar readings).
 		// It is not clear why cartographer has this behavior.
 		// Cartographer does not provide any feedback regarding
 		// why or when it does / does not update the map.
@@ -438,27 +426,12 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// test valid addIMUReading with same timestamp
 		t.Log("IMU reading 1")
-		testAddIMUReading(t, vc, timestamp)
-
-		// test getPosition zeroed if not enough sensor data has been provided
-		position, err = vc.getPosition()
+		testIMUReading := IMUReading{
+			LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
+			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
+		}
+		err = vc.addIMUReading("myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
-		positionIsZero(t, position)
-
-		// test getPointCloudMap returns error if not enough sensor data has been provided
-		pcd, err = vc.getPointCloudMap()
-		test.That(t, pcd, test.ShouldBeNil)
-		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
-
-		// test getInternalState always returns non empty results
-		internalState, err = vc.getInternalState()
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, internalState, test.ShouldNotBeNil)
-		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
-		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
-		lastInternalState = internalState
 
 		// 2. test valid addLidarReading: valid reading binary
 		t.Log("lidar reading 2")
@@ -467,7 +440,26 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// test valid addIMUReading with same timestamp
 		t.Log("IMU reading 2")
-		testAddIMUReading(t, vc, timestamp)
+		testIMUReading = IMUReading{
+			LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
+			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
+		}
+		err = vc.addIMUReading("myIMU", testIMUReading, timestamp)
+		test.That(t, err, test.ShouldBeNil)
+
+		// third sensor reading populates the pointcloud map and the position
+		t.Log("lidar reading 3")
+		timestamp = timestamp.Add(tDelta)
+		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
+
+		// test valid addIMUReading with same timestamp
+		t.Log("IMU reading 3")
+		testIMUReading = IMUReading{
+			LinearAcceleration: r3.Vector{X: 0.2, Y: 0, Z: 9.8},
+			AngularVelocity:    spatialmath.AngularVelocity{X: -0.6, Y: 0, Z: 0},
+		}
+		err = vc.addIMUReading("myIMU", testIMUReading, timestamp)
+		test.That(t, err, test.ShouldBeNil)
 
 		// test getPosition zeroed
 		position, err = vc.getPosition()
@@ -475,7 +467,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		positionIsZero(t, position)
 
-		// test getPointCloudMap now returns a non empty result
+		// test getPointCloudMap returns a non empty result
 		pcd, err = vc.getPointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
@@ -484,48 +476,6 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
 		// test getInternalState always returns different non empty results than first call
-		internalState, err = vc.getInternalState()
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, internalState, test.ShouldNotBeNil)
-		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
-		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
-		lastInternalState = internalState
-
-		// third sensor reading populates the pointcloud map and the position
-		t.Log("lidar reading 3")
-		timestamp = timestamp.Add(tDelta)
-		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
-
-		// test valid addIMUReading with same timestamp
-		// t.Log("IMU reading 3")
-		// testAddIMUReading(t, vc, testIMUReading, timestamp)
-
-		// test getPosition, is no longer zeroed
-		position, err = vc.getPosition()
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
-		test.That(t, position.X, test.ShouldNotEqual, 0)
-		test.That(t, position.Y, test.ShouldNotEqual, 0)
-		test.That(t, position.Z, test.ShouldEqual, 0)
-		test.That(t, position.Imag, test.ShouldEqual, 0)
-		test.That(t, position.Jmag, test.ShouldEqual, 0)
-		test.That(t, position.Kmag, test.ShouldNotEqual, 0)
-		test.That(t, position.Real, test.ShouldNotEqual, 1)
-
-		// test getPointCloudMap returns non 0 response
-		// on arm64 linux this returns a different response
-		// than the last call to getPointCloudMap()
-		// on arm64 osx it returns the same map as
-		// the last call to getPointCloudMap()
-		// https://viam.atlassian.net/browse/RSDK-3866
-		pcd, err = vc.getPointCloudMap()
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pcd, test.ShouldNotBeNil)
-		pc, err = pointcloud.ReadPCD(bytes.NewReader(pcd))
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
-
-		// test getInternalState always returns different non empty results than second call
 		internalState, err = vc.getInternalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)

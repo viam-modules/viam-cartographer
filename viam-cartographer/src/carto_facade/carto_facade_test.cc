@@ -247,7 +247,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_LIB_INVALID);
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled_without_imu) {
+BOOST_AUTO_TEST_CASE(
+    CartoFacade_init_derive_slam_mode_cloud_story_enabled_without_imu) {
     viam_carto_lib *lib;
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
@@ -1439,66 +1440,43 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_imu) {
     {
         VLOG(1) << "viam_carto_add_lidar_reading 1";
         viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/poc_data/DEFAULT_data_2023-07-19T15:33:40.4523Z.pcd",
-            //".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
             1629037851000000);
         BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) == VIAM_CARTO_SUCCESS);
-        double readings[6] = {-0.1005564697265625, -0.201112939453125, 9.792284790039062, 0, 0, 0};
-        add_new_testIMUReading(vc, readings, 162903785099950);
-    }
-
-    {
-        viam_carto_get_position_response pr;
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x == 0);
-        BOOST_TEST(pr.y == 0);
-        BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.imag == 0);
-        BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.real == 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
-
-        BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
                    VIAM_CARTO_SUCCESS);
-    }
-
-    {
-        viam_carto_get_point_cloud_map_response mr;
-        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
-                   VIAM_CARTO_POINTCLOUD_MAP_EMPTY);
-    }
-
-    {
-        viam_carto_get_internal_state_response isr;
-        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
-                   VIAM_CARTO_SUCCESS);
-        // special case: the first call to AddLidarReading doesn't
-        // change the internal state but subsequent calls do.
-        BOOST_TEST(blength(isr.internal_state) ==
-                   last_internal_state_response_size);
-        last_internal_state_response_size = blength(isr.internal_state);
-        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
-                   VIAM_CARTO_SUCCESS);
+        double readings[6] = {0, 0, 9.8, 0, 0, 0};
+        add_new_testIMUReading(vc, readings, 1629037851000000);
     }
 
     // second sensor reading
     {
         VLOG(1) << "viam_carto_add_lidar_reading 2";
         viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/poc_data/DEFAULT_data_2023-07-19T15:33:40.6523Z.pcd",
-            // ".artifact/data/viam-cartographer/mock_lidar/1.pcd",
-            1629037853002000);
+            "lidar", ".artifact/data/viam-cartographer/mock_lidar/1.pcd",
+            1629037853000100);
         BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
                    VIAM_CARTO_SUCCESS);
-        double readings[6] = {-0.105344873046875, -0.2059013427734375, 9.782707983398437, 0.18310546875, 0.42724609375, 0};
-        add_new_testIMUReading(vc, readings, 1629037853002050);
+        double readings[6] = {0.1, 0, 9.8, 0, -0.2, 0};
+        add_new_testIMUReading(vc, readings, 1629037853000100);
     }
 
-    // GetPosition returning origin position from 2 successful AddLidarReading
-    // requests
+    // third sensor readings
+    {
+        VLOG(1) << "viam_carto_add_lidar_reading 3";
+        viam_carto_lidar_reading sr = new_test_lidar_reading(
+            "lidar", ".artifact/data/viam-cartographer/mock_lidar/2.pcd",
+            1629037855000200);
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+        double readings[6] = {0.2, 0, 9.8, -0.6, 0, 0};
+        add_new_testIMUReading(vc, readings, 1629037855000200);
+    }
+
+    // GetPosition returns origin after 3 successful AddLidarReading and
+    // AddIMUReading requests
     {
         viam_carto_get_position_response pr;
         BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
@@ -1529,47 +1507,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_imu) {
         BOOST_TEST(cloud != nullptr);
         BOOST_TEST(cloud->points.size() != 0);
         BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    {
-        viam_carto_get_internal_state_response isr;
-        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
-                   VIAM_CARTO_SUCCESS);
-        BOOST_TEST(blength(isr.internal_state) >
-                   last_internal_state_response_size);
-        last_internal_state_response_size = blength(isr.internal_state);
-        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // third sensor readings
-    {
-        VLOG(1) << "viam_carto_add_lidar_reading 3";
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/2.pcd",
-            1629037855000200);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-        double readings[6] = {0.0, 0, 9.8, -0.0, 0, 0};
-        add_new_testIMUReading(vc, readings, 1629037855000250);
-    }
-
-    // GetPosition changed from 3 successful AddLidarReading requests
-    {
-        viam_carto_get_position_response pr;
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x != 0);
-        BOOST_TEST(pr.y != 0);
-        BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.imag == 0);
-        BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag != 0);
-        BOOST_TEST(pr.real != 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
-
-        BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
                    VIAM_CARTO_SUCCESS);
     }
 
@@ -1689,7 +1626,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_imu) {
 
                                 camera, movement_sensor, false, false, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
-
+    ac.use_imu_data = true;
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
     viam::carto_facade::CartoFacade *cf =

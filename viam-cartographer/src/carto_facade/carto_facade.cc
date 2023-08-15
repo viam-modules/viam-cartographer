@@ -849,7 +849,8 @@ void CartoFacade::AddIMUReading(const viam_carto_imu_reading *sr) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
                 << " Sensor type: IMU ";
         map_builder.AddSensorData(kIMUSensorId.id, measurement);
-        VLOG(1) << "Data added is: " << measurement.linear_acceleration << " and " << measurement.angular_velocity;
+        VLOG(1) << "Data added is: " << measurement.linear_acceleration
+                << " and " << measurement.angular_velocity;
         tmp_global_pose = map_builder.GetGlobalPose();
         map_builder_mutex.unlock();
         {
@@ -989,9 +990,10 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
         return VIAM_CARTO_LIB_INVALID;
     }
     // check that IMU is correctly set up
-    if (ac.use_imu_data == true && biseqcstr(c.movement_sensor, ("")) == true ||
-        ac.use_imu_data == false &&
-            biseqcstr(c.movement_sensor, ("")) == false) {
+    if ((ac.use_imu_data == true &&
+         biseqcstr(c.movement_sensor, ("")) == true) ||
+        (ac.use_imu_data == false &&
+         biseqcstr(c.movement_sensor, ("")) == false)) {
         return VIAM_CARTO_IMU_ENABLED_INVALID;
     }
 
