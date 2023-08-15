@@ -5,6 +5,7 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -285,6 +286,7 @@ func New(
 
 	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
 	if err != nil {
+		fmt.Println("HIII")
 		return nil, err
 	}
 	initSensorProcess(cancelSensorProcessCtx, cartoSvc)

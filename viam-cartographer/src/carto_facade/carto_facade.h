@@ -291,7 +291,7 @@ static const int checkForShutdownIntervalMicroseconds = 1e5;
 // represents. This is used to draw the cairo map and in so doing defines the
 // resolution of the outputted PCD
 static const double cairoResolutionMeters = 0.05;
-static const int resolutionRatio = 2;
+static const int resolutionRatio = 1;
 
 typedef struct config {
     std::string camera;
