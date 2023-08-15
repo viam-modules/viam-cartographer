@@ -3,6 +3,7 @@ package config
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
@@ -38,6 +39,7 @@ type OptionalConfigParams struct {
 	ImuDataRateMsec   int
 	MapRateSec        int
 	EnableMapping     bool
+	ExistingMap       string
 }
 
 var (
@@ -84,11 +86,11 @@ func (config *Config) Validate(path string) ([]string, error) {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
 
-	if config.DataDirectory == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
-	}
-
 	if !config.CloudStoryEnabled {
+		if config.DataDirectory == "" {
+			return nil, utils.NewConfigValidationFieldRequiredError(path, "data_dir")
+		}
+
 		if config.MapRateSec != nil && *config.MapRateSec < 0 {
 			return nil, errors.New("cannot specify map_rate_sec less than zero")
 		}
@@ -147,6 +149,15 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 	}
 
 	if config.CloudStoryEnabled {
+		if config.ExistingMap == "" {
+			logger.Debug("no existimg_map provided, entering mapping mode")
+		} else {
+			if !strings.HasSuffix(config.ExistingMap, ".pbstream") {
+				return OptionalConfigParams{}, newError("existing map is not a .pbstream file")
+			}
+			optionalConfigParams.ExistingMap = config.ExistingMap
+		}
+
 		if config.EnableMapping == nil {
 			logger.Debug("no enable_mapping given, setting to default value of false")
 		} else {

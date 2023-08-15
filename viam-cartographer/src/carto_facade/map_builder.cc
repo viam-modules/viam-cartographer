@@ -71,12 +71,6 @@ void MapBuilder::LoadMapFromFile(std::string internal_state_filename,
             << internal_state_filename
             << " load_frozen_trajectory: " << load_frozen_trajectory
             << " algo_config.optimize_on_start: " << optimize_on_start;
-    data_start_time = viam::carto_facade::io::ReadTimeFromTimestamp(
-        internal_state_filename.substr(
-            internal_state_filename.find(
-                viam::carto_facade::io::filename_prefix) +
-                viam::carto_facade::io::filename_prefix.length(),
-            internal_state_filename.find(".pbstream")));
 
     std::map<int, int> trajectory_ids_map = map_builder_->LoadStateFromFile(
         internal_state_filename, load_frozen_trajectory);

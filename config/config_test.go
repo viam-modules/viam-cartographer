@@ -51,14 +51,9 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("Config without required fields %s", suffix), func(t *testing.T) {
-		var requiredFields []string
-		if imuIntegrationEnabled {
-			requiredFields = []string{"data_dir", "camera"}
-		} else {
-			requiredFields = []string{"data_dir", "sensors"}
-		}
+		requiredFields := getRequiredFields(imuIntegrationEnabled, cloudStoryEnabled)
 
-		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, requiredFields[0])
+		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, "data_dir")
 		sensorErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
 		cameraErr := utils.NewConfigValidationError(testCfgPath, errCameraMustHaveName)
 
@@ -155,6 +150,21 @@ func testValidateTesthelper(
 	})
 }
 
+func getRequiredFields(imuIntegrationEnabled, cloudStoryEnabled bool) []string {
+	requiredFields := []string{}
+
+	if imuIntegrationEnabled {
+		requiredFields = append(requiredFields, "camera")
+	} else {
+		requiredFields = append(requiredFields, "sensors")
+	}
+
+	if !cloudStoryEnabled {
+		requiredFields = append(requiredFields, "data_dir")
+	}
+	return requiredFields
+}
+
 func TestValidate(t *testing.T) {
 	for _, imuEnabled := range []bool{true, false} {
 		for _, cloudStoryEnabled := range []bool{true, false} {
@@ -213,6 +223,7 @@ func getOptionalParametersTestHelper(
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 		if cloudStoryEnabled {
 			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
+			test.That(t, optionalConfigParams.ExistingMap, test.ShouldEqual, "")
 		} else {
 			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
 		}
@@ -262,6 +273,27 @@ func getOptionalParametersTestHelper(
 		} else {
 			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 2)
 			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+		}
+	})
+
+	t.Run(fmt.Sprintf("Pass invalid existing map %s", suffix), func(t *testing.T) {
+		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService.Attributes["existing_map"] = "test-file"
+		cfg, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		optionalConfigParams, err := GetOptionalParameters(
+			cfg,
+			1000,
+			1000,
+			1002,
+			logger)
+		if cloudStoryEnabled {
+			test.That(t, err, test.ShouldBeError, newError("existing map is not a .pbstream file"))
+		} else {
+			test.That(t, err, test.ShouldBeNil)
+			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
 		}
 	})
 
