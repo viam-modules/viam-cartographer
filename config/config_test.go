@@ -276,6 +276,27 @@ func getOptionalParametersTestHelper(
 		}
 	})
 
+	t.Run(fmt.Sprintf("Pass invalid existing map %s", suffix), func(t *testing.T) {
+		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService.Attributes["existing_map"] = "test-file"
+		cfg, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		optionalConfigParams, err := GetOptionalParameters(
+			cfg,
+			1000,
+			1000,
+			1002,
+			logger)
+		if cloudStoryEnabled {
+			test.That(t, err, test.ShouldBeError, newError("existing map is not a .pbstream file"))
+		} else {
+			test.That(t, err, test.ShouldBeNil)
+			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 1000)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
+		}
+	})
+
 	if imuIntegrationEnabled {
 		sensorAttributeTestHelper(t, logger, imuIntegrationEnabled, cloudStoryEnabled)
 	}

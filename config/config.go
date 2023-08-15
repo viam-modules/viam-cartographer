@@ -3,6 +3,7 @@ package config
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
@@ -151,6 +152,9 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		if config.ExistingMap == "" {
 			logger.Debug("no existimg_map provided, entering mapping mode")
 		} else {
+			if !strings.HasSuffix(config.ExistingMap, ".pbstream") {
+				return OptionalConfigParams{}, newError("existing map is not a .pbstream file")
+			}
 			optionalConfigParams.ExistingMap = config.ExistingMap
 		}
 
