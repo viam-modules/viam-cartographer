@@ -171,6 +171,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		if err := validateModes(optionalConfigParams, config.IMUIntegrationEnabled); err != nil {
 			return OptionalConfigParams{}, err
 		}
+
 		return optionalConfigParams, nil
 	}
 
