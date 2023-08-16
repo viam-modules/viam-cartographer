@@ -46,9 +46,9 @@ type OptionalConfigParams struct {
 var (
 	errCameraMustHaveName              = errors.New("\"camera[name]\" is required")
 	errSensorsMustNotBeEmpty           = errors.New("\"sensors\" must not be empty")
-	errLocalizationInOfflineModeSuffix = " = 0, enable_mapping = false, and existing_map provided. localization in offline mode not supported."
-	errLocalizationInOfflineMode       = newError(fmt.Sprintf("data_rate_msec%s", errLocalizationInOfflineModeSuffix))
-	errLocalizationInOfflineModeIMU    = newError(fmt.Sprintf("camera: data_freq_hz%s", errLocalizationInOfflineModeSuffix))
+	errLocalizationInOfflineModeSuffix = "= 0, enable_mapping = false, and existing_map provided. localization in offline mode not supported."
+	errLocalizationInOfflineMode       = newError(fmt.Sprintf("data_rate_msec %s", errLocalizationInOfflineModeSuffix))
+	errLocalizationInOfflineModeIMU    = newError(fmt.Sprintf("camera: data_freq_hz %s", errLocalizationInOfflineModeSuffix))
 )
 
 // Validate creates the list of implicit dependencies.
