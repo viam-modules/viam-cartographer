@@ -2,6 +2,7 @@
 package config
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -43,8 +44,11 @@ type OptionalConfigParams struct {
 }
 
 var (
-	errCameraMustHaveName    = errors.New("\"camera[name]\" is required")
-	errSensorsMustNotBeEmpty = errors.New("\"sensors\" must not be empty")
+	errCameraMustHaveName              = errors.New("\"camera[name]\" is required")
+	errSensorsMustNotBeEmpty           = errors.New("\"sensors\" must not be empty")
+	errLocalizationInOfflineModeSuffix = " = 0, enable_mapping = false, and existing_map provided. localization in offline mode not supported."
+	errLocalizationInOfflineMode       = newError(fmt.Sprintf("data_rate_msec%s", errLocalizationInOfflineModeSuffix))
+	errLocalizationInOfflineModeIMU    = newError(fmt.Sprintf("camera: data_freq_hz%s", errLocalizationInOfflineModeSuffix))
 )
 
 // Validate creates the list of implicit dependencies.
@@ -161,7 +165,11 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 		if config.EnableMapping == nil {
 			logger.Debug("no enable_mapping given, setting to default value of false")
 		} else {
-			optionalConfigParams.EnableMapping = config.CloudStoryEnabled
+			optionalConfigParams.EnableMapping = *config.EnableMapping
+		}
+
+		if err := validateModes(optionalConfigParams, config.IMUIntegrationEnabled); err != nil {
+			return OptionalConfigParams{}, err
 		}
 		return optionalConfigParams, nil
 	}
@@ -178,4 +186,19 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 	}
 
 	return optionalConfigParams, nil
+}
+
+func validateModes(
+	optionalConfigParams OptionalConfigParams,
+	imuEnabled bool,
+) error {
+	if optionalConfigParams.LidarDataRateMsec == 0 &&
+		!optionalConfigParams.EnableMapping &&
+		optionalConfigParams.ExistingMap != "" {
+		if imuEnabled {
+			return errLocalizationInOfflineModeIMU
+		}
+		return errLocalizationInOfflineMode
+	}
+	return nil
 }

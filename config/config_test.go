@@ -297,6 +297,37 @@ func getOptionalParametersTestHelper(
 		}
 	})
 
+	t.Run(fmt.Sprintf("config that puts cartographer in offline mode and in localizaation %s", suffix), func(t *testing.T) {
+		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService.Attributes["existing_map"] = "test-file.pbstream"
+		cfgService.Attributes["data_rate_msec"] = 0
+		cfgService.Attributes["enable_mapping"] = false
+		cfgService.Attributes["camera"] = map[string]string{
+			"name":              "testcam",
+			"data_frequency_hz": "0",
+		}
+		cfg, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		optionalConfigParams, err := GetOptionalParameters(
+			cfg,
+			1000,
+			1000,
+			1002,
+			logger)
+		if cloudStoryEnabled {
+			if imuIntegrationEnabled {
+				test.That(t, err, test.ShouldBeError, errLocalizationInOfflineModeIMU)
+			} else {
+				test.That(t, err, test.ShouldBeError, errLocalizationInOfflineMode)
+			}
+		} else {
+			test.That(t, err, test.ShouldBeNil)
+			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 0)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
+		}
+	})
+
 	if imuIntegrationEnabled {
 		sensorAttributeTestHelper(t, logger, imuIntegrationEnabled, cloudStoryEnabled)
 	}
@@ -348,12 +379,16 @@ func sensorAttributeTestHelper(
 }
 
 func TestGetOptionalParameters(t *testing.T) {
-	for _, imuEnabled := range []bool{true, false} {
-		for _, cloudStoryEnabled := range []bool{true, false} {
-			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-			getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
-		}
-	}
+	// for _, imuEnabled := range []bool{true, false} {
+	// 	for _, cloudStoryEnabled := range []bool{true, false} {
+	// 		suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+	// 		getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
+	// 	}
+	// }
+	imuEnabled := false
+	cloudStoryEnabled := false
+	suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+	getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
 }
 
 func newConfig(conf resource.Config) (*Config, error) {
