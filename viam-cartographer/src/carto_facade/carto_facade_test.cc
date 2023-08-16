@@ -145,17 +145,11 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
 
     std::string camera = "lidar";
     std::string movement_sensor = "";
-    struct viam_carto_config vcc_empty_data_dir = viam_carto_config_setup(
-        1, VIAM_CARTO_THREE_D, "", camera, movement_sensor, false, false, "");
-
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_empty_data_dir, ac) ==
-               VIAM_CARTO_DATA_DIR_NOT_PROVIDED);
-
     std::string camera2 = "";
     std::string movement_sensor2 = "";
 
     struct viam_carto_config vcc_empty_data_dir = viam_carto_config_setup(
-        1, VIAM_CARTO_THREE_D, "", camera, movement_sensor2, false, false);
+        1, VIAM_CARTO_THREE_D, "", camera, movement_sensor2, false, false, "");
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_empty_data_dir, ac) ==
                VIAM_CARTO_DATA_DIR_NOT_PROVIDED);
@@ -181,11 +175,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_lidar_config, ac) ==
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
 
-    ac.use_imu_data = true;
-
     struct viam_carto_config vcc_success_with_imu =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false);
+                                movement_sensor, false, false, "");
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_success_with_imu, ac) ==
                VIAM_CARTO_SUCCESS);
@@ -432,7 +424,7 @@ BOOST_AUTO_TEST_CASE(
         viam_carto *vc6;
         struct viam_carto_config vcc_invalid =
             viam_carto_config_setup(0, VIAM_CARTO_THREE_D, empty_dir.string(),
-                                    camera, movement_sensor, false, false);
+                                    camera, movement_sensor, false, false, "");
         BOOST_TEST(viam_carto_init(&vc6, lib, vcc_invalid, ac) ==
                    VIAM_CARTO_SLAM_MODE_INVALID);
         viam_carto_config_teardown(vcc_invalid);
@@ -1135,7 +1127,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config_without_imu) {
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
-                                camera, movement_sensor, false, false);
+                                camera, movement_sensor, false, false, "");
 
     struct config c = viam::carto_facade::from_viam_carto_config(vcc);
 
@@ -1172,7 +1164,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_without_imu) {
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
-                                camera, movement_sensor, false, false);
+                                camera, movement_sensor, false, false, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
@@ -1222,7 +1214,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_with_imu) {
         fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_config vcc =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false);
+                                movement_sensor, false, false, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
     ac.use_imu_data = true;
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
@@ -1277,7 +1269,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_imu) {
     struct viam_carto_config vcc =
         viam_carto_config_setup(60, VIAM_CARTO_THREE_D, tmp_dir.string(),
 
-                                camera, movement_sensor, false, false);
+                                camera, movement_sensor, false, false, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup();
     ac.use_imu_data = true;
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
