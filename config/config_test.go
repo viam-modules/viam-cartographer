@@ -297,7 +297,7 @@ func getOptionalParametersTestHelper(
 		}
 	})
 
-	t.Run(fmt.Sprintf("config that puts cartographer in offline mode and in localizaation %s", suffix), func(t *testing.T) {
+	t.Run(fmt.Sprintf("config that puts cartographer in offline mode and in localization mode %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		cfgService.Attributes["existing_map"] = "test-file.pbstream"
 		cfgService.Attributes["data_rate_msec"] = 0
