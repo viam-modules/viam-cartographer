@@ -46,6 +46,7 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 		deps[camera.Named(lidarName)] = getFinishedReplayLidar()
 	}
 
+	// TODO: create setup deps for various replay_imu, see https://viam.atlassian.net/browse/RSDK-4556
 	switch imuName {
 	case "good_imu":
 		deps[movementsensor.Named(imuName)] = getGoodIMU()
