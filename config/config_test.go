@@ -379,16 +379,12 @@ func sensorAttributeTestHelper(
 }
 
 func TestGetOptionalParameters(t *testing.T) {
-	// for _, imuEnabled := range []bool{true, false} {
-	// 	for _, cloudStoryEnabled := range []bool{true, false} {
-	// 		suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-	// 		getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
-	// 	}
-	// }
-	imuEnabled := false
-	cloudStoryEnabled := false
-	suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-	getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
+	for _, imuEnabled := range []bool{true, false} {
+		for _, cloudStoryEnabled := range []bool{true, false} {
+			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
+			getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
+		}
+	}
 }
 
 func newConfig(conf resource.Config) (*Config, error) {
