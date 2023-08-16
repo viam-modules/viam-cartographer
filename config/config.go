@@ -192,9 +192,9 @@ func validateModes(
 	optionalConfigParams OptionalConfigParams,
 	imuEnabled bool,
 ) error {
-	if optionalConfigParams.LidarDataRateMsec == 0 &&
-		!optionalConfigParams.EnableMapping &&
-		optionalConfigParams.ExistingMap != "" {
+	localizationMode := optionalConfigParams.LidarDataRateMsec == 0
+	offlineMode := !optionalConfigParams.EnableMapping && optionalConfigParams.ExistingMap != ""
+	if localizationMode && offlineMode {
 		if imuEnabled {
 			return errLocalizationInOfflineModeIMU
 		}
