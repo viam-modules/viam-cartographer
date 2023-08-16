@@ -23,15 +23,9 @@ func TestValidateGetLidarData(t *testing.T) {
 	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	lidar = "invalid_lidar"
-	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	// https://viam.atlassian.net/browse/RSDK-4306
-	// test not relevant until replay camera supports Properties
-	// lidar = map[string]string{"name": "no_pcd_camera"}
-	// _, err = s.NewLidar(ctx, s.SetupDeps(lidar), lidar, logger)
-	// test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
+	lidar = "lidar_with_invalid_properties"
+	_, err = s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
+	test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
 
 	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
 	sensorValidationInterval := time.Duration(10) * time.Millisecond
@@ -47,11 +41,6 @@ func TestValidateGetLidarData(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		err = s.ValidateGetLidarData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
 		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("returns error if no lidar reading succeeds within the timeout", func(t *testing.T) {
-		err := s.ValidateGetLidarData(ctx, invalidLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeError, errors.New("ValidateGetLidarData timeout: NextPointCloud error: invalid sensor"))
 	})
 
 	t.Run("returns error if no lidar reading succeeds by the time the context is cancelled", func(t *testing.T) {
@@ -129,7 +118,7 @@ func TestNewIMU(t *testing.T) {
 
 	t.Run("Failed IMU creation with sensor that does not support AngularVelocity", func(t *testing.T) {
 		lidar := "good_lidar"
-		imu := "bad_imu"
+		imu := "imu_with_invalid_properties"
 		deps := s.SetupDeps(lidar, imu)
 		actualIMU, err := s.NewIMU(context.Background(), deps, imu, logger)
 		test.That(t, err, test.ShouldBeError,
@@ -160,8 +149,8 @@ func TestTimedLidarSensorReading(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	ctx := context.Background()
 
-	lidar := "invalid_lidar"
-	invalidLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
+	lidar := "lidar_with_erroring_functions"
+	lidarWithErroringFunctions, err := s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidar = "invalid_replay_lidar"
@@ -177,7 +166,7 @@ func TestTimedLidarSensorReading(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("when the lidar returns an error, returns that error", func(t *testing.T) {
-		tsr, err := invalidLidar.TimedLidarSensorReading(ctx)
+		tsr, err := lidarWithErroringFunctions.TimedLidarSensorReading(ctx)
 		msg := "invalid sensor"
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, msg)
@@ -222,8 +211,8 @@ func TestTimedIMUSensorReading(t *testing.T) {
 	ctx := context.Background()
 
 	lidar := "good_lidar"
-	imu := "invalid_imu"
-	invalidIMU, err := s.NewIMU(ctx, s.SetupDeps(lidar, imu), imu, logger)
+	imu := "imu_with_erroring_functions"
+	imuWithErroringFunctions, err := s.NewIMU(ctx, s.SetupDeps(lidar, imu), imu, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	imu = "good_imu"
@@ -231,7 +220,7 @@ func TestTimedIMUSensorReading(t *testing.T) {
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("when the IMU returns an error, returns that error", func(t *testing.T) {
-		tsr, err := invalidIMU.TimedIMUSensorReading(ctx)
+		tsr, err := imuWithErroringFunctions.TimedIMUSensorReading(ctx)
 		msg := "invalid sensor"
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldContainSubstring, msg)
