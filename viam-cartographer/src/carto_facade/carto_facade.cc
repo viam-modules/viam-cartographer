@@ -661,9 +661,16 @@ void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
-    std::string filename = path_to_internal_state + "/" +
-                           "temp_internal_state_" +
-                           boost::uuids::to_string(uuid) + ".pbstream";
+    
+    if config.cloud_story_enabled {
+        std::string filename = "temp_internal_state_" + 
+                            boost::uuids::to_string(uuid) + ".pbstream";
+    } else {
+        std::string filename = path_to_internal_state + "/" +
+                            "temp_internal_state_" +
+                            boost::uuids::to_string(uuid) + ".pbstream";
+    }
+
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         bool ok = map_builder.SaveMapToFile(true, filename);
