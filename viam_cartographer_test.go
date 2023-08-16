@@ -170,6 +170,31 @@ func TestNew(t *testing.T) {
 	})
 
 	t.Run("Failed creation of cartographer slam service with invalid sensor "+
+		"that errors during call to Properties", func(t *testing.T) {
+		termFunc := testhelper.InitTestCL(t, logger)
+		defer termFunc()
+
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
+
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{"lidar_with_invalid_properties"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			DataRateMsec:  &testDataRateMsec,
+		}
+
+		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
+		test.That(t, err, test.ShouldBeError,
+
+			errors.New("configuring lidar camera error: 'camera' must support PCD"))
+	})
+
+	t.Run("Failed creation of cartographer slam service with bad sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
@@ -182,7 +207,7 @@ func TestNew(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Sensors:       []string{"invalid_lidar"},
+			Sensors:       []string{"lidar_with_erroring_functions"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			DataDirectory: dataDirectory,
 			DataRateMsec:  &testDataRateMsec,
@@ -379,7 +404,7 @@ func TestNewFeatureFlag(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "invalid_lidar", "data_frequency_hz": testLidarDataFreqHz},
+			Camera:                map[string]string{"name": "lidar_with_erroring_functions", "data_frequency_hz": testLidarDataFreqHz},
 			ConfigParams:          map[string]string{"mode": "2d"},
 			DataDirectory:         dataDirectory,
 			IMUIntegrationEnabled: true,
@@ -408,13 +433,13 @@ func TestNewFeatureFlag(t *testing.T) {
 			ConfigParams:          map[string]string{"mode": "2d"},
 			DataDirectory:         dataDirectory,
 			IMUIntegrationEnabled: true,
-			MovementSensor:        map[string]string{"name": "invalid_imu", "data_frequency_hz": testIMUDataFreqHz},
+			MovementSensor:        map[string]string{"name": "imu_with_invalid_properties", "data_frequency_hz": testIMUDataFreqHz},
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
 
-			errors.New("failed to get data from IMU: ValidateGetIMUData timeout: LinearAcceleration error: invalid sensor"))
+			errors.New("configuring IMU movement sensor error: 'movement_sensor' must support both LinearAcceleration and AngularVelocity"))
 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode with feature flag enabled", func(t *testing.T) {
