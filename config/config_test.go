@@ -300,11 +300,14 @@ func getOptionalParametersTestHelper(
 	t.Run(fmt.Sprintf("config that puts cartographer in offline mode and in localization mode %s", suffix), func(t *testing.T) {
 		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
 		cfgService.Attributes["existing_map"] = "test-file.pbstream"
-		cfgService.Attributes["data_rate_msec"] = 0
 		cfgService.Attributes["enable_mapping"] = false
-		cfgService.Attributes["camera"] = map[string]string{
-			"name":              "testcam",
-			"data_frequency_hz": "0",
+		if imuIntegrationEnabled {
+			cfgService.Attributes["camera"] = map[string]string{
+				"name":              "testcam",
+				"data_frequency_hz": "0",
+			}
+		} else {
+			cfgService.Attributes["data_rate_msec"] = 0
 		}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
