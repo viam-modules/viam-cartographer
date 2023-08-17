@@ -297,6 +297,40 @@ func getOptionalParametersTestHelper(
 		}
 	})
 
+	t.Run(fmt.Sprintf("config that puts cartographer in offline mode and in localization mode %s", suffix), func(t *testing.T) {
+		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService.Attributes["existing_map"] = "test-file.pbstream"
+		cfgService.Attributes["enable_mapping"] = false
+		if imuIntegrationEnabled {
+			cfgService.Attributes["camera"] = map[string]string{
+				"name":              "testcam",
+				"data_frequency_hz": "0",
+			}
+		} else {
+			cfgService.Attributes["data_rate_msec"] = 0
+		}
+		cfg, err := newConfig(cfgService)
+		test.That(t, err, test.ShouldBeNil)
+		optionalConfigParams, err := GetOptionalParameters(
+			cfg,
+			1000,
+			1000,
+			1002,
+			logger)
+		if cloudStoryEnabled {
+			if imuIntegrationEnabled {
+				test.That(t, err, test.ShouldBeError, errLocalizationInOfflineModeIMU)
+			} else {
+				test.That(t, err, test.ShouldBeError, errLocalizationInOfflineMode)
+			}
+		} else {
+			test.That(t, err, test.ShouldBeNil)
+			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 0)
+			test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
+			test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 1002)
+		}
+	})
+
 	if imuIntegrationEnabled {
 		sensorAttributeTestHelper(t, logger, imuIntegrationEnabled, cloudStoryEnabled)
 	}
