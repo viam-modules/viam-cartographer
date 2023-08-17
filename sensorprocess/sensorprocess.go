@@ -146,7 +146,7 @@ func addIMUReading(
 				config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
 			}
 			return true
-			// return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
+			//return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
 		}
 		return false
 	}
