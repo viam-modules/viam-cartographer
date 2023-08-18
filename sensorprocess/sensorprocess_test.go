@@ -815,7 +815,7 @@ func TestAddIMUReading(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("returns error in online mode when IMU GetData returns error, doesn't try to add IMU data", func(t *testing.T) {
-		movementsensor := "invalid_imu"
+		movementsensor := "imu_with_erroring_functions"
 		invalidIMUTestHelper(
 			ctx,
 			t,
@@ -830,18 +830,18 @@ func TestAddIMUReading(t *testing.T) {
 	// tests commented out below are not needed until replay movementsensor is supported,
 	// see https://viam.atlassian.net/browse/RSDK-4111
 
-	t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-		movementsensor := "invalid_replay_imu"
-		invalidIMUTestHelper(
-			ctx,
-			t,
-			cf,
-			config,
-			10,
-			movementsensor,
-			10,
-		)
-	})
+	// t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
+	// 	movementsensor := "invalid_replay_imu"
+	// 	invalidIMUTestHelper(
+	// 		ctx,
+	// 		t,
+	// 		cf,
+	// 		config,
+	// 		10,
+	// 		movementsensor,
+	// 		10,
+	// 	)
+	// })
 
 	// TODO: once test replay_imus exist https://viam.atlassian.net/browse/RSDK-4556
 	// t.Run("replay sensor adds IMU data until success in offline mode", func(t *testing.T) {

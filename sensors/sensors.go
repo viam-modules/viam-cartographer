@@ -72,7 +72,7 @@ func NewLidar(
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
 	}
 
-	// rplidar does not yet support properties
+	// rplidar does not yet support properties, see https://viam.atlassian.net/browse/RSDK-4600
 	// // If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
 	// properties, err := newLidar.Properties(ctx)
 	// if err != nil {
