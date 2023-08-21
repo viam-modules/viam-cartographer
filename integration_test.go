@@ -146,7 +146,7 @@ func testHelperCartographer(
 		attrCfg.MovementSensor = map[string]string{"name": "stub_imu"}
 	}
 
-	done := make(chan struct{})
+	lidarDone := make(chan struct{})
 	imuDone := make(chan struct{})
 	sensorReadingInterval := time.Millisecond * 200
 	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, lidarDone)
