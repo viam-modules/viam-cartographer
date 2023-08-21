@@ -847,15 +847,16 @@ void CartoFacade::AddIMUReading(const viam_carto_imu_reading *sr) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
                 << " Sensor type: IMU ";
         map_builder.AddSensorData(kIMUSensorId.id, measurement);
+
         VLOG(1) << "Data added is: " << measurement.linear_acceleration
                 << " and " << measurement.angular_velocity;
         LOG(INFO) << "Added IMU data to Cartographer";
-        tmp_global_pose = map_builder.GetGlobalPose();
+        // tmp_global_pose = map_builder.GetGlobalPose();
         map_builder_mutex.unlock();
-        {
-            std::lock_guard<std::mutex> lk(viam_response_mutex);
-            latest_global_pose = tmp_global_pose;
-        }
+        // {
+        //     std::lock_guard<std::mutex> lk(viam_response_mutex);
+        //     latest_global_pose = tmp_global_pose;
+        // }
         return;
     } else {
         throw VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK;
