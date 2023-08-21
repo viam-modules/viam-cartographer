@@ -175,6 +175,8 @@ func testHelperCartographer(
 	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
+	// We will check both channels once an accurate mock dataset has been gathered,
+	// see https://viam.atlassian.net/browse/RSDK-4495
 
 	testCartographerPosition(t, svc, attrCfg.Camera["name"], useIMU)
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)

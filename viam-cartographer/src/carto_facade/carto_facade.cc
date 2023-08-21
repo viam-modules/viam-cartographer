@@ -799,7 +799,6 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
     }
 
     cartographer::transform::Rigid3d tmp_global_pose;
-    bool update_latest_global_pose = false;
 
     if (map_builder_mutex.try_lock()) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
@@ -843,7 +842,6 @@ void CartoFacade::AddIMUReading(const viam_carto_imu_reading *sr) {
         Eigen::Vector3d(sr->ang_vel_x, sr->ang_vel_y, sr->ang_vel_z);
 
     cartographer::transform::Rigid3d tmp_global_pose;
-    bool update_latest_global_pose = false;
 
     if (map_builder_mutex.try_lock()) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
