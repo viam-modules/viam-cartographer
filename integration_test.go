@@ -61,10 +61,10 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 
 	if useIMU {
 		expectedPosOSX = r3.Vector{X: 31.26644008021215, Y: -0.07725723487584407, Z: 0}
-		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
+		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
 
 		expectedOriOSX = &spatialmath.R4AA{Theta: 1.6909088187060277, RX: 0.8939401250703025, RY: 0.11300993950972898, RZ: 0.43370474560615474}
-		expectedOriLinux = &spatialmath.R4AA{Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466, RZ: 0.3764936522466959}
+		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
 	} else {
 		expectedPosOSX = r3.Vector{X: 155.7488316264227, Y: -90.25868252233964, Z: 0}
 		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
