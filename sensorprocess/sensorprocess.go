@@ -34,14 +34,21 @@ func StartLidar(
 	ctx context.Context,
 	config Config,
 ) bool {
+	lidarTicker := time.NewTicker(time.Millisecond * time.Duration(config.LidarDataRateMsec))
+	defer lidarTicker.Stop()
+	imuTicker := time.NewTicker(time.Millisecond * time.Duration(config.IMUDataRateMsec))
+	defer imuTicker.Stop()
+
 	for {
 		select {
 		case <-ctx.Done():
 			return false
-		default:
+		case <-lidarTicker.C:
 			if jobDone := addLidarReading(ctx, config); jobDone {
 				return true
 			}
+		case <-imuTicker.C:
+			_ = addIMUReading(ctx, config)
 		}
 	}
 }
@@ -68,7 +75,7 @@ func addLidarReading(
 		tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, config)
 	} else {
 		timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, config)
-		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+		// time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
 	}
 	return false
@@ -166,7 +173,8 @@ func addIMUReading(
 		tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, config)
 	} else {
 		timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, config)
-		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+		// time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
 	}
 	return false
 }
