@@ -4,6 +4,7 @@ package sensorprocess
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -44,10 +45,12 @@ func StartLidar(
 		case <-ctx.Done():
 			return false
 		case <-lidarTicker.C:
+			fmt.Println("adding lidar reading")
 			if jobDone := addLidarReading(ctx, config); jobDone {
 				return true
 			}
 		case <-imuTicker.C:
+			fmt.Println("adding IMU reading")
 			_ = addIMUReading(ctx, config)
 		}
 	}
