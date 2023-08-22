@@ -151,6 +151,8 @@ func testHelperCartographer(
 	sensorReadingInterval := time.Millisecond * 200
 	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, lidarDone)
 	test.That(t, err, test.ShouldBeNil)
+	// IntegrationTimedIMUSensor will not be used until a full integration test can be run
+	// using synced lidar and IMU mock data, see https://viam.atlassian.net/browse/RSDK-4495
 	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], false, sensorReadingInterval, imuDone)
 	test.That(t, err, test.ShouldBeNil)
 	if !useIMU {
@@ -167,12 +169,12 @@ func testHelperCartographer(
 
 	defer cancelFunc()
 
-	// wait till all sensor readings have been read
-	if !utils.SelectContextOrWaitChan(ctx, done) {
-		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
-	}
 	// We will check both channels once an accurate mock dataset has been gathered,
 	// see https://viam.atlassian.net/browse/RSDK-4495
+	// wait till all sensor readings have been read
+	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
+		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
+	}
 
 	testCartographerPosition(t, svc, attrCfg.Camera["name"], useIMU)
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
