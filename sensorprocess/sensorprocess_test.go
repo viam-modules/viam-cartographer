@@ -469,7 +469,7 @@ func TestAddSensorReading(t *testing.T) {
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 
-	t.Run("returns false when lidar returns an error that it reached end of dataset and optimization function fails", func(t *testing.T) {
+	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function fails", func(t *testing.T) {
 		runFinalOptimizationFunc = func(context.Context, time.Duration) error {
 			return errors.New("test error")
 		}
