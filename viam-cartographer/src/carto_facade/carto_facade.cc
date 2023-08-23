@@ -586,6 +586,11 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
 }
 
 void CartoFacade::RunFinalOptimization() {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state << " expected "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         map_builder.map_builder_->pose_graph()->RunFinalOptimization();
