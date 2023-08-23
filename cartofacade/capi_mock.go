@@ -22,13 +22,14 @@ func (cf *CartoLibMock) Terminate() error {
 // CartoMock represents a fake instance of cartofacade.
 type CartoMock struct {
 	Carto
-	StartFunc            func() error
-	StopFunc             func() error
-	TerminateFunc        func() error
-	AddLidarReadingFunc  func(string, []byte, time.Time) error
-	GetPositionFunc      func() (GetPosition, error)
-	GetPointCloudMapFunc func() ([]byte, error)
-	GetInternalStateFunc func() ([]byte, error)
+	StartFunc                func() error
+	StopFunc                 func() error
+	TerminateFunc            func() error
+	AddLidarReadingFunc      func(string, []byte, time.Time) error
+	GetPositionFunc          func() (GetPosition, error)
+	GetPointCloudMapFunc     func() ([]byte, error)
+	GetInternalStateFunc     func() ([]byte, error)
+	RunFinalOptimizationFunc func() error
 }
 
 // Start calls the injected StartFunc or the real version.
@@ -85,4 +86,12 @@ func (cf *CartoMock) getInternalState() ([]byte, error) {
 		return cf.Carto.getInternalState()
 	}
 	return cf.GetInternalStateFunc()
+}
+
+// runFinalOptimization calls the injected GetInternalState or the real version.
+func (cf *CartoMock) runFinalOptimization() error {
+	if cf.RunFinalOptimizationFunc == nil {
+		return cf.Carto.runFinalOptimization()
+	}
+	return cf.RunFinalOptimizationFunc()
 }

@@ -17,12 +17,13 @@ import (
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	CartoFacade       cartofacade.Interface
-	Lidar             sensors.TimedLidarSensor
-	LidarName         string
-	LidarDataRateMsec int
-	Timeout           time.Duration
-	Logger            golog.Logger
+	CartoFacade              cartofacade.Interface
+	Lidar                    sensors.TimedLidarSensor
+	LidarName                string
+	LidarDataRateMsec        int
+	Timeout                  time.Duration
+	Logger                   golog.Logger
+	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
 // Start polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -37,6 +38,10 @@ func Start(
 			return false
 		default:
 			if jobDone := addLidarReading(ctx, config); jobDone {
+				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
+				if err != nil {
+					config.Logger.Error("Failed to finish processing all sensor readings")
+				}
 				return true
 			}
 		}

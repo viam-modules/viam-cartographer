@@ -540,3 +540,54 @@ func TestGetPointCloudMap(t *testing.T) {
 	cancelFunc()
 	activeBackgroundWorkers.Wait()
 }
+
+func TestRunFinalOptimization(t *testing.T) {
+	lib := CartoLibMock{}
+
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+	activeBackgroundWorkers := sync.WaitGroup{}
+
+	cfg, dir, err := GetTestConfig("mysensor", "")
+	algoCfg := GetTestAlgoConfig()
+	test.That(t, err, test.ShouldBeNil)
+	defer os.RemoveAll(dir)
+
+	cartoFacade := New(&lib, cfg, algoCfg)
+	carto := CartoMock{}
+	carto.RunFinalOptimizationFunc = func() error {
+		return nil
+	}
+	cartoFacade.carto = &carto
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
+
+	t.Run("testing RunFinalOptimization", func(t *testing.T) {
+		// success case
+		err = cartoFacade.RunFinalOptimization(cancelCtx, 5*time.Second)
+		test.That(t, err, test.ShouldBeNil)
+
+		carto.RunFinalOptimizationFunc = func() error {
+			return errors.New("test error 5")
+		}
+		cartoFacade.carto = &carto
+
+		// returns error
+		err = cartoFacade.RunFinalOptimization(cancelCtx, 5*time.Second)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
+
+		carto.RunFinalOptimizationFunc = func() error {
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		}
+		cartoFacade.carto = &carto
+
+		// times out
+		err = cartoFacade.RunFinalOptimization(cancelCtx, 1*time.Millisecond)
+		test.That(t, err, test.ShouldBeError)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
+	})
+
+	cancelFunc()
+	activeBackgroundWorkers.Wait()
+}

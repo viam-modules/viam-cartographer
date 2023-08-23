@@ -585,6 +585,13 @@ void CartoFacade::GetLatestSampledPointCloudMapString(std::string &pointcloud) {
     return;
 }
 
+void CartoFacade::RunFinalOptimization() {
+    {
+        std::lock_guard<std::mutex> lk(map_builder_mutex);
+        map_builder.map_builder_->pose_graph()->RunFinalOptimization();
+    }
+}
+
 void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     if (state != CartoFacadeState::STARTED) {
         LOG(ERROR) << "carto facade is in state: " << state << " expected "
@@ -1199,4 +1206,23 @@ extern int viam_carto_get_internal_state_response_destroy(
     }
     r->internal_state = nullptr;
     return return_code;
+};
+
+extern int viam_carto_run_final_optimization(viam_carto *vc) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>((vc)->carto_obj);
+        cf->RunFinalOptimization();
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+
+    return VIAM_CARTO_SUCCESS;
 };
