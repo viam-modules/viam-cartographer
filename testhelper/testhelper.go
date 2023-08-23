@@ -267,7 +267,7 @@ func IntegrationTimedIMUSensor(
 		if int(i) >= len(mockLinearAccelerationData) {
 			// communicate to the test that all imu readings have been written
 			if !closed {
-				// This will be added back once synced mock lidar and IMU data is collected,
+				// This will be added back once sycned mock lidar and IMU data is collected,
 				// see https://viam.atlassian.net/browse/RSDK-4495
 				// done <- struct{}{}
 				closed = true

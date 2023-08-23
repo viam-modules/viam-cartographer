@@ -302,6 +302,7 @@ void CartoFacade::IOInit() {
             algo_config.missing_data_ray_length);
         map_builder.OverwriteMaxRange(algo_config.max_range);
         map_builder.OverwriteMinRange(algo_config.min_range);
+        map_builder.OverwriteUseIMUData(algo_config.use_imu_data);
         if (slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
             map_builder.OverwriteMaxSubmapsToKeep(
                 algo_config.max_submaps_to_keep);
@@ -366,7 +367,7 @@ void CartoFacade::IOInit() {
 
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.StartLidarTrajectoryBuilder();
+        map_builder.StartTrajectoryBuilder(algo_config.use_imu_data);
     }
     state = CartoFacadeState::IO_INITIALIZED;
 };
@@ -783,7 +784,7 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
     if (biseq(config.component_reference, sr->lidar) == false) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->lidar) << " to be "
                 << config.component_reference;
-        throw VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST;
+        throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
     }
     std::string lidar_reading = to_std_string(sr->lidar_reading);
     if (lidar_reading.length() == 0) {
@@ -798,12 +799,57 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
     }
 
     cartographer::transform::Rigid3d tmp_global_pose;
-    bool update_latest_global_pose = false;
 
     if (map_builder_mutex.try_lock()) {
         VLOG(1) << "AddSensorData timestamp: " << measurement.time
+                << " Sensor type: Lidar "
                 << " measurement.ranges.size(): " << measurement.ranges.size();
-        map_builder.AddSensorData(measurement);
+        map_builder.AddSensorData(kRangeSensorId.id, measurement);
+        tmp_global_pose = map_builder.GetGlobalPose();
+        map_builder_mutex.unlock();
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
+        }
+        return;
+    } else {
+        throw VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK;
+    }
+};
+
+void CartoFacade::AddIMUReading(const viam_carto_imu_reading *sr) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state
+                   << " expected it to be in state: "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
+    if (biseq(to_bstring(config.movement_sensor), sr->imu) == false) {
+        VLOG(1) << "expected sensor: " << to_std_string(sr->imu) << " to be "
+                << config.movement_sensor;
+        throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
+    }
+
+    int64_t imu_reading_time_unix_milli = sr->imu_reading_time_unix_milli;
+
+    cartographer::sensor::ImuData measurement;
+    measurement.time =
+        cartographer::common::FromUniversal(0) +
+        cartographer::common::FromMilliseconds(imu_reading_time_unix_milli);
+    measurement.linear_acceleration =
+        Eigen::Vector3d(sr->lin_acc_x, sr->lin_acc_y, sr->lin_acc_z);
+    measurement.angular_velocity =
+        Eigen::Vector3d(sr->ang_vel_x, sr->ang_vel_y, sr->ang_vel_z);
+
+    cartographer::transform::Rigid3d tmp_global_pose;
+
+    if (map_builder_mutex.try_lock()) {
+        VLOG(1) << "AddSensorData timestamp: " << measurement.time
+                << " Sensor type: IMU ";
+        map_builder.AddSensorData(kIMUSensorId.id, measurement);
+        VLOG(1) << "Data added is: " << measurement.linear_acceleration
+                << " and " << measurement.angular_velocity;
+        LOG(INFO) << "Added IMU data to Cartographer";
         tmp_global_pose = map_builder.GetGlobalPose();
         map_builder_mutex.unlock();
         {
@@ -942,6 +988,14 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
     if (pVCL == nullptr) {
         return VIAM_CARTO_LIB_INVALID;
     }
+    // check that IMU is correctly set up
+    if ((ac.use_imu_data == true &&
+         biseqcstr(c.movement_sensor, ("")) == true) ||
+        (ac.use_imu_data == false &&
+         biseqcstr(c.movement_sensor, ("")) == false)) {
+        return VIAM_CARTO_IMU_ENABLED_INVALID;
+    }
+
     // allocate viam_carto struct
     viam_carto *vc = (viam_carto *)malloc(sizeof(viam_carto));
     if (vc == nullptr) {
@@ -1087,6 +1141,46 @@ extern int viam_carto_add_lidar_reading_destroy(viam_carto_lidar_reading *sr) {
     return return_code;
 };
 
+extern int viam_carto_add_imu_reading(viam_carto *vc,
+                                      const viam_carto_imu_reading *sr) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (sr == nullptr) {
+        return VIAM_CARTO_IMU_READING_INVALID;
+    }
+
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        cf->AddIMUReading(sr);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+    return VIAM_CARTO_SUCCESS;
+};
+
+extern int viam_carto_add_imu_reading_destroy(viam_carto_imu_reading *sr) {
+    if (sr == nullptr) {
+        return VIAM_CARTO_IMU_READING_INVALID;
+    }
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+
+    // destroy sensor
+    rc = bdestroy(sr->imu);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    sr->imu = nullptr;
+
+    return return_code;
+};
+
 extern int viam_carto_get_position(viam_carto *vc,
                                    viam_carto_get_position_response *r) {
     if (vc == nullptr) {
@@ -1132,7 +1226,7 @@ extern int viam_carto_get_point_cloud_map(
     }
 
     if (r == nullptr) {
-        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID;
     }
     try {
         viam::carto_facade::CartoFacade *cf =
@@ -1151,7 +1245,7 @@ extern int viam_carto_get_point_cloud_map(
 extern int viam_carto_get_point_cloud_map_response_destroy(
     viam_carto_get_point_cloud_map_response *r) {
     if (r == nullptr) {
-        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID;
     }
     int return_code = VIAM_CARTO_SUCCESS;
     int rc = BSTR_OK;
@@ -1170,7 +1264,7 @@ extern int viam_carto_get_internal_state(
     }
 
     if (r == nullptr) {
-        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID;
     }
     try {
         viam::carto_facade::CartoFacade *cf =
@@ -1189,7 +1283,7 @@ extern int viam_carto_get_internal_state(
 extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r) {
     if (r == nullptr) {
-        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID;
+        return VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID;
     }
     int return_code = VIAM_CARTO_SUCCESS;
     int rc = BSTR_OK;

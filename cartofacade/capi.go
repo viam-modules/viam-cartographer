@@ -17,6 +17,9 @@ import (
 	"errors"
 	"time"
 	"unsafe"
+
+	"github.com/golang/geo/r3"
+	"go.viam.com/rdk/spatialmath"
 )
 
 // CartoLib holds the c type viam_carto_lib
@@ -55,6 +58,7 @@ type CartoInterface interface {
 	stop() error
 	terminate() error
 	addLidarReading(string, []byte, time.Time) error
+	addIMUReading(string, IMUReading, time.Time) error
 	getPosition() (GetPosition, error)
 	getPointCloudMap() ([]byte, error)
 	getInternalState() ([]byte, error)
@@ -72,6 +76,12 @@ type GetPosition struct {
 	Kmag float64
 
 	ComponentReference string
+}
+
+// IMUReading holds values for linear acceleration and angular velocity to be converted into c
+type IMUReading struct {
+	LinearAcceleration r3.Vector
+	AngularVelocity    spatialmath.AngularVelocity
 }
 
 // LidarConfig represents the lidar configuration
@@ -106,6 +116,7 @@ type CartoAlgoConfig struct {
 	MissingDataRayLength float32
 	MaxRange             float32
 	MinRange             float32
+	UseIMUData           bool
 	MaxSubmapsToKeep     int
 	FreshSubmapsCount    int
 	MinCoveredArea       float64
@@ -207,7 +218,7 @@ func (vc *Carto) terminate() error {
 	return nil
 }
 
-// AddLidarReading is a wrapper for viam_carto_add_lidar_reading
+// addLidarReading is a wrapper for viam_carto_add_lidar_reading
 func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.Time) error {
 	value := toLidarReading(lidar, readings, timestamp)
 
@@ -218,6 +229,26 @@ func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.T
 	}
 
 	status = C.viam_carto_add_lidar_reading_destroy(&value)
+	if err := toError(status); err != nil {
+		return err
+	}
+
+	time.Sleep(time.Millisecond * 10)
+
+	return nil
+}
+
+// addIMUReading is a wrapper for viam_carto_add_imu_reading
+func (vc *Carto) addIMUReading(imu string, readings IMUReading, timestamp time.Time) error {
+	value := toIMUReading(imu, readings, timestamp)
+
+	status := C.viam_carto_add_imu_reading(vc.value, &value)
+
+	if err := toError(status); err != nil {
+		return err
+	}
+
+	status = C.viam_carto_add_imu_reading_destroy(&value)
 	if err := toError(status); err != nil {
 		return err
 	}
@@ -354,6 +385,7 @@ func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac.missing_data_ray_length = C.float(acfg.MissingDataRayLength)
 	vcac.max_range = C.float(acfg.MaxRange)
 	vcac.min_range = C.float(acfg.MinRange)
+	vcac.use_imu_data = C.bool(acfg.UseIMUData)
 	vcac.max_submaps_to_keep = C.int(acfg.MaxSubmapsToKeep)
 	vcac.fresh_submaps_count = C.int(acfg.FreshSubmapsCount)
 	vcac.min_covered_area = C.double(acfg.MinCoveredArea)
@@ -388,6 +420,23 @@ func toLidarReading(lidar string, readings []byte, timestamp time.Time) C.viam_c
 	defer C.free(readingsCBytes)
 	sr.lidar_reading = C.blk2bstr(readingsCBytes, C.int(len(readings)))
 	sr.lidar_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
+	return sr
+}
+
+func toIMUReading(imu string, readings IMUReading, timestamp time.Time) C.viam_carto_imu_reading {
+	sr := C.viam_carto_imu_reading{}
+	sensorCStr := C.CString(imu)
+	defer C.free(unsafe.Pointer(sensorCStr))
+	sr.imu = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(imu)))
+
+	sr.lin_acc_x = C.double(readings.LinearAcceleration.X)
+	sr.lin_acc_y = C.double(readings.LinearAcceleration.Y)
+	sr.lin_acc_z = C.double(readings.LinearAcceleration.Z)
+	sr.ang_vel_x = C.double(readings.AngularVelocity.X)
+	sr.ang_vel_y = C.double(readings.AngularVelocity.Y)
+	sr.ang_vel_z = C.double(readings.AngularVelocity.Z)
+
+	sr.imu_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
 	return sr
 }
 
@@ -433,8 +482,8 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR")
 	case C.VIAM_CARTO_MAP_CREATION_ERROR:
 		return errors.New("VIAM_CARTO_MAP_CREATION_ERROR")
-	case C.VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST:
-		return errors.New("VIAM_CARTO_SENSOR_NOT_IN_SENSOR_LIST")
+	case C.VIAM_CARTO_UNKNOWN_SENSOR_NAME:
+		return errors.New("VIAM_CARTO_UNKNOWN_SENSOR_NAME")
 	case C.VIAM_CARTO_LIDAR_READING_EMPTY:
 		return errors.New("VIAM_CARTO_LIDAR_READING_EMPTY")
 	case C.VIAM_CARTO_LIDAR_READING_INVALID:
@@ -443,12 +492,12 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_GET_POSITION_RESPONSE_INVALID")
 	case C.VIAM_CARTO_POINTCLOUD_MAP_EMPTY:
 		return errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY")
-	case C.VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID:
-		return errors.New("VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVLALID")
+	case C.VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID:
+		return errors.New("VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID")
 	case C.VIAM_CARTO_LIB_ALREADY_INITIALIZED:
 		return errors.New("VIAM_CARTO_LIB_ALREADY_INITIALIZED")
-	case C.VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID:
-		return errors.New("VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVLALID")
+	case C.VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID:
+		return errors.New("VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID")
 	case C.VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR:
 		return errors.New("VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR")
 	case C.VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR:
@@ -461,6 +510,10 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_NOT_IN_STARTED_STATE")
 	case C.VIAM_CARTO_NOT_IN_TERMINATABLE_STATE:
 		return errors.New("VIAM_CARTO_NOT_IN_TERMINATABLE_STATE")
+	case C.VIAM_CARTO_IMU_ENABLED_INVALID:
+		return errors.New("VIAM_CARTO_IMU_ENABLED_INVALID")
+	case C.VIAM_CARTO_IMU_READING_INVALID:
+		return errors.New("VIAM_CARTO_IMU_READING_INVALID")
 	default:
 		return errors.New("status code unclassified")
 	}

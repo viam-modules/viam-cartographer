@@ -10,8 +10,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/golang/geo/r3"
 	"go.uber.org/multierr"
 	"go.viam.com/rdk/pointcloud"
+	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 )
@@ -318,15 +320,15 @@ func TestTerminate(t *testing.T) {
 	activeBackgroundWorkers.Wait()
 }
 
-func TestAddSensorReading(t *testing.T) {
+func TestAddLidarReading(t *testing.T) {
 	lib := CartoLibMock{}
 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
 	test.That(t, err, test.ShouldBeNil)
+	algoCfg := GetTestAlgoConfig()
 	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -380,6 +382,64 @@ func TestAddSensorReading(t *testing.T) {
 	activeBackgroundWorkers.Wait()
 }
 
+func TestAddIMUReading(t *testing.T) {
+	lib := CartoLibMock{}
+
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+	activeBackgroundWorkers := sync.WaitGroup{}
+
+	cfg, dir, err := GetTestConfig("mylidar", "myIMU")
+	test.That(t, err, test.ShouldBeNil)
+	algoCfg := GetTestAlgoConfig()
+	algoCfg.UseIMUData = true
+	defer os.RemoveAll(dir)
+
+	cartoFacade := New(&lib, cfg, algoCfg)
+	carto := CartoMock{}
+	carto.AddIMUReadingFunc = func(name string, reading IMUReading, time time.Time) error {
+		return nil
+	}
+	cartoFacade.carto = &carto
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
+
+	t.Run("testing AddIMUReading", func(t *testing.T) {
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+		testIMUReading := IMUReading{
+			LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
+			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
+		}
+
+		// success case
+		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
+		test.That(t, err, test.ShouldBeNil)
+
+		carto.AddIMUReadingFunc = func(name string, reading IMUReading, time time.Time) error {
+			return errors.New("test error 5")
+		}
+		cartoFacade.carto = &carto
+
+		// returns error
+		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
+
+		carto.AddIMUReadingFunc = func(name string, reading IMUReading, timestamp time.Time) error {
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		}
+		cartoFacade.carto = &carto
+
+		// times out
+		err = cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "myIMU", testIMUReading, timestamp)
+		test.That(t, err, test.ShouldBeError)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
+	})
+
+	cancelFunc()
+	activeBackgroundWorkers.Wait()
+}
+
 func TestGetPosition(t *testing.T) {
 	lib := CartoLibMock{}
 
@@ -409,14 +469,14 @@ func TestGetPosition(t *testing.T) {
 		test.That(t, pos.Z, test.ShouldEqual, 3)
 
 		carto.GetPositionFunc = func() (GetPosition, error) {
-			return GetPosition{}, errors.New("test error 5")
+			return GetPosition{}, errors.New("test error 6")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetPosition(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("test error 5"))
+		test.That(t, err, test.ShouldResemble, errors.New("test error 6"))
 
 		carto.GetPositionFunc = func() (GetPosition, error) {
 			time.Sleep(50 * time.Millisecond)
@@ -462,14 +522,14 @@ func TestGetInternalState(t *testing.T) {
 		test.That(t, internalState, test.ShouldResemble, []byte("hello!"))
 
 		carto.GetInternalStateFunc = func() ([]byte, error) {
-			return []byte{}, errors.New("test error 6")
+			return []byte{}, errors.New("test error 7")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetInternalState(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("test error 6"))
+		test.That(t, err, test.ShouldResemble, errors.New("test error 7"))
 
 		carto.GetInternalStateFunc = func() ([]byte, error) {
 			time.Sleep(50 * time.Millisecond)
@@ -515,14 +575,14 @@ func TestGetPointCloudMap(t *testing.T) {
 		test.That(t, internalState, test.ShouldResemble, []byte("hello!"))
 
 		carto.GetPointCloudMapFunc = func() ([]byte, error) {
-			return []byte{}, errors.New("test error 7")
+			return []byte{}, errors.New("test error 8")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
 		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err, test.ShouldResemble, errors.New("test error 7"))
+		test.That(t, err, test.ShouldResemble, errors.New("test error 8"))
 
 		carto.GetPointCloudMapFunc = func() ([]byte, error) {
 			time.Sleep(50 * time.Millisecond)

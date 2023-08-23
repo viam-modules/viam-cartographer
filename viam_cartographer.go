@@ -5,6 +5,8 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -58,6 +60,7 @@ var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
 	MissingDataRayLength: 25.0,
 	MaxRange:             25.0,
 	MinRange:             0.2,
+	UseIMUData:           false,
 	MaxSubmapsToKeep:     3,
 	FreshSubmapsCount:    3,
 	MinCoveredArea:       1.0,
@@ -119,12 +122,21 @@ func TerminateCartoLib() error {
 	return cartoLib.Terminate()
 }
 
-func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
+func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) *os.File {
+	fo, err := os.Create("/Users/jeremyhyde/Documents/viam-cartographer/outputTimeLogs_fixed.txt")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("helllllllllllllllo")
 	spConfig := sensorprocess.Config{
+		File:              fo,
 		CartoFacade:       cartoSvc.cartofacade,
-		Lidar:             cartoSvc.lidar.testing,
+		Lidar:             cartoSvc.lidar.timed,
 		LidarName:         cartoSvc.lidar.name,
 		LidarDataRateMsec: cartoSvc.lidar.dataRateMsec,
+		IMU:               cartoSvc.imu.timed,
+		IMUName:           cartoSvc.imu.name,
+		IMUDataRateMsec:   cartoSvc.imu.dataRateMsec,
 		Timeout:           cartoSvc.cartoFacadeTimeout,
 		Logger:            cartoSvc.logger,
 	}
@@ -132,11 +144,23 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := sensorprocess.Start(cancelCtx, spConfig); jobDone {
+		if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
 			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
 	}()
+
+	if spConfig.IMUName != "" {
+		cartoSvc.sensorProcessWorkers.Add(1)
+		go func() {
+			defer cartoSvc.sensorProcessWorkers.Done()
+			if jobDone := spConfig.StartIMU(cancelCtx); jobDone {
+				cartoSvc.jobDone.Store(true)
+				cartoSvc.cancelSensorProcessFunc()
+			}
+		}()
+	}
+	return fo
 }
 
 // New returns a new slam service for the given robot.
@@ -224,14 +248,14 @@ func New(
 		name:         lidarName,
 		dataRateMsec: optionalConfigParams.LidarDataRateMsec,
 		actual:       lidarObject,
-		testing:      timedLidar,
+		timed:        timedLidar,
 	}
 
 	imu := IMU{
 		name:         optionalConfigParams.ImuName,
 		dataRateMsec: optionalConfigParams.ImuDataRateMsec,
 		actual:       imuObject,
-		testing:      timedIMU,
+		timed:        timedIMU,
 	}
 
 	// Cartographer SLAM Service Object
@@ -288,7 +312,9 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	initSensorProcess(cancelSensorProcessCtx, cartoSvc)
+	fo := initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
+
+	cartoSvc.File = fo
 
 	return cartoSvc, nil
 }
@@ -428,6 +454,13 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		ExistingMap:        cartoSvc.existingMap,
 	}
 
+	if cartoCfg.MovementSensor != "" {
+		cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
+		cartoAlgoConfig.UseIMUData = true
+	} else {
+		cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
+	}
+
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
 	slamMode, err := cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
 	if err != nil {
@@ -453,6 +486,8 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 }
 
 func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
+	_ = cartoSvc.File.Close()
+
 	if cartoSvc.cartofacade == nil {
 		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
 		return nil
@@ -476,7 +511,7 @@ type Lidar struct {
 	name         string
 	dataRateMsec int
 	actual       s.Lidar
-	testing      s.TimedLidarSensor
+	timed        s.TimedLidarSensor
 }
 
 // IMU is the structure containing all fields related to IMU.
@@ -484,7 +519,7 @@ type IMU struct {
 	name         string
 	dataRateMsec int
 	actual       s.IMU
-	testing      s.TimedIMUSensor
+	timed        s.TimedIMUSensor
 }
 
 // CartographerService is the structure of the slam service.
@@ -522,6 +557,7 @@ type CartographerService struct {
 	cloudStoryEnabled bool
 	enableMapping     bool
 	existingMap       string
+	File              *os.File
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,

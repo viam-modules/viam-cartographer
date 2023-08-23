@@ -4,6 +4,8 @@ package sensors
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -72,16 +74,17 @@ func NewLidar(
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
 	}
 
-	// If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
-	properties, err := newLidar.Properties(ctx)
-	if err != nil {
-		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", cameraName)
-	}
+	// rplidar does not yet support properties, see https://viam.atlassian.net/browse/RSDK-4600
+	// // If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
+	// properties, err := newLidar.Properties(ctx)
+	// if err != nil {
+	// 	return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", cameraName)
+	// }
 
-	if !properties.SupportsPCD {
-		return Lidar{}, errors.New("configuring lidar camera error: " +
-			"'camera' must support PCD")
-	}
+	// if !properties.SupportsPCD {
+	// 	return Lidar{}, errors.New("configuring lidar camera error: " +
+	// 		"'camera' must support PCD")
+	// }
 
 	return Lidar{
 		Name:  cameraName,
@@ -225,31 +228,69 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSenso
 // IMU Sensors currently do not support replay capabilities.
 func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error) {
 	replay := false
-	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-	linAcc, err := imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
-	if err != nil {
-		msg := "LinearAcceleration error"
-		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
-	}
-	angVel, err := imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
-	if err != nil {
-		msg := "AngularVelocity error"
-		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
-	}
-	readingTime := time.Now().UTC()
 
-	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-	if ok {
-		replay = true
-		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-		if err != nil {
-			msg := "replay sensor timestamp parse RFC3339Nano error"
-			return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+	var readingTime time.Time
+	var defaultTime time.Time
+	var timeLinearAcc time.Time
+	var timeAngularVel time.Time
+	var linAcc r3.Vector
+	var angVel spatialmath.AngularVelocity
+	var err error
+
+	for {
+		select {
+		case <-ctx.Done():
+			return TimedIMUSensorReadingResponse{}, nil
+		default:
+			if timeLinearAcc == defaultTime || timeLinearAcc.Sub(timeAngularVel).Milliseconds() < 0 {
+				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
+				linAcc, err = imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
+				if err != nil {
+					msg := "LinearAcceleration error"
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+				}
+				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+				if ok {
+					replay = true
+					timeLinearAcc, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+					if err != nil {
+						msg := "replay sensor timestamp parse RFC3339Nano error"
+						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+					}
+				}
+			}
+
+			if timeAngularVel == defaultTime || timeAngularVel.Sub(timeLinearAcc).Milliseconds() < 0 {
+				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
+				angVel, err = imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
+				if err != nil {
+					msg := "AngularVelocity error"
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+				}
+				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+				if ok {
+					replay = true
+					timeAngularVel, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+					if err != nil {
+						msg := "replay sensor timestamp parse RFC3339Nano error"
+						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+					}
+				}
+			}
+			if timeLinearAcc != defaultTime && timeAngularVel != defaultTime && math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < 20 {
+				fmt.Println("FOUND ALIGNED DATA")
+				readingTime = timeLinearAcc.Add(timeLinearAcc.Sub(timeAngularVel) / 2)
+
+				return TimedIMUSensorReadingResponse{
+					//LinearAcceleration: r3.Vector{X: linAcc.X / 1000, Y: linAcc.Y / 1000, Z: linAcc.Z / 1000},
+					//AngularVelocity:    spatialmath.AngularVelocity{X: angVel.X / 1000, Y: angVel.Y / 1000, Z: angVel.Z / 1000},
+					LinearAcceleration: linAcc,
+					AngularVelocity:    angVel,
+					ReadingTime:        readingTime,
+					Replay:             replay,
+				}, nil
+			}
+			fmt.Printf("NOT ALIGNED DATA: %v | %v \n", timeLinearAcc, timeAngularVel)
 		}
 	}
-
-	return TimedIMUSensorReadingResponse{
-		LinearAcceleration: linAcc, AngularVelocity: angVel,
-		ReadingTime: readingTime, Replay: replay,
-	}, nil
 }

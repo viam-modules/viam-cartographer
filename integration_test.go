@@ -51,7 +51,7 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
 }
 
-func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentRef string) {
+func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expectedComponentRef string) {
 	var expectedPosOSX r3.Vector
 	var expectedPosLinux r3.Vector
 	var expectedOriOSX *spatialmath.R4AA
@@ -59,11 +59,19 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 	tolerancePos := 0.001
 	toleranceOri := 0.001
 
-	expectedPosOSX = r3.Vector{X: 155.7488316264227, Y: -90.25868252233964, Z: 0}
-	expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
+	if useIMU {
+		expectedPosOSX = r3.Vector{X: 31.26644008021215, Y: -0.07725723487584407, Z: 0}
+		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
 
-	expectedOriOSX = &spatialmath.R4AA{Theta: 1.5465081272043815, RX: 0, RY: 0, RZ: 1}
-	expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
+		expectedOriOSX = &spatialmath.R4AA{Theta: 1.6909088187060277, RX: 0.8939401250703025, RY: 0.11300993950972898, RZ: 0.43370474560615474}
+		expectedOriLinux = &spatialmath.R4AA{Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466, RZ: 0.3764936522466959}
+	} else {
+		expectedPosOSX = r3.Vector{X: 155.7488316264227, Y: -90.25868252233964, Z: 0}
+		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
+
+		expectedOriOSX = &spatialmath.R4AA{Theta: 1.5465081272043815, RX: 0, RY: 0, RZ: 1}
+		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
+	}
 
 	position, componentRef, err := svc.GetPosition(context.Background())
 	test.That(t, err, test.ShouldBeNil)
@@ -138,13 +146,11 @@ func testHelperCartographer(
 		attrCfg.MovementSensor = map[string]string{"name": "stub_imu"}
 	}
 
-	lidarDone := make(chan struct{})
+	done := make(chan struct{})
 	imuDone := make(chan struct{})
 	sensorReadingInterval := time.Millisecond * 200
-	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, lidarDone)
+	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
 	test.That(t, err, test.ShouldBeNil)
-	// IntegrationTimedIMUSensor will not be used until a full integration test can be run
-	// using synced lidar and IMU mock data, see https://viam.atlassian.net/browse/RSDK-4495
 	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], false, sensorReadingInterval, imuDone)
 	test.That(t, err, test.ShouldBeNil)
 	if !useIMU {
@@ -161,14 +167,14 @@ func testHelperCartographer(
 
 	defer cancelFunc()
 
-	// We will check both channels once an accurate mock dataset has been gathered,
-	// see https://viam.atlassian.net/browse/RSDK-4495
 	// wait till all sensor readings have been read
-	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
+	if !utils.SelectContextOrWaitChan(ctx, done) {
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
+	// We will check both channels once an accurate mock dataset has been gathered,
+	// see https://viam.atlassian.net/browse/RSDK-4495
 
-	testCartographerPosition(t, svc, attrCfg.Camera["name"])
+	testCartographerPosition(t, svc, useIMU, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
 
 	internalState, err := slam.GetInternalStateFull(context.Background(), svc)
