@@ -126,7 +126,6 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 				optionalConfigParams.LidarDataRateMsec = 1000 / lidarDataFreqHz
 			}
 		}
-		exists = false
 		imuName, exists := config.MovementSensor["name"]
 		if exists {
 			optionalConfigParams.ImuName = imuName
