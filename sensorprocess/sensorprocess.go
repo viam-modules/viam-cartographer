@@ -81,7 +81,7 @@ func (config *Config) addLidarReading(
 				}
 				return false
 			}
-			//tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, *config)
+			tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, *config)
 			config.CurrentData.lidarTime = tsr.ReadingTime
 			config.CurrentData.lidarData = tsr.Reading
 			fmt.Printf("Updating current data lidar: %v\n", tsr.ReadingTime)
@@ -202,7 +202,7 @@ func (config *Config) addIMUReading(
 			if config.IMUDataRateMsec != 0 {
 				config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
 			}
-			//tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, *config)
+			tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, *config)
 			config.CurrentData.imuTime = tsr.ReadingTime
 			config.CurrentData.imuData = sr
 			fmt.Printf("Updating current data imu: %v\n", tsr.ReadingTime)

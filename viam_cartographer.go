@@ -123,7 +123,7 @@ func TerminateCartoLib() error {
 }
 
 func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) *os.File {
-	fo, err := os.Create("/Users/jeremyhyde/Documents/viam-cartographer/outputTimeLogs_fixed.txt")
+	fo, err := os.Create("/Users/jeremyhyde/Development/viam-cartographer/outputTimeLogs_fixed.txt")
 	if err != nil {
 		panic(err)
 	}
