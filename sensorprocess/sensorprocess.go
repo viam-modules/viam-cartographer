@@ -11,7 +11,9 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
+	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/components/camera/replaypcd"
+	"go.viam.com/rdk/spatialmath"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/sensors"
@@ -30,6 +32,8 @@ type Config struct {
 	Timeout           time.Duration
 	Logger            golog.Logger
 	CurrentData       currentData
+	offsetAV          spatialmath.AngularVelocity
+	offsetLA          r3.Vector
 }
 
 type currentData struct {
@@ -52,6 +56,11 @@ func (config *Config) StartLidar(
 			if jobDone := config.addLidarReading(ctx); jobDone {
 				return true
 			}
+			if config.IMUName != "" {
+				if jobDone := config.addIMUReading(ctx); jobDone {
+					return true
+				}
+			}
 		}
 	}
 }
@@ -64,7 +73,7 @@ func (config *Config) addLidarReading(
 	 when the lidar data rate msec is 0, we assume the user wants to be in "offline"
 	 mode and ensure every scan gets processed by cartographer
 	*/
-	//fmt.Printf("1. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime, config.CurrentData.imuTime, config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
+	fmt.Printf("1. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime, config.CurrentData.imuTime, config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
 	if config.LidarDataRateMsec == 0 {
 		if config.IMUName == "" || config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds() <= 0 {
 			if len(config.CurrentData.lidarData) != 0 {
@@ -81,10 +90,11 @@ func (config *Config) addLidarReading(
 				}
 				return false
 			}
-			tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, *config)
+			//tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, *config)
 			config.CurrentData.lidarTime = tsr.ReadingTime
 			config.CurrentData.lidarData = tsr.Reading
 			fmt.Printf("Updating current data lidar: %v\n", tsr.ReadingTime)
+			time.Sleep(time.Duration(50) * time.Millisecond)
 		}
 	} else {
 		tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
@@ -170,7 +180,7 @@ func (config *Config) addIMUReading(
 	 when the lidar data rate msec is 0, we assume the user wants to be in "offline"
 	 mode and ensure every scan gets processed by cartographer
 	*/
-	//fmt.Printf("2. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime, config.CurrentData.imuTime, config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
+	fmt.Printf("2. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime, config.CurrentData.imuTime, config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
 	if config.LidarDataRateMsec == 0 {
 		if config.CurrentData.imuTime.Sub(config.CurrentData.lidarTime).Milliseconds() < 0 {
 			var blankIMU cartofacade.IMUReading
@@ -197,15 +207,15 @@ func (config *Config) addIMUReading(
 				LinearAcceleration: tsr.LinearAcceleration,
 				AngularVelocity:    tsr.AngularVelocity,
 			}
-			sr.LinearAcceleration.Z = 9.8
 
 			if config.IMUDataRateMsec != 0 {
 				config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
 			}
-			tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, *config)
+			//tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, *config)
 			config.CurrentData.imuTime = tsr.ReadingTime
 			config.CurrentData.imuData = sr
 			fmt.Printf("Updating current data imu: %v\n", tsr.ReadingTime)
+			time.Sleep(time.Duration(50) * time.Millisecond)
 		}
 	} else {
 		tsr, err := config.IMU.TimedIMUSensorReading(ctx)

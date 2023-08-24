@@ -5,7 +5,6 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -127,7 +126,8 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println("helllllllllllllllo")
+	fo.Write([]byte("Starting...\n"))
+
 	spConfig := sensorprocess.Config{
 		File:              fo,
 		CartoFacade:       cartoSvc.cartofacade,
@@ -150,16 +150,16 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		}
 	}()
 
-	if spConfig.IMUName != "" {
-		cartoSvc.sensorProcessWorkers.Add(1)
-		go func() {
-			defer cartoSvc.sensorProcessWorkers.Done()
-			if jobDone := spConfig.StartIMU(cancelCtx); jobDone {
-				cartoSvc.jobDone.Store(true)
-				cartoSvc.cancelSensorProcessFunc()
-			}
-		}()
-	}
+	// if spConfig.IMUName != "" {
+	// 	cartoSvc.sensorProcessWorkers.Add(1)
+	// 	go func() {
+	// 		defer cartoSvc.sensorProcessWorkers.Done()
+	// 		if jobDone := spConfig.StartIMU(cancelCtx); jobDone {
+	// 			cartoSvc.jobDone.Store(true)
+	// 			cartoSvc.cancelSensorProcessFunc()
+	// 		}
+	// 	}()
+	// }
 	return fo
 }
 
@@ -558,6 +558,9 @@ type CartographerService struct {
 	enableMapping     bool
 	existingMap       string
 	File              *os.File
+
+	offsetLinearAcceleration r3.Vector
+	offsetAngularVelocity    spatialmath.AngularVelocity
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
