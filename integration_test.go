@@ -51,7 +51,7 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
 }
 
-func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentRef string, useIMU bool) {
+func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentRef string) {
 	var expectedPosOSX r3.Vector
 	var expectedPosLinux r3.Vector
 	var expectedOriOSX *spatialmath.R4AA
@@ -168,7 +168,7 @@ func testHelperCartographer(
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
 
-	testCartographerPosition(t, svc, attrCfg.Camera["name"], useIMU)
+	testCartographerPosition(t, svc, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
 
 	internalState, err := slam.GetInternalStateFull(context.Background(), svc)
