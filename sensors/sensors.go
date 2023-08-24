@@ -4,6 +4,7 @@ package sensors
 import (
 	"bytes"
 	"context"
+	"math"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -249,7 +250,8 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 	}
 
 	return TimedIMUSensorReadingResponse{
-		LinearAcceleration: linAcc, AngularVelocity: angVel,
-		ReadingTime: readingTime, Replay: replay,
+		LinearAcceleration: linAcc,
+		AngularVelocity:    spatialmath.AngularVelocity{X: angVel.X * 2 * math.Pi / 360, Y: angVel.X * 2 * math.Pi / 360, Z: angVel.X * 2 * math.Pi / 360},
+		ReadingTime:        readingTime, Replay: replay,
 	}, nil
 }

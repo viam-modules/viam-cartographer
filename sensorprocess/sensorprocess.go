@@ -73,11 +73,11 @@ func (config *Config) addLidarReading(
 	 when the lidar data rate msec is 0, we assume the user wants to be in "offline"
 	 mode and ensure every scan gets processed by cartographer
 	*/
-	fmt.Printf("1. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime, config.CurrentData.imuTime, config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
+	fmt.Printf("1. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime.Unix(), config.CurrentData.imuTime.Unix(), config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
 	if config.LidarDataRateMsec == 0 {
 		if config.IMUName == "" || config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds() <= 0 {
 			if len(config.CurrentData.lidarData) != 0 {
-				fmt.Printf("Adding current data lidar: %v\n", config.CurrentData.lidarTime)
+				fmt.Printf("Adding current data lidar: %v\n", config.CurrentData.lidarTime.Unix())
 				tryAddLidarReadingUntilSuccess(ctx, config.CurrentData.lidarData, config.CurrentData.lidarTime, *config)
 			}
 			//tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, *config)
@@ -91,10 +91,15 @@ func (config *Config) addLidarReading(
 				return false
 			}
 			//tryAddLidarReadingUntilSuccess(ctx, tsr.Reading, tsr.ReadingTime, *config)
-			config.CurrentData.lidarTime = tsr.ReadingTime
-			config.CurrentData.lidarData = tsr.Reading
-			fmt.Printf("Updating current data lidar: %v\n", tsr.ReadingTime)
-			time.Sleep(time.Duration(50) * time.Millisecond)
+			if config.CurrentData.lidarTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
+				config.CurrentData.lidarTime = tsr.ReadingTime
+				config.CurrentData.lidarData = tsr.Reading
+				fmt.Printf("Updating current data lidar: %v\n", tsr.ReadingTime.Unix())
+			} else {
+				fmt.Println("DROPPING LIDAR DATA")
+				config.File.Write([]byte(fmt.Sprintf("Dropping LIDAR Data: %v\n", tsr.ReadingTime.Unix())))
+			}
+			time.Sleep(time.Duration(5) * time.Millisecond)
 		}
 	} else {
 		tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
@@ -180,12 +185,12 @@ func (config *Config) addIMUReading(
 	 when the lidar data rate msec is 0, we assume the user wants to be in "offline"
 	 mode and ensure every scan gets processed by cartographer
 	*/
-	fmt.Printf("2. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime, config.CurrentData.imuTime, config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
+	fmt.Printf("2. LIDAR: %v IMU: %v | %v\n", config.CurrentData.lidarTime.Unix(), config.CurrentData.imuTime.Unix(), config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds())
 	if config.LidarDataRateMsec == 0 {
 		if config.CurrentData.imuTime.Sub(config.CurrentData.lidarTime).Milliseconds() < 0 {
 			var blankIMU cartofacade.IMUReading
 			if config.CurrentData.imuData != blankIMU {
-				fmt.Printf("Adding current data imu: %v\n", config.CurrentData.imuTime)
+				fmt.Printf("Adding current data imu: %v\n", config.CurrentData.imuTime.Unix())
 				tryAddIMUReadingUntilSuccess(ctx, config.CurrentData.imuData, config.CurrentData.imuTime, *config)
 			}
 			tsr, err := config.IMU.TimedIMUSensorReading(ctx)
@@ -212,10 +217,15 @@ func (config *Config) addIMUReading(
 				config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
 			}
 			//tryAddIMUReadingUntilSuccess(ctx, sr, tsr.ReadingTime, *config)
-			config.CurrentData.imuTime = tsr.ReadingTime
-			config.CurrentData.imuData = sr
-			fmt.Printf("Updating current data imu: %v\n", tsr.ReadingTime)
-			time.Sleep(time.Duration(50) * time.Millisecond)
+			if config.CurrentData.imuTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
+				config.CurrentData.imuTime = tsr.ReadingTime
+				config.CurrentData.imuData = sr
+				fmt.Printf("Updating current data imu: %v\n", tsr.ReadingTime.Unix())
+			} else {
+				fmt.Println("DROPPING IMU DATA")
+				config.File.Write([]byte(fmt.Sprintf("Dropping IMU Data: %v\n", tsr.ReadingTime.Unix())))
+			}
+			time.Sleep(time.Duration(5) * time.Millisecond)
 		}
 	} else {
 		tsr, err := config.IMU.TimedIMUSensorReading(ctx)
