@@ -59,19 +59,11 @@ func testCartographerPosition(t *testing.T, svc slam.Service, expectedComponentR
 	tolerancePos := 0.001
 	toleranceOri := 0.001
 
-	if useIMU {
-		expectedPosOSX = r3.Vector{X: 31.26644008021215, Y: -0.07725723487584407, Z: 0}
-		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
+	expectedPosOSX = r3.Vector{X: 155.7488316264227, Y: -90.25868252233964, Z: 0}
+	expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
 
-		expectedOriOSX = &spatialmath.R4AA{Theta: 1.6909088187060277, RX: 0.8939401250703025, RY: 0.11300993950972898, RZ: 0.43370474560615474}
-		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
-	} else {
-		expectedPosOSX = r3.Vector{X: 155.7488316264227, Y: -90.25868252233964, Z: 0}
-		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
-
-		expectedOriOSX = &spatialmath.R4AA{Theta: 1.5465081272043815, RX: 0, RY: 0, RZ: 1}
-		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
-	}
+	expectedOriOSX = &spatialmath.R4AA{Theta: 1.5465081272043815, RX: 0, RY: 0, RZ: 1}
+	expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
 
 	position, componentRef, err := svc.GetPosition(context.Background())
 	test.That(t, err, test.ShouldBeNil)
