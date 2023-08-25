@@ -233,8 +233,6 @@ func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.T
 		return err
 	}
 
-	time.Sleep(time.Millisecond * 10)
-
 	return nil
 }
 

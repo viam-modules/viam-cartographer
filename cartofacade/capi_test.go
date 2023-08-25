@@ -172,7 +172,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 
 		test.That(t, err, test.ShouldBeNil)
 
-		algoCfg := GetTestAlgoConfig()
+		algoCfg := GetTestAlgoConfig(false)
 		vc, err := NewCarto(cfg, algoCfg, &CartoLibMock{})
 
 		// initialize viam_carto with an invalid library incorrectly
@@ -185,7 +185,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
-		algoCfg = GetTestAlgoConfig()
+		algoCfg = GetTestAlgoConfig(false)
 		vc, err = NewCarto(cfg, algoCfg, &pvcl)
 
 		// initialize viam_carto correctly
@@ -367,12 +367,11 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		// test invalid IMU enabling configuration
-		algoCfg := GetTestAlgoConfig()
+		algoCfg := GetTestAlgoConfig(true)
 		vc, err := NewCarto(cfg, algoCfg, &pvcl)
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_IMU_ENABLED_INVALID"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
-		algoCfg.UseIMUData = true
 		vc, err = NewCarto(cfg, algoCfg, &pvcl)
 
 		// initialize viam_carto correctly
