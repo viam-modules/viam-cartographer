@@ -202,7 +202,7 @@ func ValidateGetIMUData(
 
 // TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether it was a replay sensor or not.
 func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error) {
-	replay := false
+	live := true
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	readingPc, err := lidar.lidar.NextPointCloud(ctxWithMetadata)
 	if err != nil {
@@ -220,13 +220,13 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSenso
 
 	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 	if ok {
-		replay = true
+		live = false
 		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 		if err != nil {
 			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 		}
 	}
-	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: !live}, nil
 }
 
 // TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.

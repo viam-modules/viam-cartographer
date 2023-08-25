@@ -12,6 +12,7 @@ import (
 
 	"github.com/edaniels/golog"
 	"go.viam.com/rdk/components/camera/replaypcd"
+	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/sensors"
@@ -218,7 +219,6 @@ func (config *Config) addIMUReading(
 					config.Logger.Warn("could not right to data ingestion log file")
 				}
 			}
-			// time.Sleep(time.Millisecond)
 		} else {
 			time.Sleep(time.Millisecond)
 		}
@@ -274,13 +274,11 @@ func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readi
 // getTimedIMUSensorReading returns the next imu reading if available along with a status denoting if the end of dataset as been reached.
 func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
-	// Fully implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
 		if config.LidarDataRateMsec == 0 {
-			return tsr, true, err
-			// return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
+			return tsr, strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error()), err
 		}
 		return tsr, false, err
 	}

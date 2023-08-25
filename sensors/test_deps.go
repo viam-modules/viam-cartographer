@@ -9,6 +9,7 @@ import (
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/components/camera/replaypcd"
 	"go.viam.com/rdk/components/movementsensor"
+	"go.viam.com/rdk/components/movementsensor/replay"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
@@ -50,12 +51,18 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 	switch imuName {
 	case "good_imu":
 		deps[movementsensor.Named(imuName)] = getGoodIMU()
+	case "replay_imu":
+		deps[movementsensor.Named(imuName)] = getReplayIMU(TestTime)
+	case "invalid_replay_imu":
+		deps[movementsensor.Named(imuName)] = getReplayIMU(BadTime)
 	case "imu_with_erroring_functions":
 		deps[movementsensor.Named(imuName)] = getIMUWithErroringFunctions()
 	case "imu_with_invalid_properties":
 		deps[movementsensor.Named(imuName)] = getIMUWithInvalidProperties()
 	case "gibberish_imu":
 		return deps
+	case "finished_replay_imu":
+		deps[movementsensor.Named(imuName)] = getFinishedReplayIMU()
 	}
 
 	return deps
@@ -174,14 +181,44 @@ func getFinishedReplayLidar() *inject.Camera {
 
 func getGoodIMU() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
-	vec := r3.NewPreciseVector(1, 1, 1).Vector()
+
+	linAcc := r3.Vector{X: 1, Y: 1, Z: 1}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return vec, nil
+		return linAcc, nil
 	}
+	angVel := spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return spatialmath.PointAngVel(vec, vec), nil
+		return angVel, nil
 	}
 
+	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			LinearAccelerationSupported: true,
+		}, nil
+	}
+	return imu
+}
+
+func getReplayIMU(testTime string) *inject.MovementSensor {
+	imu := &inject.MovementSensor{}
+
+	linAcc := r3.Vector{X: 1, Y: 1, Z: 1}
+	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
+		}
+		return linAcc, nil
+	}
+	angVel := spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
+	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
+		}
+		return angVel, nil
+	}
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    true,
@@ -210,18 +247,39 @@ func getIMUWithErroringFunctions() *inject.MovementSensor {
 
 func getIMUWithInvalidProperties() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
-	vec := r3.NewPreciseVector(1, 1, 1).Vector()
+
+	linAcc := r3.Vector{X: 1, Y: 1, Z: 1}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return vec, nil
+		return linAcc, nil
 	}
+
+	angVel := spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return spatialmath.PointAngVel(vec, vec), nil
+		return angVel, nil
 	}
 
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    false,
 			LinearAccelerationSupported: false,
+		}, nil
+	}
+	return imu
+}
+
+func getFinishedReplayIMU() *inject.MovementSensor {
+	imu := &inject.MovementSensor{}
+	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		return r3.Vector{}, replay.ErrEndOfDataset
+	}
+	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		return spatialmath.AngularVelocity{}, replay.ErrEndOfDataset
+	}
+
+	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			LinearAccelerationSupported: true,
 		}, nil
 	}
 	return imu

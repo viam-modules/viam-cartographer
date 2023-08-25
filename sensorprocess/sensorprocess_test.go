@@ -42,8 +42,8 @@ POINTS 0
 DATA binary
 `)
 	expectedIMUReading = cartofacade.IMUReading{
-		LinearAcceleration: r3.Vector{X: 0.5773502691896258, Y: 0.5773502691896258, Z: 0.5773502691896258},
-		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
+		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
+		AngularVelocity:    spatialmath.AngularVelocity{X: 0.017453292519943295, Y: 0.008726646259971648, Z: 0},
 	}
 	errUnknown = errors.New("unknown error")
 )
@@ -766,6 +766,7 @@ func TestAddLidarReading(t *testing.T) {
 		config.LidarName = replaySensor.Name
 		config.LidarDataRateMsec = 0
 
+		_ = config.addLidarReading(ctx) // first call gets data
 		jobDone := config.addLidarReading(ctx)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 		test.That(t, jobDone, test.ShouldBeFalse)
@@ -828,86 +829,91 @@ func TestAddIMUReading(t *testing.T) {
 	})
 
 	// TODO: once test replay_imus exist https://viam.atlassian.net/browse/RSDK-4556
-	// t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-	// 	movementsensor := "invalid_replay_imu"
-	// 	invalidIMUTestHelper(
-	// 		ctx,
-	// 		t,
-	// 		cf,
-	// 		config,
-	// 		10,
-	// 		movementsensor,
-	// 		10,
-	// 	)
-	// })
+	t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
+		movementsensor := "invalid_replay_imu"
+		invalidIMUTestHelper(
+			ctx,
+			t,
+			cf,
+			config,
+			10,
+			movementsensor,
+			10,
+		)
+	})
 
-	// t.Run("replay sensor adds IMU data until success in offline mode", func(t *testing.T) {
-	// 	movementsensor := "replay_imu"
-	// 	logger := golog.NewTestLogger(t)
-	// 	replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
-	// 	test.That(t, err, test.ShouldBeNil)
+	t.Run("replay sensor adds IMU data until success in offline mode", func(t *testing.T) {
+		movementsensor := "replay_imu"
+		logger := golog.NewTestLogger(t)
+		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		test.That(t, err, test.ShouldBeNil)
 
-	// 	var calls []addIMUReadingArgs
-	// 	cf.AddIMUReadingFunc = func(
-	// 		ctx context.Context,
-	// 		timeout time.Duration,
-	// 		sensorName string,
-	// 		currentReading cartofacade.IMUReading,
-	// 		readingTimestamp time.Time,
-	// 	) error {
-	// 		args := addIMUReadingArgs{
-	// 			timeout:          timeout,
-	// 			sensorName:       sensorName,
-	// 			currentReading:   currentReading,
-	// 			readingTimestamp: readingTimestamp,
-	// 		}
-	// 		calls = append(calls, args)
-	// 		if len(calls) == 1 {
-	// 			return errUnknown
-	// 		}
-	// 		if len(calls) == 2 {
-	// 			return cartofacade.ErrUnableToAcquireLock
-	// 		}
-	// 		return nil
-	// 	}
-	// 	config.IMU = replayIMU
-	// 	config.IMUName = replayIMU.Name
-	// 	config.IMUDataRateMsec = 0
+		var calls []addIMUReadingArgs
+		cf.AddIMUReadingFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+			sensorName string,
+			currentReading cartofacade.IMUReading,
+			readingTimestamp time.Time,
+		) error {
+			args := addIMUReadingArgs{
+				timeout:          timeout,
+				sensorName:       sensorName,
+				currentReading:   currentReading,
+				readingTimestamp: readingTimestamp,
+			}
+			calls = append(calls, args)
+			if len(calls) == 1 {
+				return errUnknown
+			}
+			if len(calls) == 2 {
+				return cartofacade.ErrUnableToAcquireLock
+			}
+			return nil
+		}
+		config.IMU = replayIMU
+		config.IMUName = replayIMU.Name
+		config.IMUDataRateMsec = 0
+		config.LidarDataRateMsec = 0
+		config.nextData.lidarTime = time.Now()
+		config.started = true
 
-	// 	jobDone := addIMUReading(ctx, config)
-	// 	test.That(t, len(calls), test.ShouldEqual, 3)
-	// 	test.That(t, jobDone, test.ShouldBeFalse)
+		_ = config.addIMUReading(ctx) // first call gets data
+		jobDone := config.addIMUReading(ctx)
+		test.That(t, len(calls), test.ShouldEqual, 3)
+		test.That(t, jobDone, test.ShouldBeFalse)
 
-	// 	firstTimestamp := calls[0].readingTimestamp
-	// 	for i, call := range calls {
-	// 		t.Logf("call %d", i)
-	// 		test.That(t, call.sensorName, test.ShouldResemble, "replay_imu")
-	// 		test.That(t, call.currentReading, test.ShouldResemble, expectedIMUReading)
-	// 		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
-	// 		test.That(t, call.readingTimestamp, test.ShouldEqual, firstTimestamp)
-	// 	}
-	// })
+		firstTimestamp := calls[0].readingTimestamp
+		for i, call := range calls {
+			t.Logf("call %d", i)
+			test.That(t, call.sensorName, test.ShouldResemble, "replay_imu")
+			test.That(t, call.currentReading, test.ShouldResemble, expectedIMUReading)
+			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+			test.That(t, call.readingTimestamp, test.ShouldEqual, firstTimestamp)
+		}
+	})
 
-	// t.Run("online replay IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-	// 	onlineModeIMUTestHelper(ctx, t, config, cf, "replay_imu")
-	// })
+	t.Run("online replay IMU adds sensor reading once and ignores errors", func(t *testing.T) {
+		onlineModeIMUTestHelper(ctx, t, config, cf, "replay_imu")
+	})
 
 	t.Run("online IMU adds sensor reading once and ignores errors", func(t *testing.T) {
 		onlineModeIMUTestHelper(ctx, t, config, cf, "good_imu")
 	})
 
-	// t.Run("returns true when IMU returns an error that it reached end of dataset", func(t *testing.T) {
-	// 	movementsensor := "finished_replay_imu"
-	// 	logger := golog.NewTestLogger(t)
-	// 	replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
-	// 	test.That(t, err, test.ShouldBeNil)
+	t.Run("returns true when IMU returns an error that it reached end of dataset", func(t *testing.T) {
+		movementsensor := "finished_replay_imu"
+		logger := golog.NewTestLogger(t)
+		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		test.That(t, err, test.ShouldBeNil)
 
-	// 	config.IMU = replayIMU
-	// 	config.IMUDataRateMsec = 0
+		config.IMU = replayIMU
+		config.IMUDataRateMsec = 0
+		config.nextData.lidarTime = time.Now()
 
-	// 	jobDone := addIMUReading(ctx, config)
-	// 	test.That(t, jobDone, test.ShouldBeTrue)
-	// })
+		jobDone := config.addIMUReading(ctx)
+		test.That(t, jobDone, test.ShouldBeTrue)
+	})
 }
 
 func TestStartLidar(t *testing.T) {
@@ -951,45 +957,45 @@ func TestStartLidar(t *testing.T) {
 	})
 }
 
-// test not needed until replay movementsensor is implemented, see https://viam.atlassian.net/browse/RSDK-4111
+func TestStartIMU(t *testing.T) {
+	logger := golog.NewTestLogger(t)
+	cf := cartofacade.Mock{}
 
-// func TestStartIMU(t *testing.T) {
-// 	logger := golog.NewTestLogger(t)
-// 	cf := cartofacade.Mock{}
+	config := Config{
+		Logger:          logger,
+		CartoFacade:     &cf,
+		IMUDataRateMsec: 50,
+		Timeout:         10 * time.Second,
+	}
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
-// 	config := Config{
-// 		Logger:          logger,
-// 		CartoFacade:     &cf,
-// 		IMUDataRateMsec: 50,
-// 		Timeout:         10 * time.Second,
-// 	}
-// 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+	t.Run("returns true when IMU returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
+		movementsensor := "finished_replay_imu"
+		logger := golog.NewTestLogger(t)
+		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		test.That(t, err, test.ShouldBeNil)
 
-// t.Run("returns true when IMU returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
-// 	movementsensor := "finished_replay_imu"
-// 	logger := golog.NewTestLogger(t)
-// 	replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
-// 	test.That(t, err, test.ShouldBeNil)
+		config.IMU = replaySensor
+		config.IMUDataRateMsec = 0
+		config.nextData.lidarTime = time.Now()
 
-// 	config.IMU = replaySensor
-// 	config.IMUDataRateMsec = 0
+		jobDone := config.StartIMU(context.Background())
+		test.That(t, jobDone, test.ShouldBeTrue)
+	})
 
-// 	jobDone := StartIMU(context.Background(), config)
-// 	test.That(t, jobDone, test.ShouldBeTrue)
-// })
+	t.Run("returns false when IMU returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
+		movementsensor := "finished_replay_imu"
+		logger := golog.NewTestLogger(t)
+		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		test.That(t, err, test.ShouldBeNil)
 
-// 	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
-// 		cam := "finished_replay_lidar"
-// 		logger := golog.NewTestLogger(t)
-// 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
-// 		test.That(t, err, test.ShouldBeNil)
+		config.IMU = replaySensor
+		config.IMUDataRateMsec = 0
+		config.nextData.lidarTime = time.Now()
 
-// 		config.Lidar = replaySensor
-// 		config.LidarDataRateMsec = 0
+		cancelFunc()
 
-// 		cancelFunc()
-
-// 		jobDone := StartLidar(cancelCtx, config)
-// 		test.That(t, jobDone, test.ShouldBeFalse)
-// 	})
-// }
+		jobDone := config.StartLidar(cancelCtx)
+		test.That(t, jobDone, test.ShouldBeFalse)
+	})
+}
