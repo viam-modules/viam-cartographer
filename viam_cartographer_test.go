@@ -169,30 +169,30 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	// t.Run("Failed creation of cartographer slam service with invalid sensor "+
-	// 	"that errors during call to Properties", func(t *testing.T) {
-	// 	termFunc := testhelper.InitTestCL(t, logger)
-	// 	defer termFunc()
+	t.Run("Failed creation of cartographer slam service with invalid sensor "+
+		"that errors during call to Properties", func(t *testing.T) {
+		termFunc := testhelper.InitTestCL(t, logger)
+		defer termFunc()
 
-	// 	dataDirectory, err := os.MkdirTemp("", "*")
-	// 	test.That(t, err, test.ShouldBeNil)
-	// 	defer func() {
-	// 		err := os.RemoveAll(dataDirectory)
-	// 		test.That(t, err, test.ShouldBeNil)
-	// 	}()
+		dataDirectory, err := os.MkdirTemp("", "*")
+		test.That(t, err, test.ShouldBeNil)
+		defer func() {
+			err := os.RemoveAll(dataDirectory)
+			test.That(t, err, test.ShouldBeNil)
+		}()
 
-	// 	attrCfg := &vcConfig.Config{
-	// 		Sensors:       []string{"lidar_with_invalid_properties"},
-	// 		ConfigParams:  map[string]string{"mode": "2d"},
-	// 		DataDirectory: dataDirectory,
-	// 		DataRateMsec:  &testDataRateMsec,
-	// 	}
+		attrCfg := &vcConfig.Config{
+			Sensors:       []string{"lidar_with_invalid_properties"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			DataRateMsec:  &testDataRateMsec,
+		}
 
-	// 	_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
-	// 	test.That(t, err, test.ShouldBeError,
+		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
+		test.That(t, err, test.ShouldBeError,
 
-	// 		errors.New("configuring lidar camera error: 'camera' must support PCD"))
-	// })
+			errors.New("configuring lidar camera error: 'camera' must support PCD"))
+	})
 
 	t.Run("Failed creation of cartographer slam service with bad sensor "+
 		"that errors during call to NextPointCloud", func(t *testing.T) {

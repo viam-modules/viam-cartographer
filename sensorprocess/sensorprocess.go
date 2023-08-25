@@ -22,18 +22,18 @@ var undefinedIMU = cartofacade.IMUReading{}
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	LogFile           *os.File
-	CartoFacade       cartofacade.Interface
-	Lidar             sensors.TimedLidarSensor
-	LidarName         string
-	LidarDataRateMsec int
-	IMU               sensors.TimedIMUSensor
-	IMUName           string
-	IMUDataRateMsec   int
-	Timeout           time.Duration
-	Logger            golog.Logger
-	nextData          nextData
-	started           bool
+	DataIngestionLogFile *os.File
+	CartoFacade          cartofacade.Interface
+	Lidar                sensors.TimedLidarSensor
+	LidarName            string
+	LidarDataRateMsec    int
+	IMU                  sensors.TimedIMUSensor
+	IMUName              string
+	IMUDataRateMsec      int
+	Timeout              time.Duration
+	Logger               golog.Logger
+	nextData             nextData
+	started              bool
 }
 
 // nextData stores the next data to be added to cartographer along with its associated timestamp so that,
@@ -115,7 +115,8 @@ func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, reading
 		default:
 			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
-				_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())))
+				_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Success \t \t | %v \n",
+					readingTime, readingTime.Unix())))
 				if err != nil {
 					config.Logger.Warn("could not right to data ingestion log file")
 				}
@@ -124,7 +125,8 @@ func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, reading
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())))
+			_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Failure \t \t | %v \n",
+				readingTime, readingTime.Unix())))
 			if err != nil {
 				config.Logger.Warn("could not right to data ingestion log file")
 			}
@@ -214,7 +216,8 @@ func (config *Config) addIMUReading(
 				config.nextData.imuTime = tsr.ReadingTime
 				config.nextData.imuData = sr
 			} else {
-				_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t | IMU | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())))
+				_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t | IMU | Dropping data \t \t | %v \n",
+					tsr.ReadingTime, tsr.ReadingTime.Unix())))
 				if err != nil {
 					config.Logger.Warn("could not right to data ingestion log file")
 				}
@@ -239,7 +242,8 @@ func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMURe
 		default:
 			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
 			if err == nil {
-				_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())))
+				_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Success \t \t | %v \n",
+					readingTime, readingTime.Unix())))
 				if err != nil {
 					config.Logger.Warn("could not right to data ingestion log file")
 				}
@@ -248,7 +252,8 @@ func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMURe
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())))
+			_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Failure \t \t | %v \n",
+				readingTime, readingTime.Unix())))
 			if err != nil {
 				config.Logger.Warn("could not right to data ingestion log file")
 			}
