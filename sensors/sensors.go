@@ -4,7 +4,6 @@ package sensors
 import (
 	"bytes"
 	"context"
-	"math"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -16,6 +15,7 @@ import (
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
+	rutils "go.viam.com/rdk/utils"
 	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
 )
@@ -251,7 +251,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 
 	return TimedIMUSensorReadingResponse{
 		LinearAcceleration: linAcc,
-		AngularVelocity:    spatialmath.AngularVelocity{X: angVel.X * 2 * math.Pi / 360, Y: angVel.X * 2 * math.Pi / 360, Z: angVel.X * 2 * math.Pi / 360},
+		AngularVelocity:    spatialmath.AngularVelocity{X: rutils.DegToRad(angVel.X), Y: rutils.DegToRad(angVel.Y), Z: rutils.DegToRad(angVel.Z)},
 		ReadingTime:        readingTime, Replay: replay,
 	}, nil
 }

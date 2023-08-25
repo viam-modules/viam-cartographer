@@ -121,15 +121,9 @@ func TerminateCartoLib() error {
 	return cartoLib.Terminate()
 }
 
-func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) *os.File {
-	fo, err := os.Create("/Users/jeremyhyde/Development/viam-cartographer/outputTimeLogs_fixed.txt")
-	if err != nil {
-		panic(err)
-	}
-	fo.Write([]byte("Starting...\n"))
+func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
 
 	spConfig := sensorprocess.Config{
-		File:              fo,
 		CartoFacade:       cartoSvc.cartofacade,
 		Lidar:             cartoSvc.lidar.timed,
 		LidarName:         cartoSvc.lidar.name,
@@ -139,6 +133,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		IMUDataRateMsec:   cartoSvc.imu.dataRateMsec,
 		Timeout:           cartoSvc.cartoFacadeTimeout,
 		Logger:            cartoSvc.logger,
+		LogFile:           cartoSvc.DataIngestionLogFile,
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
@@ -150,17 +145,17 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		}
 	}()
 
-	// if spConfig.IMUName != "" {
-	// 	cartoSvc.sensorProcessWorkers.Add(1)
-	// 	go func() {
-	// 		defer cartoSvc.sensorProcessWorkers.Done()
-	// 		if jobDone := spConfig.StartIMU(cancelCtx); jobDone {
-	// 			cartoSvc.jobDone.Store(true)
-	// 			cartoSvc.cancelSensorProcessFunc()
-	// 		}
-	// 	}()
-	// }
-	return fo
+	if spConfig.IMUName != "" {
+		cartoSvc.sensorProcessWorkers.Add(1)
+		go func() {
+			defer cartoSvc.sensorProcessWorkers.Done()
+			if jobDone := spConfig.StartIMU(cancelCtx); jobDone {
+				cartoSvc.jobDone.Store(true)
+				cartoSvc.cancelSensorProcessFunc()
+			}
+		}()
+	}
+	return
 }
 
 // New returns a new slam service for the given robot.
@@ -258,6 +253,10 @@ func New(
 		timed:        timedIMU,
 	}
 
+	if lidar.dataRateMsec == 0 && imu.dataRateMsec != 0 {
+		logger.Warn("In offline mode, but IMU data frequency is nonzero")
+	}
+
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
 		Named:                         c.ResourceName().AsNamed(),
@@ -312,9 +311,14 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	fo := initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
-	cartoSvc.File = fo
+	// REMOVE BEFORE PUSH
+	cartoSvc.DataIngestionLogFile, err = os.Create("/Users/jeremyhyde/Development/viam-cartographer/dataIngestion.txt")
+	if err != nil {
+		cartoSvc.logger.Warn("failed to generate data ingestion log file")
+	}
+
+	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
 }
@@ -486,7 +490,7 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 }
 
 func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
-	_ = cartoSvc.File.Close()
+	_ = cartoSvc.DataIngestionLogFile.Close()
 
 	if cartoSvc.cartofacade == nil {
 		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
@@ -554,13 +558,10 @@ type CartographerService struct {
 	sensorValidationIntervalSec   int
 	jobDone                       atomic.Bool
 
-	cloudStoryEnabled bool
-	enableMapping     bool
-	existingMap       string
-	File              *os.File
-
-	offsetLinearAcceleration r3.Vector
-	offsetAngularVelocity    spatialmath.AngularVelocity
+	cloudStoryEnabled    bool
+	enableMapping        bool
+	existingMap          string
+	DataIngestionLogFile *os.File
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,

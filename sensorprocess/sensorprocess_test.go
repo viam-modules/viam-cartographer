@@ -510,15 +510,15 @@ func onlineModeLidarTestHelper(
 	config.LidarName = onlineSensor.Name
 	config.LidarDataRateMsec = 10
 
-	jobDone := addLidarReading(ctx, config)
+	jobDone := config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addLidarReading(ctx, config)
+	jobDone = config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 2)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addLidarReading(ctx, config)
+	jobDone = config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 3)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
@@ -586,15 +586,15 @@ func onlineModeIMUTestHelper(
 	// set lidar data rate to signify that we are in online mode
 	config.LidarDataRateMsec = 10
 
-	jobDone := addIMUReading(ctx, config)
+	jobDone := config.addIMUReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addIMUReading(ctx, config)
+	jobDone = config.addIMUReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 2)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
-	jobDone = addIMUReading(ctx, config)
+	jobDone = config.addIMUReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 3)
 	test.That(t, jobDone, test.ShouldBeFalse)
 
@@ -652,7 +652,7 @@ func invalidLidarTestHelper(
 	config.LidarName = lidar.Name
 	config.LidarDataRateMsec = lidarDataRateMsec
 
-	jobDone := addLidarReading(ctx, config)
+	jobDone := config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 0)
 	test.That(t, jobDone, test.ShouldBeFalse)
 }
@@ -692,7 +692,7 @@ func invalidIMUTestHelper(
 	config.IMUName = imu.Name
 	config.IMUDataRateMsec = imuDataRateMsec
 
-	jobDone := addIMUReading(ctx, config)
+	jobDone := config.addIMUReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 0)
 	test.That(t, jobDone, test.ShouldBeFalse)
 }
@@ -766,7 +766,7 @@ func TestAddLidarReading(t *testing.T) {
 		config.LidarName = replaySensor.Name
 		config.LidarDataRateMsec = 0
 
-		jobDone := addLidarReading(ctx, config)
+		jobDone := config.addLidarReading(ctx)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 		test.That(t, jobDone, test.ShouldBeFalse)
 
@@ -797,7 +797,7 @@ func TestAddLidarReading(t *testing.T) {
 		config.Lidar = replaySensor
 		config.LidarDataRateMsec = 0
 
-		jobDone := addLidarReading(ctx, config)
+		jobDone := config.addLidarReading(ctx)
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 }
@@ -931,7 +931,7 @@ func TestStartLidar(t *testing.T) {
 		config.Lidar = replaySensor
 		config.LidarDataRateMsec = 0
 
-		jobDone := StartLidar(context.Background(), config)
+		jobDone := config.StartLidar(context.Background())
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 
@@ -946,7 +946,7 @@ func TestStartLidar(t *testing.T) {
 
 		cancelFunc()
 
-		jobDone := StartLidar(cancelCtx, config)
+		jobDone := config.StartLidar(cancelCtx)
 		test.That(t, jobDone, test.ShouldBeFalse)
 	})
 }
