@@ -11,17 +11,13 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
-	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/components/camera/replaypcd"
-	"go.viam.com/rdk/spatialmath"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/sensors"
 )
 
-var (
-	undefinedIMU = cartofacade.IMUReading{}
-)
+var undefinedIMU = cartofacade.IMUReading{}
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
@@ -36,8 +32,6 @@ type Config struct {
 	Timeout           time.Duration
 	Logger            golog.Logger
 	CurrentData       currentData
-	offsetAV          spatialmath.AngularVelocity
-	offsetLA          r3.Vector
 }
 
 type currentData struct {
@@ -86,7 +80,6 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
-
 	} else {
 		// only add the stored lidar data and begin processing the next one, if the stored imu data occurs after it.
 		if config.IMUName == "" || config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds() <= 0 {
@@ -110,7 +103,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			} else {
 				config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())))
 			}
-			//time.Sleep(time.Millisecond)
+			// time.Sleep(time.Millisecond)
 		} else {
 			time.Sleep(time.Millisecond)
 		}
@@ -207,7 +200,6 @@ func (config *Config) addIMUReading(
 
 		timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, *config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-
 	} else {
 		// only add the stored imu data and begin processing the next one, if the stored lidar data occurs after it.
 		if config.CurrentData.imuTime.Sub(config.CurrentData.lidarTime).Milliseconds() < 0 {
@@ -243,7 +235,7 @@ func (config *Config) addIMUReading(
 			} else {
 				config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())))
 			}
-			//time.Sleep(time.Millisecond)
+			// time.Sleep(time.Millisecond)
 		} else {
 			time.Sleep(time.Millisecond)
 		}

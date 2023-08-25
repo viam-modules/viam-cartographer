@@ -122,7 +122,6 @@ func TerminateCartoLib() error {
 }
 
 func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
-
 	spConfig := sensorprocess.Config{
 		CartoFacade:       cartoSvc.cartofacade,
 		Lidar:             cartoSvc.lidar.timed,
@@ -155,7 +154,6 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 			}
 		}()
 	}
-	return
 }
 
 // New returns a new slam service for the given robot.
@@ -313,7 +311,7 @@ func New(
 	}
 
 	// REMOVE BEFORE PUSH
-	cartoSvc.DataIngestionLogFile, err = os.Create("/Users/jeremyhyde/Development/viam-cartographer/dataIngestion.txt")
+	cartoSvc.DataIngestionLogFile, err = os.Create(cartoSvc.dataDirectory + "/dataIngestion.txt")
 	if err != nil {
 		cartoSvc.logger.Warn("failed to generate data ingestion log file")
 	}
