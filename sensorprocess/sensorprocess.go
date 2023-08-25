@@ -31,10 +31,13 @@ type Config struct {
 	IMUDataRateMsec   int
 	Timeout           time.Duration
 	Logger            golog.Logger
-	CurrentData       currentData
+	nextData          nextData
+	started           bool
 }
 
-type currentData struct {
+// nextData stores the next data to be added to cartographer along with its associated timestamp so that,
+// in offline mode, data from multiple sensors can be added in order
+type nextData struct {
 	lidarTime time.Time
 	lidarData []byte
 	imuTime   time.Time
@@ -67,43 +70,32 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 	*/
 	if config.LidarDataRateMsec != 0 {
 		// get next lidar data response
-		tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
+		tsr, status, err := getTimedLidarSensorReading(ctx, config)
 		if err != nil {
-			config.Logger.Warn(err)
-			// only end the sensor process if we are in offline mode
-			if config.LidarDataRateMsec == 0 {
-				return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
-			}
-			return false
+			return status
 		}
 
+		// sleep remainder of time interval
 		timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
+
 	} else {
-		// only add the stored lidar data and begin processing the next one, if the stored imu data occurs after it.
-		if config.IMUName == "" || config.CurrentData.lidarTime.Sub(config.CurrentData.imuTime).Milliseconds() <= 0 {
-			if config.CurrentData.lidarData != nil {
-				tryAddLidarReadingUntilSuccess(ctx, config.CurrentData.lidarData, config.CurrentData.lidarTime, *config)
+		// add the stored lidar data and begin processing the next one, if no imu exists or the currently stored imu data occurs after it.
+		if config.IMUName == "" || config.nextData.lidarTime.Sub(config.nextData.imuTime).Milliseconds() <= 0 {
+			if config.nextData.lidarData != nil {
+				tryAddLidarReadingUntilSuccess(ctx, config.nextData.lidarData, config.nextData.lidarTime, *config)
+				config.started = true
 			}
 			// get next lidar data response
-			tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
+			tsr, status, err := getTimedLidarSensorReading(ctx, config)
 			if err != nil {
-				config.Logger.Warn(err)
-				// only end the sensor process if we are in offline mode
-				if config.LidarDataRateMsec == 0 {
-					return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
-				}
-				return false
+				return status
 			}
-			// update current lidar data and time
-			if config.CurrentData.lidarTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
-				config.CurrentData.lidarTime = tsr.ReadingTime
-				config.CurrentData.lidarData = tsr.Reading
-			} else {
-				config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())))
-			}
-			// time.Sleep(time.Millisecond)
+
+			config.nextData.lidarTime = tsr.ReadingTime
+			config.nextData.lidarData = tsr.Reading
+
 		} else {
 			time.Sleep(time.Millisecond)
 		}
@@ -178,48 +170,30 @@ func (config *Config) addIMUReading(
 	*/
 	if config.LidarDataRateMsec != 0 {
 		// get next imu data response
-		tsr, err := config.IMU.TimedIMUSensorReading(ctx)
-		// Fully implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
+		tsr, status, err := getTimedIMUSensorReading(ctx, config)
 		if err != nil {
-			config.Logger.Warn(err)
-			// only end the sensor process if we are in offline mode
-			if config.LidarDataRateMsec == 0 {
-				if config.IMUDataRateMsec != 0 {
-					config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
-				}
-				return true
-				// return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
-			}
-			return false
+			return status
 		}
 
+		// parse imu reading
 		sr := cartofacade.IMUReading{
 			LinearAcceleration: tsr.LinearAcceleration,
 			AngularVelocity:    tsr.AngularVelocity,
 		}
 
+		// sleep remainder of time interval
 		timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, *config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	} else {
-		// only add the stored imu data and begin processing the next one, if the stored lidar data occurs after it.
-		if config.CurrentData.imuTime.Sub(config.CurrentData.lidarTime).Milliseconds() < 0 {
-			if config.CurrentData.imuData != undefinedIMU {
-				tryAddIMUReadingUntilSuccess(ctx, config.CurrentData.imuData, config.CurrentData.imuTime, *config)
+		// add the stored imu data and begin processing the next one, if the currently stored lidar data occurs after it.
+		if config.nextData.imuTime.Sub(config.nextData.lidarTime).Milliseconds() < 0 {
+			if config.started && config.nextData.imuData != undefinedIMU {
+				tryAddIMUReadingUntilSuccess(ctx, config.nextData.imuData, config.nextData.imuTime, *config)
 			}
 			// get next imu data response
-			tsr, err := config.IMU.TimedIMUSensorReading(ctx)
-			// Fully implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
+			tsr, status, err := getTimedIMUSensorReading(ctx, config)
 			if err != nil {
-				config.Logger.Warn(err)
-				// only end the sensor process if we are in offline mode
-				if config.LidarDataRateMsec == 0 {
-					if config.IMUDataRateMsec != 0 {
-						config.Logger.Warn("In offline mode, but IMU data frequency is nonzero")
-					}
-					return true
-					// return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
-				}
-				return false
+				return status
 			}
 
 			// parse imu reading
@@ -229,9 +203,9 @@ func (config *Config) addIMUReading(
 			}
 
 			// update current imu data and time
-			if config.CurrentData.imuTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
-				config.CurrentData.imuTime = tsr.ReadingTime
-				config.CurrentData.imuData = sr
+			if config.nextData.imuTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
+				config.nextData.imuTime = tsr.ReadingTime
+				config.nextData.imuData = sr
 			} else {
 				config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())))
 			}
@@ -280,4 +254,34 @@ func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readi
 	}
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(config.IMUDataRateMsec-timeElapsedMs)))
+}
+
+// getTimedIMUSensorReading returns the next imu reading if available along with a status denoting if the end of dataset as been reached
+func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
+	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
+	// Fully implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
+	if err != nil {
+		config.Logger.Warn(err)
+		// only end the sensor process if we are in offline mode
+		if config.LidarDataRateMsec == 0 {
+			return tsr, true, err
+			// return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
+		}
+		return tsr, false, err
+	}
+	return tsr, false, err
+}
+
+// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the end of dataset as been reached
+func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
+	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
+	if err != nil {
+		config.Logger.Warn(err)
+		// only end the sensor process if we are in offline mode
+		if config.LidarDataRateMsec == 0 {
+			return tsr, strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()), err
+		}
+		return tsr, false, err
+	}
+	return tsr, false, err
 }

@@ -4,6 +4,7 @@ package sensors
 import (
 	"bytes"
 	"context"
+	"math"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -15,9 +16,13 @@ import (
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
-	rutils "go.viam.com/rdk/utils"
+	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
+)
+
+var (
+	defaultTime = time.Time{}
 )
 
 // Lidar represents a LIDAR sensor.
@@ -226,32 +231,65 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSenso
 // IMU Sensors currently do not support replay capabilities.
 func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error) {
 	replay := false
-	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-	linAcc, err := imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
-	if err != nil {
-		msg := "LinearAcceleration error"
-		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
-	}
-	angVel, err := imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
-	if err != nil {
-		msg := "AngularVelocity error"
-		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
-	}
-	readingTime := time.Now().UTC()
 
-	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-	if ok {
-		replay = true
-		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-		if err != nil {
-			msg := "replay sensor timestamp parse RFC3339Nano error"
-			return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+	var timeLinearAcc, timeAngularVel time.Time
+	var linAcc r3.Vector
+	var angVel spatialmath.AngularVelocity
+	var err error
+	for {
+		select {
+		case <-ctx.Done():
+			return TimedIMUSensorReadingResponse{}, nil
+		default:
+			if timeLinearAcc == defaultTime || timeLinearAcc.Sub(timeAngularVel).Milliseconds() < 0 {
+				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
+				linAcc, err = imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
+				if err != nil {
+					msg := "LinearAcceleration error"
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+				}
+				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+				if ok {
+					replay = true
+					timeLinearAcc, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+					if err != nil {
+						msg := "replay sensor timestamp parse RFC3339Nano error"
+						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+					}
+				}
+			}
+
+			if timeAngularVel == defaultTime || timeAngularVel.Sub(timeLinearAcc).Milliseconds() < 0 {
+				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
+				angVel, err = imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
+				if err != nil {
+					msg := "AngularVelocity error"
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+				}
+				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+				if ok {
+					replay = true
+					timeAngularVel, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+					if err != nil {
+						msg := "replay sensor timestamp parse RFC3339Nano error"
+						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+					}
+				}
+			}
+			if timeLinearAcc != defaultTime && timeAngularVel != defaultTime && math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < 20 {
+				readingTime := timeLinearAcc.Add(timeLinearAcc.Sub(timeAngularVel) / 2)
+
+				return TimedIMUSensorReadingResponse{
+					LinearAcceleration: linAcc,
+					AngularVelocity: spatialmath.AngularVelocity{
+						X: rdkutils.DegToRad(angVel.X),
+						Y: rdkutils.DegToRad(angVel.Y),
+						Z: rdkutils.DegToRad(angVel.Z),
+					},
+					ReadingTime: readingTime,
+					Replay:      replay,
+				}, nil
+			}
 		}
 	}
-
-	return TimedIMUSensorReadingResponse{
-		LinearAcceleration: linAcc,
-		AngularVelocity:    spatialmath.AngularVelocity{X: rutils.DegToRad(angVel.X), Y: rutils.DegToRad(angVel.Y), Z: rutils.DegToRad(angVel.Z)},
-		ReadingTime:        readingTime, Replay: replay,
-	}, nil
 }

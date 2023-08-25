@@ -34,7 +34,7 @@ func TestRequest(t *testing.T) {
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := GetTestAlgoConfig()
+		algoConfig := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 		carto.GetPositionFunc = func() (GetPosition, error) {
 			return GetPosition{}, nil
@@ -60,7 +60,7 @@ func TestRequest(t *testing.T) {
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := GetTestAlgoConfig()
+		algoConfig := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
@@ -86,7 +86,7 @@ func TestRequest(t *testing.T) {
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := GetTestAlgoConfig()
+		algoConfig := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
@@ -114,7 +114,7 @@ func TestRequest(t *testing.T) {
 		defer os.RemoveAll(dir)
 		test.That(t, err, test.ShouldBeNil)
 
-		algoConfig := GetTestAlgoConfig()
+		algoConfig := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
@@ -147,7 +147,7 @@ func TestInitialize(t *testing.T) {
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
 
@@ -174,7 +174,7 @@ func TestStart(t *testing.T) {
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
 
@@ -225,7 +225,7 @@ func TestStop(t *testing.T) {
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
 
@@ -276,7 +276,7 @@ func TestTerminate(t *testing.T) {
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
 
@@ -328,7 +328,7 @@ func TestAddLidarReading(t *testing.T) {
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
 	test.That(t, err, test.ShouldBeNil)
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -390,8 +390,7 @@ func TestAddIMUReading(t *testing.T) {
 
 	cfg, dir, err := GetTestConfig("mylidar", "myIMU")
 	test.That(t, err, test.ShouldBeNil)
-	algoCfg := GetTestAlgoConfig()
-	algoCfg.UseIMUData = true
+	algoCfg := GetTestAlgoConfig(true)
 	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -447,7 +446,7 @@ func TestGetPosition(t *testing.T) {
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
 
@@ -502,7 +501,7 @@ func TestGetInternalState(t *testing.T) {
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
 
@@ -555,7 +554,7 @@ func TestGetPointCloudMap(t *testing.T) {
 	activeBackgroundWorkers := sync.WaitGroup{}
 
 	cfg, dir, err := GetTestConfig("mysensor", "")
-	algoCfg := GetTestAlgoConfig()
+	algoCfg := GetTestAlgoConfig(false)
 	test.That(t, err, test.ShouldBeNil)
 	defer os.RemoveAll(dir)
 
