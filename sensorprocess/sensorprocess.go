@@ -36,7 +36,7 @@ type Config struct {
 }
 
 // nextData stores the next data to be added to cartographer along with its associated timestamp so that,
-// in offline mode, data from multiple sensors can be added in order
+// in offline mode, data from multiple sensors can be added in order.
 type nextData struct {
 	lidarTime time.Time
 	lidarData []byte
@@ -79,7 +79,6 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
-
 	} else {
 		// add the stored lidar data and begin processing the next one, if no imu exists or the currently stored imu data occurs after it.
 		if config.IMUName == "" || config.nextData.lidarTime.Sub(config.nextData.imuTime).Milliseconds() <= 0 {
@@ -95,7 +94,6 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 
 			config.nextData.lidarTime = tsr.ReadingTime
 			config.nextData.lidarData = tsr.Reading
-
 		} else {
 			time.Sleep(time.Millisecond)
 		}
@@ -116,13 +114,19 @@ func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, reading
 		default:
 			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
-				config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())))
+				_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())))
+				if err != nil {
+					config.Logger.Warn("could not right to data ingestion log file")
+				}
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())))
+			_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())))
+			if err != nil {
+				config.Logger.Warn("could not right to data ingestion log file")
+			}
 		}
 	}
 }
@@ -202,12 +206,17 @@ func (config *Config) addIMUReading(
 				AngularVelocity:    tsr.AngularVelocity,
 			}
 
+			// TODO: Remove dropping out of order imu readings after DATA-1812 has been complete
+			// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
 			// update current imu data and time
 			if config.nextData.imuTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
 				config.nextData.imuTime = tsr.ReadingTime
 				config.nextData.imuData = sr
 			} else {
-				config.LogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())))
+				_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t | IMU | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())))
+				if err != nil {
+					config.Logger.Warn("could not right to data ingestion log file")
+				}
 			}
 			// time.Sleep(time.Millisecond)
 		} else {
@@ -230,13 +239,19 @@ func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMURe
 		default:
 			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
 			if err == nil {
-				config.LogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())))
+				_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())))
+				if err != nil {
+					config.Logger.Warn("could not right to data ingestion log file")
+				}
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			config.LogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())))
+			_, err = config.LogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())))
+			if err != nil {
+				config.Logger.Warn("could not right to data ingestion log file")
+			}
 		}
 	}
 }
@@ -256,7 +271,7 @@ func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readi
 	return int(math.Max(0, float64(config.IMUDataRateMsec-timeElapsedMs)))
 }
 
-// getTimedIMUSensorReading returns the next imu reading if available along with a status denoting if the end of dataset as been reached
+// getTimedIMUSensorReading returns the next imu reading if available along with a status denoting if the end of dataset as been reached.
 func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
 	// Fully implement once we support replay movementsensors, see https://viam.atlassian.net/browse/RSDK-4111
@@ -272,7 +287,8 @@ func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.Time
 	return tsr, false, err
 }
 
-// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the end of dataset as been reached
+// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the end of dataset as been
+// reached.
 func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {

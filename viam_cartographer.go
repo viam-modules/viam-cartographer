@@ -314,7 +314,7 @@ func New(
 	cartoSvc.DataIngestionLogFile, err = os.Create("/Users/jeremyhyde/Development/viam-cartographer/dataIngestion.txt")
 	// cartoSvc.DataIngestionLogFile, err = os.Create(cartoSvc.dataDirectory + "/dataIngestion.txt")
 	if err != nil {
-		cartoSvc.logger.Warn("failed to generate data ingestion log file")
+		cartoSvc.logger.Warn("failed to create data ingestion log file")
 	}
 
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
@@ -489,7 +489,10 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 }
 
 func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
-	_ = cartoSvc.DataIngestionLogFile.Close()
+	err := cartoSvc.DataIngestionLogFile.Close()
+	if err != nil {
+		cartoSvc.logger.Warn("could not close data ingestion log file")
+	}
 
 	if cartoSvc.cartofacade == nil {
 		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
@@ -501,7 +504,7 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 		cartoSvc.logger.Errorw("cartofacade stop failed", "error", stopErr)
 	}
 
-	err := cartoSvc.cartofacade.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
+	err = cartoSvc.cartofacade.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		cartoSvc.logger.Errorw("cartofacade terminate failed", "error", err)
 		return err
