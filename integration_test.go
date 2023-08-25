@@ -146,10 +146,10 @@ func testHelperCartographer(
 		attrCfg.MovementSensor = map[string]string{"name": "stub_imu"}
 	}
 
-	done := make(chan struct{})
+	lidarDone := make(chan struct{})
 	imuDone := make(chan struct{})
 	sensorReadingInterval := time.Millisecond * 200
-	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, done)
+	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, lidarDone)
 	test.That(t, err, test.ShouldBeNil)
 	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], false, sensorReadingInterval, imuDone)
 	test.That(t, err, test.ShouldBeNil)
@@ -168,7 +168,7 @@ func testHelperCartographer(
 	defer cancelFunc()
 
 	// wait till all sensor readings have been read
-	if !utils.SelectContextOrWaitChan(ctx, done) {
+	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
 	// We will check both channels once an accurate mock dataset has been gathered,

@@ -23,10 +23,9 @@ func TestValidateGetLidarData(t *testing.T) {
 	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	// Implement once rplidar supports Properties, see https://viam.atlassian.net/browse/RSDK-4600
-	// lidar = "lidar_with_invalid_properties"
-	// _, err = s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
-	// test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
+	lidar = "lidar_with_invalid_properties"
+	_, err = s.NewLidar(ctx, s.SetupDeps(lidar, ""), lidar, logger)
+	test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
 
 	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
 	sensorValidationInterval := time.Duration(10) * time.Millisecond
