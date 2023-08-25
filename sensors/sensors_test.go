@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/edaniels/golog"
-	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/spatialmath"
+	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/test"
 
 	s "github.com/viamrobotics/viam-cartographer/sensors"
@@ -139,9 +139,13 @@ func TestNewIMU(t *testing.T) {
 
 		tsr, err := actualIMU.TimedIMUSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
-		vec := r3.NewPreciseVector(1, 1, 1).Vector()
-		test.That(t, tsr.LinearAcceleration, test.ShouldResemble, vec)
-		test.That(t, tsr.AngularVelocity, test.ShouldResemble, spatialmath.PointAngVel(vec, vec))
+		test.That(t, tsr.LinearAcceleration, test.ShouldResemble, s.LinAcc)
+		test.That(t, tsr.AngularVelocity, test.ShouldResemble,
+			spatialmath.AngularVelocity{
+				X: rdkutils.DegToRad(s.AngVel.X),
+				Y: rdkutils.DegToRad(s.AngVel.Y),
+				Z: rdkutils.DegToRad(s.AngVel.Z),
+			})
 	})
 }
 
@@ -231,9 +235,13 @@ func TestTimedIMUSensorReading(t *testing.T) {
 		beforeReading := time.Now().UTC()
 		tsr, err := goodIMU.TimedIMUSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
-		vec := r3.NewPreciseVector(1, 1, 1).Vector()
-		test.That(t, tsr.LinearAcceleration, test.ShouldResemble, vec)
-		test.That(t, tsr.AngularVelocity, test.ShouldResemble, spatialmath.PointAngVel(vec, vec))
+		test.That(t, tsr.LinearAcceleration, test.ShouldResemble, s.LinAcc)
+		test.That(t, tsr.AngularVelocity, test.ShouldResemble,
+			spatialmath.AngularVelocity{
+				X: rdkutils.DegToRad(s.AngVel.X),
+				Y: rdkutils.DegToRad(s.AngVel.Y),
+				Z: rdkutils.DegToRad(s.AngVel.Z),
+			})
 		test.That(t, tsr.ReadingTime.After(beforeReading), test.ShouldBeTrue)
 		test.That(t, tsr.ReadingTime.Location(), test.ShouldEqual, time.UTC)
 		test.That(t, tsr.Replay, test.ShouldBeFalse)

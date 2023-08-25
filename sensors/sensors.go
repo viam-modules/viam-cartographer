@@ -284,7 +284,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 						Y: rdkutils.DegToRad(angVel.Y),
 						Z: rdkutils.DegToRad(angVel.Z),
 					},
-					ReadingTime: time.Now(),
+					ReadingTime: time.Now().UTC(),
 					Replay:      false,
 				}, nil
 			} else if math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < replayTimeTolerance {

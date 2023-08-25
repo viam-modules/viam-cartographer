@@ -25,6 +25,13 @@ const (
 	BadTime = "NOT A TIME"
 )
 
+var (
+	// LinAcc is the successful mock linear acceleration result used for testing.
+	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
+	// AngVel is the successful mock angular velocity  result used for testing.
+	AngVel = spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
+)
+
 // SetupDeps returns the dependencies based on the lidar passed as argument.
 func SetupDeps(lidarName, imuName string) resource.Dependencies {
 	deps := make(resource.Dependencies)
@@ -182,13 +189,11 @@ func getFinishedReplayLidar() *inject.Camera {
 func getGoodIMU() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 
-	linAcc := r3.Vector{X: 1, Y: 1, Z: 1}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return linAcc, nil
+		return LinAcc, nil
 	}
-	angVel := spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return angVel, nil
+		return AngVel, nil
 	}
 
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
@@ -203,21 +208,19 @@ func getGoodIMU() *inject.MovementSensor {
 func getReplayIMU(testTime string) *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 
-	linAcc := r3.Vector{X: 1, Y: 1, Z: 1}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return linAcc, nil
+		return LinAcc, nil
 	}
-	angVel := spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return angVel, nil
+		return AngVel, nil
 	}
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -236,6 +239,7 @@ func getIMUWithErroringFunctions() *inject.MovementSensor {
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
 	}
+
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    true,
@@ -248,14 +252,11 @@ func getIMUWithErroringFunctions() *inject.MovementSensor {
 func getIMUWithInvalidProperties() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 
-	linAcc := r3.Vector{X: 1, Y: 1, Z: 1}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return linAcc, nil
+		return LinAcc, nil
 	}
-
-	angVel := spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return angVel, nil
+		return AngVel, nil
 	}
 
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
