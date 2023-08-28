@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -166,9 +167,10 @@ func testHelperCartographer(
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancelFunc()
-
+	tstart := time.Now()
 	// wait till all sensor readings have been read
 	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
+		fmt.Printf("Time Duration ZZTOP %v\n", time.Now().Sub(tstart).Milliseconds())
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
 	// We will check both channels once an accurate mock dataset has been gathered,
