@@ -836,7 +836,12 @@ void CartoFacade::AddIMUReading(const viam_carto_imu_reading *sr) {
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
-    if (biseq(to_bstring(config.movement_sensor), sr->imu) == false) {
+    bstring movement_sensor = to_bstring(config.movement_sensor);
+
+    bool known_sensor = biseq(movement_sensor, sr->imu);
+    bdestroy(movement_sensor);
+
+    if (!known_sensor) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->imu) << " to be "
                 << config.movement_sensor;
         throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
