@@ -334,6 +334,10 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
 		test.That(t, internalState, test.ShouldNotEqual, lastInternalState)
 
+		// test runFinalOptimization succeeds
+		err = vc.runFinalOptimization()
+		test.That(t, err, test.ShouldBeNil)
+
 		// test stop
 		err = vc.stop()
 		test.That(t, err, test.ShouldBeNil)

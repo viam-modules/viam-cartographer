@@ -20,18 +20,19 @@ var undefinedIMU = cartofacade.IMUReading{}
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	CartoFacade       cartofacade.Interface
-	Lidar             sensors.TimedLidarSensor
-	LidarName         string
-	LidarDataRateMsec int
-	IMU               sensors.TimedIMUSensor
-	IMUName           string
-	IMUDataRateMsec   int
-	Timeout           time.Duration
-	Logger            golog.Logger
-	nextData          nextData
-	started           bool
-	stopped           bool
+	CartoFacade              cartofacade.Interface
+	Lidar                    sensors.TimedLidarSensor
+	LidarName                string
+	LidarDataRateMsec        int
+	IMU                      sensors.TimedIMUSensor
+	IMUName                  string
+	IMUDataRateMsec          int
+	Timeout                  time.Duration
+	Logger                   golog.Logger
+	nextData                 nextData
+	started                  bool
+	stopped                  bool
+	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
 // nextData stores the next data to be added to cartographer along with its associated timestamp so that,
@@ -55,6 +56,11 @@ func (config *Config) StartLidar(
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
 				config.stopped = true
+				config.Logger.Info("Beginning final optimization")
+				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
+				if err != nil {
+					config.Logger.Error("Failed to finish processing all sensor readings")
+				}
 				return true
 			}
 		}

@@ -62,6 +62,7 @@ type CartoInterface interface {
 	getPosition() (GetPosition, error)
 	getPointCloudMap() ([]byte, error)
 	getInternalState() ([]byte, error)
+	runFinalOptimization() error
 }
 
 // GetPosition holds values returned from c to be processed later
@@ -312,6 +313,17 @@ func (vc *Carto) getInternalState() ([]byte, error) {
 	}
 
 	return interalState, nil
+}
+
+// runFinalOptimization is a wrapper for viam_carto_run_final_optimization
+func (vc *Carto) runFinalOptimization() error {
+	status := C.viam_carto_run_final_optimization(vc.value)
+
+	if err := toError(status); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files

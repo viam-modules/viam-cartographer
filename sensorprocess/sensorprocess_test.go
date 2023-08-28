@@ -53,13 +53,19 @@ func TestAddLidarReadingOffline(t *testing.T) {
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
-	config := Config{
-		Logger:            logger,
-		CartoFacade:       &cf,
-		LidarName:         "good_lidar",
-		LidarDataRateMsec: 200,
-		Timeout:           10 * time.Second,
+
+	runFinalOptimizationFunc := func(context.Context, time.Duration) error {
+		return nil
 	}
+	config := Config{
+		Logger:                   logger,
+		CartoFacade:              &cf,
+		LidarName:                "good_lidar",
+		LidarDataRateMsec:        200,
+		Timeout:                  10 * time.Second,
+		RunFinalOptimizationFunc: runFinalOptimizationFunc,
+	}
+
 	t.Run("When addLidarReading returns successfully, no infinite loop", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
@@ -251,11 +257,12 @@ func TestAddLidarReadingOnline(t *testing.T) {
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 	config := Config{
-		Logger:            logger,
-		CartoFacade:       &cf,
-		LidarName:         "good_lidar",
-		LidarDataRateMsec: 200,
-		Timeout:           10 * time.Second,
+		Logger:                   logger,
+		CartoFacade:              &cf,
+		LidarName:                "good_lidar",
+		LidarDataRateMsec:        200,
+		Timeout:                  10 * time.Second,
+		RunFinalOptimizationFunc: cf.RunFinalOptimization,
 	}
 
 	t.Run("When AddLidarReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
@@ -701,11 +708,16 @@ func TestAddLidarReading(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
+	runFinalOptimizationFunc := func(context.Context, time.Duration) error {
+		return nil
+	}
+
 	config := Config{
-		Logger:            logger,
-		CartoFacade:       &cf,
-		LidarDataRateMsec: 200,
-		Timeout:           10 * time.Second,
+		Logger:                   logger,
+		CartoFacade:              &cf,
+		LidarDataRateMsec:        200,
+		Timeout:                  10 * time.Second,
+		RunFinalOptimizationFunc: runFinalOptimizationFunc,
 	}
 	ctx := context.Background()
 
@@ -789,7 +801,32 @@ func TestAddLidarReading(t *testing.T) {
 		onlineModeLidarTestHelper(ctx, t, config, cf, "good_lidar")
 	})
 
-	t.Run("returns true when lidar returns an error that it reached end of dataset", func(t *testing.T) {
+	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function succeeds", func(t *testing.T) {
+		cam := "finished_replay_lidar"
+		logger := golog.NewTestLogger(t)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
+		test.That(t, err, test.ShouldBeNil)
+
+		config.Lidar = replaySensor
+		config.LidarDataRateMsec = 0
+
+		jobDone := config.addLidarReading(ctx)
+		test.That(t, jobDone, test.ShouldBeTrue)
+	})
+
+	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function fails", func(t *testing.T) {
+		runFinalOptimizationFunc = func(context.Context, time.Duration) error {
+			return errors.New("test error")
+		}
+
+		config = Config{
+			Logger:                   logger,
+			CartoFacade:              &cf,
+			LidarDataRateMsec:        200,
+			Timeout:                  10 * time.Second,
+			RunFinalOptimizationFunc: runFinalOptimizationFunc,
+		}
+
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
@@ -921,10 +958,11 @@ func TestStartLidar(t *testing.T) {
 	cf := cartofacade.Mock{}
 
 	config := Config{
-		Logger:            logger,
-		CartoFacade:       &cf,
-		LidarDataRateMsec: 200,
-		Timeout:           10 * time.Second,
+		Logger:                   logger,
+		CartoFacade:              &cf,
+		LidarDataRateMsec:        200,
+		Timeout:                  10 * time.Second,
+		RunFinalOptimizationFunc: cf.RunFinalOptimization,
 	}
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
