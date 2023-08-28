@@ -48,7 +48,7 @@ const (
 	defaultSensorValidationIntervalSec   = 1
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
-	defaultCartoFacadeTimeout            = 5 * time.Second
+	defaultCartoFacadeTimeout            = 5 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
 )
 
