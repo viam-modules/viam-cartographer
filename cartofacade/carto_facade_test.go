@@ -36,8 +36,8 @@ func TestRequest(t *testing.T) {
 
 		algoConfig := GetTestAlgoConfig(false)
 		carto := CartoMock{}
-		carto.GetPositionFunc = func() (GetPosition, error) {
-			return GetPosition{}, nil
+		carto.PositionFunc = func() (Position, error) {
+			return Position{}, nil
 		}
 
 		cf := New(&cartoLib, config, algoConfig)
@@ -439,7 +439,7 @@ func TestAddIMUReading(t *testing.T) {
 	activeBackgroundWorkers.Wait()
 }
 
-func TestGetPosition(t *testing.T) {
+func TestPosition(t *testing.T) {
 	lib := CartoLibMock{}
 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -452,39 +452,39 @@ func TestGetPosition(t *testing.T) {
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
-	carto.GetPositionFunc = func() (GetPosition, error) {
-		pos := GetPosition{X: 1, Y: 2, Z: 3}
+	carto.PositionFunc = func() (Position, error) {
+		pos := Position{X: 1, Y: 2, Z: 3}
 		return pos, nil
 	}
 	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
-	t.Run("testing GetPosition", func(t *testing.T) {
+	t.Run("testing Position", func(t *testing.T) {
 		// success case
-		pos, err := cartoFacade.GetPosition(cancelCtx, 5*time.Second)
+		pos, err := cartoFacade.Position(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pos.X, test.ShouldEqual, 1)
 		test.That(t, pos.Y, test.ShouldEqual, 2)
 		test.That(t, pos.Z, test.ShouldEqual, 3)
 
-		carto.GetPositionFunc = func() (GetPosition, error) {
-			return GetPosition{}, errors.New("test error 6")
+		carto.PositionFunc = func() (Position, error) {
+			return Position{}, errors.New("test error 6")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
-		_, err = cartoFacade.GetPosition(cancelCtx, 5*time.Second)
+		_, err = cartoFacade.Position(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("test error 6"))
 
-		carto.GetPositionFunc = func() (GetPosition, error) {
+		carto.PositionFunc = func() (Position, error) {
 			time.Sleep(50 * time.Millisecond)
-			return GetPosition{}, nil
+			return Position{}, nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		_, err = cartoFacade.GetPosition(cancelCtx, 1*time.Millisecond)
+		_, err = cartoFacade.Position(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -494,7 +494,7 @@ func TestGetPosition(t *testing.T) {
 	activeBackgroundWorkers.Wait()
 }
 
-func TestGetInternalState(t *testing.T) {
+func TestInternalState(t *testing.T) {
 	lib := CartoLibMock{}
 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -507,37 +507,37 @@ func TestGetInternalState(t *testing.T) {
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
-	carto.GetInternalStateFunc = func() ([]byte, error) {
+	carto.InternalStateFunc = func() ([]byte, error) {
 		internalState := []byte("hello!")
 		return internalState, nil
 	}
 	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
-	t.Run("testing GetInternalState", func(t *testing.T) {
+	t.Run("testing InternalState", func(t *testing.T) {
 		// success case
-		internalState, err := cartoFacade.GetInternalState(cancelCtx, 5*time.Second)
+		internalState, err := cartoFacade.InternalState(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldResemble, []byte("hello!"))
 
-		carto.GetInternalStateFunc = func() ([]byte, error) {
+		carto.InternalStateFunc = func() ([]byte, error) {
 			return []byte{}, errors.New("test error 7")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
-		_, err = cartoFacade.GetInternalState(cancelCtx, 5*time.Second)
+		_, err = cartoFacade.InternalState(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("test error 7"))
 
-		carto.GetInternalStateFunc = func() ([]byte, error) {
+		carto.InternalStateFunc = func() ([]byte, error) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		_, err = cartoFacade.GetInternalState(cancelCtx, 1*time.Millisecond)
+		_, err = cartoFacade.InternalState(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -547,7 +547,7 @@ func TestGetInternalState(t *testing.T) {
 	activeBackgroundWorkers.Wait()
 }
 
-func TestGetPointCloudMap(t *testing.T) {
+func TestPointCloudMap(t *testing.T) {
 	lib := CartoLibMock{}
 
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
@@ -560,37 +560,37 @@ func TestGetPointCloudMap(t *testing.T) {
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
-	carto.GetPointCloudMapFunc = func() ([]byte, error) {
+	carto.PointCloudMapFunc = func() ([]byte, error) {
 		internalState := []byte("hello!")
 		return internalState, nil
 	}
 	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
-	t.Run("testing GetPointCloudMap", func(t *testing.T) {
+	t.Run("testing PointCloudMap", func(t *testing.T) {
 		// success case
-		internalState, err := cartoFacade.GetPointCloudMap(cancelCtx, 5*time.Second)
+		internalState, err := cartoFacade.PointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldResemble, []byte("hello!"))
 
-		carto.GetPointCloudMapFunc = func() ([]byte, error) {
+		carto.PointCloudMapFunc = func() ([]byte, error) {
 			return []byte{}, errors.New("test error 8")
 		}
 		cartoFacade.carto = &carto
 
 		// returns error
-		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 5*time.Second)
+		_, err = cartoFacade.PointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("test error 8"))
 
-		carto.GetPointCloudMapFunc = func() ([]byte, error) {
+		carto.PointCloudMapFunc = func() ([]byte, error) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
 		cartoFacade.carto = &carto
 
 		// times out
-		_, err = cartoFacade.GetPointCloudMap(cancelCtx, 1*time.Millisecond)
+		_, err = cartoFacade.PointCloudMap(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)

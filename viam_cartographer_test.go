@@ -69,20 +69,20 @@ func TestNew(t *testing.T) {
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeNil)
 
-		pose, componentRef, err := svc.GetPosition(ctx)
+		pose, componentRef, err := svc.Position(ctx)
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
-		gpcmF, err := svc.GetPointCloudMap(ctx)
+		gpcmF, err := svc.PointCloudMap(ctx)
 		test.That(t, gpcmF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
-		gisF, err := svc.GetInternalState(ctx)
+		gisF, err := svc.InternalState(ctx)
 		test.That(t, gisF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
-		mapTime, err := svc.GetLatestMapInfo(ctx)
+		mapTime, err := svc.LatestMapInfo(ctx)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 		test.That(t, mapTime, test.ShouldResemble, time.Time{})
 
@@ -240,28 +240,28 @@ func TestNew(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.LocalizingMode)
 
-		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
-		_, componentReference, err := svc.GetPosition(context.Background())
+		_, componentReference, err := svc.Position(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "replay_lidar")
 
-		pcmFunc, err := svc.GetPointCloudMap(context.Background())
+		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
 
-		isFunc, err := svc.GetInternalState(context.Background())
+		isFunc, err := svc.InternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		is, err := slam.HelperConcatenateChunksToFull(isFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
 
-		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		timestamp2, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
@@ -290,28 +290,28 @@ func TestNew(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.UpdatingMode)
 
-		_, componentReference, err := svc.GetPosition(context.Background())
+		_, componentReference, err := svc.Position(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
 
-		pcmFunc, err := svc.GetPointCloudMap(context.Background())
+		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
 
-		isFunc, err := svc.GetInternalState(context.Background())
+		isFunc, err := svc.InternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		is, err := slam.HelperConcatenateChunksToFull(isFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
 
-		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
-		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		timestamp2, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
@@ -464,28 +464,28 @@ func TestNewFeatureFlag(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.LocalizingMode)
 
-		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
-		_, componentReference, err := svc.GetPosition(context.Background())
+		_, componentReference, err := svc.Position(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
 
-		pcmFunc, err := svc.GetPointCloudMap(context.Background())
+		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
 
-		isFunc, err := svc.GetInternalState(context.Background())
+		isFunc, err := svc.InternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		is, err := slam.HelperConcatenateChunksToFull(isFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
 
-		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		timestamp2, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
@@ -514,28 +514,28 @@ func TestNewFeatureFlag(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.UpdatingMode)
 
-		_, componentReference, err := svc.GetPosition(context.Background())
+		_, componentReference, err := svc.Position(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
 
-		timestamp1, err := svc.GetLatestMapInfo(context.Background())
+		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
-		pcmFunc, err := svc.GetPointCloudMap(context.Background())
+		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
 
-		isFunc, err := svc.GetInternalState(context.Background())
+		isFunc, err := svc.InternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		is, err := slam.HelperConcatenateChunksToFull(isFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
 
-		timestamp2, err := svc.GetLatestMapInfo(context.Background())
+		timestamp2, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
@@ -594,20 +594,20 @@ func TestClose(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 
-		pose, componentRef, err := svc.GetPosition(ctx)
+		pose, componentRef, err := svc.Position(ctx)
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 
-		gpcmF, err := svc.GetPointCloudMap(ctx)
+		gpcmF, err := svc.PointCloudMap(ctx)
 		test.That(t, gpcmF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 
-		gisF, err := svc.GetInternalState(ctx)
+		gisF, err := svc.InternalState(ctx)
 		test.That(t, gisF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 
-		mapTime, err := svc.GetLatestMapInfo(ctx)
+		mapTime, err := svc.LatestMapInfo(ctx)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 		test.That(t, mapTime, test.ShouldResemble, time.Time{})
 

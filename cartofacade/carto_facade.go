@@ -108,23 +108,23 @@ func (cf *CartoFacade) AddIMUReading(
 	return nil
 }
 
-// GetPosition calls into the cartofacade C code.
-func (cf *CartoFacade) GetPosition(ctx context.Context, timeout time.Duration) (GetPosition, error) {
+// Position calls into the cartofacade C code.
+func (cf *CartoFacade) Position(ctx context.Context, timeout time.Duration) (Position, error) {
 	untyped, err := cf.request(ctx, position, emptyRequestParams, timeout)
 	if err != nil {
-		return GetPosition{}, err
+		return Position{}, err
 	}
 
-	pos, ok := untyped.(GetPosition)
+	pos, ok := untyped.(Position)
 	if !ok {
-		return GetPosition{}, errors.New("unable to cast response from cartofacade to a position info struct")
+		return Position{}, errors.New("unable to cast response from cartofacade to a position info struct")
 	}
 
 	return pos, nil
 }
 
-// GetInternalState calls into the cartofacade C code.
-func (cf *CartoFacade) GetInternalState(ctx context.Context, timeout time.Duration) ([]byte, error) {
+// InternalState calls into the cartofacade C code.
+func (cf *CartoFacade) InternalState(ctx context.Context, timeout time.Duration) ([]byte, error) {
 	untyped, err := cf.request(ctx, internalState, emptyRequestParams, timeout)
 	if err != nil {
 		return []byte{}, err
@@ -138,8 +138,8 @@ func (cf *CartoFacade) GetInternalState(ctx context.Context, timeout time.Durati
 	return internalState, nil
 }
 
-// GetPointCloudMap calls into the cartofacade C code.
-func (cf *CartoFacade) GetPointCloudMap(ctx context.Context, timeout time.Duration) ([]byte, error) {
+// PointCloudMap calls into the cartofacade C code.
+func (cf *CartoFacade) PointCloudMap(ctx context.Context, timeout time.Duration) ([]byte, error) {
 	untyped, err := cf.request(ctx, pointCloudMap, emptyRequestParams, timeout)
 	if err != nil {
 		return []byte{}, err
@@ -269,15 +269,15 @@ type Interface interface {
 		currentReading IMUReading,
 		readingTimestamp time.Time,
 	) error
-	GetPosition(
+	Position(
 		ctx context.Context,
 		timeout time.Duration,
-	) (GetPosition, error)
-	GetInternalState(
+	) (Position, error)
+	InternalState(
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error)
-	GetPointCloudMap(
+	PointCloudMap(
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error)
@@ -354,11 +354,11 @@ func (r *Request) doWork(
 
 		return nil, cf.carto.addIMUReading(imu, reading, timestamp)
 	case position:
-		return cf.carto.getPosition()
+		return cf.carto.position()
 	case internalState:
-		return cf.carto.getInternalState()
+		return cf.carto.internalState()
 	case pointCloudMap:
-		return cf.carto.getPointCloudMap()
+		return cf.carto.pointCloudMap()
 	case runFinalOptimization:
 		return nil, cf.carto.runFinalOptimization()
 	}
