@@ -166,11 +166,9 @@ func testHelperCartographer(
 	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
 
 	defer cancelFunc()
-	tstart := time.Now()
 	// wait till all sensor readings have been read
 	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
-		t.Logf("test duration %d", time.Since(tstart).Milliseconds())
-
+		t.Logf("test duration %dms", time.Since(start).Milliseconds())
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
 	// We will check both channels once an accurate mock dataset has been gathered,
@@ -184,9 +182,8 @@ func testHelperCartographer(
 
 	// Close out slam service
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
-	stop := time.Now()
-	testDuration := stop.Sub(start)
-	t.Logf("test duration %d", testDuration)
+	testDuration := time.Since(start)
+	t.Logf("test duration %dms", testDuration.Milliseconds())
 
 	// Check that a map was generated as the test has been running for more than the map rate msec
 	mapsInDir, err := os.ReadDir(path.Join(dataDirectory, "internal_state"))

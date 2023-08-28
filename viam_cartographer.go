@@ -5,7 +5,6 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
-	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -123,16 +122,15 @@ func TerminateCartoLib() error {
 
 func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
-		CartoFacade:          cartoSvc.cartofacade,
-		Lidar:                cartoSvc.lidar.timed,
-		LidarName:            cartoSvc.lidar.name,
-		LidarDataRateMsec:    cartoSvc.lidar.dataRateMsec,
-		IMU:                  cartoSvc.imu.timed,
-		IMUName:              cartoSvc.imu.name,
-		IMUDataRateMsec:      cartoSvc.imu.dataRateMsec,
-		Timeout:              cartoSvc.cartoFacadeTimeout,
-		Logger:               cartoSvc.logger,
-		DataIngestionLogFile: cartoSvc.DataIngestionLogFile,
+		CartoFacade:       cartoSvc.cartofacade,
+		Lidar:             cartoSvc.lidar.timed,
+		LidarName:         cartoSvc.lidar.name,
+		LidarDataRateMsec: cartoSvc.lidar.dataRateMsec,
+		IMU:               cartoSvc.imu.timed,
+		IMUName:           cartoSvc.imu.name,
+		IMUDataRateMsec:   cartoSvc.imu.dataRateMsec,
+		Timeout:           cartoSvc.cartoFacadeTimeout,
+		Logger:            cartoSvc.logger,
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
@@ -310,13 +308,6 @@ func New(
 		return nil, err
 	}
 
-	// REMOVE BEFORE PUSH
-	// cartoSvc.DataIngestionLogFile, err = os.Create("/Users/jeremyhyde/Development/viam-cartographer/dataIngestion.txt")
-	cartoSvc.DataIngestionLogFile, err = os.Create(cartoSvc.dataDirectory + "/dataIngestion.txt")
-	if err != nil {
-		cartoSvc.logger.Warn("failed to create data ingestion log file")
-	}
-
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
@@ -489,11 +480,6 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 }
 
 func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
-	err := cartoSvc.DataIngestionLogFile.Close()
-	if err != nil {
-		cartoSvc.logger.Warn("could not close data ingestion log file")
-	}
-
 	if cartoSvc.cartofacade == nil {
 		cartoSvc.logger.Debug("terminateCartoFacade called when cartoSvc.cartofacade is nil")
 		return nil
@@ -504,7 +490,7 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 		cartoSvc.logger.Errorw("cartofacade stop failed", "error", stopErr)
 	}
 
-	err = cartoSvc.cartofacade.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
+	err := cartoSvc.cartofacade.Terminate(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		cartoSvc.logger.Errorw("cartofacade terminate failed", "error", err)
 		return err
@@ -560,10 +546,9 @@ type CartographerService struct {
 	sensorValidationIntervalSec   int
 	jobDone                       atomic.Bool
 
-	cloudStoryEnabled    bool
-	enableMapping        bool
-	existingMap          string
-	DataIngestionLogFile *os.File
+	cloudStoryEnabled bool
+	enableMapping     bool
+	existingMap       string
 }
 
 // GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,

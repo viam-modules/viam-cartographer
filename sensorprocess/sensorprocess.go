@@ -4,9 +4,7 @@ package sensorprocess
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
-	"os"
 	"strings"
 	"time"
 
@@ -22,19 +20,18 @@ var undefinedIMU = cartofacade.IMUReading{}
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	DataIngestionLogFile *os.File
-	CartoFacade          cartofacade.Interface
-	Lidar                sensors.TimedLidarSensor
-	LidarName            string
-	LidarDataRateMsec    int
-	IMU                  sensors.TimedIMUSensor
-	IMUName              string
-	IMUDataRateMsec      int
-	Timeout              time.Duration
-	Logger               golog.Logger
-	nextData             nextData
-	started              bool
-	stopped              bool
+	CartoFacade       cartofacade.Interface
+	Lidar             sensors.TimedLidarSensor
+	LidarName         string
+	LidarDataRateMsec int
+	IMU               sensors.TimedIMUSensor
+	IMUName           string
+	IMUDataRateMsec   int
+	Timeout           time.Duration
+	Logger            golog.Logger
+	nextData          nextData
+	started           bool
+	stopped           bool
 }
 
 // nextData stores the next data to be added to cartographer along with its associated timestamp so that,
@@ -117,21 +114,13 @@ func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, reading
 		default:
 			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 			if err == nil {
-				_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Success \t \t | %v \n",
-					readingTime, readingTime.Unix())))
-				if err != nil {
-					config.Logger.Warn("could not right to data ingestion log file")
-				}
+				config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t | LIDAR | Failure \t \t | %v \n",
-				readingTime, readingTime.Unix())))
-			if err != nil {
-				config.Logger.Warn("could not right to data ingestion log file")
-			}
+			config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())
 		}
 	}
 }
@@ -221,11 +210,7 @@ func (config *Config) addIMUReading(
 				config.nextData.imuTime = tsr.ReadingTime
 				config.nextData.imuData = sr
 			} else {
-				_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t | IMU | Dropping data \t \t | %v \n",
-					tsr.ReadingTime, tsr.ReadingTime.Unix())))
-				if err != nil {
-					config.Logger.Warn("could not right to data ingestion log file")
-				}
+				config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
 			}
 		} else {
 			time.Sleep(time.Millisecond)
@@ -247,21 +232,13 @@ func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMURe
 		default:
 			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
 			if err == nil {
-				_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Success \t \t | %v \n",
-					readingTime, readingTime.Unix())))
-				if err != nil {
-					config.Logger.Warn("could not right to data ingestion log file")
-				}
+				config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			_, err = config.DataIngestionLogFile.Write([]byte(fmt.Sprintf("%v \t |  IMU  | Failure \t \t | %v \n",
-				readingTime, readingTime.Unix())))
-			if err != nil {
-				config.Logger.Warn("could not right to data ingestion log file")
-			}
+			config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())
 		}
 	}
 }
