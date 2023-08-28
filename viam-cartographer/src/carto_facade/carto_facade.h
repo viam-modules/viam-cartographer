@@ -273,6 +273,13 @@ extern int viam_carto_get_internal_state(
 extern int viam_carto_get_internal_state_response_destroy(
     viam_carto_get_internal_state_response *r);
 
+// viam_carto_run_final_optimization/2 takes a viam_carto pointer
+//
+// On error: Returns a non 0 error code
+//
+// On success: Returns 0 & blocks until all data has been processed
+extern int viam_carto_run_final_optimization(viam_carto *vc);
+
 #ifdef __cplusplus
 }
 #endif
@@ -365,6 +372,7 @@ class CartoFacade {
     void CacheLatestMap();
     void CacheMapInLocalizationMode();
     void GetLatestSampledPointCloudMapString(std::string &pointcloud);
+    void RunFinalOptimization();
     cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
     viam_carto_lib *lib;
     viam::carto_facade::config config;

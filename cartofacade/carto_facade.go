@@ -131,6 +131,16 @@ func (cf *CartoFacade) GetPointCloudMap(ctx context.Context, timeout time.Durati
 	return pointCloud, nil
 }
 
+// RunFinalOptimization calls into the cartofacade C code.
+func (cf *CartoFacade) RunFinalOptimization(ctx context.Context, timeout time.Duration) error {
+	_, err := cf.request(ctx, runFinalOptimization, emptyRequestParams, timeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // RequestType defines the carto C API call that is being made.
 type RequestType int64
 
@@ -151,6 +161,8 @@ const (
 	internalState
 	// pointCloudMap represents the viam_carto_get_point_cloud_map in c.
 	pointCloudMap
+	// runFinalOptimization represents viam_carto_run_final_optimization.
+	runFinalOptimization
 )
 
 // RequestParamType defines the type being provided as input to the work.
@@ -238,6 +250,10 @@ type Interface interface {
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error)
+	RunFinalOptimization(
+		ctx context.Context,
+		timeout time.Duration,
+	) error
 }
 
 // Request defines all of the necessary pieces to call into the CGo API.
@@ -295,6 +311,8 @@ func (r *Request) doWork(
 		return cf.carto.getInternalState()
 	case pointCloudMap:
 		return cf.carto.getPointCloudMap()
+	case runFinalOptimization:
+		return nil, cf.carto.runFinalOptimization()
 	}
 	return nil, fmt.Errorf("no worktype found for: %v", r.requestType)
 }

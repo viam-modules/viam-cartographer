@@ -121,12 +121,13 @@ func TerminateCartoLib() error {
 
 func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
-		CartoFacade:       cartoSvc.cartofacade,
-		Lidar:             cartoSvc.lidar.testing,
-		LidarName:         cartoSvc.lidar.name,
-		LidarDataRateMsec: cartoSvc.lidar.dataRateMsec,
-		Timeout:           cartoSvc.cartoFacadeTimeout,
-		Logger:            cartoSvc.logger,
+		CartoFacade:              cartoSvc.cartofacade,
+		Lidar:                    cartoSvc.lidar.testing,
+		LidarName:                cartoSvc.lidar.name,
+		LidarDataRateMsec:        cartoSvc.lidar.dataRateMsec,
+		Timeout:                  cartoSvc.cartoFacadeTimeout,
+		Logger:                   cartoSvc.logger,
+		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)

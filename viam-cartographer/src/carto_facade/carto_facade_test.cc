@@ -1042,10 +1042,15 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo) {
                    VIAM_CARTO_SUCCESS);
     }
 
+    BOOST_TEST(viam_carto_run_final_optimization(vc) == VIAM_CARTO_SUCCESS);
+
     // Stop
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
     // stop not allowed if not started
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_NOT_IN_STARTED_STATE);
+    // run_final_optimization not allowed if not started
+    BOOST_TEST(viam_carto_run_final_optimization(vc) ==
+               VIAM_CARTO_NOT_IN_STARTED_STATE);
 
     // behavior of methods after stop
     // AddLidarReading
