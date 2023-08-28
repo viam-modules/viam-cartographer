@@ -311,7 +311,7 @@ func New(
 	}
 
 	// REMOVE BEFORE PUSH
-	//cartoSvc.DataIngestionLogFile, err = os.Create("/Users/jeremyhyde/Development/viam-cartographer/dataIngestion.txt")
+	// cartoSvc.DataIngestionLogFile, err = os.Create("/Users/jeremyhyde/Development/viam-cartographer/dataIngestion.txt")
 	cartoSvc.DataIngestionLogFile, err = os.Create(cartoSvc.dataDirectory + "/dataIngestion.txt")
 	if err != nil {
 		cartoSvc.logger.Warn("failed to create data ingestion log file")

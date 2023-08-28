@@ -169,8 +169,7 @@ func testHelperCartographer(
 	tstart := time.Now()
 	// wait till all sensor readings have been read
 	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
-
-		t.Logf("test duration %d", time.Now().Sub(tstart).Milliseconds())
+		t.Logf("test duration %d", time.Since(tstart).Milliseconds())
 
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}

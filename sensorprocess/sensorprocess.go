@@ -34,6 +34,7 @@ type Config struct {
 	Logger               golog.Logger
 	nextData             nextData
 	started              bool
+	stopped              bool
 }
 
 // nextData stores the next data to be added to cartographer along with its associated timestamp so that,
@@ -56,6 +57,7 @@ func (config *Config) StartLidar(
 			return false
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
+				config.stopped = true
 				return true
 			}
 		}
@@ -159,6 +161,9 @@ func (config *Config) StartIMU(
 		case <-ctx.Done():
 			return false
 		default:
+			if config.stopped {
+				return true
+			}
 			if jobDone := config.addIMUReading(ctx); jobDone {
 				return true
 			}
