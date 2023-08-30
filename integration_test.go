@@ -148,10 +148,11 @@ func testHelperCartographer(
 
 	lidarDone := make(chan struct{})
 	imuDone := make(chan struct{})
-	sensorReadingInterval := time.Millisecond * 200
-	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, sensorReadingInterval, lidarDone)
+	lidarReadingInterval := time.Millisecond * 200
+	imuReadingInterval := time.Millisecond * 50
+	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, lidarReadingInterval, lidarDone)
 	test.That(t, err, test.ShouldBeNil)
-	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], false, sensorReadingInterval, imuDone)
+	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], replaySensor, imuReadingInterval, imuDone)
 	test.That(t, err, test.ShouldBeNil)
 	if !useIMU {
 		test.That(t, timedIMU, test.ShouldBeNil)
@@ -309,7 +310,7 @@ func integrationTestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 			test.That(t, err, test.ShouldBeNil)
 		}()
 
-		// save the internal state of the mapping run to a new datadir
+		// save the internal state of the mapping run to a new dat adir
 		saveInternalState(t, internalState, dataDirectoryUpdating)
 		// update fromthat internal state
 		testHelperCartographer(t, dataDirectoryUpdating, subAlgo, logger, true, false, 1, cartofacade.UpdatingMode)
