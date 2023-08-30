@@ -149,7 +149,7 @@ func testHelperCartographer(
 	lidarDone := make(chan struct{})
 	imuDone := make(chan struct{})
 	lidarReadingInterval := time.Millisecond * 200
-	imuReadingInterval := time.Millisecond * 50
+	imuReadingInterval := time.Millisecond * 200
 	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, lidarReadingInterval, lidarDone)
 	test.That(t, err, test.ShouldBeNil)
 	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], replaySensor, imuReadingInterval, imuDone)
