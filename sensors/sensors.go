@@ -232,7 +232,7 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSenso
 // TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.
 // IMU Sensors currently do not support replay capabilities.
 func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error) {
-	live := true
+	replay := false
 
 	var timeLinearAcc, timeAngularVel time.Time
 	var linAcc r3.Vector
@@ -250,9 +250,11 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 					msg := "LinearAcceleration error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 				}
+				timeLinearAcc = time.Now().UTC()
+
 				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 				if ok {
-					live = live && false
+					replay = true
 					timeLinearAcc, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 					if err != nil {
 						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
@@ -267,27 +269,18 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 					msg := "AngularVelocity error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 				}
+				timeAngularVel = time.Now().UTC()
+
 				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 				if ok {
-					live = live && false
+					replay = true
 					timeAngularVel, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 					if err != nil {
 						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 					}
 				}
 			}
-			if live {
-				return TimedIMUSensorReadingResponse{
-					LinearAcceleration: linAcc,
-					AngularVelocity: spatialmath.AngularVelocity{
-						X: rdkutils.DegToRad(angVel.X),
-						Y: rdkutils.DegToRad(angVel.Y),
-						Z: rdkutils.DegToRad(angVel.Z),
-					},
-					ReadingTime: time.Now().UTC(),
-					Replay:      false,
-				}, nil
-			} else if math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < replayTimeToleranceMsec {
+			if math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < replayTimeToleranceMsec {
 				return TimedIMUSensorReadingResponse{
 					LinearAcceleration: linAcc,
 					AngularVelocity: spatialmath.AngularVelocity{
@@ -296,7 +289,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 						Z: rdkutils.DegToRad(angVel.Z),
 					},
 					ReadingTime: timeLinearAcc.Add(timeLinearAcc.Sub(timeAngularVel) / 2),
-					Replay:      true,
+					Replay:      replay,
 				}, nil
 			}
 		}

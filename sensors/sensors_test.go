@@ -233,6 +233,8 @@ func TestTimedIMUSensorReading(t *testing.T) {
 
 	t.Run("when a live IMU succeeds, returns current time in UTC and the reading", func(t *testing.T) {
 		beforeReading := time.Now().UTC()
+		time.Sleep(time.Millisecond)
+
 		tsr, err := goodIMU.TimedIMUSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, tsr.LinearAcceleration, test.ShouldResemble, s.LinAcc)
