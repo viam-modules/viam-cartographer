@@ -9,14 +9,14 @@ require (
 	github.com/golangci/golangci-lint v1.51.2
 	github.com/pkg/errors v0.9.1
 	github.com/rhysd/actionlint v1.6.24
-	github.com/viamrobotics/gostream v0.0.0-20230609200515-c5d67c29ed25
+	github.com/viamrobotics/gostream v0.0.0-20230725145737-ed58004e202e
 	go.opencensus.io v0.24.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	go.viam.com/api v0.1.156
-	go.viam.com/rdk v0.5.1-0.20230719205427-c10eab2aa624
+	go.viam.com/api v0.1.179-0.20230814212331-d05fed6b5dfc
+	go.viam.com/rdk v0.7.3
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.38
+	go.viam.com/utils v0.1.40
 )
 
 require (
@@ -198,21 +198,21 @@ require (
 	github.com/pelletier/go-toml/v2 v2.0.5 // indirect
 	github.com/pion/datachannel v1.5.5 // indirect
 	github.com/pion/dtls/v2 v2.2.7 // indirect
-	github.com/pion/ice/v2 v2.3.8 // indirect
+	github.com/pion/ice/v2 v2.3.9 // indirect
 	github.com/pion/interceptor v0.1.17 // indirect
 	github.com/pion/logging v0.2.2 // indirect
 	github.com/pion/mdns v0.0.8-0.20230502060824-17c664ea7d5c // indirect
-	github.com/pion/mediadevices v0.4.1-0.20230605163757-e64f0d8697f9 // indirect
+	github.com/pion/mediadevices v0.5.1-0.20230724160738-03c44ee80347 // indirect
 	github.com/pion/randutil v0.1.0 // indirect
 	github.com/pion/rtcp v1.2.10 // indirect
 	github.com/pion/rtp v1.7.13 // indirect
 	github.com/pion/sctp v1.8.7 // indirect
 	github.com/pion/sdp/v3 v3.0.6 // indirect
 	github.com/pion/srtp/v2 v2.0.15 // indirect
-	github.com/pion/stun v0.6.0 // indirect
+	github.com/pion/stun v0.6.1 // indirect
 	github.com/pion/transport/v2 v2.2.1 // indirect
-	github.com/pion/turn/v2 v2.1.0 // indirect
-	github.com/pion/webrtc/v3 v3.2.10 // indirect
+	github.com/pion/turn/v2 v2.1.2 // indirect
+	github.com/pion/webrtc/v3 v3.2.11 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/polyfloyd/go-errorlint v1.1.0 // indirect
 	github.com/prometheus/client_golang v1.12.2 // indirect

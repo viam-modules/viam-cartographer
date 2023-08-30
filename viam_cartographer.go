@@ -58,6 +58,7 @@ var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
 	MissingDataRayLength: 25.0,
 	MaxRange:             25.0,
 	MinRange:             0.2,
+	UseIMUData:           false,
 	MaxSubmapsToKeep:     3,
 	FreshSubmapsCount:    3,
 	MinCoveredArea:       1.0,
@@ -119,12 +120,15 @@ func TerminateCartoLib() error {
 	return cartoLib.Terminate()
 }
 
-func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService) {
+func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
 		CartoFacade:              cartoSvc.cartofacade,
-		Lidar:                    cartoSvc.lidar.testing,
+		Lidar:                    cartoSvc.lidar.timed,
 		LidarName:                cartoSvc.lidar.name,
 		LidarDataRateMsec:        cartoSvc.lidar.dataRateMsec,
+		IMU:                      cartoSvc.imu.timed,
+		IMUName:                  cartoSvc.imu.name,
+		IMUDataRateMsec:          cartoSvc.imu.dataRateMsec,
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		Logger:                   cartoSvc.logger,
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
@@ -133,11 +137,19 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := sensorprocess.Start(cancelCtx, spConfig); jobDone {
+		if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
 			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
 	}()
+
+	if spConfig.IMUName != "" {
+		cartoSvc.sensorProcessWorkers.Add(1)
+		go func() {
+			defer cartoSvc.sensorProcessWorkers.Done()
+			_ = spConfig.StartIMU(cancelCtx)
+		}()
+	}
 }
 
 // New returns a new slam service for the given robot.
@@ -193,6 +205,16 @@ func New(
 		lidarName = svcConfig.Sensors[0]
 	}
 
+	if optionalConfigParams.ImuName != "" {
+		if optionalConfigParams.LidarDataRateMsec == 0 && optionalConfigParams.ImuDataRateMsec != 0 {
+			return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
+		}
+
+		if optionalConfigParams.LidarDataRateMsec != 0 && optionalConfigParams.ImuDataRateMsec == 0 {
+			return nil, errors.New("In online mode, but IMU data frequency is zero")
+		}
+	}
+
 	// Get the lidar for the Dim2D cartographer sub algorithm
 	lidarObject, err := s.NewLidar(ctx, deps, lidarName, logger)
 	if err != nil {
@@ -225,14 +247,14 @@ func New(
 		name:         lidarName,
 		dataRateMsec: optionalConfigParams.LidarDataRateMsec,
 		actual:       lidarObject,
-		testing:      timedLidar,
+		timed:        timedLidar,
 	}
 
 	imu := IMU{
 		name:         optionalConfigParams.ImuName,
 		dataRateMsec: optionalConfigParams.ImuDataRateMsec,
 		actual:       imuObject,
-		testing:      timedIMU,
+		timed:        timedIMU,
 	}
 
 	// Cartographer SLAM Service Object
@@ -289,7 +311,8 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	initSensorProcess(cancelSensorProcessCtx, cartoSvc)
+
+	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
 }
@@ -429,6 +452,13 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		ExistingMap:        cartoSvc.existingMap,
 	}
 
+	if cartoCfg.MovementSensor != "" {
+		cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
+		cartoAlgoConfig.UseIMUData = true
+	} else {
+		cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
+	}
+
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
 	slamMode, err := cf.Initialize(ctx, cartoSvc.cartoFacadeTimeout, &cartoSvc.cartoFacadeWorkers)
 	if err != nil {
@@ -477,7 +507,7 @@ type Lidar struct {
 	name         string
 	dataRateMsec int
 	actual       s.Lidar
-	testing      s.TimedLidarSensor
+	timed        s.TimedLidarSensor
 }
 
 // IMU is the structure containing all fields related to IMU.
@@ -485,7 +515,7 @@ type IMU struct {
 	name         string
 	dataRateMsec int
 	actual       s.IMU
-	testing      s.TimedIMUSensor
+	timed        s.TimedIMUSensor
 }
 
 // CartographerService is the structure of the slam service.
