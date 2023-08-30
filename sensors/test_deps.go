@@ -188,14 +188,12 @@ func getFinishedReplayLidar() *inject.Camera {
 
 func getGoodIMU() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
-
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
 		return LinAcc, nil
 	}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		return AngVel, nil
 	}
-
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    true,
@@ -207,7 +205,6 @@ func getGoodIMU() *inject.MovementSensor {
 
 func getReplayIMU(testTime string) *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
-
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
 		if mdMap, ok := md.(map[string][]string); ok {
@@ -239,7 +236,6 @@ func getIMUWithErroringFunctions() *inject.MovementSensor {
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
 	}
-
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    true,
@@ -251,14 +247,12 @@ func getIMUWithErroringFunctions() *inject.MovementSensor {
 
 func getIMUWithInvalidProperties() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
-
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
 		return LinAcc, nil
 	}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		return AngVel, nil
 	}
-
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    false,
@@ -276,7 +270,6 @@ func getFinishedReplayIMU() *inject.MovementSensor {
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		return spatialmath.AngularVelocity{}, replay.ErrEndOfDataset
 	}
-
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    true,

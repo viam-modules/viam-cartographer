@@ -86,7 +86,11 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
 	} else {
-		// add the stored lidar data and begin processing the next one, if no imu exists or the currently stored imu data occurs after it.
+		/*
+			In order for cartographer to build a correct map, the lidar and imu readings need to be processed in
+			order in offline mode. We only add the stored lidar data if we do not have any IMU data to add, or if
+			the next IMU data has a timestamp after the current lidar reading's timestamp.
+		*/
 		if config.IMUName == "" || config.nextData.lidarTime.Sub(config.nextData.imuTime).Milliseconds() <= 0 {
 			if config.nextData.lidarData != nil {
 				tryAddLidarReadingUntilSuccess(ctx, config.nextData.lidarData, config.nextData.lidarTime, *config)
@@ -107,7 +111,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 	return false
 }
 
-// tryAddLidarReadingUntilSuccess adds a reading to the cartofacade retries on error (offline mode).
+// tryAddLidarReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode).
 func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, readingTime time.Time, config Config) {
 	/*
 		while add lidar reading fails, keep trying to add the same reading - in offline mode
@@ -131,7 +135,7 @@ func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, reading
 	}
 }
 
-// tryAddLidarReading adds a reading to the carto facade does not retry (online).
+// tryAddLidarReading adds a reading to the carto facade and does not retry (online).
 func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
 	startTime := time.Now()
 	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
@@ -192,7 +196,11 @@ func (config *Config) addIMUReading(
 		timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, *config)
 		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	} else {
-		// add the stored imu data and begin processing the next one, if the currently stored lidar data occurs after it.
+		/*
+			In order for cartographer to build a correct map, the lidar and imu readings need to be processed in
+			order in offline mode. We only add the stored IMU data if the next lidar data has a timestamp after
+			the current IMU reading's timestamp.
+		*/
 		if config.nextData.imuTime.Sub(config.nextData.lidarTime).Milliseconds() < 0 {
 			if config.started && config.nextData.imuData != undefinedIMU {
 				tryAddIMUReadingUntilSuccess(ctx, config.nextData.imuData, config.nextData.imuTime, *config)
@@ -225,7 +233,7 @@ func (config *Config) addIMUReading(
 	return false
 }
 
-// tryAddIMUReadingUntilSuccess adds a reading to the cartofacade retries on error (offline mode).
+// tryAddIMUReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode).
 func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time, config Config) {
 	/*
 		while add sensor reading fails, keep trying to add the same reading - in offline mode
@@ -249,7 +257,7 @@ func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMURe
 	}
 }
 
-// tryAddIMUReading adds a reading to the carto facade does not retry (online).
+// tryAddIMUReading adds a reading to the carto facade and does not retry (online).
 func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time, config Config) int {
 	startTime := time.Now()
 	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
