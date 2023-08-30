@@ -29,7 +29,8 @@ type Config struct {
 	IMUDataRateMsec          int
 	Timeout                  time.Duration
 	Logger                   golog.Logger
-	nextData                 nextData
+	nextLidarData            nextLidarData
+	nextIMUData              nextIMUData
 	firstLidarReadingTime    *time.Time
 	lastLidarReadingTime     *time.Time
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
@@ -37,11 +38,14 @@ type Config struct {
 
 // nextData stores the next data to be added to cartographer along with its associated timestamp so that,
 // in offline mode, data from multiple sensors can be added in order.
-type nextData struct {
-	lidarTime time.Time
-	lidarData []byte
-	imuTime   time.Time
-	imuData   cartofacade.IMUReading
+type nextLidarData struct {
+	time time.Time
+	data []byte
+}
+
+type nextIMUData struct {
+	time time.Time
+	data cartofacade.IMUReading
 }
 
 // StartLidar polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -55,7 +59,7 @@ func (config *Config) StartLidar(
 			return false
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
-				config.lastLidarReadingTime = &config.nextData.lidarTime
+				config.lastLidarReadingTime = &config.nextLidarData.time
 				config.Logger.Info("Beginning final optimization")
 				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
 				if err != nil {
@@ -91,11 +95,11 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			order in offline mode. We only add the stored lidar data if we do not have any IMU data to add, or if
 			the next IMU data has a timestamp after the current lidar reading's timestamp.
 		*/
-		if config.IMUName == "" || config.nextData.lidarTime.Sub(config.nextData.imuTime).Milliseconds() <= 0 {
-			if config.nextData.lidarData != nil {
-				tryAddLidarReadingUntilSuccess(ctx, config.nextData.lidarData, config.nextData.lidarTime, *config)
+		if config.IMUName == "" || config.nextLidarData.time.Sub(config.nextIMUData.time).Milliseconds() <= 0 {
+			if config.nextLidarData.data != nil {
+				tryAddLidarReadingUntilSuccess(ctx, config.nextLidarData.data, config.nextLidarData.time, *config)
 				if config.firstLidarReadingTime == nil {
-					config.firstLidarReadingTime = &config.nextData.lidarTime
+					config.firstLidarReadingTime = &config.nextLidarData.time
 				}
 			}
 			// get next lidar data response
@@ -104,8 +108,8 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 				return status
 			}
 
-			config.nextData.lidarTime = tsr.ReadingTime
-			config.nextData.lidarData = tsr.Reading
+			config.nextLidarData.time = tsr.ReadingTime
+			config.nextLidarData.data = tsr.Reading
 		} else {
 			time.Sleep(time.Millisecond)
 		}
@@ -162,7 +166,7 @@ func (config *Config) StartIMU(
 		case <-ctx.Done():
 			return false
 		default:
-			if config.lastLidarReadingTime != nil && config.nextData.imuTime.Sub(*config.lastLidarReadingTime) > 0 {
+			if config.lastLidarReadingTime != nil && config.nextIMUData.time.Sub(*config.lastLidarReadingTime) > 0 {
 				return true
 			}
 			if jobDone := config.addIMUReading(ctx); jobDone {
@@ -203,10 +207,10 @@ func (config *Config) addIMUReading(
 			order in offline mode. We only add the stored IMU data if the next lidar data has a timestamp after
 			the current IMU reading's timestamp.
 		*/
-		if config.nextData.imuTime.Sub(config.nextData.lidarTime).Milliseconds() < 0 {
-			if config.nextData.imuData != undefinedIMU && config.firstLidarReadingTime != nil &&
-				config.nextData.imuTime.Sub(*config.firstLidarReadingTime) > 0 {
-				tryAddIMUReadingUntilSuccess(ctx, config.nextData.imuData, config.nextData.imuTime, *config)
+		if config.nextIMUData.time.Sub(config.nextLidarData.time).Milliseconds() < 0 {
+			if config.nextIMUData.data != undefinedIMU && config.firstLidarReadingTime != nil &&
+				config.nextIMUData.time.Sub(*config.firstLidarReadingTime) > 0 {
+				tryAddIMUReadingUntilSuccess(ctx, config.nextIMUData.data, config.nextIMUData.time, *config)
 			}
 			// get next imu data response
 			tsr, status, err := getTimedIMUSensorReading(ctx, config)
@@ -223,9 +227,9 @@ func (config *Config) addIMUReading(
 			// TODO: Remove dropping out of order imu readings after DATA-1812 has been complete
 			// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
 			// update current imu data and time
-			if config.nextData.imuTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
-				config.nextData.imuTime = tsr.ReadingTime
-				config.nextData.imuData = sr
+			if config.nextIMUData.time.Sub(tsr.ReadingTime).Milliseconds() < 0 {
+				config.nextIMUData.time = tsr.ReadingTime
+				config.nextIMUData.data = sr
 			} else {
 				config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
 			}

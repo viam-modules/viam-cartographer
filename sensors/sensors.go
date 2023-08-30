@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	replayTimeTolerance         = 20 // Milliseconds
+	replayTimeTolerance         = 10 // Milliseconds
 	replayTimestampErrorMessage = "replay sensor timestamp parse RFC3339Nano error"
 )
 
