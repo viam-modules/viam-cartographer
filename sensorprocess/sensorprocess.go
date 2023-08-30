@@ -30,8 +30,8 @@ type Config struct {
 	Timeout                  time.Duration
 	Logger                   golog.Logger
 	nextData                 nextData
-	startedAddingLidarData   bool
-	stoppedAddingLidarData   bool
+	firstLidarReadingTime    *time.Time
+	lastLidarReadingTime     *time.Time
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
@@ -55,7 +55,7 @@ func (config *Config) StartLidar(
 			return false
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
-				config.stoppedAddingLidarData = true
+				config.lastLidarReadingTime = &config.nextData.lidarTime
 				config.Logger.Info("Beginning final optimization")
 				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
 				if err != nil {
@@ -94,7 +94,9 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		if config.IMUName == "" || config.nextData.lidarTime.Sub(config.nextData.imuTime).Milliseconds() <= 0 {
 			if config.nextData.lidarData != nil {
 				tryAddLidarReadingUntilSuccess(ctx, config.nextData.lidarData, config.nextData.lidarTime, *config)
-				config.startedAddingLidarData = true
+				if config.firstLidarReadingTime == nil {
+					config.firstLidarReadingTime = &config.nextData.lidarTime
+				}
 			}
 			// get next lidar data response
 			tsr, status, err := getTimedLidarSensorReading(ctx, config)
@@ -160,7 +162,7 @@ func (config *Config) StartIMU(
 		case <-ctx.Done():
 			return false
 		default:
-			if config.stoppedAddingLidarData {
+			if config.lastLidarReadingTime != nil && config.nextData.imuTime.Sub(*config.lastLidarReadingTime) > 0 {
 				return true
 			}
 			if jobDone := config.addIMUReading(ctx); jobDone {
@@ -202,7 +204,8 @@ func (config *Config) addIMUReading(
 			the current IMU reading's timestamp.
 		*/
 		if config.nextData.imuTime.Sub(config.nextData.lidarTime).Milliseconds() < 0 {
-			if config.startedAddingLidarData && config.nextData.imuData != undefinedIMU {
+			if config.nextData.imuData != undefinedIMU && config.firstLidarReadingTime != nil &&
+				config.nextData.imuTime.Sub(*config.firstLidarReadingTime) > 0 {
 				tryAddIMUReadingUntilSuccess(ctx, config.nextData.imuData, config.nextData.imuTime, *config)
 			}
 			// get next imu data response
