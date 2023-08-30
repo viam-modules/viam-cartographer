@@ -109,8 +109,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 // and returns them.
 func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUDataRateMsec, defaultMapRateSec int, logger golog.Logger,
 ) (OptionalConfigParams, error) {
-	optionalConfigParams := OptionalConfigParams{ImuDataRateMsec: defaultIMUDataRateMsec}
-
+	var optionalConfigParams OptionalConfigParams
 	// feature flag for new config
 	if config.IMUIntegrationEnabled {
 		strCameraDataFreqHz, exists := config.Camera["data_frequency_hz"]

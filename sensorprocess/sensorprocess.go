@@ -16,7 +16,10 @@ import (
 	"github.com/viamrobotics/viam-cartographer/sensors"
 )
 
-var undefinedIMU = cartofacade.IMUReading{}
+var (
+	undefinedIMU = cartofacade.IMUReading{}
+	defaultTime  = time.Time{}
+)
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
@@ -31,8 +34,8 @@ type Config struct {
 	Logger                   golog.Logger
 	nextLidarData            nextLidarData
 	nextIMUData              nextIMUData
-	firstLidarReadingTime    *time.Time
-	lastLidarReadingTime     *time.Time
+	firstLidarReadingTime    time.Time
+	lastLidarReadingTime     time.Time
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
@@ -59,7 +62,7 @@ func (config *Config) StartLidar(
 			return false
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
-				config.lastLidarReadingTime = &config.nextLidarData.time
+				config.lastLidarReadingTime = config.nextLidarData.time
 				config.Logger.Info("Beginning final optimization")
 				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
 				if err != nil {
@@ -98,8 +101,8 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		if config.IMUName == "" || config.nextLidarData.time.Sub(config.nextIMUData.time).Milliseconds() <= 0 {
 			if config.nextLidarData.data != nil {
 				tryAddLidarReadingUntilSuccess(ctx, config.nextLidarData.data, config.nextLidarData.time, *config)
-				if config.firstLidarReadingTime == nil {
-					config.firstLidarReadingTime = &config.nextLidarData.time
+				if config.firstLidarReadingTime == defaultTime {
+					config.firstLidarReadingTime = config.nextLidarData.time
 				}
 			}
 			// get next lidar data response
@@ -166,7 +169,7 @@ func (config *Config) StartIMU(
 		case <-ctx.Done():
 			return false
 		default:
-			if config.lastLidarReadingTime != nil && config.nextIMUData.time.Sub(*config.lastLidarReadingTime) > 0 {
+			if config.lastLidarReadingTime != defaultTime && config.nextIMUData.time.Sub(config.lastLidarReadingTime) > 0 {
 				return true
 			}
 			if jobDone := config.addIMUReading(ctx); jobDone {
@@ -208,8 +211,8 @@ func (config *Config) addIMUReading(
 			the current IMU reading's timestamp.
 		*/
 		if config.nextIMUData.time.Sub(config.nextLidarData.time).Milliseconds() < 0 {
-			if config.nextIMUData.data != undefinedIMU && config.firstLidarReadingTime != nil &&
-				config.nextIMUData.time.Sub(*config.firstLidarReadingTime) > 0 {
+			if config.nextIMUData.data != undefinedIMU && config.firstLidarReadingTime != defaultTime &&
+				config.nextIMUData.time.Sub(config.firstLidarReadingTime) > 0 {
 				tryAddIMUReadingUntilSuccess(ctx, config.nextIMUData.data, config.nextIMUData.time, *config)
 			}
 			// get next imu data response

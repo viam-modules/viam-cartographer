@@ -913,7 +913,7 @@ func TestAddIMUReading(t *testing.T) {
 		config.IMUDataRateMsec = 0
 		config.LidarDataRateMsec = 0
 		config.nextLidarData.time = time.Now()
-		config.firstLidarReadingTime = &time.Time{}
+		config.firstLidarReadingTime = time.Time{}.Add(time.Millisecond)
 
 		_ = config.addIMUReading(ctx) // first call gets data
 		jobDone := config.addIMUReading(ctx)
