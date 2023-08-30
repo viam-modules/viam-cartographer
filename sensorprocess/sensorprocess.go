@@ -30,8 +30,8 @@ type Config struct {
 	Timeout                  time.Duration
 	Logger                   golog.Logger
 	nextData                 nextData
-	started                  bool
-	stopped                  bool
+	startedAddingLidarData   bool
+	stoppedAddingLidarData   bool
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
@@ -55,7 +55,7 @@ func (config *Config) StartLidar(
 			return false
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
-				config.stopped = true
+				config.stoppedAddingLidarData = true
 				config.Logger.Info("Beginning final optimization")
 				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
 				if err != nil {
@@ -94,7 +94,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		if config.IMUName == "" || config.nextData.lidarTime.Sub(config.nextData.imuTime).Milliseconds() <= 0 {
 			if config.nextData.lidarData != nil {
 				tryAddLidarReadingUntilSuccess(ctx, config.nextData.lidarData, config.nextData.lidarTime, *config)
-				config.started = true
+				config.startedAddingLidarData = true
 			}
 			// get next lidar data response
 			tsr, status, err := getTimedLidarSensorReading(ctx, config)
@@ -160,7 +160,7 @@ func (config *Config) StartIMU(
 		case <-ctx.Done():
 			return false
 		default:
-			if config.stopped {
+			if config.stoppedAddingLidarData {
 				return true
 			}
 			if jobDone := config.addIMUReading(ctx); jobDone {
@@ -202,7 +202,7 @@ func (config *Config) addIMUReading(
 			the current IMU reading's timestamp.
 		*/
 		if config.nextData.imuTime.Sub(config.nextData.lidarTime).Milliseconds() < 0 {
-			if config.started && config.nextData.imuData != undefinedIMU {
+			if config.startedAddingLidarData && config.nextData.imuData != undefinedIMU {
 				tryAddIMUReadingUntilSuccess(ctx, config.nextData.imuData, config.nextData.imuTime, *config)
 			}
 			// get next imu data response

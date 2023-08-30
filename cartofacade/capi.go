@@ -520,10 +520,10 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_NOT_IN_STARTED_STATE")
 	case C.VIAM_CARTO_NOT_IN_TERMINATABLE_STATE:
 		return errors.New("VIAM_CARTO_NOT_IN_TERMINATABLE_STATE")
-	case C.VIAM_CARTO_IMU_ENABLED_INVALID:
-		return errors.New("VIAM_CARTO_IMU_ENABLED_INVALID")
+	case C.VIAM_CARTO_IMU_PROVIDE_AND_IMU_ENABLED_MISMATCH:
+		return errors.New("VIAM_CARTO_IMU_PROVIDE_AND_IMU_ENABLED_MISMATCH")
 	case C.VIAM_CARTO_IMU_READING_INVALID:
-		return errors.New("VIAM_CARTO_IMU_READING_INVALID")
+		return errors.New("VIAM_CARTO_IMU_PROVIDE_AND_IMU_ENABLED_MISMATCH")
 	default:
 		return errors.New("status code unclassified")
 	}

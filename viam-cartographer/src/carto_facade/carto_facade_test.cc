@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
                                 no_movement_sensor, false, false, "");
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_imu_config, ac) ==
-               VIAM_CARTO_IMU_ENABLED_INVALID);
+               VIAM_CARTO_IMU_PROVIDE_AND_IMU_ENABLED_MISMATCH);
 
     //  Test config validation with deprecated config structure
     fs::path deprecated_path = tmp_dir / fs::path(bfs::unique_path().string());

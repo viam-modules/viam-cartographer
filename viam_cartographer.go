@@ -248,7 +248,7 @@ func New(
 	}
 
 	if lidar.dataRateMsec == 0 && imu.dataRateMsec != 0 {
-		logger.Warn("In offline mode, but IMU data frequency is nonzero")
+		return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
 	}
 
 	// Cartographer SLAM Service Object
