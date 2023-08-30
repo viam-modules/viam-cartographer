@@ -217,6 +217,10 @@ func New(
 		return nil, err
 	}
 
+	if optionalConfigParams.LidarDataRateMsec == 0 && optionalConfigParams.ImuDataRateMsec != 0 {
+		return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
+	}
+
 	// Need to be able to shut down the sensor process before the cartoFacade
 	cancelSensorProcessCtx, cancelSensorProcessFunc := context.WithCancel(context.Background())
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
@@ -245,10 +249,6 @@ func New(
 		dataRateMsec: optionalConfigParams.ImuDataRateMsec,
 		actual:       imuObject,
 		timed:        timedIMU,
-	}
-
-	if lidar.dataRateMsec == 0 && imu.dataRateMsec != 0 {
-		return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
 	}
 
 	// Cartographer SLAM Service Object
