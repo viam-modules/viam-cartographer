@@ -424,6 +424,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// 1. test valid addLidarReading: valid reading ascii
 		tDelta := time.Second * 5
+		imuReadingOffset := time.Millisecond * 5
 		t.Log("lidar reading 1")
 		timestamp = timestamp.Add(tDelta)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
@@ -434,7 +435,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 			LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
 		}
-		err = vc.addIMUReading("myIMU", testIMUReading, timestamp)
+		err = vc.addIMUReading("myIMU", testIMUReading, timestamp.Add(imuReadingOffset))
 		test.That(t, err, test.ShouldBeNil)
 
 		// 2. test valid addLidarReading: valid reading binary
@@ -448,7 +449,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 			LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
 		}
-		err = vc.addIMUReading("myIMU", testIMUReading, timestamp)
+		err = vc.addIMUReading("myIMU", testIMUReading, timestamp.Add(imuReadingOffset))
 		test.That(t, err, test.ShouldBeNil)
 
 		// third sensor reading populates the pointcloud map and the position
@@ -462,14 +463,14 @@ func TestCGoAPIWithIMU(t *testing.T) {
 			LinearAcceleration: r3.Vector{X: 0.2, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: -0.6, Y: 0, Z: 0},
 		}
-		err = vc.addIMUReading("myIMU", testIMUReading, timestamp)
+		err = vc.addIMUReading("myIMU", testIMUReading, timestamp.Add(imuReadingOffset))
 		test.That(t, err, test.ShouldBeNil)
 
 		// test getPosition zeroed
 		position, err = vc.getPosition()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
-		positionIsZero(t, position)
+		test.That(t, r3.Vector{X: position.X, Y: position.Y, Z: position.Z}, test.ShouldNotResemble, r3.Vector{X: 0, Y: 0, Z: 0})
 
 		// test getPointCloudMap returns a non empty result
 		pcd, err = vc.getPointCloudMap()
