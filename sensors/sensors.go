@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	replayTimeTolerance         = 10 // Milliseconds
+	replayTimeToleranceMsec     = 10 // Milliseconds
 	replayTimestampErrorMessage = "replay sensor timestamp parse RFC3339Nano error"
 )
 
@@ -287,7 +287,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 					ReadingTime: time.Now().UTC(),
 					Replay:      false,
 				}, nil
-			} else if math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < replayTimeTolerance {
+			} else if math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < replayTimeToleranceMsec {
 				return TimedIMUSensorReadingResponse{
 					LinearAcceleration: linAcc,
 					AngularVelocity: spatialmath.AngularVelocity{

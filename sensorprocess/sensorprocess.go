@@ -282,7 +282,7 @@ func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readi
 	return int(math.Max(0, float64(config.IMUDataRateMsec-timeElapsedMs)))
 }
 
-// getTimedIMUSensorReading returns the next imu reading if available along with a status denoting if the end of dataset as been reached.
+// getTimedIMUSensorReading returns the next imu reading if available along with a status denoting if the end of dataset has been reached.
 func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
 	if err != nil {
@@ -296,7 +296,7 @@ func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.Time
 	return tsr, false, err
 }
 
-// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the end of dataset as been
+// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the end of dataset has been
 // reached.
 func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)

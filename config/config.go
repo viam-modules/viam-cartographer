@@ -160,7 +160,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 
 	if config.CloudStoryEnabled {
 		if config.ExistingMap == "" {
-			logger.Debug("no existimg_map provided, entering mapping mode")
+			logger.Debug("no existing_map provided, entering mapping mode")
 		} else {
 			if !strings.HasSuffix(config.ExistingMap, ".pbstream") {
 				return OptionalConfigParams{}, newError("existing map is not a .pbstream file")

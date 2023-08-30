@@ -1010,7 +1010,7 @@ extern int viam_carto_init(viam_carto **ppVC, viam_carto_lib *pVCL,
          biseqcstr(c.movement_sensor, ("")) == true) ||
         (ac.use_imu_data == false &&
          biseqcstr(c.movement_sensor, ("")) == false)) {
-        return VIAM_CARTO_IMU_PROVIDE_AND_IMU_ENABLED_MISMATCH;
+        return VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH;
     }
 
     // allocate viam_carto struct

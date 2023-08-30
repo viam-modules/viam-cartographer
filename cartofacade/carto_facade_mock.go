@@ -54,14 +54,14 @@ type Mock struct {
 	AddLidarReadingFunc func(
 		ctx context.Context,
 		timeout time.Duration,
-		sensorName string,
+		lidarName string,
 		currentReading []byte,
 		readingTimestamp time.Time,
 	) error
 	AddIMUReadingFunc func(
 		ctx context.Context,
 		timeout time.Duration,
-		sensorName string,
+		imuName string,
 		currentReading IMUReading,
 		readingTimestamp time.Time,
 	) error
@@ -152,28 +152,28 @@ func (cf *Mock) Terminate(
 func (cf *Mock) AddLidarReading(
 	ctx context.Context,
 	timeout time.Duration,
-	sensorName string,
+	lidarName string,
 	currentReading []byte,
 	readingTimestamp time.Time,
 ) error {
 	if cf.AddLidarReadingFunc == nil {
-		return cf.CartoFacade.AddLidarReading(ctx, timeout, sensorName, currentReading, readingTimestamp)
+		return cf.CartoFacade.AddLidarReading(ctx, timeout, lidarName, currentReading, readingTimestamp)
 	}
-	return cf.AddLidarReadingFunc(ctx, timeout, sensorName, currentReading, readingTimestamp)
+	return cf.AddLidarReadingFunc(ctx, timeout, lidarName, currentReading, readingTimestamp)
 }
 
 // AddIMUReading calls the injected AddIMUReadingFunc or the real version.
 func (cf *Mock) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
-	sensorName string,
+	imuName string,
 	currentReading IMUReading,
 	readingTimestamp time.Time,
 ) error {
 	if cf.AddIMUReadingFunc == nil {
-		return cf.CartoFacade.AddIMUReading(ctx, timeout, sensorName, currentReading, readingTimestamp)
+		return cf.CartoFacade.AddIMUReading(ctx, timeout, imuName, currentReading, readingTimestamp)
 	}
-	return cf.AddIMUReadingFunc(ctx, timeout, sensorName, currentReading, readingTimestamp)
+	return cf.AddIMUReadingFunc(ctx, timeout, imuName, currentReading, readingTimestamp)
 }
 
 // GetPosition calls the injected GetPositionFunc or the real version.

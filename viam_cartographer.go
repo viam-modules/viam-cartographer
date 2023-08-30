@@ -205,6 +205,16 @@ func New(
 		lidarName = svcConfig.Sensors[0]
 	}
 
+	if optionalConfigParams.ImuName != "" {
+		if optionalConfigParams.LidarDataRateMsec == 0 && optionalConfigParams.ImuDataRateMsec != 0 {
+			return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
+		}
+
+		if optionalConfigParams.LidarDataRateMsec != 0 && optionalConfigParams.ImuDataRateMsec == 0 {
+			return nil, errors.New("In online mode, but IMU data frequency is zero")
+		}
+	}
+
 	// Get the lidar for the Dim2D cartographer sub algorithm
 	lidarObject, err := s.NewLidar(ctx, deps, lidarName, logger)
 	if err != nil {
@@ -215,10 +225,6 @@ func New(
 	imuObject, err := s.NewIMU(ctx, deps, optionalConfigParams.ImuName, logger)
 	if err != nil {
 		return nil, err
-	}
-
-	if optionalConfigParams.LidarDataRateMsec == 0 && optionalConfigParams.ImuDataRateMsec != 0 {
-		return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
 	}
 
 	// Need to be able to shut down the sensor process before the cartoFacade

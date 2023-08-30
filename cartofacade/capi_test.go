@@ -373,7 +373,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		// test invalid IMU enabling configuration
 		algoCfg := GetTestAlgoConfig(false)
 		vc, err := NewCarto(cfg, algoCfg, &pvcl)
-		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_IMU_PROVIDE_AND_IMU_ENABLED_MISMATCH"))
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
 		algoCfg = GetTestAlgoConfig(true)

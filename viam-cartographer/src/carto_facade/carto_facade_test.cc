@@ -186,7 +186,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
                                 no_movement_sensor, false, false, "");
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_imu_config, ac) ==
-               VIAM_CARTO_IMU_PROVIDE_AND_IMU_ENABLED_MISMATCH);
+               VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH);
 
     //  Test config validation with deprecated config structure
     fs::path deprecated_path = tmp_dir / fs::path(bfs::unique_path().string());
@@ -1223,7 +1223,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_without_imu) {
     BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
     BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
 
-    // // Start
+    // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(((cf->state) == CartoFacadeState::STARTED));
 
@@ -1345,7 +1345,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_imu) {
 
     {
         viam_carto_lidar_reading sr;
-        // must be they first sensor in the sensor list
+        // must be the first sensor in the sensor list
         sr.lidar = bfromcstr("never heard of it sensor");
         std::string pcd = help::binary_pcd(points);
         sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
@@ -1361,7 +1361,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_imu) {
     // empty lidar reading
     {
         viam_carto_lidar_reading sr;
-        // must be they first sensor in the sensor list
+        // must be the first sensor in the sensor list
         sr.lidar = bfromcstr("lidar");
         std::string pcd = "empty lidar reading";
         // passing 0 as the second parameter makes the string empty
