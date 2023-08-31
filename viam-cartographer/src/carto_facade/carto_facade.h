@@ -441,50 +441,8 @@ class CartoFacade {
     // includes the timestamp of the time when the map is saved.
     void SaveInternalStateOnInterval();
 
-    // ConvertSavedMapToStream converted the saved pbstream to the passed in
-    // string and deletes the file.
-    // void ConvertSavedMapToStream(const std::string filename_with_timestamp,
-    //                              std::string *buffer);
-
-    // TryFileClose attempts to close an opened ifstream, returning an error
-    // string if it fails.
-    // std::string TryFileClose(std::ifstream &file, std::string filename);
-
-    // ProcessDataAndStartSavingMaps processes the data in the data directory
-    // that is newer than the provided data_cutoff_time
-    // and starts the process to save maps in parallel. In offline mode,
-    // all data in the directory is processed. In online mode, the most
-    // recently generated data is processed until a shutdown signal is
-    // received.
-    // void ProcessDataAndStartSavingMaps(double data_cutoff_time);
-
-    // GetLatestPaintedMapSlices paints and returns the current map of
-    // Cartographer
-    // cartographer::io::PaintSubmapSlicesResult GetLatestPaintedMapSlices();
-
-    // GetLatestSampledPointCloudMapString paints and returns the latest map as
-    // a pcd string with probability estimates written to the color field. The
-    // pcd is generated from PaintedMapSlices() and sampled to fit the 32 MB
-    // limit on gRPC messages. The sampled behavior may change when moving to
-    // streamed point clouds.
-    // void GetLatestSampledPointCloudMapString(std::string &pointcloud);
-
-    // CacheLatestMap extracts and saves the latest map as a backup in
-    // the respective member variables.
-    // void CacheLatestMap();
-
-    // If using the LOCALIZING slam mode, cache a copy of the map before
-    // beginning to process data. If cartographer fails to do this,
-    // terminate the program.
-    // void CacheMapInLocalizationMode();
-
-    // std::vector<std::string> file_list_offline;
-    // size_t current_file_offline = 0;
-    // std::string current_file_online;
-
     std::shared_mutex optimization_shared_mutex;
 
-    // std::atomic<bool> finished_processing_offline{false};
     std::unique_ptr<std::thread> thread_save_internal_state;
 
     std::mutex viam_response_mutex;
