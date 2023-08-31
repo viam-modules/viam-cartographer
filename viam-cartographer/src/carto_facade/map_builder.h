@@ -57,7 +57,7 @@ class MapBuilder {
     // string if it fails.
     std::string TryFileClose(std::ifstream &file, std::string filename);
 
-    void StartLidarTrajectoryBuilder();
+    void StartTrajectoryBuilder(bool use_imu_data);
 
     // SetStartTime sets the start_time to the time stamp from the first sensor
     // file that is being read in.
@@ -72,8 +72,10 @@ class MapBuilder {
 
     // AddSensorData adds sensor data to cartographer's internal state
     // throws if adding sensor data fails.
-    // Currently assumes the sensor data is coming from the lidar
-    void AddSensorData(cartographer::sensor::TimedPointCloudData measurement);
+    void AddSensorData(const std::string &sensor_id,
+                       cartographer::sensor::TimedPointCloudData measurement);
+    void AddSensorData(const std::string &sensor_id,
+                       cartographer::sensor::ImuData measurement);
 
     // GetLocalSlamResultCallback saves the local pose in the
     // local_slam_result_poses array.
@@ -86,6 +88,7 @@ class MapBuilder {
     void OverwriteMissingDataRayLength(float value);
     void OverwriteMaxRange(float value);
     void OverwriteMinRange(float value);
+    void OverwriteUseIMUData(bool value);
     void OverwriteMaxSubmapsToKeep(int value);
     void OverwriteFreshSubmapsCount(int value);
     void OverwriteMinCoveredArea(double value);
@@ -100,6 +103,7 @@ class MapBuilder {
     float GetMissingDataRayLength();
     float GetMaxRange();
     float GetMinRange();
+    bool GetUseIMUData();
     int GetMaxSubmapsToKeep();
     int GetFreshSubmapsCount();
     double GetMinCoveredArea();

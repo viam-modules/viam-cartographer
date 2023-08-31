@@ -32,7 +32,7 @@ func GetBadTestConfig() CartoConfig {
 }
 
 // GetTestAlgoConfig gets a sample algo config for testing purposes.
-func GetTestAlgoConfig() CartoAlgoConfig {
+func GetTestAlgoConfig(useImuData bool) CartoAlgoConfig {
 	return CartoAlgoConfig{
 		OptimizeOnStart:      false,
 		OptimizeEveryNNodes:  3,
@@ -40,6 +40,7 @@ func GetTestAlgoConfig() CartoAlgoConfig {
 		MissingDataRayLength: 25.0,
 		MaxRange:             25.0,
 		MinRange:             0.2,
+		UseIMUData:           useImuData,
 		MaxSubmapsToKeep:     3,
 		FreshSubmapsCount:    3,
 		MinCoveredArea:       1.0,

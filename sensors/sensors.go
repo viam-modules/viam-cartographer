@@ -4,6 +4,7 @@ package sensors
 import (
 	"bytes"
 	"context"
+	"math"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -15,9 +16,17 @@ import (
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
+	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/rdk/utils/contextutils"
 	goutils "go.viam.com/utils"
 )
+
+const (
+	replayTimeToleranceMsec     = 10 // Milliseconds
+	replayTimestampErrorMessage = "replay sensor timestamp parse RFC3339Nano error"
+)
+
+var defaultTime = time.Time{}
 
 // Lidar represents a LIDAR sensor.
 type Lidar struct {
@@ -193,7 +202,7 @@ func ValidateGetIMUData(
 
 // TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether it was a replay sensor or not.
 func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error) {
-	replay := false
+	live := true
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	readingPc, err := lidar.lidar.NextPointCloud(ctxWithMetadata)
 	if err != nil {
@@ -211,45 +220,78 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSenso
 
 	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
 	if ok {
-		replay = true
+		live = false
 		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
 		if err != nil {
-			msg := "replay sensor timestamp parse RFC3339Nano error"
-			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
+			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 		}
 	}
-	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: !live}, nil
 }
 
 // TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.
 // IMU Sensors currently do not support replay capabilities.
 func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error) {
 	replay := false
-	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-	linAcc, err := imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
-	if err != nil {
-		msg := "LinearAcceleration error"
-		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
-	}
-	angVel, err := imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
-	if err != nil {
-		msg := "AngularVelocity error"
-		return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
-	}
-	readingTime := time.Now().UTC()
 
-	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-	if ok {
-		replay = true
-		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-		if err != nil {
-			msg := "replay sensor timestamp parse RFC3339Nano error"
-			return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+	var timeLinearAcc, timeAngularVel time.Time
+	var linAcc r3.Vector
+	var angVel spatialmath.AngularVelocity
+	var err error
+	for {
+		select {
+		case <-ctx.Done():
+			return TimedIMUSensorReadingResponse{}, nil
+		default:
+			if timeLinearAcc == defaultTime || timeLinearAcc.Sub(timeAngularVel).Milliseconds() < 0 {
+				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
+				linAcc, err = imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
+				if err != nil {
+					msg := "LinearAcceleration error"
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+				}
+				timeLinearAcc = time.Now().UTC()
+
+				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+				if ok {
+					replay = true
+					timeLinearAcc, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+					if err != nil {
+						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
+					}
+				}
+			}
+
+			if timeAngularVel == defaultTime || timeAngularVel.Sub(timeLinearAcc).Milliseconds() < 0 {
+				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
+				angVel, err = imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
+				if err != nil {
+					msg := "AngularVelocity error"
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+				}
+				timeAngularVel = time.Now().UTC()
+
+				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
+				if ok {
+					replay = true
+					timeAngularVel, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
+					if err != nil {
+						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
+					}
+				}
+			}
+			if math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < replayTimeToleranceMsec {
+				return TimedIMUSensorReadingResponse{
+					LinearAcceleration: linAcc,
+					AngularVelocity: spatialmath.AngularVelocity{
+						X: rdkutils.DegToRad(angVel.X),
+						Y: rdkutils.DegToRad(angVel.Y),
+						Z: rdkutils.DegToRad(angVel.Z),
+					},
+					ReadingTime: timeLinearAcc.Add(timeLinearAcc.Sub(timeAngularVel) / 2),
+					Replay:      replay,
+				}, nil
+			}
 		}
 	}
-
-	return TimedIMUSensorReadingResponse{
-		LinearAcceleration: linAcc, AngularVelocity: angVel,
-		ReadingTime: readingTime, Replay: replay,
-	}, nil
 }
