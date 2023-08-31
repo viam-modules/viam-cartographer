@@ -106,7 +106,7 @@ func TestRequest(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("failure due to timeout", func(t *testing.T) {
+	t.Run("fails when the work function takes longer than the timeout", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
