@@ -48,6 +48,11 @@ const (
 	// NumPointClouds is the number of pointclouds saved in artifact
 	// for the cartographer integration tests.
 	NumPointClouds = 15
+	// CartoFacadeTimeoutForTest is the timeout used for capi requests for tests
+	CartoFacadeTimeoutForTest = 5 * time.Second
+	// CartoFacadeInternalTimeoutForTest is the timeout used for internal capi
+	// requests for tests
+	CartoFacadeInternalTimeoutForTest = 15 * time.Minute
 )
 
 var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
@@ -323,8 +328,8 @@ func CreateIntegrationSLAMService(
 		logger,
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
-		5*time.Second,
-		5*time.Second,
+		CartoFacadeTimeoutForTest,
+		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
 		timedIMU,
 	)
@@ -383,8 +388,8 @@ func CreateSLAMService(
 		logger,
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
-		5*time.Second,
-		5*time.Second,
+		CartoFacadeTimeoutForTest,
+		CartoFacadeInternalTimeoutForTest,
 		nil,
 		nil,
 	)
