@@ -2,12 +2,14 @@
 package testhelper
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"testing"
@@ -47,10 +49,10 @@ const (
 	testDialMaxTimeoutSec              = 1
 	// NumPointClouds is the number of pointclouds saved in artifact
 	// for the cartographer integration tests.
-	NumPointClouds = 15
+	NumPointClouds = 15 //20
 )
 
-var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
+var mockDataPath = "/Users/jeremyhyde/Downloads/mock_data" //artifact.MustPath("viam-cartographer/mock_lidar") //
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
@@ -115,7 +117,7 @@ func getStubIMU(t *testing.T) *inject.MovementSensor {
 }
 
 func mockLidarReadingsValid() error {
-	dirEntries, err := os.ReadDir(mockLidarPath)
+	dirEntries, err := os.ReadDir(mockDataPath + "/lidar") // os.ReadDir(mockDataPath)
 	if err != nil {
 		return err
 	}
@@ -127,7 +129,7 @@ func mockLidarReadingsValid() error {
 		}
 	}
 	if len(files) < NumPointClouds {
-		return errors.New("expected at least 15 lidar readings for integration test")
+		return errors.Errorf("expected at least %v lidar readings for integration test", NumPointClouds)
 	}
 	for i := 0; i < NumPointClouds; i++ {
 		found := false
@@ -140,7 +142,7 @@ func mockLidarReadingsValid() error {
 		}
 
 		if !found {
-			return errors.Errorf("expected %s to exist for integration test", path.Join(mockLidarPath, expectedFile))
+			return errors.Errorf("expected %s to exist for integration test", path.Join(mockDataPath+"/lidar", expectedFile)) // path.Join(mockDataPath, expectedFile)) //
 		}
 	}
 	return nil
@@ -185,10 +187,11 @@ func IntegrationTimedLidarSensor(
 				done <- struct{}{}
 				closed = true
 			}
-			return s.TimedLidarSensorReadingResponse{}, errors.New("end of dataset")
+			return s.TimedLidarSensorReadingResponse{}, errors.New("Lidar: end of dataset")
 		}
 
-		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
+		file, err := os.Open(mockDataPath + "/lidar/" + strconv.FormatUint(i, 10) + ".pcd")
+		//file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 		if err != nil {
 			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to open pcd file")
 			return s.TimedLidarSensorReadingResponse{}, err
@@ -238,45 +241,73 @@ func IntegrationTimedIMUSensor(
 	closed := false
 
 	ts := &s.TimedIMUSensorMock{}
-	mockLinearAccelerationData := []r3.Vector{
-		{X: 1, Y: 1, Z: 1},
-		{X: 2, Y: 1, Z: 1},
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 1, Z: 2},
-		{X: 1, Y: 1, Z: 3},
-		{X: 1, Y: 3, Z: 1},
-		{X: 3, Y: 1, Z: 1},
-		{X: 2, Y: 1, Z: 1},
-	}
-	mockAngularVelocityData := []spatialmath.AngularVelocity{
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 1, Z: 2},
-		{X: 1, Y: 1, Z: 2},
-		{X: 1, Y: 1, Z: 2},
-		{X: 5, Y: 1, Z: 1},
-		{X: 5, Y: 1, Z: 1},
-	}
+	// mockLinearAccelerationData := []r3.Vector{
+	// 	{X: 1, Y: 1, Z: 1},
+	// 	{X: 2, Y: 1, Z: 1},
+	// 	{X: 1, Y: 2, Z: 1},
+	// 	{X: 1, Y: 1, Z: 2},
+	// 	{X: 1, Y: 1, Z: 3},
+	// 	{X: 1, Y: 3, Z: 1},
+	// 	{X: 3, Y: 1, Z: 1},
+	// 	{X: 2, Y: 1, Z: 1},
+	// }
+	// mockAngularVelocityData := []spatialmath.AngularVelocity{
+	// 	{X: 1, Y: 2, Z: 1},
+	// 	{X: 1, Y: 2, Z: 1},
+	// 	{X: 1, Y: 2, Z: 1},
+	// 	{X: 1, Y: 1, Z: 2},
+	// 	{X: 1, Y: 1, Z: 2},
+	// 	{X: 1, Y: 1, Z: 2},
+	// 	{X: 5, Y: 1, Z: 1},
+	// 	{X: 5, Y: 1, Z: 1},
+	// }
 
 	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+
+	file, err := os.Open(mockDataPath + "/imu/data.txt")
+	if err != nil {
+		t.Error("TEST FAILED TimedIMUSensorReading Mock failed to open data file")
+		return nil, err
+	}
+	defer file.Close()
+
+	fileScanner := bufio.NewScanner(file)
+	fileScanner.Split(bufio.ScanLines)
+	var fileLines []string
+
+	for fileScanner.Scan() {
+		fileLines = append(fileLines, fileScanner.Text())
+	}
 
 	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
 		readingTime = readingTime.Add(sensorReadingInterval)
 		t.Logf("TimedIMUSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
-		if int(i) >= len(mockLinearAccelerationData) {
+		if int(i) >= len(fileLines) {
 			// communicate to the test that all imu readings have been written
 			if !closed {
-				// This will be added back once synced mock lidar and IMU data is collected,
-				// see https://viam.atlassian.net/browse/RSDK-4495
-				// done <- struct{}{}
+				done <- struct{}{}
 				closed = true
 			}
-			return s.TimedIMUSensorReadingResponse{}, errors.New("end of dataset")
+			return s.TimedIMUSensorReadingResponse{}, errors.New("IMU: end of dataset")
 		}
-		linAcc := mockLinearAccelerationData[i]
-		angVel := mockAngularVelocityData[i]
+		fmt.Printf("i: %v\n", i)
+		re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
+		matches := re.FindAllString(fileLines[i], -1)
+
+		linAccX, _ := strconv.ParseFloat(matches[0], 64)
+		linAccY, _ := strconv.ParseFloat(matches[1], 64)
+		linAccZ, _ := strconv.ParseFloat(matches[2], 64)
+
+		linAcc := r3.Vector{X: linAccX, Y: linAccY, Z: linAccZ}
+
+		angVelX, _ := strconv.ParseFloat(matches[3], 64)
+		angVelY, _ := strconv.ParseFloat(matches[4], 64)
+		angVelZ, _ := strconv.ParseFloat(matches[5], 64)
+
+		angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
+
 		i++
+
 		return s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: readingTime, Replay: replay}, nil
 	}
 
