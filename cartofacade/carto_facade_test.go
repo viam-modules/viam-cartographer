@@ -577,7 +577,6 @@ func TestPointCloudMap(t *testing.T) {
 		internalState, err := cartoFacade.PointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldResemble, internalState)
-
 	})
 
 	t.Run("failure", func(t *testing.T) {
