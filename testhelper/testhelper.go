@@ -290,7 +290,6 @@ func IntegrationTimedIMUSensor(
 			}
 			return s.TimedIMUSensorReadingResponse{}, errors.New("IMU: end of dataset")
 		}
-		fmt.Printf("i: %v\n", i)
 		re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
 		matches := re.FindAllString(fileLines[i], -1)
 
@@ -307,7 +306,6 @@ func IntegrationTimedIMUSensor(
 		angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
 
 		i++
-
 		return s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: readingTime, Replay: replay}, nil
 	}
 
