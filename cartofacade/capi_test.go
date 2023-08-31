@@ -388,20 +388,20 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		err = vc.start()
 		test.That(t, err, test.ShouldBeNil)
 
-		// test getPosition before sensor data is added
-		position, err := vc.getPosition()
+		// test position before sensor data is added
+		position, err := vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		positionIsZero(t, position)
 
-		// test getPointCloudMap before sensor data is added
-		pcd, err := vc.getPointCloudMap()
+		// test pointCloudMap before sensor data is added
+		pcd, err := vc.pointCloudMap()
 		test.That(t, pcd, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
-		// test getInternalState before sensor data is added
-		internalState, err := vc.getInternalState()
+		// test internalState before sensor data is added
+		internalState, err := vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
@@ -466,22 +466,22 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		err = vc.addIMUReading("myIMU", testIMUReading, timestamp.Add(imuReadingOffset))
 		test.That(t, err, test.ShouldBeNil)
 
-		// test getPosition zeroed
-		position, err = vc.getPosition()
+		// test position zeroed
+		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		test.That(t, r3.Vector{X: position.X, Y: position.Y, Z: position.Z}, test.ShouldNotResemble, r3.Vector{X: 0, Y: 0, Z: 0})
 
-		// test getPointCloudMap returns a non empty result
-		pcd, err = vc.getPointCloudMap()
+		// test pointCloudMap returns a non empty result
+		pcd, err = vc.pointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
 		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
-		// test getInternalState always returns different non empty results than first call
-		internalState, err = vc.getInternalState()
+		// test internalState always returns different non empty results than first call
+		internalState, err = vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
