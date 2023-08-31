@@ -26,7 +26,7 @@ func TestRequest(t *testing.T) {
 		return nil
 	}
 	testErr := errors.New("error")
-	t.Run("successful request", func(t *testing.T) {
+	t.Run("success", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
@@ -52,7 +52,7 @@ func TestRequest(t *testing.T) {
 		activeBackgroundWorkers.Wait()
 	})
 
-	t.Run("failed request", func(t *testing.T) {
+	t.Run("failure", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
@@ -78,7 +78,7 @@ func TestRequest(t *testing.T) {
 		activeBackgroundWorkers.Wait()
 	})
 
-	t.Run("request with a cancelled context", func(t *testing.T) {
+	t.Run("failure due to cancelled context", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
@@ -106,7 +106,7 @@ func TestRequest(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("request with a work function that takes longer than the timeout", func(t *testing.T) {
+	t.Run("failure due to timeout", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
