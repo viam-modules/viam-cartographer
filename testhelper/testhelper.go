@@ -324,6 +324,7 @@ func CreateIntegrationSLAMService(
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
 		5*time.Second,
+		5*time.Second,
 		timedLidar,
 		timedIMU,
 	)
@@ -382,6 +383,7 @@ func CreateSLAMService(
 		logger,
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
+		5*time.Second,
 		5*time.Second,
 		nil,
 		nil,

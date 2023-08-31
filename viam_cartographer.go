@@ -48,6 +48,7 @@ const (
 	parsePortMaxTimeoutSec               = 60
 	localhost0                           = "localhost:0"
 	defaultCartoFacadeTimeout            = 5 * time.Second
+	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
 )
 
@@ -89,6 +90,7 @@ func init() {
 				defaultSensorValidationMaxTimeoutSec,
 				defaultSensorValidationIntervalSec,
 				defaultCartoFacadeTimeout,
+				defaultCartoFacadeInternalTimeout,
 				nil,
 				nil,
 			)
@@ -126,6 +128,7 @@ func initSensorProcess(cancelCtx context.Context, cartoSvc *CartographerService)
 		LidarName:                cartoSvc.lidar.name,
 		LidarDataRateMsec:        cartoSvc.lidar.dataRateMsec,
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
+		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
 	}
@@ -149,6 +152,7 @@ func New(
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
+	cartoFacadeInternalTimeout time.Duration,
 	testTimedLidarSensorOverride s.TimedLidarSensor,
 	testTimedIMUSensorOverride s.TimedIMUSensor,
 ) (slam.Service, error) {
@@ -250,6 +254,7 @@ func New(
 		sensorValidationMaxTimeoutSec: sensorValidationMaxTimeoutSec,
 		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
 		cartoFacadeTimeout:            cartoFacadeTimeout,
+		cartoFacadeInternalTimeout:    cartoFacadeInternalTimeout,
 		mapTimestamp:                  time.Now().UTC(),
 		cloudStoryEnabled:             svcConfig.CloudStoryEnabled,
 		enableMapping:                 optionalConfigParams.EnableMapping,
@@ -504,8 +509,9 @@ type CartographerService struct {
 	configParams  map[string]string
 	dataDirectory string
 
-	cartofacade        cartofacade.Interface
-	cartoFacadeTimeout time.Duration
+	cartofacade                cartofacade.Interface
+	cartoFacadeTimeout         time.Duration
+	cartoFacadeInternalTimeout time.Duration
 
 	mapRateSec int
 

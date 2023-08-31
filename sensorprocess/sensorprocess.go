@@ -22,6 +22,7 @@ type Config struct {
 	LidarName                string
 	LidarDataRateMsec        int
 	Timeout                  time.Duration
+	InternalTimeout          time.Duration
 	Logger                   golog.Logger
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
@@ -39,9 +40,9 @@ func Start(
 		default:
 			if jobDone := addLidarReading(ctx, config); jobDone {
 				config.Logger.Info("Beginning final optimization")
-				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
+				err := config.RunFinalOptimizationFunc(ctx, config.InternalTimeout)
 				if err != nil {
-					config.Logger.Error("Failed to finish processing all sensor readings")
+					config.Logger.Error("Failed to finish processing all sensor readings: ", err)
 				}
 				return true
 			}
