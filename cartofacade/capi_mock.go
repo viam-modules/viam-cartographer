@@ -33,7 +33,7 @@ type CartoMock struct {
 	RunFinalOptimizationFunc func() error
 }
 
-// Start calls the injected StartFunc or the real version.
+// start calls the injected StartFunc or the real version.
 func (cf *CartoMock) start() error {
 	if cf.StartFunc == nil {
 		return cf.Carto.start()
@@ -41,7 +41,7 @@ func (cf *CartoMock) start() error {
 	return cf.StartFunc()
 }
 
-// Stop calls the injected StopFunc or the real version.
+// stop calls the injected StopFunc or the real version.
 func (cf *CartoMock) stop() error {
 	if cf.StopFunc == nil {
 		return cf.Carto.stop()
@@ -49,7 +49,7 @@ func (cf *CartoMock) stop() error {
 	return cf.StopFunc()
 }
 
-// Terminate calls the injected TerminateFunc or the real version.
+// terminate calls the injected TerminateFunc or the real version.
 func (cf *CartoMock) terminate() error {
 	if cf.TerminateFunc == nil {
 		return cf.Carto.terminate()
@@ -97,7 +97,7 @@ func (cf *CartoMock) internalState() ([]byte, error) {
 	return cf.InternalStateFunc()
 }
 
-// runFinalOptimization calls the injected GetInternalState or the real version.
+// runFinalOptimization calls the injected RunFinalOptimization or the real version.
 func (cf *CartoMock) runFinalOptimization() error {
 	if cf.RunFinalOptimizationFunc == nil {
 		return cf.Carto.runFinalOptimization()
