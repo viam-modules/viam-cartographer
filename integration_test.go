@@ -62,22 +62,37 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, mode 
 	switch {
 	case useIMU && mode == cartofacade.UpdatingMode:
 		expectedPosOSX = r3.Vector{X: 5.882838701736658, Y: 3.071019233988039, Z: 0}
-		expectedOriOSX = &spatialmath.R4AA{Theta: 0.023418952088469582, RX: 0.9847737291364351, RY: 0.17332572441345112, RZ: -0.013375188195744212}
+		expectedOriOSX = &spatialmath.R4AA{
+			Theta: 0.023418952088469582, RX: 0.9847737291364351, RY: 0.17332572441345112,
+			RZ: -0.013375188195744212,
+		}
 
 		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
-		expectedOriLinux = &spatialmath.R4AA{Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466, RZ: 0.3764936522466959}
+		expectedOriLinux = &spatialmath.R4AA{
+			Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466,
+			RZ: 0.3764936522466959,
+		}
+
 	case useIMU && mode != cartofacade.UpdatingMode:
 		expectedPosOSX = r3.Vector{X: 4.7290456742637685, Y: 3.840642095845822, Z: 0}
-		expectedOriOSX = &spatialmath.R4AA{Theta: 0.02342781010456736, RX: 0.9843120830417524, RY: 0.1737669232094075, RZ: 0.030574165178177792}
+		expectedOriOSX = &spatialmath.R4AA{
+			Theta: 0.02342781010456736, RX: 0.9843120830417524, RY: 0.1737669232094075,
+			RZ: 0.030574165178177792,
+		}
 
 		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
-		expectedOriLinux = &spatialmath.R4AA{Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466, RZ: 0.3764936522466959}
+		expectedOriLinux = &spatialmath.R4AA{
+			Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466,
+			RZ: 0.3764936522466959,
+		}
+
 	case !useIMU && mode == cartofacade.UpdatingMode:
 		expectedPosOSX = r3.Vector{X: 3.558142186397387, Y: 3.7690587022387874, Z: 0}
 		expectedOriOSX = &spatialmath.R4AA{Theta: 0.00228885684885118, RX: 0, RY: 0, RZ: 1}
 
 		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
 		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
+
 	case !useIMU && mode != cartofacade.UpdatingMode:
 		expectedPosOSX = r3.Vector{X: 3.5169344230934447, Y: 3.519425001143934, Z: 0}
 		expectedOriOSX = &spatialmath.R4AA{Theta: 0.0003758992914140011, RX: 0, RY: 0, RZ: 1}
@@ -214,6 +229,7 @@ func testHelperCartographer(
 	return internalState
 }
 
+//nolint:dupl
 func integrationTestHelperCartographer(t *testing.T, subAlgo viamcartographer.SubAlgo) {
 	logger := golog.NewTestLogger(t)
 
@@ -277,6 +293,7 @@ func integrationTestHelperCartographer(t *testing.T, subAlgo viamcartographer.Su
 	})
 }
 
+//nolint:dupl
 func integrationTestHelperCartographerWithIMU(t *testing.T, subAlgo viamcartographer.SubAlgo) {
 	logger := golog.NewTestLogger(t)
 
@@ -340,6 +357,7 @@ func integrationTestHelperCartographerWithIMU(t *testing.T, subAlgo viamcartogra
 	})
 }
 
+//nolint:dupl
 func integrationTestHelperCartographerReplay(t *testing.T, subAlgo viamcartographer.SubAlgo) {
 	logger := golog.NewTestLogger(t)
 

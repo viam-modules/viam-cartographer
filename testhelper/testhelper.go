@@ -49,10 +49,10 @@ const (
 	testDialMaxTimeoutSec              = 1
 	// NumPointClouds is the number of pointclouds saved in artifact
 	// for the cartographer integration tests.
-	NumPointClouds = 15 //20
+	NumPointClouds = 15 // 20
 )
 
-var mockDataPath = "/Users/jeremyhyde/Downloads/mock_data" //artifact.MustPath("viam-cartographer/mock_lidar") //
+var mockDataPath = "/Users/jeremyhyde/Downloads/mock_data" // artifact.MustPath("viam-cartographer/mock_lidar") //
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
@@ -142,7 +142,7 @@ func mockLidarReadingsValid() error {
 		}
 
 		if !found {
-			return errors.Errorf("expected %s to exist for integration test", path.Join(mockDataPath+"/lidar", expectedFile)) // path.Join(mockDataPath, expectedFile)) //
+			return errors.Errorf("expected %s to exist for integration test", path.Join(mockDataPath+"/lidar", expectedFile))
 		}
 	}
 	return nil
@@ -191,7 +191,7 @@ func IntegrationTimedLidarSensor(
 		}
 
 		file, err := os.Open(mockDataPath + "/lidar/" + strconv.FormatUint(i, 10) + ".pcd")
-		//file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
+		// file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 		if err != nil {
 			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to open pcd file")
 			return s.TimedLidarSensorReadingResponse{}, err
@@ -241,26 +241,6 @@ func IntegrationTimedIMUSensor(
 	closed := false
 
 	ts := &s.TimedIMUSensorMock{}
-	// mockLinearAccelerationData := []r3.Vector{
-	// 	{X: 1, Y: 1, Z: 1},
-	// 	{X: 2, Y: 1, Z: 1},
-	// 	{X: 1, Y: 2, Z: 1},
-	// 	{X: 1, Y: 1, Z: 2},
-	// 	{X: 1, Y: 1, Z: 3},
-	// 	{X: 1, Y: 3, Z: 1},
-	// 	{X: 3, Y: 1, Z: 1},
-	// 	{X: 2, Y: 1, Z: 1},
-	// }
-	// mockAngularVelocityData := []spatialmath.AngularVelocity{
-	// 	{X: 1, Y: 2, Z: 1},
-	// 	{X: 1, Y: 2, Z: 1},
-	// 	{X: 1, Y: 2, Z: 1},
-	// 	{X: 1, Y: 1, Z: 2},
-	// 	{X: 1, Y: 1, Z: 2},
-	// 	{X: 1, Y: 1, Z: 2},
-	// 	{X: 5, Y: 1, Z: 1},
-	// 	{X: 5, Y: 1, Z: 1},
-	// }
 
 	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
@@ -269,7 +249,6 @@ func IntegrationTimedIMUSensor(
 		t.Error("TEST FAILED TimedIMUSensorReading Mock failed to open data file")
 		return nil, err
 	}
-	defer file.Close()
 
 	fileScanner := bufio.NewScanner(file)
 	fileScanner.Split(bufio.ScanLines)
@@ -293,16 +272,20 @@ func IntegrationTimedIMUSensor(
 		re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
 		matches := re.FindAllString(fileLines[i], -1)
 
-		linAccX, _ := strconv.ParseFloat(matches[0], 64)
-		linAccY, _ := strconv.ParseFloat(matches[1], 64)
-		linAccZ, _ := strconv.ParseFloat(matches[2], 64)
-
+		linAccX, err1 := strconv.ParseFloat(matches[0], 64)
+		linAccY, err2 := strconv.ParseFloat(matches[1], 64)
+		linAccZ, err3 := strconv.ParseFloat(matches[2], 64)
+		if err1 != nil || err2 != nil || err3 != nil {
+			return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing linear acceleration from file")
+		}
 		linAcc := r3.Vector{X: linAccX, Y: linAccY, Z: linAccZ}
 
-		angVelX, _ := strconv.ParseFloat(matches[3], 64)
-		angVelY, _ := strconv.ParseFloat(matches[4], 64)
-		angVelZ, _ := strconv.ParseFloat(matches[5], 64)
-
+		angVelX, err1 := strconv.ParseFloat(matches[3], 64)
+		angVelY, err2 := strconv.ParseFloat(matches[4], 64)
+		angVelZ, err3 := strconv.ParseFloat(matches[5], 64)
+		if err1 != nil || err2 != nil || err3 != nil {
+			return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing linear acceleration from file")
+		}
 		angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
 
 		i++
