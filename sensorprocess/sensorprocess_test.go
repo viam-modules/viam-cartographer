@@ -265,7 +265,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
 	}
 
-	t.Run("AddLidarReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddLidarReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -281,7 +281,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddLidarReading slower than DataRateMsec and returns lock error, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddLidarReading is slower than DataRateMsec and returns a lock error, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -297,7 +297,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddLidarReading blocks for more than the DataRateMsec"+
+	t.Run("when AddLidarReading blocks for more than the DataRateMsec"+
 		"and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
@@ -314,7 +314,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddLidarReading faster than the DataRateMsec and succeeds, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddLidarReading is faster than the DataRateMsec and succeeds, time to sleep is <= DataRateMsec", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -330,7 +330,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
-	t.Run("AddLidarReading faster than the DataRateMsec and returns lock error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddLidarReading is faster than the DataRateMsec and returns lock error, time to sleep is <= DataRateMsec", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -346,7 +346,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
 
-	t.Run("AddLidarReading faster than DataRateMsec and returns unexpected error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddLidarReading is faster than DataRateMsec and returns an unexpected error, time to sleep is <= DataRateMsec", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -380,7 +380,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		Timeout:           10 * time.Second,
 	}
 
-	t.Run("AddIMUReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddIMUReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -396,7 +396,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddIMUReading slower than DataRateMsec and returns lock error, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddIMUReading is slower than DataRateMsec and returns a lock error, time to sleep is 0", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -412,7 +412,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddIMUReading blocks for more than the DataRateMsec and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddIMUReading blocks for more than the DataRateMsec and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -428,7 +428,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("AddIMUReading faster than the DataRateMsec and succeeds, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddIMUReading is faster than the DataRateMsec and succeeds, time to sleep is <= DataRateMsec", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -444,7 +444,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
 	})
 
-	t.Run("AddIMUReading faster than the DataRateMsec and returns lock error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddIMUReading is faster than the DataRateMsec and returns a lock error, time to sleep is <= DataRateMsec", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -460,7 +460,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
 	})
 
-	t.Run("AddIMUReading faster than DataRateMsec and returns unexpected error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddIMUReading is faster than DataRateMsec and returns an unexpected error, time to sleep is <= DataRateMsec", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
