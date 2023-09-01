@@ -135,14 +135,10 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
 	}
 
-	spConfigWithMutex := sensorprocess.ConfigWithMutex{
-		Config: &spConfig,
-	}
-
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := spConfigWithMutex.StartLidar(cancelCtx); jobDone {
+		if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
 			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
@@ -152,7 +148,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
-			_ = spConfigWithMutex.StartIMU(cancelCtx)
+			_ = spConfig.StartIMU(cancelCtx)
 		}()
 	}
 }
