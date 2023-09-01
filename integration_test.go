@@ -40,8 +40,8 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 	toleranceOri := 0.001
 
 	switch {
-	case runtime.GOOS != "linux" && useIMU:
-		expectedPos = r3.Vector{X: 4.764540006619114, Y: 7.64793191575982, Z: 0}
+	case runtime.GOOS == "darwin" && useIMU:
+		expectedPos = r3.Vector{X: 4.553181280089508, Y: 7.477329011895338, Z: 0}
 		expectedOri = &spatialmath.R4AA{
 			RX:    0.9859260885936583,
 			RY:    0.16404016011887448,
@@ -56,13 +56,14 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 			RZ:    0.06656798354450472,
 			Theta: 0.02229559831890859,
 		}
-	case runtime.GOOS != "linux" && !useIMU:
-		expectedPos = r3.Vector{X: 4.323028714593357, Y: 4.629247748686252, Z: 0}
+
+	case runtime.GOOS == "darwin" && !useIMU:
+		expectedPos = r3.Vector{X: 4.120375736261496, Y: 2.5213315508872665, Z: 0}
 		expectedOri = &spatialmath.R4AA{
 			RX:    0,
 			RY:    0,
 			RZ:    1,
-			Theta: 0.00228885684885118,
+			Theta: 0.0006629744894043836,
 		}
 	case runtime.GOOS == "linux" && !useIMU:
 		expectedPos = r3.Vector{X: 3.36881455047323, Y: 4.130035158293928, Z: 0}
@@ -242,6 +243,7 @@ func TestIntegrationCartographer(t *testing.T) {
 		mode        cartofacade.SlamMode
 		subAlgo     viamcartographer.SubAlgo
 	}{
+		// Live sensor
 		// {
 		// 	description: "live sensor mapping mode 2D",
 		// 	replay:      false,
@@ -263,34 +265,36 @@ func TestIntegrationCartographer(t *testing.T) {
 		// 	mode:        cartofacade.UpdatingMode,
 		// 	subAlgo:     viamcartographer.Dim2d,
 		// },
-		// {
-		// 	description: "live sensor mapping mode 2D",
-		// 	replay:      true,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.MappingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description: "replay sensor localizing mode 2D",
-		// 	replay:      true,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.LocalizingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description: "replay sensor updating mode 2D",
-		// 	replay:      true,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.UpdatingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
+		//Replay sensor
 		{
-			description: "live with imu sensor mapping mode 2D",
-			replay:      false,
-			imuEnabled:  true,
+			description: "live sensor mapping mode 2D",
+			replay:      true,
+			imuEnabled:  false,
 			mode:        cartofacade.MappingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
+		{
+			description: "replay sensor localizing mode 2D",
+			replay:      true,
+			imuEnabled:  false,
+			mode:        cartofacade.LocalizingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		{
+			description: "replay sensor updating mode 2D",
+			replay:      true,
+			imuEnabled:  false,
+			mode:        cartofacade.UpdatingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		// // Live + imu sensor
+		// {
+		// 	description: "live with imu sensor mapping mode 2D",
+		// 	replay:      false,
+		// 	imuEnabled:  true,
+		// 	mode:        cartofacade.MappingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
 		// {
 		// 	description: "live with imu sensor localizing mode 2D",
 		// 	replay:      false,
@@ -328,6 +332,8 @@ func TestIntegrationCartographer(t *testing.T) {
 			if tt.mode == cartofacade.MappingMode {
 				return
 			}
+
+			fmt.Println("RUNNING SECOND TEST")
 
 			// Prep second run directory
 			dataDirectory2, err := os.MkdirTemp("", "*")

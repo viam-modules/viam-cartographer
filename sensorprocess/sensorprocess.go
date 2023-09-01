@@ -120,6 +120,8 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 				tryAddLidarReadingUntilSuccess(ctx, config.currentLidarData.data, config.currentLidarData.time, *config)
 				if config.firstLidarReadingTime == defaultTime {
 					config.firstLidarReadingTime = config.currentLidarData.time
+
+					config.Logger.Debugf("%v \t | LIDAR | STARTING \t \t | %v \n", config.currentLidarData.time, config.currentLidarData.time.Unix())
 				}
 			}
 			// get next lidar data response
@@ -182,7 +184,7 @@ func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Ti
 func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {
-		config.Logger.Warn(err)
+		//config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
 		if config.LidarDataRateMsec == 0 {
 			return tsr, strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()), err

@@ -90,7 +90,7 @@ func IntegrationTimedLidarSensor(
 		// when the imu is present (timeTracker.NextImuTime has been defined) and is always true the first iteration.
 		// This combined with manual definition of timestamps allow for consistent results.
 		for {
-			t.Logf("Lidar | Lidar Time: %v IMU Time %v | Next Lidar Time: %v Next IMU Time %v \n", timeTracker.LidarTime, timeTracker.ImuTime, timeTracker.NextLidarTime, timeTracker.NextImuTime)
+			//t.Logf("Lidar | Lidar Time: %v IMU Time %v | Next Lidar Time: %v Next IMU Time %v \n", timeTracker.LidarTime, timeTracker.ImuTime, timeTracker.NextLidarTime, timeTracker.NextImuTime)
 			if !started || timeTracker.ImuTime == defaultTime || timeTracker.LidarTime.Sub(timeTracker.NextImuTime) <= 0 {
 				started = true
 				timeTracker.mutex.Lock()
@@ -101,7 +101,7 @@ func IntegrationTimedLidarSensor(
 
 		// Communicating all lidar readings have been sent to cartographer or if the last imu reading has been sent by checking
 		// if LastLidarTime has been defined. If so, simulate endOfDataSet error.
-		t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.LidarTime.String())
+		//t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.LidarTime.String())
 		if i >= NumPointClouds || timeTracker.LastImuTime != defaultTime {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
 			if !closed {
