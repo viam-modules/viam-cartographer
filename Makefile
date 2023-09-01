@@ -6,10 +6,14 @@ GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevis
 SHELL := /usr/bin/env bash
 export PATH := $(TOOL_BIN):$(PATH)
 export GOBIN := $(TOOL_BIN)
+export CGO_LDFLAGS_ALLOW
 
 ifneq (, $(shell which brew))
 	EXTRA_CMAKE_FLAGS := -DCMAKE_PREFIX_PATH=$(shell brew --prefix) -DQt5_DIR=$(shell brew --prefix qt5)/lib/cmake/Qt5
 	export PKG_CONFIG_PATH := $(shell brew --prefix openssl@3)/lib/pkgconfig
+	export CGO_LDFLAGS := "-L../viam-cartographer/build -L../viam-cartographer/build/cartographer -lviam-cartographer  -lcartographer -ldl -lm -labsl_hash  -labsl_city -labsl_bad_optional_access -labsl_strerror  -labsl_str_format_internal -labsl_synchronization -labsl_strings -labsl_throw_delegate -lcairo -llua5.3 -lstdc++ -lceres -lprotobuf -lglog -lboost_filesystem -lboost_iostreams -lpcl_io -lpcl_common -labsl_raw_hash_set -labsl_log_internal_message -labsl_log_internal_check_op"
+else
+	export CGO_LDFLAGS := "-L../viam-cartographer/build -L../viam-cartographer/build/cartographer -lviam-cartographer  -lcartographer -ldl -lm -labsl_hash  -labsl_city -labsl_bad_optional_access -labsl_strerror  -labsl_str_format_internal -labsl_synchronization -labsl_strings -labsl_throw_delegate -lcairo -llua5.3 -lstdc++ -lceres -lprotobuf -lglog -lboost_filesystem -lboost_iostreams -lpcl_io -lpcl_common -labsl_raw_hash_set"
 endif
 
 default: build
