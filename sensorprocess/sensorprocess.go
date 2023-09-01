@@ -93,7 +93,6 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		}
 
 		// update prev and next time
-		//config.mutex.Lock()
 		if config.nextLidarData.time != defaultTime {
 			config.nextLidarData.prevTime = config.nextLidarData.time
 		} else {
@@ -106,13 +105,11 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		if config.nextLidarData.time.Sub(config.nextIMUData.time) >= 0 {
 			// add lidar data
 			timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
-			//config.mutex.Unlock()
 			// sleep remainder of time
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 			config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
 		} else {
 			config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", config.nextLidarData.time, config.nextLidarData.time.Unix())
-			//config.mutex.Unlock()
 		}
 	} else {
 		/*
@@ -135,7 +132,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			config.nextLidarData.time = tsr.ReadingTime
 			config.nextLidarData.data = tsr.Reading
 		} else {
-			time.Sleep(time.Millisecond)
+			//time.Sleep(time.Millisecond)
 		}
 	}
 	return false
@@ -226,7 +223,6 @@ func (config *Config) addIMUReading(
 		}
 
 		// update stored imu time
-		//config.mutex.Lock()
 		config.nextIMUData.prevTime = config.nextIMUData.time
 		config.nextIMUData.time = tsr.ReadingTime
 		config.nextIMUData.data = sr
@@ -237,11 +233,9 @@ func (config *Config) addIMUReading(
 			// add imu data
 			timeToSleep := tryAddIMUReading(ctx, config.nextIMUData.data, config.nextIMUData.time, *config)
 			// sleep remainder of duration
-			//config.mutex.Unlock()
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		} else {
 			config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", config.nextIMUData.time, config.nextLidarData.prevTime)
-			//config.mutex.Unlock()
 		}
 	} else {
 		/*
@@ -276,7 +270,7 @@ func (config *Config) addIMUReading(
 				config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
 			}
 		} else {
-			time.Sleep(time.Millisecond)
+			//time.Sleep(time.Millisecond)
 		}
 	}
 	return false
