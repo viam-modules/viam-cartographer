@@ -912,7 +912,7 @@ func TestAddIMUReading(t *testing.T) {
 		config.IMUName = replayIMU.Name
 		config.IMUDataRateMsec = 0
 		config.LidarDataRateMsec = 0
-		config.nextLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now()
 		config.firstLidarReadingTime = time.Time{}.Add(time.Millisecond)
 
 		_ = config.addIMUReading(ctx) // first call gets data
@@ -946,7 +946,7 @@ func TestAddIMUReading(t *testing.T) {
 
 		config.IMU = replayIMU
 		config.IMUDataRateMsec = 0
-		config.nextLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now()
 
 		jobDone := config.addIMUReading(ctx)
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -1015,7 +1015,7 @@ func TestStartIMU(t *testing.T) {
 
 		config.IMU = replaySensor
 		config.IMUDataRateMsec = 0
-		config.nextLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now()
 
 		jobDone := config.StartIMU(context.Background())
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -1029,7 +1029,7 @@ func TestStartIMU(t *testing.T) {
 
 		config.IMU = replaySensor
 		config.IMUDataRateMsec = 0
-		config.nextLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now()
 
 		cancelFunc()
 
