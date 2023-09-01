@@ -6,14 +6,10 @@ GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevis
 SHELL := /usr/bin/env bash
 export PATH := $(TOOL_BIN):$(PATH)
 export GOBIN := $(TOOL_BIN)
-export CGO_LDFLAGS_ALLOW
 
 ifneq (, $(shell which brew))
 	EXTRA_CMAKE_FLAGS := -DCMAKE_PREFIX_PATH=$(shell brew --prefix) -DQt5_DIR=$(shell brew --prefix qt5)/lib/cmake/Qt5
 	export PKG_CONFIG_PATH := $(shell brew --prefix openssl@3)/lib/pkgconfig
-	export CGO_LDFLAGS := "-L../viam-cartographer/build -L../viam-cartographer/build/cartographer -lviam-cartographer  -lcartographer -ldl -lm -labsl_hash  -labsl_city -labsl_bad_optional_access -labsl_strerror  -labsl_str_format_internal -labsl_synchronization -labsl_strings -labsl_throw_delegate -lcairo -llua5.3 -lstdc++ -lceres -lprotobuf -lglog -lboost_filesystem -lboost_iostreams -lpcl_io -lpcl_common -labsl_raw_hash_set -labsl_log_internal_message -labsl_log_internal_check_op"
-else
-	export CGO_LDFLAGS := "-L../viam-cartographer/build -L../viam-cartographer/build/cartographer -lviam-cartographer  -lcartographer -ldl -lm -labsl_hash  -labsl_city -labsl_bad_optional_access -labsl_strerror  -labsl_str_format_internal -labsl_synchronization -labsl_strings -labsl_throw_delegate -lcairo -llua5.3 -lstdc++ -lceres -lprotobuf -lglog -lboost_filesystem -lboost_iostreams -lpcl_io -lpcl_common -labsl_raw_hash_set"
 endif
 
 default: build
@@ -105,8 +101,12 @@ viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
 cartographer-module: viam-cartographer/build/unit_tests
-	rm -f bin/cartographer-module
-	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
+	rm -f bin/cartographer-module && mkdir -p bin
+# Newer versions of abseil require extra ld flags in our module, so this ugly thing.
+# It's expected that if NOT using brew, a prebuilt environment (like canon) is in use with the older abseil installed.
+	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
+	test "$$absl_version" -gt "20220101" && export CGO_LDFLAGS="$$CGO_LDFLAGS -labsl_log_internal_message -labsl_log_internal_check_op" || true; \
+	go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 
