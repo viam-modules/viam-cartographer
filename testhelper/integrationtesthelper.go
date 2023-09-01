@@ -31,7 +31,7 @@ const (
 	NumIMUData = 30
 	// Path to slam mock data used for integration tests artifact path.
 	// artifact.MustPath("viam-cartographer/mock_lidar")
-	mockDataPath = "/host/mock_data"
+	mockDataPath = "/Users/jeremyhyde/Development/viam-cartographer/mock_data"
 )
 
 var defaultTime = time.Time{}
