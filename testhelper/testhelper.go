@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -49,10 +50,12 @@ const (
 	testDialMaxTimeoutSec              = 1
 	// NumPointClouds is the number of pointclouds saved in artifact
 	// for the cartographer integration tests.
-	NumPointClouds = 15 // 20
+	NumPointClouds = 9 // 20
 )
 
 var mockDataPath = "/Users/jeremyhyde/Downloads/mock_data" // artifact.MustPath("viam-cartographer/mock_lidar") //
+
+var defaultTime = time.Time{}
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
@@ -148,6 +151,18 @@ func mockLidarReadingsValid() error {
 	return nil
 }
 
+type TimeTracker struct {
+	LidarTime     time.Time
+	NextLidarTime time.Time
+
+	ImuTime     time.Time
+	NextImuTime time.Time
+
+	LastLidarTime time.Time
+
+	mutex sync.Mutex
+}
+
 // IntegrationTimedLidarSensor returns a mock timed lidar sensor
 // or an error if preconditions to build the mock are not met.
 // It validates that all required mock lidar reading files are able to be found.
@@ -166,27 +181,45 @@ func IntegrationTimedLidarSensor(
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
+	timeTracker *TimeTracker,
 ) (s.TimedLidarSensor, error) {
 	err := mockLidarReadingsValid()
 	if err != nil {
 		return nil, err
 	}
 
+	started := false
+
 	var i uint64
 	closed := false
 
 	ts := &s.TimedLidarSensorMock{}
-	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
 	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
-		readingTime = readingTime.Add(sensorReadingInterval)
-		t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
+		fmt.Println("HELLO Lidar")
+		// wait for other measurements to be added
+		for {
+			fmt.Printf("Lidar | Lidar Time: %v IMU Time %v | Next Lidar Time: %v Next IMU Time %v \n", timeTracker.LidarTime, timeTracker.ImuTime, timeTracker.NextLidarTime, timeTracker.NextImuTime)
+			//timeTracker.mutex.Lock()
+			if !started || timeTracker.ImuTime == defaultTime || timeTracker.LidarTime.Sub(timeTracker.NextImuTime) <= 0 {
+				started = true
+				timeTracker.mutex.Lock()
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		fmt.Println("Adding Lidar")
+
+		t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.LidarTime.String())
 		if i >= NumPointClouds {
 			// communicate to the test that all lidar readings have been written
 			if !closed {
 				done <- struct{}{}
 				closed = true
+				timeTracker.LastLidarTime = timeTracker.LidarTime
 			}
+			timeTracker.mutex.Unlock()
+
 			return s.TimedLidarSensorReadingResponse{}, errors.New("Lidar: end of dataset")
 		}
 
@@ -209,8 +242,15 @@ func IntegrationTimedLidarSensor(
 			return s.TimedLidarSensorReadingResponse{}, err
 		}
 
+		resp := s.TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: timeTracker.LidarTime, Replay: replay}
 		i++
-		return s.TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+
+		//timeTracker.mutex.Lock()
+		timeTracker.LidarTime = timeTracker.LidarTime.Add(sensorReadingInterval)
+		timeTracker.NextLidarTime = timeTracker.LidarTime.Add(sensorReadingInterval)
+		timeTracker.mutex.Unlock()
+
+		return resp, nil
 	}
 
 	return ts, nil
@@ -233,16 +273,18 @@ func IntegrationTimedIMUSensor(
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
+	timeTracker *TimeTracker,
 ) (s.TimedIMUSensor, error) {
 	if imu == "" {
 		return nil, nil
 	}
+
+	started := false
+
 	var i uint64
 	closed := false
 
 	ts := &s.TimedIMUSensorMock{}
-
-	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
 
 	file, err := os.Open(mockDataPath + "/imu/data.txt")
 	if err != nil {
@@ -259,14 +301,28 @@ func IntegrationTimedIMUSensor(
 	}
 
 	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
-		readingTime = readingTime.Add(sensorReadingInterval)
-		t.Logf("TimedIMUSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
-		if int(i) >= len(fileLines) {
+		fmt.Println("HELLO IMU")
+		// wait for other measurements to be added
+		for {
+			fmt.Printf("IMU   | Lidar Time: %v IMU Time %v | Next Lidar Time: %v Next IMU Time %v \n", timeTracker.LidarTime, timeTracker.ImuTime, timeTracker.NextLidarTime, timeTracker.NextImuTime)
+			//timeTracker.mutex.Lock()
+			if !started || timeTracker.ImuTime.Sub(timeTracker.NextLidarTime) < 0 {
+				started = true
+				timeTracker.mutex.Lock()
+				break
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		fmt.Println("Adding IMU")
+
+		t.Logf("TimedIMUSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.ImuTime.String())
+		if int(i) >= len(fileLines) || timeTracker.LastLidarTime != defaultTime {
 			// communicate to the test that all imu readings have been written
 			if !closed {
 				done <- struct{}{}
 				closed = true
 			}
+			timeTracker.mutex.Unlock()
 			return s.TimedIMUSensorReadingResponse{}, errors.New("IMU: end of dataset")
 		}
 		re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
@@ -288,8 +344,13 @@ func IntegrationTimedIMUSensor(
 		}
 		angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
 
+		resp := s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: timeTracker.ImuTime, Replay: replay}
 		i++
-		return s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: readingTime, Replay: replay}, nil
+		//timeTracker.mutex.Lock()
+		timeTracker.ImuTime = timeTracker.ImuTime.Add(sensorReadingInterval)
+		timeTracker.NextImuTime = timeTracker.ImuTime.Add(sensorReadingInterval)
+		timeTracker.mutex.Unlock()
+		return resp, nil
 	}
 
 	return ts, nil

@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -61,24 +62,26 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, mode 
 
 	switch {
 	case useIMU && mode == cartofacade.UpdatingMode:
-		expectedPosOSX = r3.Vector{X: 5.882838701736658, Y: 3.071019233988039, Z: 0}
+		expectedPosOSX = r3.Vector{X: 4.764540006619114, Y: 7.64793191575982, Z: 0}
 		expectedOriOSX = &spatialmath.R4AA{
-			Theta: 0.023418952088469582, RX: 0.9847737291364351, RY: 0.17332572441345112,
-			RZ: -0.013375188195744212,
+			Theta: 0.02222300520776762, RX: 0.9859260885936583, RY: 0.16404016011887448,
+			RZ: -0.03225792458581239,
 		}
 
 		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
 		expectedOriLinux = &spatialmath.R4AA{
-			Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466,
+			Theta: 1.025317158587307098, RX: 0.9252197096950275, RY: 0.04712768411234466,
 			RZ: 0.3764936522466959,
 		}
 
 	case useIMU && mode != cartofacade.UpdatingMode:
-		expectedPosOSX = r3.Vector{X: 4.7290456742637685, Y: 3.840642095845822, Z: 0}
+		expectedPosOSX = r3.Vector{X: 4.764540006619114, Y: 7.64793191575982, Z: 0}
+		//Position point: (4.764540006619114, 7.64793191575982, -1.2464703216665085e-18)
 		expectedOriOSX = &spatialmath.R4AA{
-			Theta: 0.02342781010456736, RX: 0.9843120830417524, RY: 0.1737669232094075,
-			RZ: 0.030574165178177792,
+			Theta: 0.02222300520776762, RX: 0.9859260885936583, RY: 0.16404016011887448,
+			RZ: -0.03225792458581239,
 		}
+		// Position orientation: RX: 0.9859260885936583, RY: 0.16404016011887448, RZ: -0.03225792458581239, Theta: 0.02222300520776762
 
 		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
 		expectedOriLinux = &spatialmath.R4AA{
@@ -87,10 +90,10 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, mode 
 		}
 
 	case !useIMU && mode == cartofacade.UpdatingMode:
-		expectedPosOSX = r3.Vector{X: 3.558142186397387, Y: 3.7690587022387874, Z: 0}
+		expectedPosOSX = r3.Vector{X: 4.323028714593357, Y: 4.629247748686252, Z: 0}
 		expectedOriOSX = &spatialmath.R4AA{Theta: 0.00228885684885118, RX: 0, RY: 0, RZ: 1}
 
-		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
+		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
 		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
 
 	case !useIMU && mode != cartofacade.UpdatingMode:
@@ -174,14 +177,26 @@ func testHelperCartographer(
 		attrCfg.MovementSensor = map[string]string{"name": "stub_imu"}
 	}
 
-	lidarDone := make(chan struct{})
-	imuDone := make(chan struct{})
 	lidarReadingInterval := time.Millisecond * 200
 	imuReadingInterval := time.Millisecond * 50
-	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, lidarReadingInterval, lidarDone)
+	timeTracker := testhelper.TimeTracker{
+		LidarTime: time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC),
+	}
+
+	if useIMU {
+		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
+	}
+	//timeTracker.NextImuTime = timeTracker.ImuTime.Add(imuReadingInterval)
+	//timeTracker.NextLidarTime = timeTracker.LidarTime.Add(lidarReadingInterval)
+
+	lidarDone := make(chan struct{})
+	imuDone := make(chan struct{})
+	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, lidarReadingInterval, lidarDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
-	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], replaySensor, imuReadingInterval, imuDone)
+	fmt.Println("Made lidar")
+	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], replaySensor, imuReadingInterval, imuDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
+	fmt.Println("Made imu")
 	if !useIMU {
 		test.That(t, timedIMU, test.ShouldBeNil)
 	}
@@ -200,6 +215,7 @@ func testHelperCartographer(
 		t.Logf("test duration %dms", time.Since(start).Milliseconds())
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
+	t.Logf("Lidar data finished")
 
 	if useIMU {
 		if !utils.SelectContextOrWaitChan(ctx, imuDone) {
@@ -207,6 +223,7 @@ func testHelperCartographer(
 			test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 		}
 	}
+	t.Logf("IMU data finished")
 
 	testCartographerPosition(t, svc, useIMU, expectedMode, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)

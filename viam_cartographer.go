@@ -5,6 +5,7 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -134,10 +135,14 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
 	}
 
+	spConfigWithMutex := sensorprocess.ConfigWithMutex{
+		Config: &spConfig,
+	}
+
 	cartoSvc.sensorProcessWorkers.Add(1)
 	go func() {
 		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
+		if jobDone := spConfigWithMutex.StartLidar(cancelCtx); jobDone {
 			cartoSvc.jobDone.Store(true)
 			cartoSvc.cancelSensorProcessFunc()
 		}
@@ -147,7 +152,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
-			_ = spConfig.StartIMU(cancelCtx)
+			_ = spConfigWithMutex.StartIMU(cancelCtx)
 		}()
 	}
 }
@@ -167,6 +172,7 @@ func New(
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
 
+	fmt.Println("STARTING NEW")
 	svcConfig, err := resource.NativeConfig[*vcConfig.Config](c)
 	if err != nil {
 		return nil, err
@@ -256,6 +262,7 @@ func New(
 		actual:       imuObject,
 		timed:        timedIMU,
 	}
+	fmt.Println("STARTING CREATE IMU AND LIDAR")
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
@@ -286,6 +293,8 @@ func New(
 			}
 		}
 	}()
+
+	fmt.Println("STARTING VALIDATE LIDAR")
 	if err = s.ValidateGetLidarData(
 		cancelSensorProcessCtx,
 		timedLidar,
@@ -295,6 +304,7 @@ func New(
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
 	}
+	fmt.Println("STARTING VALIDATE IMU")
 	if cartoSvc.imu.name != "" {
 		if err = s.ValidateGetIMUData(
 			cancelSensorProcessCtx,
@@ -306,12 +316,13 @@ func New(
 			return nil, err
 		}
 	}
-
+	fmt.Println("STARTING CARTO FACADE")
 	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
 	if err != nil {
 		return nil, err
 	}
 
+	fmt.Println("STARTING SENSOR PROCESS")
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
@@ -693,11 +704,14 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 		return nil
 	}
 
+	cartoSvc.logger.Info("Closing cartographer module")
+
 	defer cartoSvc.mu.Unlock()
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("Close() called multiple times")
 		return nil
 	}
+
 	// stop sensor process workers
 	cartoSvc.cancelSensorProcessFunc()
 	cartoSvc.sensorProcessWorkers.Wait()
@@ -712,6 +726,8 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 	cartoSvc.cancelCartoFacadeFunc()
 	cartoSvc.cartoFacadeWorkers.Wait()
 	cartoSvc.closed = true
+
+	cartoSvc.logger.Info("Closing complete")
 	return nil
 }
 
