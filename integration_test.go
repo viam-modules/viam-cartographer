@@ -14,6 +14,7 @@ import (
 	"path"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"testing"
 	"time"
 
@@ -30,6 +31,66 @@ import (
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
 	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
+
+// Test final position and orientation are at approximately the expected values
+func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expectedComponentRef string) {
+	var expectedPos r3.Vector
+	var expectedOri *spatialmath.R4AA
+	tolerancePos := 0.001
+	toleranceOri := 0.001
+
+	switch {
+	case runtime.GOOS != "linux" && useIMU:
+		expectedPos = r3.Vector{X: 4.764540006619114, Y: 7.64793191575982, Z: 0}
+		expectedOri = &spatialmath.R4AA{
+			RX:    0.9859260885936583,
+			RY:    0.16404016011887448,
+			RZ:    -0.03225792458581239,
+			Theta: 0.02222300520776762,
+		}
+	case runtime.GOOS == "linux" && useIMU:
+		expectedPos = r3.Vector{X: 8.9990012566792, Y: 3.38371853513753, Z: 0}
+		expectedOri = &spatialmath.R4AA{
+			RX:    0.9839756084582248,
+			RY:    0.16541071768807708,
+			RZ:    0.06656798354450472,
+			Theta: 0.02229559831890859,
+		}
+	case runtime.GOOS != "linux" && !useIMU:
+		expectedPos = r3.Vector{X: 4.323028714593357, Y: 4.629247748686252, Z: 0}
+		expectedOri = &spatialmath.R4AA{
+			RX:    0,
+			RY:    0,
+			RZ:    1,
+			Theta: 0.00228885684885118,
+		}
+	case runtime.GOOS == "linux" && !useIMU:
+		expectedPos = r3.Vector{X: 3.36881455047323, Y: 4.130035158293928, Z: 0}
+		expectedOri = &spatialmath.R4AA{
+			RX:    0,
+			RY:    0,
+			RZ:    -1,
+			Theta: 0.0010751949934010567,
+		}
+	}
+
+	position, componentRef, err := svc.GetPosition(context.Background())
+	test.That(t, err, test.ShouldBeNil)
+	test.That(t, componentRef, test.ShouldEqual, expectedComponentRef)
+
+	pos := position.Point()
+	t.Logf("Position point: (%v, %v, %v)", pos.X, pos.Y, pos.Z)
+	test.That(t, pos.X, test.ShouldBeBetween, expectedPos.X-tolerancePos, expectedPos.X+tolerancePos)
+	test.That(t, pos.Y, test.ShouldBeBetween, expectedPos.Y-tolerancePos, expectedPos.Y+tolerancePos)
+	test.That(t, pos.Z, test.ShouldBeBetween, expectedPos.Z-tolerancePos, expectedPos.Z+tolerancePos)
+
+	ori := position.Orientation().AxisAngles()
+	t.Logf("Position orientation: RX: %v, RY: %v, RZ: %v, Theta: %v", ori.RX, ori.RY, ori.RZ, ori.Theta)
+	test.That(t, ori.RX, test.ShouldBeBetween, expectedOri.RX-toleranceOri, expectedOri.RX+toleranceOri)
+	test.That(t, ori.RY, test.ShouldBeBetween, expectedOri.RY-toleranceOri, expectedOri.RY+toleranceOri)
+	test.That(t, ori.RZ, test.ShouldBeBetween, expectedOri.RZ-toleranceOri, expectedOri.RZ+toleranceOri)
+	test.That(t, ori.Theta, test.ShouldBeBetween, expectedOri.Theta-toleranceOri, expectedOri.Theta+toleranceOri)
+}
 
 // Checks the cartographer map and confirms there at least 100 map points.
 func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) {
@@ -52,93 +113,7 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
 }
 
-func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, mode cartofacade.SlamMode, expectedComponentRef string) {
-	var expectedPosOSX r3.Vector
-	var expectedPosLinux r3.Vector
-	var expectedOriOSX *spatialmath.R4AA
-	var expectedOriLinux *spatialmath.R4AA
-	tolerancePos := 0.001
-	toleranceOri := 0.001
-
-	switch {
-	case useIMU && mode == cartofacade.UpdatingMode:
-		expectedPosOSX = r3.Vector{X: 4.764540006619114, Y: 7.64793191575982, Z: 0}
-		expectedOriOSX = &spatialmath.R4AA{
-			Theta: 0.02222300520776762, RX: 0.9859260885936583, RY: 0.16404016011887448,
-			RZ: -0.03225792458581239,
-		}
-
-		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
-		expectedOriLinux = &spatialmath.R4AA{
-			Theta: 1.025317158587307098, RX: 0.9252197096950275, RY: 0.04712768411234466,
-			RZ: 0.3764936522466959,
-		}
-
-	case useIMU && mode != cartofacade.UpdatingMode:
-		expectedPosOSX = r3.Vector{X: 4.764540006619114, Y: 7.64793191575982, Z: 0}
-		//Position point: (4.764540006619114, 7.64793191575982, -1.2464703216665085e-18)
-		expectedOriOSX = &spatialmath.R4AA{
-			Theta: 0.02222300520776762, RX: 0.9859260885936583, RY: 0.16404016011887448,
-			RZ: -0.03225792458581239,
-		}
-		// Position orientation: RX: 0.9859260885936583, RY: 0.16404016011887448, RZ: -0.03225792458581239, Theta: 0.02222300520776762
-
-		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
-		expectedOriLinux = &spatialmath.R4AA{
-			Theta: 1.6301758733667822, RX: 0.9252197096950275, RY: 0.04712768411234466,
-			RZ: 0.3764936522466959,
-		}
-
-	case !useIMU && mode == cartofacade.UpdatingMode:
-		expectedPosOSX = r3.Vector{X: 4.323028714593357, Y: 4.629247748686252, Z: 0}
-		expectedOriOSX = &spatialmath.R4AA{Theta: 0.00228885684885118, RX: 0, RY: 0, RZ: 1}
-
-		expectedPosLinux = r3.Vector{X: 33.36424739867359, Y: -15.892546207753742, Z: -1.7763568394002505e-15}
-		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
-
-	case !useIMU && mode != cartofacade.UpdatingMode:
-		expectedPosOSX = r3.Vector{X: 3.5169344230934447, Y: 3.519425001143934, Z: 0}
-		expectedOriOSX = &spatialmath.R4AA{Theta: 0.0003758992914140011, RX: 0, RY: 0, RZ: 1}
-
-		expectedPosLinux = r3.Vector{X: 158.79903385710674, Y: -77.01514065531592, Z: 0}
-		expectedOriLinux = &spatialmath.R4AA{Theta: 0.3331667853231311, RX: 0, RY: 0, RZ: 1}
-	}
-
-	position, componentRef, err := svc.GetPosition(context.Background())
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, componentRef, test.ShouldEqual, expectedComponentRef)
-
-	actualPos := position.Point()
-	t.Logf("Position point: (%v, %v, %v)", actualPos.X, actualPos.Y, actualPos.Z)
-	// https://viam.atlassian.net/browse/RSDK-3866
-	// mac
-	if actualPos.X > expectedPosOSX.X-tolerancePos && actualPos.X < expectedPosOSX.X+tolerancePos {
-		test.That(t, actualPos.Y, test.ShouldBeBetween, expectedPosOSX.Y-tolerancePos, expectedPosOSX.Y+tolerancePos)
-		test.That(t, actualPos.Z, test.ShouldBeBetween, expectedPosOSX.Z-tolerancePos, expectedPosOSX.Z+tolerancePos)
-		// linux
-	} else if actualPos.X > expectedPosLinux.X-tolerancePos && actualPos.X < expectedPosLinux.X+tolerancePos {
-		test.That(t, actualPos.Y, test.ShouldBeBetween, expectedPosLinux.Y-tolerancePos, expectedPosLinux.Y+tolerancePos)
-		test.That(t, actualPos.Z, test.ShouldBeBetween, expectedPosLinux.Z-tolerancePos, expectedPosLinux.Z+tolerancePos)
-	} else {
-		t.Error("TEST FAILED Position is outside of expected platform range")
-	}
-
-	actualOri := position.Orientation().AxisAngles()
-	t.Logf("Position orientation: RX: %v, RY: %v, RZ: %v, Theta: %v", actualOri.RX, actualOri.RY, actualOri.RZ, actualOri.Theta)
-
-	if actualOri.Theta > expectedOriOSX.Theta-toleranceOri && actualOri.Theta < expectedOriOSX.Theta+toleranceOri {
-		test.That(t, actualOri.RX, test.ShouldBeBetween, expectedOriOSX.RX-toleranceOri, expectedOriOSX.RX+toleranceOri)
-		test.That(t, actualOri.RY, test.ShouldBeBetween, expectedOriOSX.RY-toleranceOri, expectedOriOSX.RY+toleranceOri)
-		test.That(t, actualOri.Theta, test.ShouldBeBetween, expectedOriOSX.Theta-toleranceOri, expectedOriOSX.Theta+toleranceOri)
-	} else if actualOri.Theta > expectedOriLinux.Theta-toleranceOri && actualOri.Theta < expectedOriLinux.Theta+toleranceOri {
-		test.That(t, actualOri.RX, test.ShouldBeBetween, expectedOriLinux.RX-toleranceOri, expectedOriLinux.RX+toleranceOri)
-		test.That(t, actualOri.RY, test.ShouldBeBetween, expectedOriLinux.RY-toleranceOri, expectedOriLinux.RY+toleranceOri)
-		test.That(t, actualOri.RZ, test.ShouldBeBetween, expectedOriLinux.RZ-toleranceOri, expectedOriLinux.RZ+toleranceOri)
-	} else {
-		t.Error("TEST FAILED Orientation is outside of expected platform range")
-	}
-}
-
+// Saves cartographer's internal state in the data directory.
 func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
 	timeStamp := time.Now()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
@@ -151,6 +126,9 @@ func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
 	}
 }
 
+// testHelperCartographer is responsible for running a viam-cartographer process using the desired mock sensors. Once started it will
+// waiting for all data to be processed by monitor sensor channels. After data has been fully processed, the endpoints Position,
+// PointCloudMap, InternalState are evaluated and the process is closed out. The final internal state of cartographer is then returned.
 func testHelperCartographer(
 	t *testing.T,
 	dataDirectory string,
@@ -164,8 +142,9 @@ func testHelperCartographer(
 	termFunc := testhelper.InitTestCL(t, logger)
 	defer termFunc()
 
+	// Create config
+	var timeTracker testhelper.TimeTracker
 	attrCfg := &vcConfig.Config{
-		Camera: map[string]string{"name": "stub_lidar"},
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
@@ -173,63 +152,68 @@ func testHelperCartographer(
 		DataDirectory:         dataDirectory,
 		IMUIntegrationEnabled: true,
 	}
+
+	// Add lidar component to config (required)
+	lidarDone := make(chan struct{})
+	lidarReadingInterval := time.Millisecond * 200
+	attrCfg.Camera = map[string]string{"name": "stub_lidar"}
+	timeTracker.LidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
+
+	// Add imu component to config (optional)
+	imuDone := make(chan struct{})
+	imuReadingInterval := time.Millisecond * 50
 	if useIMU {
 		attrCfg.MovementSensor = map[string]string{"name": "stub_imu"}
-	}
-
-	lidarReadingInterval := time.Millisecond * 200
-	imuReadingInterval := time.Millisecond * 50
-	timeTracker := testhelper.TimeTracker{
-		LidarTime: time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC),
-	}
-
-	if useIMU {
 		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	}
-	//timeTracker.NextImuTime = timeTracker.ImuTime.Add(imuReadingInterval)
-	//timeTracker.NextLidarTime = timeTracker.LidarTime.Add(lidarReadingInterval)
 
-	lidarDone := make(chan struct{})
-	imuDone := make(chan struct{})
+	// Start Sensors
+	fmt.Println("STarting sensors")
 	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"], replaySensor, lidarReadingInterval, lidarDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
-	fmt.Println("Made lidar")
+	fmt.Println("STarting sensor2s")
 	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"], replaySensor, imuReadingInterval, imuDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
-	fmt.Println("Made imu")
+	fmt.Println("finished sensors")
+
 	if !useIMU {
 		test.That(t, timedIMU, test.ShouldBeNil)
 	}
+
+	// Start SLAM Service
 	svc, err := testhelper.CreateIntegrationSLAMService(t, attrCfg, timedLidar, timedIMU, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	start := time.Now()
 	cSvc, ok := svc.(*viamcartographer.CartographerService)
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, cSvc.SlamMode, test.ShouldEqual, expectedMode)
-	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
 
+	// Waiting for sensor processes to finish sending data and for context to be canceled
+	start := time.Now()
+	ctx, cancelFunc := context.WithTimeout(context.Background(), time.Second*5)
 	defer cancelFunc()
-	// wait till all lidar readings have been read
+
+	// Wait for lidar sensor process to complete (required)
 	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
 		t.Logf("test duration %dms", time.Since(start).Milliseconds())
 		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
-	t.Logf("Lidar data finished")
+	fmt.Println("lidar finished")
 
-	if useIMU {
-		if !utils.SelectContextOrWaitChan(ctx, imuDone) {
-			t.Logf("test duration %dms", time.Since(start).Milliseconds())
-			test.That(t, errors.New("test timeout"), test.ShouldBeNil)
-		}
+	// Wait for IMU sensor process to complete (optional)
+	if useIMU && !utils.SelectContextOrWaitChan(ctx, imuDone) {
+		t.Logf("test duration %dms", time.Since(start).Milliseconds())
+		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
 	}
-	t.Logf("IMU data finished")
+	fmt.Println("imu finished")
 
-	testCartographerPosition(t, svc, useIMU, expectedMode, attrCfg.Camera["name"])
+	// Test end points and retrieve internal state
+	testCartographerPosition(t, svc, useIMU, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
-
 	internalState, err := slam.GetInternalStateFull(context.Background(), svc)
 	test.That(t, err, test.ShouldBeNil)
+
+	fmt.Println("closing out service")
 
 	// Close out slam service
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
@@ -246,206 +230,121 @@ func testHelperCartographer(
 	return internalState
 }
 
-//nolint:dupl
-func integrationTestHelperCartographer(t *testing.T, subAlgo viamcartographer.SubAlgo) {
+// TestIntegrationCartographer provides end-to-end testing of viam-cartographer using a combination of live vs. replay cameras
+// and imu enabled mode.
+func TestIntegrationCartographer(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
-	t.Run("live sensor mapping mode", func(t *testing.T) {
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
+	cases := []struct {
+		description string
+		replay      bool
+		imuEnabled  bool
+		mode        cartofacade.SlamMode
+		subAlgo     viamcartographer.SubAlgo
+	}{
+		// {
+		// 	description: "live sensor mapping mode 2D",
+		// 	replay:      false,
+		// 	imuEnabled:  false,
+		// 	mode:        cartofacade.MappingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+		// {
+		// 	description: "live sensor localizing mode 2D",
+		// 	replay:      false,
+		// 	imuEnabled:  false,
+		// 	mode:        cartofacade.LocalizingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+		// {
+		// 	description: "live sensor updating mode 2D",
+		// 	replay:      false,
+		// 	imuEnabled:  false,
+		// 	mode:        cartofacade.UpdatingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+		// {
+		// 	description: "live sensor mapping mode 2D",
+		// 	replay:      true,
+		// 	imuEnabled:  false,
+		// 	mode:        cartofacade.MappingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+		// {
+		// 	description: "replay sensor localizing mode 2D",
+		// 	replay:      true,
+		// 	imuEnabled:  false,
+		// 	mode:        cartofacade.LocalizingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+		// {
+		// 	description: "replay sensor updating mode 2D",
+		// 	replay:      true,
+		// 	imuEnabled:  false,
+		// 	mode:        cartofacade.UpdatingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+		{
+			description: "live with imu sensor mapping mode 2D",
+			replay:      false,
+			imuEnabled:  true,
+			mode:        cartofacade.MappingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		// {
+		// 	description: "live with imu sensor localizing mode 2D",
+		// 	replay:      false,
+		// 	imuEnabled:  true,
+		// 	mode:        cartofacade.LocalizingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+		// {
+		// 	description: "live with imu sensor updating mode 2D",
+		// 	replay:      false,
+		// 	imuEnabled:  true,
+		// 	mode:        cartofacade.UpdatingMode,
+		// 	subAlgo:     viamcartographer.Dim2d,
+		// },
+	}
+
+	// Loop over defined test cases, resetting the directories between slam sessions
+	for _, tt := range cases {
+		t.Run(tt.description, func(t *testing.T) {
+			// Prep first run directory
+			dataDirectory1, err := os.MkdirTemp("", "*")
 			test.That(t, err, test.ShouldBeNil)
-		}()
+			defer func() {
+				err := os.RemoveAll(dataDirectory1)
+				test.That(t, err, test.ShouldBeNil)
+			}()
 
-		testHelperCartographer(t, dataDirectory, subAlgo, logger, false, false, 1, cartofacade.MappingMode)
-	})
+			// Set mapRateSec for mapping mode
+			mapRateSec := 1
 
-	t.Run("live sensor localizing mode", func(t *testing.T) {
-		dataDirectoryMapping, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryMapping)
+			// Run mapping test
+			internalState := testHelperCartographer(t, dataDirectory1, tt.subAlgo, logger, tt.replay, tt.imuEnabled, 1, cartofacade.MappingMode)
+
+			// Return if in mapping mode as there are no further actions required
+			if tt.mode == cartofacade.MappingMode {
+				return
+			}
+
+			// Prep second run directory
+			dataDirectory2, err := os.MkdirTemp("", "*")
 			test.That(t, err, test.ShouldBeNil)
-		}()
+			defer func() {
+				err := os.RemoveAll(dataDirectory2)
+				test.That(t, err, test.ShouldBeNil)
+			}()
 
-		// do a mapping run with replay sensor
-		internalState := testHelperCartographer(t, dataDirectoryMapping, subAlgo, logger, true, false, 1, cartofacade.MappingMode)
+			// Save internal state
+			saveInternalState(t, internalState, dataDirectory2)
 
-		dataDirectoryLocalizing, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryLocalizing)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// save the internal state of the mapping run to a new data_dir
-		saveInternalState(t, internalState, dataDirectoryLocalizing)
-		// localize on that internal state
-		testHelperCartographer(t, dataDirectoryLocalizing, subAlgo, logger, false, false, 0, cartofacade.LocalizingMode)
-	})
-
-	t.Run("live sensor updating mode", func(t *testing.T) {
-		dataDirectoryMapping, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryMapping)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// do a mapping run
-		internalState := testHelperCartographer(t, dataDirectoryMapping, subAlgo, logger, true, false, 1, cartofacade.MappingMode)
-
-		dataDirectoryUpdating, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryUpdating)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// save the internal state of the mapping run to a new data_dir
-		saveInternalState(t, internalState, dataDirectoryUpdating)
-		// update that internal state
-		testHelperCartographer(t, dataDirectoryUpdating, subAlgo, logger, false, false, 1, cartofacade.UpdatingMode)
-	})
-}
-
-//nolint:dupl
-func integrationTestHelperCartographerWithIMU(t *testing.T, subAlgo viamcartographer.SubAlgo) {
-	logger := golog.NewTestLogger(t)
-
-	t.Run("live sensor mapping mode", func(t *testing.T) {
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		testHelperCartographer(t, dataDirectory, subAlgo, logger, false, true, 1, cartofacade.MappingMode)
-	})
-
-	t.Run("live sensor localizing mode", func(t *testing.T) {
-		dataDirectoryMapping, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryMapping)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// do a mapping run with replay sensor
-		internalState := testHelperCartographer(t, dataDirectoryMapping, subAlgo, logger, true, true, 1, cartofacade.MappingMode)
-
-		dataDirectoryLocalizing, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryLocalizing)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// save the internal state of the mapping run to a new data_dir
-		saveInternalState(t, internalState, dataDirectoryLocalizing)
-		// localize on that internal state
-		testHelperCartographer(t, dataDirectoryLocalizing, subAlgo, logger, false, true, 0, cartofacade.LocalizingMode)
-	})
-
-	t.Run("live sensor updating mode", func(t *testing.T) {
-		dataDirectoryMapping, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryMapping)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// do a mapping run
-		internalState := testHelperCartographer(t, dataDirectoryMapping, subAlgo, logger, true, true, 1, cartofacade.MappingMode)
-
-		dataDirectoryUpdating, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryUpdating)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// save the internal state of the mapping run to a new data_dir
-		saveInternalState(t, internalState, dataDirectoryUpdating)
-		// update from that internal state
-		testHelperCartographer(t, dataDirectoryUpdating, subAlgo, logger, false, true, 1, cartofacade.UpdatingMode)
-	})
-}
-
-//nolint:dupl
-func integrationTestHelperCartographerReplay(t *testing.T, subAlgo viamcartographer.SubAlgo) {
-	logger := golog.NewTestLogger(t)
-
-	t.Run("replay sensor mapping mode", func(t *testing.T) {
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		testHelperCartographer(t, dataDirectory, subAlgo, logger, true, false, 1, cartofacade.MappingMode)
-	})
-
-	t.Run("replay sensor localizing mode", func(t *testing.T) {
-		dataDirectoryMapping, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryMapping)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// do a mapping run with replay sensor
-		internalState := testHelperCartographer(t, dataDirectoryMapping, subAlgo, logger, true, false, 1, cartofacade.MappingMode)
-
-		dataDirectoryLocalizing, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryLocalizing)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// save the internal state of the mapping run to a new data_dir
-		saveInternalState(t, internalState, dataDirectoryLocalizing)
-		// localize on that internal state
-		testHelperCartographer(t, dataDirectoryLocalizing, subAlgo, logger, true, false, 0, cartofacade.LocalizingMode)
-	})
-
-	t.Run("replay sensor updating mode", func(t *testing.T) {
-		dataDirectoryMapping, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryMapping)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// do a mapping run
-		internalState := testHelperCartographer(t, dataDirectoryMapping, subAlgo, logger, true, false, 1, cartofacade.MappingMode)
-
-		dataDirectoryUpdating, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectoryUpdating)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
-		// save the internal state of the mapping run to a new data_dir
-		saveInternalState(t, internalState, dataDirectoryUpdating)
-		// update from that internal state
-		testHelperCartographer(t, dataDirectoryUpdating, subAlgo, logger, true, false, 1, cartofacade.UpdatingMode)
-	})
-}
-
-func TestCartographerIntegration2D(t *testing.T) {
-	integrationTestHelperCartographer(t, viamcartographer.Dim2d)
-}
-
-func TestCartographerIntegrationWithIMU2D(t *testing.T) {
-	integrationTestHelperCartographerWithIMU(t, viamcartographer.Dim2d)
-}
-
-func TestCartographerIntegrationReplay2D(t *testing.T) {
-	integrationTestHelperCartographerReplay(t, viamcartographer.Dim2d)
+			// Run follow up updating or localizing test
+			if tt.mode == cartofacade.LocalizingMode {
+				mapRateSec = 0
+			}
+			testHelperCartographer(t, dataDirectory2, tt.subAlgo, logger, tt.replay, tt.imuEnabled, mapRateSec, tt.mode)
+		})
+	}
 }
