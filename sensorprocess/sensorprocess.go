@@ -4,7 +4,6 @@ package sensorprocess
 import (
 	"context"
 	"errors"
-	"fmt"
 	"math"
 	"strings"
 	"time"
@@ -37,20 +36,18 @@ type Config struct {
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
-// nextLidarData stores the next data to be added to cartographer along with its associated timestamp so that,
+// LidarData stores the next data to be added to cartographer along with its associated timestamp so that,
 // in offline mode, data from multiple sensors can be added in order.
 type LidarData struct {
 	time time.Time
 	data []byte
-	//prevTime time.Time
 }
 
-// nextIMUData stores the next data to be added to cartographer along with its associated timestamp so that,
+// IMUData stores the next data to be added to cartographer along with its associated timestamp so that,
 // in offline mode, data from multiple sensors can be added in order.
 type IMUData struct {
 	time time.Time
 	data cartofacade.IMUReading
-	//prevTime time.Time
 }
 
 // StartLidar polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -58,7 +55,6 @@ type IMUData struct {
 func (config *Config) StartLidar(
 	ctx context.Context,
 ) bool {
-	fmt.Println("STARTED LIDAR")
 	for {
 		select {
 		case <-ctx.Done():
@@ -91,12 +87,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			return status
 		}
 
-		// update prev and next time
-		// if config.nextLidarData.prevTime == defaultTime {
-		// 	config.nextLidarData.prevTime = tsr.ReadingTime
-		// } else {
-		// 	config.nextLidarData.prevTime = config.nextLidarData.time
-		// }
+		// update stored lidar time
 		config.currentLidarData.time = tsr.ReadingTime
 		config.currentLidarData.data = tsr.Reading
 
@@ -105,7 +96,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		if tsr.ReadingTime.Sub(config.currentIMUData.time) >= 0 {
 			timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-			config.Logger.Debugf("sleep for %s milliseconds", time.Duration(timeToSleep))
+			config.Logger.Debugf("sleep for %vms", timeToSleep)
 		} else {
 			config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
 		}
@@ -131,8 +122,6 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			}
 			config.currentLidarData.time = tsr.ReadingTime
 			config.currentLidarData.data = tsr.Reading
-		} else {
-			//time.Sleep(time.Millisecond)
 		}
 	}
 	return false
@@ -173,6 +162,7 @@ func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Ti
 		} else {
 			config.Logger.Warnw("Skipping lidar reading due to error from cartofacade", "error", err)
 		}
+		return 0
 	}
 	config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
@@ -184,7 +174,7 @@ func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Ti
 func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {
-		//config.Logger.Warn(err)
+		// config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
 		if config.LidarDataRateMsec == 0 {
 			return tsr, strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()), err
@@ -199,7 +189,6 @@ func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.Ti
 func (config *Config) StartIMU(
 	ctx context.Context,
 ) bool {
-	fmt.Println("STARTED IMU")
 	for {
 		select {
 		case <-ctx.Done():
@@ -238,18 +227,16 @@ func (config *Config) addIMUReading(
 		}
 
 		// update stored imu time
-		//config.nextIMUData.prevTime = config.nextIMUData.time
 		config.currentIMUData.time = tsr.ReadingTime
 		config.currentIMUData.data = sr
 
 		// only add imu data to cartographer and sleep remainder of time interval if it is after most recent lidar data to ensure
 		// ordered time
-		if tsr.ReadingTime.Sub(config.currentLidarData.time).Milliseconds() > 0 { //&&
-			//config.nextIMUData.time.Sub(config.nextLidarData.prevTime).Milliseconds() > 0 {
+		if tsr.ReadingTime.Sub(config.currentLidarData.time).Milliseconds() > 0 {
 			timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, *config)
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		} else {
-			config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix()) //.nextLidarData.prevTime)
+			config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
 		}
 	} else {
 		/*
@@ -330,8 +317,9 @@ func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readi
 		} else {
 			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
 		}
+		return 0
 	}
-	config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix()) //.nextLidarData.prevTime)
+	config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(config.IMUDataRateMsec-timeElapsedMs)))
 }

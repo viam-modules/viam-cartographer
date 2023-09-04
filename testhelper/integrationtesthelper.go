@@ -30,8 +30,9 @@ const (
 	// file used for integration tests.
 	NumIMUData = 30
 	// Path to slam mock data used for integration tests artifact path.
-	// artifact.MustPath("viam-cartographer/mock_lidar")
-	mockDataPath = "/Users/jeremyhyde/Development/viam-cartographer/mock_data"
+	// artifact.MustPath("viam-cartographer/mock_lidar").
+	mockDataPath                = "/Users/jeremyhyde/Development/viam-cartographer/mock_data"
+	sensorDataIngestionWaitTime = 50 * time.Millisecond
 )
 
 var defaultTime = time.Time{}
@@ -72,7 +73,6 @@ func IntegrationTimedLidarSensor(
 	done chan struct{},
 	timeTracker *TimeTracker,
 ) (s.TimedLidarSensor, error) {
-
 	// Check required amount of lidar data is present
 	err := mockLidarReadingsValid()
 	if err != nil {
@@ -85,27 +85,31 @@ func IntegrationTimedLidarSensor(
 	ts := &s.TimedLidarSensorMock{}
 	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
 		defer timeTracker.mutex.Unlock()
-
 		// Holds the process until for all necessary imu data has been sent to cartographer. Only applicable
 		// when the imu is present (timeTracker.NextImuTime has been defined) and is always true the first iteration.
 		// This combined with manual definition of timestamps allow for consistent results.
 		for {
-			//t.Logf("Lidar | Lidar Time: %v IMU Time %v | Next Lidar Time: %v Next IMU Time %v \n", timeTracker.LidarTime, timeTracker.ImuTime, timeTracker.NextLidarTime, timeTracker.NextImuTime)
-			if !started || timeTracker.ImuTime == defaultTime || timeTracker.LidarTime.Sub(timeTracker.NextImuTime) <= 0 {
+			if timeTracker.ImuTime == defaultTime {
 				started = true
 				timeTracker.mutex.Lock()
+				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
-			//time.Sleep(100 * time.Millisecond)
+
+			if !started || timeTracker.LidarTime.Sub(timeTracker.ImuTime) < 0 {
+				started = true
+				timeTracker.mutex.Lock()
+				time.Sleep(sensorDataIngestionWaitTime)
+				break
+			}
 		}
 
 		// Communicating all lidar readings have been sent to cartographer or if the last imu reading has been sent by checking
 		// if LastLidarTime has been defined. If so, simulate endOfDataSet error.
-		//t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.LidarTime.String())
+		t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.LidarTime.String())
 		if i >= NumPointClouds || timeTracker.LastImuTime != defaultTime {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
 			if !closed {
-				fmt.Println("Sending end of dataset to lidar done channel")
 				done <- struct{}{}
 				closed = true
 				timeTracker.LastLidarTime = timeTracker.LidarTime
@@ -115,9 +119,9 @@ func IntegrationTimedLidarSensor(
 		}
 
 		// Get next lidar data
-		resp, err := createTimedLidarSensorReadingResponse(t, ctx, i, replay, timeTracker)
+		resp, err := createTimedLidarSensorReadingResponse(t, i, replay, timeTracker)
 		if err != nil {
-			return resp, nil
+			return resp, err
 		}
 
 		// Advance the data index and update time tracker (manual timestamps occurs here)
@@ -150,7 +154,6 @@ func IntegrationTimedIMUSensor(
 	done chan struct{},
 	timeTracker *TimeTracker,
 ) (s.TimedIMUSensor, error) {
-
 	// Return nil if imu is not requested
 	if imu == "" {
 		return nil, nil
@@ -168,18 +171,16 @@ func IntegrationTimedIMUSensor(
 	ts := &s.TimedIMUSensorMock{}
 	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
 		defer timeTracker.mutex.Unlock()
-
 		// Holds the process until for all necessary lidar data has been sent to cartographer. Is always
 		// true the first iteration. This combined with manual definition of timestamps allow for consistent
 		// results.
 		for {
-			t.Logf("IMU   | Lidar Time: %v IMU Time %v | Next Lidar Time: %v Next IMU Time %v \n", timeTracker.LidarTime, timeTracker.ImuTime, timeTracker.NextLidarTime, timeTracker.NextImuTime)
-			if !started || timeTracker.ImuTime.Sub(timeTracker.NextLidarTime) < 0 {
+			if !started || timeTracker.ImuTime.Sub(timeTracker.NextLidarTime) <= 0 {
 				started = true
 				timeTracker.mutex.Lock()
+				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
-			//time.Sleep(100 * time.Millisecond)
 		}
 
 		// Communicating all desired imu readings have been sent or to cartographer or if the last lidar reading has been sent by checking
@@ -188,7 +189,6 @@ func IntegrationTimedIMUSensor(
 		if int(i) >= len(mockDataset) || timeTracker.LastLidarTime != defaultTime {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
 			if !closed {
-				fmt.Println("Sending end of dataset to imu done channel")
 				done <- struct{}{}
 				closed = true
 				timeTracker.LastImuTime = timeTracker.ImuTime
@@ -196,7 +196,7 @@ func IntegrationTimedIMUSensor(
 			return s.TimedIMUSensorReadingResponse{}, errors.New("IMU: end of dataset")
 		}
 
-		resp, err := createTimedIMUSensorReadingResponse(t, ctx, mockDataset[i], replay, timeTracker)
+		resp, err := createTimedIMUSensorReadingResponse(t, mockDataset[i], replay, timeTracker)
 		if err != nil {
 			return resp, err
 		}
@@ -211,24 +211,7 @@ func IntegrationTimedIMUSensor(
 	return ts, nil
 }
 
-func createDatasetFromFile(t *testing.T, filepath string) ([]string, error) {
-	file, err := os.Open(mockDataPath + "/imu/data.txt")
-	if err != nil {
-		t.Error("TEST FAILED TimedIMUSensorReading Mock failed to open data file")
-		return []string{}, err
-	}
-
-	mockDatasetScanner := bufio.NewScanner(file)
-	mockDatasetScanner.Split(bufio.ScanLines)
-	var mockDataset []string
-
-	for mockDatasetScanner.Scan() {
-		mockDataset = append(mockDataset, mockDatasetScanner.Text())
-	}
-	return mockDataset, nil
-}
-
-func createTimedLidarSensorReadingResponse(t *testing.T, ctx context.Context, i uint64, replay bool, timeTracker *TimeTracker,
+func createTimedLidarSensorReadingResponse(t *testing.T, i uint64, replay bool, timeTracker *TimeTracker,
 ) (s.TimedLidarSensorReadingResponse, error) {
 	file, err := os.Open(mockDataPath + "/lidar/" + strconv.FormatUint(i, 10) + ".pcd")
 	// file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
@@ -249,11 +232,15 @@ func createTimedLidarSensorReadingResponse(t *testing.T, ctx context.Context, i 
 		return s.TimedLidarSensorReadingResponse{}, err
 	}
 
-	resp := s.TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: timeTracker.LidarTime, Replay: replay}
+	resp := s.TimedLidarSensorReadingResponse{
+		Reading:     buf.Bytes(),
+		ReadingTime: timeTracker.LidarTime,
+		Replay:      replay,
+	}
 	return resp, nil
 }
 
-func createTimedIMUSensorReadingResponse(t *testing.T, ctx context.Context, line string, replay bool, timeTracker *TimeTracker,
+func createTimedIMUSensorReadingResponse(t *testing.T, line string, replay bool, timeTracker *TimeTracker,
 ) (s.TimedIMUSensorReadingResponse, error) {
 	re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
 	matches := re.FindAllString(line, -1)
@@ -276,7 +263,12 @@ func createTimedIMUSensorReadingResponse(t *testing.T, ctx context.Context, line
 	}
 	angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
 
-	resp := s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: timeTracker.ImuTime, Replay: replay}
+	resp := s.TimedIMUSensorReadingResponse{
+		LinearAcceleration: linAcc,
+		AngularVelocity:    angVel,
+		ReadingTime:        timeTracker.ImuTime,
+		Replay:             replay,
+	}
 	return resp, nil
 }
 

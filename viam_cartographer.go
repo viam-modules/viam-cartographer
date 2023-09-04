@@ -5,7 +5,6 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -168,7 +167,6 @@ func New(
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
 
-	fmt.Println("STARTING NEW")
 	svcConfig, err := resource.NativeConfig[*vcConfig.Config](c)
 	if err != nil {
 		return nil, err
@@ -258,7 +256,6 @@ func New(
 		actual:       imuObject,
 		timed:        timedIMU,
 	}
-	fmt.Println("STARTING CREATE IMU AND LIDAR")
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
@@ -290,7 +287,6 @@ func New(
 		}
 	}()
 
-	fmt.Println("STARTING VALIDATE LIDAR")
 	if err = s.ValidateGetLidarData(
 		cancelSensorProcessCtx,
 		timedLidar,
@@ -300,7 +296,7 @@ func New(
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
 	}
-	fmt.Println("STARTING VALIDATE IMU")
+
 	if cartoSvc.imu.name != "" {
 		if err = s.ValidateGetIMUData(
 			cancelSensorProcessCtx,
@@ -312,13 +308,12 @@ func New(
 			return nil, err
 		}
 	}
-	fmt.Println("STARTING CARTO FACADE")
+
 	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
 	if err != nil {
 		return nil, err
 	}
 
-	fmt.Println("STARTING SENSOR PROCESS")
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
