@@ -6,6 +6,7 @@ import (
 	"errors"
 	"math"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -33,8 +34,8 @@ type Config struct {
 	currentLidarData         LidarData
 	currentIMUData           IMUData
 	firstLidarReadingTime    time.Time
-	lastLidarReadingTime     time.Time
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
+	Mutex                    *sync.Mutex
 }
 
 // LidarData stores the next data to be added to cartographer along with its associated timestamp so that,
@@ -62,7 +63,6 @@ func (config *Config) StartLidar(
 			return false
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
-				config.lastLidarReadingTime = config.currentLidarData.time
 				config.Logger.Info("Beginning final optimization")
 				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
 				if err != nil {
@@ -89,13 +89,16 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			return status
 		}
 
-		// update stored lidar timestamp
+		// update stored lidar timestamp and extract current timestamps
+		config.Mutex.Lock()
 		config.currentLidarData.time = tsr.ReadingTime
 		config.currentLidarData.data = tsr.Reading
+		currentIMUTime := config.currentIMUData.time
+		config.Mutex.Unlock()
 
 		// if an imu exists only add lidar data to cartographer and sleep remainder of time interval if it is after most recent imu data
 		// to ensure ordered time
-		if config.IMUName == "" || tsr.ReadingTime.Sub(config.currentIMUData.time) >= 0 {
+		if config.IMUName == "" || tsr.ReadingTime.Sub(currentIMUTime) >= 0 {
 			timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 			config.Logger.Debugf("sleep for %vms", timeToSleep)
@@ -109,19 +112,27 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			the next IMU data has a timestamp after the current lidar reading's timestamp.
 		*/
 
+		config.Mutex.Lock()
+		currentLidarTime := config.currentLidarData.time
+		currentLidarData := config.currentLidarData.data
+		currentIMUTime := config.currentIMUData.time
+		config.Mutex.Unlock()
+
 		// If an IMU exists, skip adding measurement until the current lidar time is after the current imu timestamp
-		if config.IMUName != "" && config.currentLidarData.time.Sub(config.currentIMUData.time).Milliseconds() > 0 {
+		if config.IMUName != "" && currentLidarTime.Sub(currentIMUTime).Milliseconds() > 0 {
 			time.Sleep(10 * time.Millisecond)
 			return false
 		}
 
 		// Add current lidar data if it is non-nil
-		if config.currentLidarData.data != nil {
-			tryAddLidarReadingUntilSuccess(ctx, config.currentLidarData.data, config.currentLidarData.time, *config)
+		if currentLidarData != nil {
+			tryAddLidarReadingUntilSuccess(ctx, currentLidarData, currentLidarTime, *config)
 
+			config.Mutex.Lock()
 			if config.firstLidarReadingTime == defaultTime {
-				config.firstLidarReadingTime = config.currentLidarData.time
+				config.firstLidarReadingTime = currentLidarTime
 			}
+			config.Mutex.Unlock()
 		}
 
 		// get next lidar data response
@@ -129,8 +140,11 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		if err != nil {
 			return status
 		}
+
+		config.Mutex.Lock()
 		config.currentLidarData.time = tsr.ReadingTime
 		config.currentLidarData.data = tsr.Reading
+		config.Mutex.Unlock()
 	}
 
 	return false
@@ -183,7 +197,7 @@ func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Ti
 func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {
-		// config.Logger.Warn(err)
+		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
 		if config.LidarDataRateMsec == 0 {
 			return tsr, strings.Contains(replaypcd.ErrEndOfDataset.Error(), err.Error()), err
@@ -234,6 +248,7 @@ func (config *Config) addIMUReading(
 		}
 
 		// update stored imu time
+		config.Mutex.Lock()
 		config.currentIMUData.time = tsr.ReadingTime
 		config.currentIMUData.data = sr
 
@@ -252,16 +267,22 @@ func (config *Config) addIMUReading(
 			the current IMU reading's timestamp.
 		*/
 
-		if config.firstLidarReadingTime != defaultTime {
+		config.Mutex.Lock()
+		currentIMUTime := config.currentIMUData.time
+		currentIMUData := config.currentIMUData.data
+		firstLidarReadingTime := config.firstLidarReadingTime
+		config.Mutex.Unlock()
+
+		if firstLidarReadingTime != defaultTime {
 			// Skip adding measurement if currently stored IMU data is after currently stored lidar data
-			if config.firstLidarReadingTime.Sub(config.currentIMUData.time).Milliseconds() >= 0 {
+			if firstLidarReadingTime.Sub(currentIMUTime).Milliseconds() >= 0 {
 				time.Sleep(10 * time.Millisecond)
 				return false
 			}
 
 			// Add IMU data if imu data has been defined and occurs after first lidar data
 			if config.currentIMUData.time != defaultTime {
-				tryAddIMUReadingUntilSuccess(ctx, config.currentIMUData.data, config.currentIMUData.time, *config)
+				tryAddIMUReadingUntilSuccess(ctx, currentIMUData, currentIMUTime, *config)
 			}
 		}
 
@@ -280,12 +301,14 @@ func (config *Config) addIMUReading(
 		// TODO: Remove dropping out of order imu readings after DATA-1812 has been complete
 		// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
 		// update current imu data and time
+		config.Mutex.Lock()
 		if config.currentIMUData.time.Sub(tsr.ReadingTime).Milliseconds() < 0 {
 			config.currentIMUData.time = tsr.ReadingTime
 			config.currentIMUData.data = sr
 		} else {
 			config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
 		}
+		config.Mutex.Unlock()
 	}
 	return false
 }

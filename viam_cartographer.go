@@ -130,6 +130,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		Logger:                   cartoSvc.logger,
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
+		Mutex:                    &sync.Mutex{},
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)

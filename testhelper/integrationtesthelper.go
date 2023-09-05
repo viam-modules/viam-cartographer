@@ -53,7 +53,7 @@ type TimeTracker struct {
 	LastLidarTime time.Time
 	LastImuTime   time.Time
 
-	mutex sync.Mutex
+	Mu *sync.Mutex
 }
 
 // IntegrationTimedLidarSensor returns a mock timed lidar sensor
@@ -87,24 +87,24 @@ func IntegrationTimedLidarSensor(
 	closed := false
 	ts := &s.TimedLidarSensorMock{}
 	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
-		defer timeTracker.mutex.Unlock()
+		defer timeTracker.Mu.Unlock()
 		/*
 			Holds the process until for all necessary imu data has been sent to cartographer. Only applicable
 			when the imu is present (timeTracker.NextImuTime has been defined) and is always true the first iteration.
 			This combined with manual definition of timestamps allow for consistent results.
 		*/
 		for {
+			timeTracker.Mu.Lock()
 			if timeTracker.ImuTime == defaultTime {
-				timeTracker.mutex.Lock()
 				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
 
 			if i <= 1 || timeTracker.LidarTime.Sub(timeTracker.ImuTime) <= 0 {
-				timeTracker.mutex.Lock()
 				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
+			timeTracker.Mu.Unlock()
 		}
 
 		// Communicating all lidar readings have been sent to cartographer or if the last imu reading has been sent by checking
@@ -172,18 +172,19 @@ func IntegrationTimedIMUSensor(
 	closed := false
 	ts := &s.TimedIMUSensorMock{}
 	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
-		defer timeTracker.mutex.Unlock()
+		defer timeTracker.Mu.Unlock()
 		/*
 			Holds the process until for all necessary lidar data has been sent to cartographer. Is always
 			true the first iteration. This combined with manual definition of timestamps allow for consistent
 			results.
 		*/
 		for {
+			timeTracker.Mu.Lock()
 			if i == 0 || timeTracker.ImuTime.Sub(timeTracker.NextLidarTime) < 0 {
-				timeTracker.mutex.Lock()
 				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
+			timeTracker.Mu.Unlock()
 		}
 
 		// Communicating all desired imu readings have been sent or to cartographer or if the last lidar reading has been sent by

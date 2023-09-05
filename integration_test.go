@@ -15,6 +15,7 @@ import (
 	"reflect"
 	"runtime"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -156,7 +157,10 @@ func testHelperCartographer(
 	defer termFunc()
 
 	// Create config
-	var timeTracker testhelper.TimeTracker
+	timeTracker := testhelper.TimeTracker{
+		Mu: &sync.Mutex{},
+	}
+
 	attrCfg := &vcConfig.Config{
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
