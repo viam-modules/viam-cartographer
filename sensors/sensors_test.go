@@ -207,7 +207,11 @@ func TestTimedLidarSensorReading(t *testing.T) {
 		tsr, err := goodReplayLidar.TimedLidarSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, tsr.Reading, test.ShouldNotBeNil)
-		test.That(t, tsr.ReadingTime.Equal(s.TestTime), test.ShouldBeTrue)
+
+		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, tsr.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
+
 		test.That(t, tsr.Replay, test.ShouldBeTrue)
 	})
 }
