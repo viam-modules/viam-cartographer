@@ -3,6 +3,7 @@ package sensorprocess
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -542,9 +543,7 @@ func onlineModeLidarTestHelper(
 		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 	} else if cam == "replay_lidar" {
-		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTime)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, calls[0].readingTimestamp.Equal(readingTime), test.ShouldBeTrue)
+		test.That(t, calls[0].readingTimestamp.Equal(s.TestTime), test.ShouldBeTrue)
 	} else {
 		t.Errorf("no timestamp tests provided for %v", cam)
 	}
@@ -592,6 +591,8 @@ func onlineModeIMUTestHelper(
 
 	// set lidar data rate to signify that we are in online mode
 	config.LidarDataRateMsec = 10
+	config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
+	config.firstLidarReadingTime = time.Time{}.Add(time.Millisecond)
 
 	jobDone := config.addIMUReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
@@ -618,9 +619,7 @@ func onlineModeIMUTestHelper(
 		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 	} else if movementSensor == "replay_imu" {
-		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTime)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, calls[0].readingTimestamp.Equal(readingTime), test.ShouldBeTrue)
+		test.That(t, calls[0].readingTimestamp.Equal(s.TestTime), test.ShouldBeTrue)
 	} else {
 		t.Errorf("no timestamp tests provided for %v", movementSensor)
 	}
@@ -718,6 +717,7 @@ func TestAddLidarReading(t *testing.T) {
 		LidarDataRateMsec:        200,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: runFinalOptimizationFunc,
+		Mutex:                    &sync.Mutex{},
 	}
 	ctx := context.Background()
 
@@ -818,14 +818,7 @@ func TestAddLidarReading(t *testing.T) {
 		runFinalOptimizationFunc = func(context.Context, time.Duration) error {
 			return errors.New("test error")
 		}
-
-		config = Config{
-			Logger:                   logger,
-			CartoFacade:              &cf,
-			LidarDataRateMsec:        200,
-			Timeout:                  10 * time.Second,
-			RunFinalOptimizationFunc: runFinalOptimizationFunc,
-		}
+		config.RunFinalOptimizationFunc = runFinalOptimizationFunc
 
 		cam := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
@@ -849,6 +842,7 @@ func TestAddIMUReading(t *testing.T) {
 		CartoFacade:     &cf,
 		IMUDataRateMsec: 50,
 		Timeout:         10 * time.Second,
+		Mutex:           &sync.Mutex{},
 	}
 	ctx := context.Background()
 
@@ -865,7 +859,6 @@ func TestAddIMUReading(t *testing.T) {
 		)
 	})
 
-	// TODO: once test replay_imus exist https://viam.atlassian.net/browse/RSDK-4556
 	t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
 		movementsensor := "invalid_replay_imu"
 		invalidIMUTestHelper(
@@ -912,7 +905,7 @@ func TestAddIMUReading(t *testing.T) {
 		config.IMUName = replayIMU.Name
 		config.IMUDataRateMsec = 0
 		config.LidarDataRateMsec = 0
-		config.currentLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 		config.firstLidarReadingTime = time.Time{}.Add(time.Millisecond)
 
 		_ = config.addIMUReading(ctx) // first call gets data
@@ -946,7 +939,7 @@ func TestAddIMUReading(t *testing.T) {
 
 		config.IMU = replayIMU
 		config.IMUDataRateMsec = 0
-		config.currentLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		jobDone := config.addIMUReading(ctx)
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -963,6 +956,7 @@ func TestStartLidar(t *testing.T) {
 		LidarDataRateMsec:        200,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
+		Mutex:                    &sync.Mutex{},
 	}
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
@@ -1004,6 +998,7 @@ func TestStartIMU(t *testing.T) {
 		CartoFacade:     &cf,
 		IMUDataRateMsec: 50,
 		Timeout:         10 * time.Second,
+		Mutex:           &sync.Mutex{},
 	}
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
@@ -1015,7 +1010,7 @@ func TestStartIMU(t *testing.T) {
 
 		config.IMU = replaySensor
 		config.IMUDataRateMsec = 0
-		config.currentLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		jobDone := config.StartIMU(context.Background())
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -1029,7 +1024,7 @@ func TestStartIMU(t *testing.T) {
 
 		config.IMU = replaySensor
 		config.IMUDataRateMsec = 0
-		config.currentLidarData.time = time.Now()
+		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		cancelFunc()
 

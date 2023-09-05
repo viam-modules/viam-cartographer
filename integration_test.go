@@ -129,7 +129,7 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 
 // Saves cartographer's internal state in the data directory.
 func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
-	timeStamp := time.Now()
+	timeStamp := time.Now().UTC()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
 	if err := os.Mkdir(internalStateDir, 0o755); err != nil {
 		t.Error("TEST FAILED failed to create test internal state directory")
@@ -212,7 +212,7 @@ func testHelperCartographer(
 	test.That(t, cSvc.SlamMode, test.ShouldEqual, expectedMode)
 
 	// Waiting for sensor processes to finish sending data and for context to be canceled
-	start := time.Now()
+	start := time.Now().UTC()
 	ctx, cancelFunc := context.WithTimeout(context.Background(), testTimeout)
 	defer cancelFunc()
 

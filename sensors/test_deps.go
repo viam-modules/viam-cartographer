@@ -2,6 +2,7 @@ package sensors
 
 import (
 	"context"
+	"time"
 
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
@@ -18,14 +19,13 @@ import (
 	"go.viam.com/rdk/utils/contextutils"
 )
 
-const (
-	// TestTime can be used to test specific timestamps provided by a replay sensor.
-	TestTime = "2006-01-02T15:04:05.9999Z"
-	// BadTime can be used to represent something that should cause an error while parsing it as a time.
-	BadTime = "NOT A TIME"
-)
+// BadTime can be used to represent something that should cause an error while parsing it as a time.
+const BadTime = "NOT A TIME"
 
 var (
+	// TestTime can be used to test specific timestamps provided by a replay sensor.
+	TestTime   = time.Now().UTC()
+	timeFormat = "2006-01-02T15:04:05.999999Z"
 	// LinAcc is the successful mock linear acceleration result used for testing.
 	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
 	// AngVel is the successful mock angular velocity  result used for testing.
@@ -41,7 +41,7 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 	case "warming_up_lidar":
 		deps[camera.Named(lidarName)] = getWarmingUpLidar()
 	case "replay_lidar":
-		deps[camera.Named(lidarName)] = getReplayLidar(TestTime)
+		deps[camera.Named(lidarName)] = getReplayLidar(TestTime.Format(timeFormat))
 	case "invalid_replay_lidar":
 		deps[camera.Named(lidarName)] = getReplayLidar(BadTime)
 	case "lidar_with_erroring_functions":
@@ -54,12 +54,11 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 		deps[camera.Named(lidarName)] = getFinishedReplayLidar()
 	}
 
-	// TODO: create setup deps for various replay_imu, see https://viam.atlassian.net/browse/RSDK-4556
 	switch imuName {
 	case "good_imu":
 		deps[movementsensor.Named(imuName)] = getGoodIMU()
 	case "replay_imu":
-		deps[movementsensor.Named(imuName)] = getReplayIMU(TestTime)
+		deps[movementsensor.Named(imuName)] = getReplayIMU(TestTime.Format(timeFormat))
 	case "invalid_replay_imu":
 		deps[movementsensor.Named(imuName)] = getReplayIMU(BadTime)
 	case "imu_with_erroring_functions":

@@ -94,12 +94,13 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		config.currentLidarData.time = tsr.ReadingTime
 		config.currentLidarData.data = tsr.Reading
 		currentIMUTime := config.currentIMUData.time
+		cfg := *config
 		config.Mutex.Unlock()
 
 		// if an imu exists only add lidar data to cartographer and sleep remainder of time interval if it is after most recent imu data
 		// to ensure ordered time
 		if config.IMUName == "" || tsr.ReadingTime.Sub(currentIMUTime) >= 0 {
-			timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
+			timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, cfg)
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 			config.Logger.Debugf("sleep for %vms", timeToSleep)
 		} else {
@@ -116,6 +117,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 		currentLidarTime := config.currentLidarData.time
 		currentLidarData := config.currentLidarData.data
 		currentIMUTime := config.currentIMUData.time
+		cfg := *config
 		config.Mutex.Unlock()
 
 		// If an IMU exists, skip adding measurement until the current lidar time is after the current imu timestamp
@@ -126,7 +128,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 
 		// Add current lidar data if it is non-nil
 		if currentLidarData != nil {
-			tryAddLidarReadingUntilSuccess(ctx, currentLidarData, currentLidarTime, *config)
+			tryAddLidarReadingUntilSuccess(ctx, currentLidarData, currentLidarTime, cfg)
 
 			config.Mutex.Lock()
 			if config.firstLidarReadingTime == defaultTime {
@@ -176,7 +178,8 @@ func tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, reading
 
 // tryAddLidarReading adds a reading to the carto facade and does not retry (online).
 func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Time, config Config) int {
-	startTime := time.Now()
+	startTime := time.Now().UTC()
+
 	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
 	if err != nil {
 		config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())
@@ -185,7 +188,6 @@ func tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Ti
 		} else {
 			config.Logger.Warnw("Skipping lidar reading due to error from cartofacade", "error", err)
 		}
-		return 0
 	}
 	config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
@@ -200,7 +202,7 @@ func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.Ti
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
 		if config.LidarDataRateMsec == 0 {
-			return tsr, strings.Contains(replaypcd.ErrEndOfDataset.Error(), err.Error()), err
+			return tsr, strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()), err
 		}
 		return tsr, false, err
 	}
@@ -251,11 +253,14 @@ func (config *Config) addIMUReading(
 		config.Mutex.Lock()
 		config.currentIMUData.time = tsr.ReadingTime
 		config.currentIMUData.data = sr
+		currentLidarData := config.currentLidarData.time
+		cfg := *config
+		config.Mutex.Unlock()
 
 		// only add imu data to cartographer and sleep remainder of time interval if it is after most recent lidar data to ensure
 		// ordered time
-		if tsr.ReadingTime.Sub(config.currentLidarData.time).Milliseconds() > 0 {
-			timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, *config)
+		if tsr.ReadingTime.Sub(currentLidarData).Milliseconds() > 0 {
+			timeToSleep := tryAddIMUReading(ctx, sr, tsr.ReadingTime, cfg)
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 		} else {
 			config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
@@ -271,19 +276,18 @@ func (config *Config) addIMUReading(
 		currentIMUTime := config.currentIMUData.time
 		currentIMUData := config.currentIMUData.data
 		firstLidarReadingTime := config.firstLidarReadingTime
+		cfg := *config
 		config.Mutex.Unlock()
 
-		if firstLidarReadingTime != defaultTime {
-			// Skip adding measurement if currently stored IMU data is after currently stored lidar data
+		if firstLidarReadingTime != defaultTime && currentIMUTime != defaultTime {
+			// Skip adding measurement if imu data has been defined but occurs before first lidar data
 			if firstLidarReadingTime.Sub(currentIMUTime).Milliseconds() >= 0 {
 				time.Sleep(10 * time.Millisecond)
 				return false
 			}
 
-			// Add IMU data if imu data has been defined and occurs after first lidar data
-			if config.currentIMUData.time != defaultTime {
-				tryAddIMUReadingUntilSuccess(ctx, currentIMUData, currentIMUTime, *config)
-			}
+			// Add IMU data
+			tryAddIMUReadingUntilSuccess(ctx, currentIMUData, currentIMUTime, cfg)
 		}
 
 		// get next imu data response
@@ -339,7 +343,7 @@ func tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMURe
 
 // tryAddIMUReading adds a reading to the carto facade and does not retry (online).
 func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time, config Config) int {
-	startTime := time.Now()
+	startTime := time.Now().UTC()
 	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
 	if err != nil {
 		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())
@@ -348,7 +352,6 @@ func tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readi
 		} else {
 			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
 		}
-		return 0
 	}
 	config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())

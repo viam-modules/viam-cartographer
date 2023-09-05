@@ -187,6 +187,8 @@ func TestTimedLidarSensorReading(t *testing.T) {
 
 	t.Run("when a live lidar succeeds, returns current time in UTC and the reading", func(t *testing.T) {
 		beforeReading := time.Now().UTC()
+		time.Sleep(10 * time.Millisecond)
+
 		tsr, err := goodLidar.TimedLidarSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, tsr.Reading, test.ShouldNotBeNil)
@@ -205,7 +207,7 @@ func TestTimedLidarSensorReading(t *testing.T) {
 		tsr, err := goodReplayLidar.TimedLidarSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, tsr.Reading, test.ShouldNotBeNil)
-		test.That(t, tsr.ReadingTime, test.ShouldEqual, time.Date(2006, 1, 2, 15, 4, 5, 999900000, time.UTC))
+		test.That(t, tsr.ReadingTime.Equal(s.TestTime), test.ShouldBeTrue)
 		test.That(t, tsr.Replay, test.ShouldBeTrue)
 	})
 }
