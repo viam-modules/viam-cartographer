@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -32,7 +33,9 @@ import (
 )
 
 const (
-	testTimeout = 20 * time.Second
+	defaultLidarTimeInterval = 200
+	defaultIMUTimeInterval   = 50
+	testTimeout              = 20 * time.Second
 )
 
 // Test final position and orientation are at approximately the expected values.
@@ -43,38 +46,44 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 	toleranceOri := 0.001
 
 	switch {
-	case runtime.GOOS == "darwin" && useIMU:
-		expectedPos = r3.Vector{X: 3.697475784009534, Y: 1.9629740734804884, Z: 0}
-		expectedOri = &spatialmath.R4AA{
-			RX:    0.9867946501586069,
-			RY:    0.15958660525363744,
-			RZ:    0.027720639277843195,
-			Theta: 0.02201298037349276,
-		}
-	case runtime.GOOS == "linux" && useIMU:
-		expectedPos = r3.Vector{X: 2.939886462523304, Y: 3.990394760745178, Z: 0}
-		expectedOri = &spatialmath.R4AA{
-			RX:    0.9869122655452758,
-			RY:    0.15955700241151274,
-			RZ:    0.023361145043504908,
-			Theta: 0.02201052775598754,
-		}
-
+	// Position point: (3.651426324334424, 1.422454179829863, 0)
 	case runtime.GOOS == "darwin" && !useIMU:
-		expectedPos = r3.Vector{X: 4.120375736261496, Y: 2.5213315508872665, Z: 0}
+		expectedPos = r3.Vector{X: 3.651426324334424, Y: 1.422454179829863, Z: 0}
 		expectedOri = &spatialmath.R4AA{
 			RX:    0,
 			RY:    0,
 			RZ:    1,
 			Theta: 0.0006629744894043836,
 		}
+	// Position point: (1.2714478890528866, 3.1271067529150076, 0)
 	case runtime.GOOS == "linux" && !useIMU:
-		expectedPos = r3.Vector{X: 3.36881455047323, Y: 4.130035158293928, Z: 0}
+		expectedPos = r3.Vector{X: 1.2714478890528866, Y: 3.1271067529150076, Z: 0}
 		expectedOri = &spatialmath.R4AA{
 			RX:    0,
 			RY:    0,
 			RZ:    -1,
 			Theta: 0.0010751949934010567,
+		}
+
+	// Position point: (4.4700878707562035, 3.1781587655776358, 2.3524813865755907e-19)
+	// Position orientation: RX: 0.9861776038047263, RY: 0.1637212678758259, RZ: 0.025477052402116784, Theta: 0.02399255141454847
+	case runtime.GOOS == "darwin" && useIMU:
+		expectedPos = r3.Vector{X: 4.4700878707562035, Y: 3.1781587655776358, Z: 0}
+		expectedOri = &spatialmath.R4AA{
+			RX:    0.9861776038047263,
+			RY:    0.1637212678758259,
+			RZ:    0.025477052402116784,
+			Theta: 0.02399255141454847,
+		}
+	// Position point: (3.2250269853115867, 5.104006882925285, 6.504215770777879e-18)
+	// Position orientation: RX: 0.9864461301028694, RY: 0.16360809262540335, RZ: 0.012506975355798564, Theta: 0.02398663944371901
+	case runtime.GOOS == "linux" && useIMU:
+		expectedPos = r3.Vector{X: 3.2250269853115867, Y: 5.104006882925285, Z: 0}
+		expectedOri = &spatialmath.R4AA{
+			RX:    0.9864461301028694,
+			RY:    0.16360809262540335,
+			RZ:    0.012506975355798564,
+			Theta: 0.02398663944371901,
 		}
 	}
 
@@ -159,18 +168,25 @@ func testHelperCartographer(
 
 	// Add lidar component to config (required)
 	lidarDone := make(chan struct{})
-	lidarReadingInterval := time.Millisecond * 200
-	attrCfg.Camera = map[string]string{"name": "stub_lidar"}
+	lidarReadingInterval := time.Millisecond * defaultLidarTimeInterval
 	timeTracker.LidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
+	if replaySensor {
+		attrCfg.Camera = map[string]string{"name": "stub_lidar", "data_frequency_hz": "0"}
+	} else {
+		attrCfg.Camera = map[string]string{"name": "stub_lidar", "data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval)}
+	}
 
 	// Add imu component to config (optional)
 	imuDone := make(chan struct{})
-	imuReadingInterval := time.Millisecond * 50
+	imuReadingInterval := time.Millisecond * defaultIMUTimeInterval
 	if useIMU {
-		attrCfg.MovementSensor = map[string]string{"name": "stub_imu"}
+		if replaySensor {
+			attrCfg.MovementSensor = map[string]string{"name": "stub_imu", "data_frequency_hz": "0"}
+		} else {
+			attrCfg.MovementSensor = map[string]string{"name": "stub_imu", "data_frequency_hz": strconv.Itoa(defaultIMUTimeInterval)}
+		}
 		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	}
-
 	// Start Sensors
 	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"],
 		replaySensor, lidarReadingInterval, lidarDone, &timeTracker)

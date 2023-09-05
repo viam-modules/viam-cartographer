@@ -75,25 +75,26 @@ func (config *Config) StartLidar(
 
 // addLidarReading adds a lidar reading to the cartofacade.
 func (config *Config) addLidarReading(ctx context.Context) bool {
-	/*
-	 when the lidar data rate msec is non-zero, we assume the user wants to be in "online"
-	 mode and ensure the most recent scan gets processed by cartographer. If data rate msec
-	 is zero we process every scan in order
-	*/
+	// Process data in online or offline mode determined by the lidar's data rate
 	if config.LidarDataRateMsec != 0 {
+		/*
+			when the lidar data rate msec is non-zero, we assume the user wants to be in "online"
+			mode and ensure the most recent scan after any corresponding imu scans gets processed by cartographer.
+		*/
+
 		// get next lidar data response
 		tsr, status, err := getTimedLidarSensorReading(ctx, config)
 		if err != nil {
 			return status
 		}
 
-		// update stored lidar time
+		// update stored lidar timestamp
 		config.currentLidarData.time = tsr.ReadingTime
 		config.currentLidarData.data = tsr.Reading
 
-		// only add lidar data to cartographer and sleep remainder of time interval if it is after most recent imu data to ensure
-		// ordered time
-		if tsr.ReadingTime.Sub(config.currentIMUData.time) >= 0 {
+		// if an imu exists only add lidar data to cartographer and sleep remainder of time interval if it is after most recent imu data
+		// to ensure ordered time
+		if config.IMUName == "" || tsr.ReadingTime.Sub(config.currentIMUData.time) >= 0 {
 			timeToSleep := tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime, *config)
 			time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 			config.Logger.Debugf("sleep for %vms", timeToSleep)
@@ -106,24 +107,31 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 			order in offline mode. We only add the stored lidar data if we do not have any IMU data to add, or if
 			the next IMU data has a timestamp after the current lidar reading's timestamp.
 		*/
-		if config.IMUName == "" || config.currentLidarData.time.Sub(config.currentIMUData.time).Milliseconds() <= 0 {
-			if config.currentLidarData.data != nil {
-				tryAddLidarReadingUntilSuccess(ctx, config.currentLidarData.data, config.currentLidarData.time, *config)
-				if config.firstLidarReadingTime == defaultTime {
-					config.firstLidarReadingTime = config.currentLidarData.time
 
-					config.Logger.Debugf("%v \t | LIDAR | STARTING \t \t | %v \n", config.currentLidarData.time, config.currentLidarData.time.Unix())
-				}
-			}
-			// get next lidar data response
-			tsr, status, err := getTimedLidarSensorReading(ctx, config)
-			if err != nil {
-				return status
-			}
-			config.currentLidarData.time = tsr.ReadingTime
-			config.currentLidarData.data = tsr.Reading
+		// If an IMU exists, skip adding measurement until the current lidar time is after the current imu timestamp
+		if config.IMUName != "" && config.currentLidarData.time.Sub(config.currentIMUData.time).Milliseconds() > 0 {
+			time.Sleep(10 * time.Millisecond)
+			return false
 		}
+
+		// Add current lidar data if it is non-nil
+		if config.currentLidarData.data != nil {
+			tryAddLidarReadingUntilSuccess(ctx, config.currentLidarData.data, config.currentLidarData.time, *config)
+
+			if config.firstLidarReadingTime == defaultTime {
+				config.firstLidarReadingTime = config.currentLidarData.time
+			}
+		}
+
+		// get next lidar data response
+		tsr, status, err := getTimedLidarSensorReading(ctx, config)
+		if err != nil {
+			return status
+		}
+		config.currentLidarData.time = tsr.ReadingTime
+		config.currentLidarData.data = tsr.Reading
 	}
+
 	return false
 }
 
@@ -177,7 +185,7 @@ func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.Ti
 		// config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
 		if config.LidarDataRateMsec == 0 {
-			return tsr, strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()), err
+			return tsr, strings.Contains(replaypcd.ErrEndOfDataset.Error(), err.Error()), err
 		}
 		return tsr, false, err
 	}
@@ -194,9 +202,6 @@ func (config *Config) StartIMU(
 		case <-ctx.Done():
 			return false
 		default:
-			if config.lastLidarReadingTime != defaultTime && config.currentIMUData.time.Sub(config.lastLidarReadingTime) > 0 {
-				return true
-			}
 			if jobDone := config.addIMUReading(ctx); jobDone {
 				return true
 			}
@@ -208,12 +213,13 @@ func (config *Config) StartIMU(
 func (config *Config) addIMUReading(
 	ctx context.Context,
 ) bool {
-	/*
-	 when the lidar data rate msec is non-zero, we assume the user wants to be in "online"
-	 mode and ensure the most recent scan gets processed by cartographer. If data rate msec
-	 is zero we process every scan in order
-	*/
+	// Process data in online or offline mode determined by the lidar's data rate
 	if config.LidarDataRateMsec != 0 {
+		/*
+			 	when the lidar data rate msec is non-zero, we assume the user wants to be in "online"
+				mode and ensure the most recent scan gets processed by cartographer.
+		*/
+
 		// get next imu data response
 		tsr, status, err := getTimedIMUSensorReading(ctx, config)
 		if err != nil {
@@ -245,16 +251,17 @@ func (config *Config) addIMUReading(
 			the current IMU reading's timestamp.
 		*/
 
-		// Skip adding measurement if currently stored IMU data is after currently stored lidar data
-		if config.currentIMUData.time.Sub(config.currentLidarData.time).Milliseconds() >= 0 {
-			return false
-		}
+		if config.firstLidarReadingTime != defaultTime {
+			// Skip adding measurement if currently stored IMU data is after currently stored lidar data
+			if config.firstLidarReadingTime.Sub(config.currentIMUData.time).Milliseconds() >= 0 {
+				time.Sleep(10 * time.Millisecond)
+				return false
+			}
 
-		// Add IMU data if imu data has been defined and occurs after first lidar data
-		firstLidarTime := config.firstLidarReadingTime
-		currentIMUTime := config.currentIMUData.time
-		if currentIMUTime != defaultTime && firstLidarTime != defaultTime && currentIMUTime.Sub(firstLidarTime) > 0 {
-			tryAddIMUReadingUntilSuccess(ctx, config.currentIMUData.data, config.currentIMUData.time, *config)
+			// Add IMU data if imu data has been defined and occurs after first lidar data
+			if config.currentIMUData.time != defaultTime {
+				tryAddIMUReadingUntilSuccess(ctx, config.currentIMUData.data, config.currentIMUData.time, *config)
+			}
 		}
 
 		// get next imu data response
