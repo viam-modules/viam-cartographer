@@ -30,6 +30,7 @@ type Config struct {
 	IMUName                  string
 	IMUDataRateMsec          int
 	Timeout                  time.Duration
+	InternalTimeout          time.Duration
 	Logger                   golog.Logger
 	currentLidarData         LidarData
 	currentIMUData           IMUData
@@ -64,9 +65,9 @@ func (config *Config) StartLidar(
 		default:
 			if jobDone := config.addLidarReading(ctx); jobDone {
 				config.Logger.Info("Beginning final optimization")
-				err := config.RunFinalOptimizationFunc(ctx, config.Timeout)
+				err := config.RunFinalOptimizationFunc(ctx, config.InternalTimeout)
 				if err != nil {
-					config.Logger.Error("Failed to finish processing all sensor readings")
+					config.Logger.Error("Failed to finish processing all sensor readings: ", err)
 				}
 				return true
 			}

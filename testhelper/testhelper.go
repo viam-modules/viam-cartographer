@@ -40,7 +40,10 @@ const (
 	// function for the while loop that attempts to grab data from the
 	// sensor that is used in the GetAndSaveData function.
 	SensorValidationIntervalSecForTest = 1
-	testDialMaxTimeoutSec              = 1
+	// CartoFacadeTimeoutForTest is the timeout used for capi requests for tests.
+	CartoFacadeTimeoutForTest = 5 * time.Second
+	// CartoFacadeInternalTimeoutForTest is the timeout used for internal capi requests for tests.
+	CartoFacadeInternalTimeoutForTest = 15 * time.Minute
 )
 
 // SetupStubDeps returns stubbed dependencies based on the camera
@@ -145,7 +148,8 @@ func CreateIntegrationSLAMService(
 		logger,
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
-		5*time.Second,
+		CartoFacadeTimeoutForTest,
+		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
 		timedIMU,
 	)
@@ -204,7 +208,8 @@ func CreateSLAMService(
 		logger,
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
-		5*time.Second,
+		CartoFacadeTimeoutForTest,
+		CartoFacadeInternalTimeoutForTest,
 		nil,
 		nil,
 	)

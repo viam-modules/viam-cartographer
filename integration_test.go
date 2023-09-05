@@ -88,7 +88,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 		}
 	}
 
-	position, componentRef, err := svc.GetPosition(context.Background())
+	position, componentRef, err := svc.Position(context.Background())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, componentRef, test.ShouldEqual, expectedComponentRef)
 
@@ -108,12 +108,12 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 
 // Checks the cartographer map and confirms there at least 100 map points.
 func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) {
-	timestamp1, err := svc.GetLatestMapInfo(context.Background())
+	timestamp1, err := svc.LatestMapInfo(context.Background())
 	test.That(t, err, test.ShouldBeNil)
-	pcd, err := slam.GetPointCloudMapFull(context.Background(), svc)
+	pcd, err := slam.PointCloudMapFull(context.Background(), svc)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, pcd, test.ShouldNotBeNil)
-	timestamp2, err := svc.GetLatestMapInfo(context.Background())
+	timestamp2, err := svc.LatestMapInfo(context.Background())
 	test.That(t, err, test.ShouldBeNil)
 
 	if localizationMode == true {
@@ -233,7 +233,8 @@ func testHelperCartographer(
 	// Test end points and retrieve internal state
 	testCartographerPosition(t, svc, useIMU, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
-	internalState, err := slam.GetInternalStateFull(context.Background(), svc)
+
+	internalState, err := slam.InternalStateFull(context.Background(), svc)
 	test.That(t, err, test.ShouldBeNil)
 	logger.Debug("closing out service")
 

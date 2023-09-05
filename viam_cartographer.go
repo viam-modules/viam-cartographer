@@ -46,6 +46,7 @@ const (
 	defaultSensorValidationMaxTimeoutSec = 30
 	defaultSensorValidationIntervalSec   = 1
 	defaultCartoFacadeTimeout            = 5 * time.Second
+	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
 )
 
@@ -88,6 +89,7 @@ func init() {
 				defaultSensorValidationMaxTimeoutSec,
 				defaultSensorValidationIntervalSec,
 				defaultCartoFacadeTimeout,
+				defaultCartoFacadeInternalTimeout,
 				nil,
 				nil,
 			)
@@ -128,6 +130,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		IMUName:                  cartoSvc.imu.name,
 		IMUDataRateMsec:          cartoSvc.imu.dataRateMsec,
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
+		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
 		Mutex:                    &sync.Mutex{},
@@ -160,6 +163,7 @@ func New(
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
+	cartoFacadeInternalTimeout time.Duration,
 	testTimedLidarSensorOverride s.TimedLidarSensor,
 	testTimedIMUSensorOverride s.TimedIMUSensor,
 ) (slam.Service, error) {
@@ -271,6 +275,7 @@ func New(
 		sensorValidationMaxTimeoutSec: sensorValidationMaxTimeoutSec,
 		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
 		cartoFacadeTimeout:            cartoFacadeTimeout,
+		cartoFacadeInternalTimeout:    cartoFacadeInternalTimeout,
 		mapTimestamp:                  time.Now().UTC(),
 		cloudStoryEnabled:             svcConfig.CloudStoryEnabled,
 		enableMapping:                 optionalConfigParams.EnableMapping,
@@ -535,8 +540,9 @@ type CartographerService struct {
 	configParams  map[string]string
 	dataDirectory string
 
-	cartofacade        cartofacade.Interface
-	cartoFacadeTimeout time.Duration
+	cartofacade                cartofacade.Interface
+	cartoFacadeTimeout         time.Duration
+	cartoFacadeInternalTimeout time.Duration
 
 	mapRateSec int
 
@@ -556,21 +562,21 @@ type CartographerService struct {
 	existingMap       string
 }
 
-// GetPosition forwards the request for positional data to the slam library's gRPC service. Once a response is received,
+// Position forwards the request for positional data to the slam library's gRPC service. Once a response is received,
 // it is unpacked into a Pose and a component reference string.
-func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialmath.Pose, string, error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetPosition")
+func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.Pose, string, error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Position")
 	defer span.End()
 	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("GetPosition called with use_cloud_slam set to true")
+		cartoSvc.logger.Warn("Position called with use_cloud_slam set to true")
 		return nil, "", ErrUseCloudSlamEnabled
 	}
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("GetPosition called after closed")
+		cartoSvc.logger.Warn("Position called after closed")
 		return nil, "", ErrClosed
 	}
 
-	pos, err := cartoSvc.cartofacade.GetPosition(ctx, cartoSvc.cartoFacadeTimeout)
+	pos, err := cartoSvc.cartofacade.Position(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, "", err
 	}
@@ -587,44 +593,44 @@ func (cartoSvc *CartographerService) GetPosition(ctx context.Context) (spatialma
 	return CheckQuaternionFromClientAlgo(pose, cartoSvc.lidar.name, returnedExt)
 }
 
-// GetPointCloudMap creates a request calls the slam algorithms GetPointCloudMap endpoint and returns a callback
+// PointCloudMap creates a request calls the slam algorithms PointCloudMap endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
-func (cartoSvc *CartographerService) GetPointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetPointCloudMap")
+func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::PointCloudMap")
 	defer span.End()
 	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("GetPointCloudMap called with use_cloud_slam set to true")
+		cartoSvc.logger.Warn("PointCloudMap called with use_cloud_slam set to true")
 		return nil, ErrUseCloudSlamEnabled
 	}
 
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("GetPointCloudMap called after closed")
+		cartoSvc.logger.Warn("PointCloudMap called after closed")
 		return nil, ErrClosed
 	}
 
-	pc, err := cartoSvc.cartofacade.GetPointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
+	pc, err := cartoSvc.cartofacade.PointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, err
 	}
 	return toChunkedFunc(pc), nil
 }
 
-// GetInternalState creates a request, calls the slam algorithms GetInternalState endpoint and returns a callback
+// InternalState creates a request, calls the slam algorithms InternalState endpoint and returns a callback
 // function which will return the next chunk of the current internal state of the slam algo.
-func (cartoSvc *CartographerService) GetInternalState(ctx context.Context) (func() ([]byte, error), error) {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetInternalState")
+func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() ([]byte, error), error) {
+	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::InternalState")
 	defer span.End()
 	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("GetInternalState called with use_cloud_slam set to true")
+		cartoSvc.logger.Warn("InternalState called with use_cloud_slam set to true")
 		return nil, ErrUseCloudSlamEnabled
 	}
 
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("GetInternalState called after closed")
+		cartoSvc.logger.Warn("InternalState called after closed")
 		return nil, ErrClosed
 	}
 
-	is, err := cartoSvc.cartofacade.GetInternalState(ctx, cartoSvc.cartoFacadeTimeout)
+	is, err := cartoSvc.cartofacade.InternalState(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -647,18 +653,18 @@ func toChunkedFunc(b []byte) func() ([]byte, error) {
 	return f
 }
 
-// GetLatestMapInfo returns a new timestamp every time it is called when in mapping mode, to signal
+// LatestMapInfo returns a new timestamp every time it is called when in mapping mode, to signal
 // that the map should be updated. In localizing, the timestamp returned is the timestamp of the session.
-func (cartoSvc *CartographerService) GetLatestMapInfo(ctx context.Context) (time.Time, error) {
-	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::GetLatestMapInfo")
+func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Time, error) {
+	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::LatestMapInfo")
 	defer span.End()
 	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("GetLatestMapInfo called with use_cloud_slam set to true")
+		cartoSvc.logger.Warn("LatestMapInfo called with use_cloud_slam set to true")
 		return time.Time{}, ErrUseCloudSlamEnabled
 	}
 
 	if cartoSvc.closed {
-		cartoSvc.logger.Warn("GetLatestMapInfo called after closed")
+		cartoSvc.logger.Warn("LatestMapInfo called after closed")
 		return time.Time{}, ErrClosed
 	}
 
