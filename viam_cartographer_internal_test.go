@@ -29,31 +29,31 @@ func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orien
 	}
 }
 
-func setMockGetPositionFunc(
+func setMockPositionFunc(
 	mockCartoFacade *cartofacade.Mock,
-	pos cartofacade.GetPosition,
+	pos cartofacade.Position,
 ) {
-	mockCartoFacade.GetPositionFunc = func(
+	mockCartoFacade.PositionFunc = func(
 		ctx context.Context,
 		timeout time.Duration,
-	) (cartofacade.GetPosition, error) {
+	) (cartofacade.Position, error) {
 		return pos,
 			nil
 	}
 }
 
-func checkGetPositionOutputs(
+func checkPositionOutputs(
 	t *testing.T,
 	mockCartoFacade *cartofacade.Mock,
 	inputPose *commonv1.Pose,
 	inputQuat map[string]interface{},
 	inputComponentRef string,
 	svc *CartographerService,
-	pos cartofacade.GetPosition,
+	pos cartofacade.Position,
 ) {
-	setMockGetPositionFunc(mockCartoFacade, pos)
+	setMockPositionFunc(mockCartoFacade, pos)
 
-	pose, componentReference, err := svc.GetPosition(context.Background())
+	pose, componentReference, err := svc.Position(context.Background())
 	test.That(t, err, test.ShouldBeNil)
 	expectedPose := spatialmath.NewPose(
 		r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
@@ -63,12 +63,12 @@ func checkGetPositionOutputs(
 	test.That(t, componentReference, test.ShouldEqual, inputComponentRef)
 }
 
-func TestGetPositionEndpoint(t *testing.T) {
+func TestPositionEndpoint(t *testing.T) {
 	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
 	svc.cartofacade = mockCartoFacade
 
-	originPos := cartofacade.GetPosition{
+	originPos := cartofacade.Position{
 		X:    0,
 		Y:    0,
 		Z:    0,
@@ -78,7 +78,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		Kmag: 0.0,
 	}
 
-	nonOriginPos := cartofacade.GetPosition{
+	nonOriginPos := cartofacade.Position{
 		X:    5,
 		Y:    5,
 		Z:    5,
@@ -96,7 +96,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkGetPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "", svc, originPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "", svc, originPos)
 	})
 
 	t.Run("origin pose success", func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestGetPositionEndpoint(t *testing.T) {
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkGetPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "primarySensor1", svc, originPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "primarySensor1", svc, originPos)
 	})
 
 	t.Run("non origin pose success", func(t *testing.T) {
@@ -112,21 +112,21 @@ func TestGetPositionEndpoint(t *testing.T) {
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkGetPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "primarySensor2", svc, nonOriginPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "primarySensor2", svc, nonOriginPos)
 	})
 
 	t.Run("error case", func(t *testing.T) {
 		svc.lidar.name = "primarySensor3"
-		mockCartoFacade.GetPositionFunc = func(
+		mockCartoFacade.PositionFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
-		) (cartofacade.GetPosition, error) {
-			return cartofacade.GetPosition{}, errors.New("testError")
+		) (cartofacade.Position, error) {
+			return cartofacade.Position{}, errors.New("testError")
 		}
 
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
-		pose, componentReference, err := svc.GetPosition(context.Background())
+		pose, componentReference, err := svc.Position(context.Background())
 
 		test.That(t, err, test.ShouldBeError, errors.New("testError"))
 		test.That(t, pose, test.ShouldBeNil)
@@ -134,11 +134,11 @@ func TestGetPositionEndpoint(t *testing.T) {
 	})
 }
 
-func setMockGetPointCloudFunc(
+func setMockPointCloudFunc(
 	mock *cartofacade.Mock,
 	pc []byte,
 ) {
-	mock.GetPointCloudMapFunc = func(
+	mock.PointCloudMapFunc = func(
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error) {
@@ -227,7 +227,7 @@ func testApisThatReturnCallbackFuncs(
 	})
 }
 
-func TestGetPointCloudMapEndpoint(t *testing.T) {
+func TestPointCloudMapEndpoint(t *testing.T) {
 	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
 	pathToFileLargerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"
@@ -238,31 +238,31 @@ func TestGetPointCloudMapEndpoint(t *testing.T) {
 		mockCartoFacade,
 		pathToFileLargerThanChunkSize,
 		pathToFileSmallerThanChunkSize,
-		svc.GetPointCloudMap,
-		setMockGetPointCloudFunc,
+		svc.PointCloudMap,
+		setMockPointCloudFunc,
 	)
 
 	t.Run("cartofacade error", func(t *testing.T) {
-		setMockGetPointCloudFunc(mockCartoFacade, []byte{})
+		setMockPointCloudFunc(mockCartoFacade, []byte{})
 
-		mockCartoFacade.GetPointCloudMapFunc = func(
+		mockCartoFacade.PointCloudMapFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 		) ([]byte, error) {
 			return nil, errors.New("test")
 		}
 
-		callback, err := svc.GetPointCloudMap(context.Background())
+		callback, err := svc.PointCloudMap(context.Background())
 		test.That(t, callback, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, errors.New("test"))
 	})
 }
 
-func setMockGetInternalStateFunc(
+func setMockInternalStateFunc(
 	mock *cartofacade.Mock,
 	pc []byte,
 ) {
-	mock.GetInternalStateFunc = func(
+	mock.InternalStateFunc = func(
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error) {
@@ -270,7 +270,7 @@ func setMockGetInternalStateFunc(
 	}
 }
 
-func TestGetInternalStateEndpoint(t *testing.T) {
+func TestInternalStateEndpoint(t *testing.T) {
 	svc := &CartographerService{Named: resource.NewName(slam.API, "test").AsNamed()}
 	mockCartoFacade := &cartofacade.Mock{}
 	pathToFileLargerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
@@ -281,21 +281,21 @@ func TestGetInternalStateEndpoint(t *testing.T) {
 		mockCartoFacade,
 		pathToFileLargerThanChunkSize,
 		pathToFileSmallerThanChunkSize,
-		svc.GetInternalState,
-		setMockGetInternalStateFunc,
+		svc.InternalState,
+		setMockInternalStateFunc,
 	)
 
 	t.Run("cartofacade error", func(t *testing.T) {
-		setMockGetInternalStateFunc(mockCartoFacade, []byte{})
+		setMockInternalStateFunc(mockCartoFacade, []byte{})
 
-		mockCartoFacade.GetInternalStateFunc = func(
+		mockCartoFacade.InternalStateFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
 		) ([]byte, error) {
 			return nil, errors.New("test")
 		}
 
-		callback, err := svc.GetInternalState(context.Background())
+		callback, err := svc.InternalState(context.Background())
 		test.That(t, callback, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, errors.New("test"))
 	})

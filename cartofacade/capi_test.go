@@ -14,7 +14,7 @@ import (
 	"go.viam.com/utils/artifact"
 )
 
-func positionIsZero(t *testing.T, position GetPosition) {
+func positionIsZero(t *testing.T, position Position) {
 	test.That(t, position.X, test.ShouldEqual, 0)
 	test.That(t, position.Y, test.ShouldEqual, 0)
 	test.That(t, position.Z, test.ShouldEqual, 0)
@@ -106,10 +106,10 @@ func TestGetConfig(t *testing.T) {
 	})
 }
 
-func TestGetPositionResponse(t *testing.T) {
-	gpr := getTestGetPositionResponse()
+func TestPositionResponse(t *testing.T) {
+	gpr := getTestPositionResponse()
 	t.Run("position response properly converted between C and go", func(t *testing.T) {
-		holder := toGetPositionResponse(gpr)
+		holder := toPositionResponse(gpr)
 		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
 
 		test.That(t, holder.X, test.ShouldEqual, 100)
@@ -197,20 +197,20 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		err = vc.start()
 		test.That(t, err, test.ShouldBeNil)
 
-		// test getPosition before sensor data is added
-		position, err := vc.getPosition()
+		// test position before sensor data is added
+		position, err := vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		positionIsZero(t, position)
 
-		// test getPointCloudMap before sensor data is added
-		pcd, err := vc.getPointCloudMap()
+		// test pointCloudMap before sensor data is added
+		pcd, err := vc.pointCloudMap()
 		test.That(t, pcd, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
-		// test getInternalState before sensor data is added
-		internalState, err := vc.getInternalState()
+		// test internalState before sensor data is added
+		internalState, err := vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
@@ -250,20 +250,20 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
 
-		// test getPosition zeroed if not enough sensor data has been provided
-		position, err = vc.getPosition()
+		// test position zeroed if not enough sensor data has been provided
+		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		positionIsZero(t, position)
 
-		// test getPointCloudMap returns error if not enough sensor data has been provided
-		pcd, err = vc.getPointCloudMap()
+		// test pointCloudMap returns error if not enough sensor data has been provided
+		pcd, err = vc.pointCloudMap()
 		test.That(t, pcd, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
-		// test getInternalState always returns non empty results
-		internalState, err = vc.getInternalState()
+		// test internalState always returns non empty results
+		internalState, err = vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
@@ -275,22 +275,22 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDBinary)
 
-		// test getPosition zeroed
-		position, err = vc.getPosition()
+		// test position zeroed
+		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		positionIsZero(t, position)
 
-		// test getPointCloudMap now returns a non empty result
-		pcd, err = vc.getPointCloudMap()
+		// test pointCloudMap now returns a non empty result
+		pcd, err = vc.pointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
 		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
-		// test getInternalState always returns different non empty results than first call
-		internalState, err = vc.getInternalState()
+		// test internalState always returns different non empty results than first call
+		internalState, err = vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
@@ -302,8 +302,8 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
 
-		// test getPosition, is no longer zeroed
-		position, err = vc.getPosition()
+		// test position, is no longer zeroed
+		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		test.That(t, position.X, test.ShouldNotEqual, 0)
@@ -314,21 +314,21 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		test.That(t, position.Kmag, test.ShouldNotEqual, 0)
 		test.That(t, position.Real, test.ShouldNotEqual, 1)
 
-		// test getPointCloudMap returns non 0 response
+		// test pointCloudMap returns non 0 response
 		// on arm64 linux this returns a different response
-		// than the last call to getPointCloudMap()
+		// than the last call to pointCloudMap()
 		// on arm64 osx it returns the same map as
-		// the last call to getPointCloudMap()
+		// the last call to pointCloudMap()
 		// https://viam.atlassian.net/browse/RSDK-3866
-		pcd, err = vc.getPointCloudMap()
+		pcd, err = vc.pointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
 		pc, err = pointcloud.ReadPCD(bytes.NewReader(pcd))
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
-		// test getInternalState always returns different non empty results than second call
-		internalState, err = vc.getInternalState()
+		// test internalState always returns different non empty results than second call
+		internalState, err = vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
@@ -388,20 +388,20 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		err = vc.start()
 		test.That(t, err, test.ShouldBeNil)
 
-		// test getPosition before sensor data is added
-		position, err := vc.getPosition()
+		// test position before sensor data is added
+		position, err := vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		positionIsZero(t, position)
 
-		// test getPointCloudMap before sensor data is added
-		pcd, err := vc.getPointCloudMap()
+		// test pointCloudMap before sensor data is added
+		pcd, err := vc.pointCloudMap()
 		test.That(t, pcd, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
 
-		// test getInternalState before sensor data is added
-		internalState, err := vc.getInternalState()
+		// test internalState before sensor data is added
+		internalState, err := vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
@@ -466,22 +466,22 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		err = vc.addIMUReading("myIMU", testIMUReading, timestamp.Add(imuReadingOffset))
 		test.That(t, err, test.ShouldBeNil)
 
-		// test getPosition zeroed
-		position, err = vc.getPosition()
+		// test position zeroed
+		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
 		test.That(t, r3.Vector{X: position.X, Y: position.Y, Z: position.Z}, test.ShouldNotResemble, r3.Vector{X: 0, Y: 0, Z: 0})
 
-		// test getPointCloudMap returns a non empty result
-		pcd, err = vc.getPointCloudMap()
+		// test pointCloudMap returns a non empty result
+		pcd, err = vc.pointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
 		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
-		// test getInternalState always returns different non empty results than first call
-		internalState, err = vc.getInternalState()
+		// test internalState always returns different non empty results than first call
+		internalState, err = vc.internalState()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)

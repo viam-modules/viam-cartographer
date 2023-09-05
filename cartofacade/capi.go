@@ -59,14 +59,14 @@ type CartoInterface interface {
 	terminate() error
 	addLidarReading(string, []byte, time.Time) error
 	addIMUReading(string, IMUReading, time.Time) error
-	getPosition() (GetPosition, error)
-	getPointCloudMap() ([]byte, error)
-	getInternalState() ([]byte, error)
+	position() (Position, error)
+	pointCloudMap() ([]byte, error)
+	internalState() ([]byte, error)
 	runFinalOptimization() error
 }
 
-// GetPosition holds values returned from c to be processed later
-type GetPosition struct {
+// Position holds values returned from c to be processed later
+type Position struct {
 	X float64
 	Y float64
 	Z float64
@@ -255,28 +255,28 @@ func (vc *Carto) addIMUReading(imu string, readings IMUReading, timestamp time.T
 	return nil
 }
 
-// GetPosition is a wrapper for viam_carto_get_position
-func (vc *Carto) getPosition() (GetPosition, error) {
+// position is a wrapper for viam_carto_get_position
+func (vc *Carto) position() (Position, error) {
 	value := C.viam_carto_get_position_response{}
 
 	status := C.viam_carto_get_position(vc.value, &value)
 
 	if err := toError(status); err != nil {
-		return GetPosition{}, err
+		return Position{}, err
 	}
 
-	getPosition := toGetPositionResponse(value)
+	position := toPositionResponse(value)
 
 	status = C.viam_carto_get_position_response_destroy(&value)
 	if err := toError(status); err != nil {
-		return GetPosition{}, err
+		return Position{}, err
 	}
 
-	return getPosition, nil
+	return position, nil
 }
 
-// GetPointCloudMap is a wrapper for viam_carto_get_point_cloud_map
-func (vc *Carto) getPointCloudMap() ([]byte, error) {
+// pointCloudMap is a wrapper for viam_carto_get_point_cloud_map
+func (vc *Carto) pointCloudMap() ([]byte, error) {
 	value := C.viam_carto_get_point_cloud_map_response{}
 
 	status := C.viam_carto_get_point_cloud_map(vc.value, &value)
@@ -295,8 +295,8 @@ func (vc *Carto) getPointCloudMap() ([]byte, error) {
 	return pcd, nil
 }
 
-// GetInternalState is a wrapper for viam_carto_get_internal_state
-func (vc *Carto) getInternalState() ([]byte, error) {
+// internalState is a wrapper for viam_carto_get_internal_state
+func (vc *Carto) internalState() ([]byte, error) {
 	value := C.viam_carto_get_internal_state_response{}
 
 	status := C.viam_carto_get_internal_state(vc.value, &value)
@@ -327,7 +327,7 @@ func (vc *Carto) runFinalOptimization() error {
 }
 
 // this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
-func getTestGetPositionResponse() C.viam_carto_get_position_response {
+func getTestPositionResponse() C.viam_carto_get_position_response {
 	gpr := C.viam_carto_get_position_response{}
 
 	gpr.x = C.double(100)
@@ -406,8 +406,8 @@ func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	return vcac
 }
 
-func toGetPositionResponse(value C.viam_carto_get_position_response) GetPosition {
-	return GetPosition{
+func toPositionResponse(value C.viam_carto_get_position_response) Position {
+	return Position{
 		X: float64(value.x),
 		Y: float64(value.y),
 		Z: float64(value.z),

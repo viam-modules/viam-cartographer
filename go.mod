@@ -13,8 +13,8 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.24.0
-	go.viam.com/api v0.1.179-0.20230814212331-d05fed6b5dfc
-	go.viam.com/rdk v0.7.3
+	go.viam.com/api v0.1.186
+	go.viam.com/rdk v0.7.3-rc0.0.20230831150519-ddd4ef604885
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.40
 )
@@ -41,6 +41,7 @@ require (
 	github.com/alecthomas/participle/v2 v2.0.0 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
+	github.com/apache/arrow/go/arrow v0.0.0-20201229220542-30ce2eb5d4dc // indirect
 	github.com/ashanbrown/forbidigo v1.4.0 // indirect
 	github.com/ashanbrown/makezero v1.1.1 // indirect
 	github.com/aybabtme/uniplot v0.0.0-20151203143629-039c559e5e7e // indirect
@@ -61,6 +62,8 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/charithe/durationcheck v0.0.9 // indirect
 	github.com/chavacava/garif v0.0.0-20221024190013-b3ef35877348 // indirect
+	github.com/chewxy/hm v1.0.0 // indirect
+	github.com/chewxy/math32 v1.0.8 // indirect
 	github.com/curioswitch/go-reassign v0.2.0 // indirect
 	github.com/daixiang0/gci v0.9.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -105,6 +108,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
@@ -119,7 +123,11 @@ require (
 	github.com/golangci/misspell v0.4.0 // indirect
 	github.com/golangci/revgrep v0.0.0-20220804021717-745bb2f7c2e6 // indirect
 	github.com/golangci/unconvert v0.0.0-20180507085042-28b1c447d1f4 // indirect
+	github.com/gonum/blas v0.0.0-20181208220705-f22b278b28ac // indirect
+	github.com/gonum/lapack v0.0.0-20181123203213-e4cdc5a0bff9 // indirect
+	github.com/gonum/matrix v0.0.0-20181209220409-c518dec07be9 // indirect
 	github.com/gonuts/binary v0.2.0 // indirect
+	github.com/google/flatbuffers v2.0.6+incompatible // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
@@ -133,6 +141,7 @@ require (
 	github.com/gostaticanalysis/nilerr v0.1.1 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 // indirect
+	github.com/guptarohit/asciigraph v0.5.1 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
@@ -225,6 +234,7 @@ require (
 	github.com/quasilyte/stdinfo v0.0.0-20220114132959-f7386bf02567 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/robfig/cron v1.2.0 // indirect
+	github.com/rocketlaunchr/dataframe-go v0.0.0-20201007021539-67b046771f0b // indirect
 	github.com/rs/cors v1.9.0 // indirect
 	github.com/ryancurrah/gomodguard v1.3.0 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.4.0 // indirect
@@ -238,6 +248,7 @@ require (
 	github.com/sivchari/containedctx v1.0.2 // indirect
 	github.com/sivchari/nosnakecase v1.7.0 // indirect
 	github.com/sivchari/tenv v1.7.1 // indirect
+	github.com/sjwhitworth/golearn v0.0.0-20211014193759-a8b69c276cd8 // indirect
 	github.com/smartystreets/assertions v1.13.1 // indirect
 	github.com/sonatard/noctx v0.0.1 // indirect
 	github.com/sourcegraph/go-diff v0.7.0 // indirect
@@ -268,6 +279,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	github.com/xfmoulet/qoi v0.2.0 // indirect
+	github.com/xtgo/set v1.0.0 // indirect
 	github.com/yagipy/maintidx v1.0.0 // indirect
 	github.com/yeya24/promlinter v0.2.0 // indirect
 	github.com/youmark/pkcs8 v0.0.0-20201027041543-1326539a0a0a // indirect
@@ -278,6 +290,7 @@ require (
 	go.mongodb.org/mongo-driver v1.12.0-prerelease.0.20221109213319-d3466eeae7a7 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
+	go4.org/unsafe/assume-no-moving-gc v0.0.0-20230525183740-e7c30c78aeb2 // indirect
 	goji.io v2.0.2+incompatible // indirect
 	golang.org/x/crypto v0.10.0 // indirect
 	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1 // indirect
@@ -305,6 +318,9 @@ require (
 	gopkg.in/src-d/go-billy.v4 v4.3.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gorgonia.org/tensor v0.9.24 // indirect
+	gorgonia.org/vecf32 v0.9.0 // indirect
+	gorgonia.org/vecf64 v0.9.0 // indirect
 	honnef.co/go/tools v0.4.2 // indirect
 	mvdan.cc/gofumpt v0.4.0 // indirect
 	mvdan.cc/interfacer v0.0.0-20180901003855-c20040233aed // indirect
