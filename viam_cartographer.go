@@ -45,8 +45,6 @@ const (
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
 	defaultSensorValidationIntervalSec   = 1
-	parsePortMaxTimeoutSec               = 60
-	localhost0                           = "localhost:0"
 	defaultCartoFacadeTimeout            = 5 * time.Second
 	chunkSizeBytes                       = 1 * 1024 * 1024
 )
