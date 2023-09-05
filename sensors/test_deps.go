@@ -23,10 +23,8 @@ import (
 const BadTime = "NOT A TIME"
 
 var (
-	// TestTime can be used to test specific timestamps provided by a replay sensor.
-	TestTime = time.Now().UTC()
-	// TestTimestamp formats the TestTime into a string.
-	TestTimestamp = TestTime.Format("2006-01-02T15:04:05.999999Z")
+	// TestTimestamp can be used to test specific timestamps provided by a replay sensor.
+	TestTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05.999999Z")
 	// LinAcc is the successful mock linear acceleration result used for testing.
 	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
 	// AngVel is the successful mock angular velocity  result used for testing.

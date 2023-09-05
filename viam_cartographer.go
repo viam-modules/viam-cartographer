@@ -290,7 +290,6 @@ func New(
 			}
 		}
 	}()
-
 	if err = s.ValidateGetLidarData(
 		cancelSensorProcessCtx,
 		timedLidar,
@@ -300,7 +299,6 @@ func New(
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
 	}
-
 	if cartoSvc.imu.name != "" {
 		if err = s.ValidateGetIMUData(
 			cancelSensorProcessCtx,
@@ -707,7 +705,6 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 		cartoSvc.logger.Warn("Close() called multiple times")
 		return nil
 	}
-
 	// stop sensor process workers
 	cartoSvc.cancelSensorProcessFunc()
 	cartoSvc.sensorProcessWorkers.Wait()
