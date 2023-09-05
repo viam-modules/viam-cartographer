@@ -245,49 +245,49 @@ func TestIntegrationCartographer(t *testing.T) {
 		subAlgo     viamcartographer.SubAlgo
 	}{
 		// Live sensor
-		// {
-		// 	description: "live sensor mapping mode 2D",
-		// 	replay:      false,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.MappingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description: "live sensor localizing mode 2D",
-		// 	replay:      false,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.LocalizingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description: "live sensor updating mode 2D",
-		// 	replay:      false,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.UpdatingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
+		{
+			description: "live sensor mapping mode 2D",
+			replay:      false,
+			imuEnabled:  false,
+			mode:        cartofacade.MappingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		{
+			description: "live sensor localizing mode 2D",
+			replay:      false,
+			imuEnabled:  false,
+			mode:        cartofacade.LocalizingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		{
+			description: "live sensor updating mode 2D",
+			replay:      false,
+			imuEnabled:  false,
+			mode:        cartofacade.UpdatingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
 		// Replay sensor
-		// {
-		// 	description: "live sensor mapping mode 2D",
-		// 	replay:      true,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.MappingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description: "replay sensor localizing mode 2D",
-		// 	replay:      true,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.LocalizingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description: "replay sensor updating mode 2D",
-		// 	replay:      true,
-		// 	imuEnabled:  false,
-		// 	mode:        cartofacade.UpdatingMode,
-		// 	subAlgo:     viamcartographer.Dim2d,
-		// },
+		{
+			description: "live sensor mapping mode 2D",
+			replay:      true,
+			imuEnabled:  false,
+			mode:        cartofacade.MappingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		{
+			description: "replay sensor localizing mode 2D",
+			replay:      true,
+			imuEnabled:  false,
+			mode:        cartofacade.LocalizingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		{
+			description: "replay sensor updating mode 2D",
+			replay:      true,
+			imuEnabled:  false,
+			mode:        cartofacade.UpdatingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
 		// Live + imu sensor
 		{
 			description: "replay with imu sensor mapping mode 2D",
