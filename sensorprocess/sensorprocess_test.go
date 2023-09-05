@@ -546,7 +546,9 @@ func onlineModeLidarTestHelper(
 		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 	} else if cam == "replay_lidar" {
-		test.That(t, calls[0].readingTimestamp.Equal(s.TestTime), test.ShouldBeTrue)
+		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, calls[0].readingTimestamp.Equal(readingTime), test.ShouldBeTrue)
 	} else {
 		t.Errorf("no timestamp tests provided for %v", cam)
 	}
@@ -622,7 +624,9 @@ func onlineModeIMUTestHelper(
 		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
 	} else if movementSensor == "replay_imu" {
-		test.That(t, calls[0].readingTimestamp.Equal(s.TestTime), test.ShouldBeTrue)
+		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, calls[0].readingTimestamp.Equal(readingTime), test.ShouldBeTrue)
 	} else {
 		t.Errorf("no timestamp tests provided for %v", movementSensor)
 	}

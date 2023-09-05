@@ -24,8 +24,9 @@ const BadTime = "NOT A TIME"
 
 var (
 	// TestTime can be used to test specific timestamps provided by a replay sensor.
-	TestTime   = time.Now().UTC()
-	timeFormat = "2006-01-02T15:04:05.999999Z"
+	TestTime = time.Now().UTC()
+	// TestTimestamp formats the TestTime into a string.
+	TestTimestamp = TestTime.Format("2006-01-02T15:04:05.999999Z")
 	// LinAcc is the successful mock linear acceleration result used for testing.
 	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
 	// AngVel is the successful mock angular velocity  result used for testing.
@@ -41,7 +42,7 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 	case "warming_up_lidar":
 		deps[camera.Named(lidarName)] = getWarmingUpLidar()
 	case "replay_lidar":
-		deps[camera.Named(lidarName)] = getReplayLidar(TestTime.Format(timeFormat))
+		deps[camera.Named(lidarName)] = getReplayLidar(TestTimestamp)
 	case "invalid_replay_lidar":
 		deps[camera.Named(lidarName)] = getReplayLidar(BadTime)
 	case "lidar_with_erroring_functions":
@@ -58,7 +59,7 @@ func SetupDeps(lidarName, imuName string) resource.Dependencies {
 	case "good_imu":
 		deps[movementsensor.Named(imuName)] = getGoodIMU()
 	case "replay_imu":
-		deps[movementsensor.Named(imuName)] = getReplayIMU(TestTime.Format(timeFormat))
+		deps[movementsensor.Named(imuName)] = getReplayIMU(TestTimestamp)
 	case "invalid_replay_imu":
 		deps[movementsensor.Named(imuName)] = getReplayIMU(BadTime)
 	case "imu_with_erroring_functions":

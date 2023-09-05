@@ -234,8 +234,8 @@ func (config *Config) addIMUReading(
 	// Process data in online or offline mode determined by the lidar's data rate
 	if config.LidarDataRateMsec != 0 {
 		/*
-			 	when the lidar data rate msec is non-zero, we assume the user wants to be in "online"
-				mode and ensure the most recent scan gets processed by cartographer.
+			when the lidar data rate msec is non-zero, we assume the user wants to be in "online"
+			mode and ensure the most recent scan gets processed by cartographer.
 		*/
 
 		// get next imu data response
