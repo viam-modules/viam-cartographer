@@ -187,7 +187,6 @@ func TestStart(t *testing.T) {
 		carto.StartFunc = func() error {
 			return nil
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.Start(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 	})
@@ -197,18 +196,16 @@ func TestStart(t *testing.T) {
 		carto.StartFunc = func() error {
 			return expectedErr
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.Start(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.StartFunc = func() error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.Start(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -248,18 +245,16 @@ func TestStop(t *testing.T) {
 		carto.StopFunc = func() error {
 			return expectedErr
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.Stop(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.StopFunc = func() error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.Stop(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -299,18 +294,16 @@ func TestTerminate(t *testing.T) {
 		carto.TerminateFunc = func() error {
 			return expectedErr
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.Terminate(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.TerminateFunc = func() error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.Terminate(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -361,18 +354,16 @@ func TestAddLidarReading(t *testing.T) {
 		carto.AddLidarReadingFunc = func(name string, reading []byte, time time.Time) error {
 			return expectedErr
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.AddLidarReadingFunc = func(name string, reading []byte, timestamp time.Time) error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.AddLidarReading(cancelCtx, 1*time.Millisecond, "mysensor", buf.Bytes(), timestamp)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -418,20 +409,16 @@ func TestAddIMUReading(t *testing.T) {
 		carto.AddIMUReadingFunc = func(name string, reading IMUReading, time time.Time) error {
 			return expectedErr
 		}
-		cartoFacade.carto = &carto
-
-		// returns error
 		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.AddIMUReadingFunc = func(name string, reading IMUReading, timestamp time.Time) error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -463,7 +450,6 @@ func TestPosition(t *testing.T) {
 			pos := Position{X: 1, Y: 2, Z: 3}
 			return pos, nil
 		}
-		cartoFacade.carto = &carto
 		pos, err := cartoFacade.Position(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pos.X, test.ShouldEqual, 1)
@@ -476,18 +462,16 @@ func TestPosition(t *testing.T) {
 		carto.PositionFunc = func() (Position, error) {
 			return Position{}, expectedErr
 		}
-		cartoFacade.carto = &carto
 		_, err = cartoFacade.Position(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.PositionFunc = func() (Position, error) {
 			time.Sleep(50 * time.Millisecond)
 			return Position{}, nil
 		}
-		cartoFacade.carto = &carto
 		_, err = cartoFacade.Position(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -519,7 +503,6 @@ func TestInternalState(t *testing.T) {
 		carto.InternalStateFunc = func() ([]byte, error) {
 			return internalState, nil
 		}
-		cartoFacade.carto = &carto
 		internalState, err := cartoFacade.InternalState(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldResemble, internalState)
@@ -530,18 +513,16 @@ func TestInternalState(t *testing.T) {
 		carto.InternalStateFunc = func() ([]byte, error) {
 			return []byte{}, expectedErr
 		}
-		cartoFacade.carto = &carto
 		_, err = cartoFacade.InternalState(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.InternalStateFunc = func() ([]byte, error) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
-		cartoFacade.carto = &carto
 		_, err = cartoFacade.InternalState(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -573,7 +554,6 @@ func TestPointCloudMap(t *testing.T) {
 		carto.PointCloudMapFunc = func() ([]byte, error) {
 			return internalState, nil
 		}
-		cartoFacade.carto = &carto
 		internalState, err := cartoFacade.PointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, internalState, test.ShouldResemble, internalState)
@@ -584,18 +564,16 @@ func TestPointCloudMap(t *testing.T) {
 		carto.PointCloudMapFunc = func() ([]byte, error) {
 			return []byte{}, expectedErr
 		}
-		cartoFacade.carto = &carto
 		_, err = cartoFacade.PointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.PointCloudMapFunc = func() ([]byte, error) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
-		cartoFacade.carto = &carto
 		_, err = cartoFacade.PointCloudMap(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
@@ -635,18 +613,16 @@ func TestRunFinalOptimization(t *testing.T) {
 		carto.RunFinalOptimizationFunc = func() error {
 			return expectedErr
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.RunFinalOptimization(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
 
-	t.Run("times out", func(t *testing.T) {
+	t.Run("failure due to time out", func(t *testing.T) {
 		carto.RunFinalOptimizationFunc = func() error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		cartoFacade.carto = &carto
 		err = cartoFacade.RunFinalOptimization(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
