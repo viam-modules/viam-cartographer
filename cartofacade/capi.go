@@ -186,7 +186,7 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 	return carto, nil
 }
 
-// Start is a wrapper for viam_carto_start
+// start is a wrapper for viam_carto_start
 func (vc *Carto) start() error {
 	status := C.viam_carto_start(vc.value)
 
@@ -197,7 +197,7 @@ func (vc *Carto) start() error {
 	return nil
 }
 
-// Stop is a wrapper for viam_carto_stop
+// stop is a wrapper for viam_carto_stop
 func (vc *Carto) stop() error {
 	status := C.viam_carto_stop(vc.value)
 
@@ -208,7 +208,7 @@ func (vc *Carto) stop() error {
 	return nil
 }
 
-// Terminate calls viam_carto_terminate to clean up memory for viam carto
+// terminate calls viam_carto_terminate to clean up memory for viam carto
 func (vc *Carto) terminate() error {
 	status := C.viam_carto_terminate(&vc.value)
 
@@ -326,7 +326,7 @@ func (vc *Carto) runFinalOptimization() error {
 	return nil
 }
 
-// this function is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
+// getTestPositionResponse is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
 func getTestPositionResponse() C.viam_carto_get_position_response {
 	gpr := C.viam_carto_get_position_response{}
 
