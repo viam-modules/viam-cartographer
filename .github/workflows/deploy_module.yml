@@ -1,0 +1,68 @@
+name: Deploy Cartographer Module to Registry
+
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+env:
+  VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.0.0-{0}.{1}', github.ref_name, github.run_number) }}
+
+jobs:
+  appimage:
+    name: AppImage Build and Upload Cartographer to Registry
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: [ubuntu-latest]
+            image: ghcr.io/viamrobotics/canon:amd64-cache
+            platform: linux/amd64
+          - arch: [buildjet-2vcpu-ubuntu-2204-arm]
+            image: ghcr.io/viamrobotics/canon:arm64-cache
+            platform: linux/arm64
+    runs-on: ${{ matrix.arch }}
+    container:
+      image: ${{ matrix.image }}
+      options: --platform ${{ matrix.platform }}
+    timeout-minutes: 30
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+      with:
+        submodules: recursive
+
+    - name: apt update
+      run: |
+        sudo apt update
+
+    - name: Clean and Fix Permissions
+      run: |
+        chown -R testbot:testbot .
+        sudo -u testbot bash -lc 'make clean'
+        
+    - name: make setup
+      run: |
+        sudo -u testbot bash -lc 'make setup'
+
+    - name: Build appimage
+      run: |
+        sudo -u testbot bash -lc 'make BUILD_CHANNEL="${{ github.ref_name }}" appimage'
+
+    - name: Bundle module
+      run: |
+        cp etc/packaging/appimages/deploy/cartographer-module-*.AppImage cartographer-module.AppImage
+        tar czf module.tar.gz cartographer-module.AppImage
+
+    - uses: viamrobotics/upload-module@main
+      with:
+        module-path: module.tar.gz
+        platform: ${{ matrix.platform }}
+        version: ${{ env.VERSION }}
+        key-id: ${{ secrets.viam_key_id }}
+        key-value: ${{ secrets.viam_key_value }}
