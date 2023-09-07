@@ -54,15 +54,10 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	// update stored lidar timestamp
 	config.updateMutexProtectedLidarData(tsr.ReadingTime, tsr.Reading)
 
-	// if an imu exists only add lidar data to cartographer and sleep remainder of time interval if it is after most recent imu data
-	// to ensure ordered time
-	if config.IMUName == "" || tsr.ReadingTime.Sub(config.currentIMUData.time) >= 0 {
-		timeToSleep := config.tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime)
-		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-		config.Logger.Debugf("sleep for %vms", timeToSleep)
-	} else {
-		config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
-	}
+	// add lidar data to cartographer and sleep remainder of time interval
+	timeToSleep := config.tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime)
+	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+	config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
 
 	return false
 }
@@ -103,12 +98,10 @@ func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 	return false
 }
 
-// tryAddLidarReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode).
+// tryAddLidarReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode). While add lidar
+// reading fails, keep trying to add the same reading - in offline mode we want to process each reading so if we cannot
+// acquire the lock we should try again.
 func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, readingTime time.Time) {
-	/*
-		while add lidar reading fails, keep trying to add the same reading - in offline mode
-		we want to process each reading so if we cannot acquire the lock we should try again
-	*/
 	for {
 		select {
 		case <-ctx.Done():

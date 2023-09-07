@@ -55,32 +55,29 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 	// update stored imu time
 	config.updateMutexProtectedIMUData(tsr.ReadingTime, sr)
 
-	// only add imu data to cartographer and sleep remainder of time interval if it is after most recent lidar data to ensure
-	// ordered time
-	if tsr.ReadingTime.Sub(config.currentLidarData.time).Milliseconds() > 0 {
-		timeToSleep := config.tryAddIMUReading(ctx, sr, tsr.ReadingTime)
-		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-	} else {
-		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
-	}
+	// add imu data to cartographer and sleep remainder of time interval
+	timeToSleep := config.tryAddIMUReading(ctx, sr, tsr.ReadingTime)
+	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
+
 	return false
 }
 
 // addIMUReadingInOffline ensures imu scans get added in a time ordered series with any desired lidar scans without skipping any.
 func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
-	// Extract current lidar reading time for ordering data ingestion
+	// extract current lidar reading time for ordering data ingestion
 	config.Mutex.Lock()
 	sensorProcessStartTime := config.sensorProcessStartTime
 	config.Mutex.Unlock()
 
 	if sensorProcessStartTime != defaultTime && config.currentIMUData.time != defaultTime {
-		// Skip adding measurement if imu data has been defined but occurs before first lidar data
+		// skip adding measurement if imu data has been defined but occurs before first lidar data
 		if sensorProcessStartTime.Sub(config.currentIMUData.time).Milliseconds() >= 0 {
 			time.Sleep(10 * time.Millisecond)
 			return false
 		}
 
-		// Add IMU data
+		// add IMU data
 		config.tryAddIMUReadingUntilSuccess(ctx, config.currentIMUData.data, config.currentIMUData.time)
 	}
 
@@ -108,12 +105,10 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 	return false
 }
 
-// tryAddIMUReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode).
+// tryAddIMUReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode). While add sensor reading
+// fails, keep trying to add the same reading - in offline mode we want to process each reading so if we cannot acquire the lock
+// we should try again.
 func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time) {
-	/*
-		while add sensor reading fails, keep trying to add the same reading - in offline mode
-		we want to process each reading so if we cannot acquire the lock we should try again
-	*/
 	for {
 		select {
 		case <-ctx.Done():
