@@ -87,16 +87,16 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 
 	pos := position.Point()
 	t.Logf("Position point: (%v, %v, %v)", pos.X, pos.Y, pos.Z)
-	test.That(t, pos.X, test.ShouldBeBetween, expectedPos.X-tolerancePos, expectedPos.X+tolerancePos)
-	test.That(t, pos.Y, test.ShouldBeBetween, expectedPos.Y-tolerancePos, expectedPos.Y+tolerancePos)
-	test.That(t, pos.Z, test.ShouldBeBetween, expectedPos.Z-tolerancePos, expectedPos.Z+tolerancePos)
+	test.That(t, pos.X, test.ShouldAlmostEqual, expectedPos.X, tolerancePos)
+	test.That(t, pos.Y, test.ShouldAlmostEqual, expectedPos.Y, tolerancePos)
+	test.That(t, pos.Z, test.ShouldAlmostEqual, expectedPos.Z, tolerancePos)
 
 	ori := position.Orientation().AxisAngles()
 	t.Logf("Position orientation: RX: %v, RY: %v, RZ: %v, Theta: %v", ori.RX, ori.RY, ori.RZ, ori.Theta)
-	test.That(t, ori.RX, test.ShouldBeBetween, expectedOri.RX-toleranceOri, expectedOri.RX+toleranceOri)
-	test.That(t, ori.RY, test.ShouldBeBetween, expectedOri.RY-toleranceOri, expectedOri.RY+toleranceOri)
-	test.That(t, ori.RZ, test.ShouldBeBetween, expectedOri.RZ-toleranceOri, expectedOri.RZ+toleranceOri)
-	test.That(t, ori.Theta, test.ShouldBeBetween, expectedOri.Theta-toleranceOri, expectedOri.Theta+toleranceOri)
+	test.That(t, ori.RX, test.ShouldAlmostEqual, expectedOri.RX, toleranceOri)
+	test.That(t, ori.RY, test.ShouldAlmostEqual, expectedOri.RY, toleranceOri)
+	test.That(t, ori.RZ, test.ShouldAlmostEqual, expectedOri.RZ, toleranceOri)
+	test.That(t, ori.Theta, test.ShouldAlmostEqual, expectedOri.Theta, toleranceOri)
 }
 
 // Checks the cartographer map and confirms there at least 100 map points.
@@ -134,7 +134,7 @@ func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
 }
 
 // testHelperCartographer is responsible for running a viam-cartographer process using the desired mock sensors. Once started it will
-// waiting for all data to be processed by monitor sensor channels. After data has been fully processed, the endpoints Position,
+// wait for all data to be processed by monitor sensor channels. After data has been fully processed, the endpoints Position,
 // PointCloudMap, InternalState are evaluated and the process is closed out. The final internal state of cartographer is then returned.
 func testHelperCartographer(
 	t *testing.T,
@@ -204,12 +204,11 @@ func testHelperCartographer(
 	test.That(t, ok, test.ShouldBeTrue)
 	test.That(t, cSvc.SlamMode, test.ShouldEqual, expectedMode)
 
-	// Waiting for sensor processes to finish sending data and for context to be canceled
+	// Wait for sensor processes to finish sending data and for context to be canceled
 	start := time.Now().UTC()
 	ctx, cancelFunc := context.WithTimeout(context.Background(), testTimeout)
 	defer cancelFunc()
 
-	// Wait for sensor processes to complete
 	finishedProcessingLidarData := utils.SelectContextOrWaitChan(ctx, lidarDone)
 	t.Logf("lidar sensor process duration %dms (timeout = %dms)", time.Since(start).Milliseconds(), testTimeout.Milliseconds())
 	test.That(t, finishedProcessingLidarData, test.ShouldBeTrue)
@@ -219,6 +218,7 @@ func testHelperCartographer(
 		t.Logf("imu sensor process duration %dms (timeout = %dms)", time.Since(start).Milliseconds(), testTimeout.Milliseconds())
 		test.That(t, finishedProcessingIMUData, test.ShouldBeTrue)
 	}
+	t.Logf("sensor processes have completed, all data has been ingested")
 
 	// Test end points and retrieve internal state
 	testCartographerPosition(t, svc, useIMU, attrCfg.Camera["name"])
@@ -279,7 +279,7 @@ func TestIntegrationCartographer(t *testing.T) {
 		},
 		// Replay sensor
 		{
-			description: "live sensor mapping mode 2D",
+			description: "replay sensor mapping mode 2D",
 			replay:      true,
 			imuEnabled:  false,
 			mode:        cartofacade.MappingMode,

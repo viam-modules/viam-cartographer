@@ -12,7 +12,7 @@ import (
 	"github.com/viamrobotics/viam-cartographer/sensors"
 )
 
-// defaultTime is used to check if timestamps have not ben set yet.
+// defaultTime is used to check if timestamps have not been set yet.
 var defaultTime = time.Time{}
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
