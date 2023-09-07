@@ -8,7 +8,6 @@ package viamcartographer_test
 import (
 	"bytes"
 	"context"
-	"errors"
 	"os"
 	"path"
 	"path/filepath"
@@ -210,19 +209,16 @@ func testHelperCartographer(
 	ctx, cancelFunc := context.WithTimeout(context.Background(), testTimeout)
 	defer cancelFunc()
 
-	// Wait for lidar sensor process to complete (required)
-	if !utils.SelectContextOrWaitChan(ctx, lidarDone) {
-		t.Logf("test duration %dms", time.Since(start).Milliseconds())
-		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
-	}
-	logger.Debug("lidar data finished")
+	// Wait for sensor processes to complete
+	finishedProcessingLidarData := utils.SelectContextOrWaitChan(ctx, lidarDone)
+	t.Logf("lidar sensor process duration %dms (timeout = %dms)", time.Since(start).Milliseconds(), testTimeout.Milliseconds())
+	test.That(t, finishedProcessingLidarData, test.ShouldBeTrue)
 
-	// Wait for IMU sensor process to complete (optional)
-	if useIMU && !utils.SelectContextOrWaitChan(ctx, imuDone) {
-		t.Logf("test duration %dms", time.Since(start).Milliseconds())
-		test.That(t, errors.New("test timeout"), test.ShouldBeNil)
+	if useIMU {
+		finishedProcessingIMUData := utils.SelectContextOrWaitChan(ctx, imuDone)
+		t.Logf("imu sensor process duration %dms (timeout = %dms)", time.Since(start).Milliseconds(), testTimeout.Milliseconds())
+		test.That(t, finishedProcessingIMUData, test.ShouldBeTrue)
 	}
-	logger.Debug("imu data finished")
 
 	// Test end points and retrieve internal state
 	testCartographerPosition(t, svc, useIMU, attrCfg.Camera["name"])
