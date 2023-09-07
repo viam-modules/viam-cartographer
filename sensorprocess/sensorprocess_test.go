@@ -77,7 +77,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 		) error {
 			return nil
 		}
-		tryAddLidarReadingUntilSuccess(context.Background(), reading, readingTimestamp, config)
+		config.tryAddLidarReadingUntilSuccess(context.Background(), reading, readingTimestamp)
 	})
 
 	t.Run("failure with UNABLE_TO_ACQUIRE_LOCK error and cancelled context, no infinite loop", func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		config.tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp)
 	})
 
 	t.Run("failure with a different error and cancelled context, no infinite loop", func(t *testing.T) {
@@ -109,7 +109,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		config.tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp)
 	})
 
 	t.Run("failure with errors being hit a few times, a retry, and then success", func(t *testing.T) {
@@ -139,7 +139,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 			}
 			return nil
 		}
-		tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		config.tryAddLidarReadingUntilSuccess(cancelCtx, reading, readingTimestamp)
 		test.That(t, len(calls), test.ShouldEqual, 4)
 		for i, args := range calls {
 			t.Logf("addLidarReadingArgsHistory %d", i)
@@ -177,7 +177,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 		) error {
 			return nil
 		}
-		tryAddIMUReadingUntilSuccess(context.Background(), reading, readingTimestamp, config)
+		config.tryAddIMUReadingUntilSuccess(context.Background(), reading, readingTimestamp)
 	})
 
 	t.Run("failure with UNABLE_TO_ACQUIRE_LOCK error and cancelled context, no infinite loop", func(t *testing.T) {
@@ -193,7 +193,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		tryAddIMUReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		config.tryAddIMUReadingUntilSuccess(cancelCtx, reading, readingTimestamp)
 	})
 
 	t.Run("failure with a different error and cancelled context, no infinite loop", func(t *testing.T) {
@@ -209,7 +209,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		cancelFunc()
-		tryAddIMUReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		config.tryAddIMUReadingUntilSuccess(cancelCtx, reading, readingTimestamp)
 	})
 
 	t.Run("failure with errors being hit a few times, a retry, and then success", func(t *testing.T) {
@@ -239,7 +239,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 			}
 			return nil
 		}
-		tryAddIMUReadingUntilSuccess(cancelCtx, reading, readingTimestamp, config)
+		config.tryAddIMUReadingUntilSuccess(cancelCtx, reading, readingTimestamp)
 		test.That(t, len(calls), test.ShouldEqual, 4)
 		for i, args := range calls {
 			t.Logf("addIMUReadingArgsHistory %d", i)
@@ -278,7 +278,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -294,7 +294,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -311,7 +311,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -326,7 +326,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
@@ -343,7 +343,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
@@ -360,7 +360,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := tryAddLidarReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
 	})
@@ -395,7 +395,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := tryAddIMUReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -411,7 +411,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := tryAddIMUReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -427,7 +427,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := tryAddIMUReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -442,7 +442,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := tryAddIMUReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
 	})
@@ -458,7 +458,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := tryAddIMUReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
 	})
@@ -475,7 +475,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := tryAddIMUReading(context.Background(), reading, readingTimestamp, config)
+		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
 	})
@@ -597,7 +597,7 @@ func onlineModeIMUTestHelper(
 	// set lidar data rate to signify that we are in online mode
 	config.LidarDataRateMsec = 10
 	config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
-	config.firstLidarReadingTime = time.Time{}.Add(time.Millisecond)
+	config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
 	jobDone := config.addIMUReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
@@ -913,7 +913,7 @@ func TestAddIMUReading(t *testing.T) {
 		config.IMUDataRateMsec = 0
 		config.LidarDataRateMsec = 0
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
-		config.firstLidarReadingTime = time.Time{}.Add(time.Millisecond)
+		config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
 		_ = config.addIMUReading(ctx) // first call gets data
 		jobDone := config.addIMUReading(ctx)

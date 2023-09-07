@@ -27,11 +27,12 @@ type Config struct {
 	Timeout                  time.Duration
 	InternalTimeout          time.Duration
 	Logger                   golog.Logger
-	currentLidarData         LidarData
-	currentIMUData           IMUData
-	firstLidarReadingTime    time.Time
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
-	Mutex                    *sync.Mutex
+
+	sensorProcessStartTime time.Time
+	currentLidarData       LidarData
+	currentIMUData         IMUData
+	Mutex                  *sync.Mutex
 }
 
 // IMUData stores the next data to be added to cartographer along with its associated timestamp so that,
@@ -48,6 +49,7 @@ type LidarData struct {
 	data []byte
 }
 
+// Update currentIMUData under a mutex lock.
 func (config *Config) updateMutexProtectedIMUData(time time.Time, data cartofacade.IMUReading) {
 	config.Mutex.Lock()
 	config.currentIMUData.time = time
@@ -55,6 +57,7 @@ func (config *Config) updateMutexProtectedIMUData(time time.Time, data cartofaca
 	config.Mutex.Unlock()
 }
 
+// Update currentLidarData under a mutex lock.
 func (config *Config) updateMutexProtectedLidarData(time time.Time, data []byte) {
 	config.Mutex.Lock()
 	config.currentLidarData.time = time
