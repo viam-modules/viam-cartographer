@@ -17,22 +17,25 @@ var defaultTime = time.Time{}
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	CartoFacade              cartofacade.Interface
-	Lidar                    sensors.TimedLidarSensor
-	LidarName                string
-	LidarDataRateMsec        int
-	IMU                      sensors.TimedIMUSensor
-	IMUName                  string
-	IMUDataRateMsec          int
+	CartoFacade            cartofacade.Interface
+	sensorProcessStartTime time.Time
+
+	Lidar             sensors.TimedLidarSensor
+	LidarName         string
+	LidarDataRateMsec int
+	currentLidarData  LidarData
+
+	IMU             sensors.TimedIMUSensor
+	IMUName         string
+	IMUDataRateMsec int
+	currentIMUData  IMUData
+
 	Timeout                  time.Duration
 	InternalTimeout          time.Duration
 	Logger                   golog.Logger
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 
-	sensorProcessStartTime time.Time
-	currentLidarData       LidarData
-	currentIMUData         IMUData
-	Mutex                  *sync.Mutex
+	Mutex *sync.Mutex
 }
 
 // IMUData stores the next data to be added to cartographer along with its associated timestamp so that,
