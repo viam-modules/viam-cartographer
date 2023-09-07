@@ -1,0 +1,13 @@
+{
+  "module_id": "viam:cartographer",
+  "visibility": "public",
+  "url": "https://github.com/viamrobotics/viam-cartographer",
+  "description": "Go module for Google Cartographer",
+  "models": [
+    {
+      "api": "rdk:service:slam",
+      "model": "viam:slam:cartographer"
+    }
+  ],
+  "entrypoint": "cartographer-module.AppImage"
+}
