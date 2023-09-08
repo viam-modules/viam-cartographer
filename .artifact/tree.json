@@ -1,5 +1,83 @@
 {
   "viam-cartographer": {
+    "mock_data": {
+      "imu": {
+        "data.txt": {
+          "hash": "2b41e7cb9d3f9db51a3fd94f23766e50",
+          "size": 4242
+        }
+      },
+      "lidar": {
+        "0.pcd": {
+          "hash": "32b95e765b10c1cfc6097eebc74bbe64",
+          "size": 9880
+        },
+        "1.pcd": {
+          "hash": "a038d9f7ad0356704d512402ead3665b",
+          "size": 9928
+        },
+        "10.pcd": {
+          "hash": "7ffd7681874dd36a8c435a4718e472bc",
+          "size": 10000
+        },
+        "11.pcd": {
+          "hash": "ef95af97b5ed0bc9587cb19dd487f03e",
+          "size": 9880
+        },
+        "12.pcd": {
+          "hash": "592da217520e0a6874ce8387451b59aa",
+          "size": 9868
+        },
+        "13.pcd": {
+          "hash": "1a696bfed9c0cc93d16f76f8c3e295f8",
+          "size": 10000
+        },
+        "14.pcd": {
+          "hash": "3049df7aa2bcde37d068979abc869a3a",
+          "size": 9952
+        },
+        "15.pcd": {
+          "hash": "f001078e01a4104fdfca8294eef99210",
+          "size": 9952
+        },
+        "16.pcd": {
+          "hash": "e1b7aa85857575d275a40b61ed896400",
+          "size": 9964
+        },
+        "2.pcd": {
+          "hash": "924d493bc3ba60a72cb3acad7205663e",
+          "size": 9952
+        },
+        "3.pcd": {
+          "hash": "be52a00e9edab3873e76bc38283e956d",
+          "size": 10036
+        },
+        "4.pcd": {
+          "hash": "d38b3e6275ada37dfd3a5b1ad8518b41",
+          "size": 10012
+        },
+        "5.pcd": {
+          "hash": "41ecd45e566babf33d0e46b57f7f5d91",
+          "size": 9964
+        },
+        "6.pcd": {
+          "hash": "5076d6681530bd995e9155f70dc5fd41",
+          "size": 9928
+        },
+        "7.pcd": {
+          "hash": "6738b43810d9bdb2f93c392d6a71b96b",
+          "size": 10000
+        },
+        "8.pcd": {
+          "hash": "fc8e932ef4ceac3abcb3dc85fc5f970e",
+          "size": 10060
+        },
+        "9.pcd": {
+          "hash": "10e2501cedc4900d542e81e6f4391189",
+          "size": 9916
+        }
+      }
+    },
     "mock_lidar": {
       "0.pcd": {
         "hash": "fc063341f9586fcddc69df23f2870de7",

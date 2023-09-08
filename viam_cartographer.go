@@ -45,8 +45,6 @@ const (
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
 	defaultSensorValidationIntervalSec   = 1
-	parsePortMaxTimeoutSec               = 60
-	localhost0                           = "localhost:0"
 	defaultCartoFacadeTimeout            = 5 * time.Second
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
@@ -135,6 +133,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
+		Mutex:                    &sync.Mutex{},
 	}
 
 	cartoSvc.sensorProcessWorkers.Add(1)
@@ -699,6 +698,8 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 		return nil
 	}
 
+	cartoSvc.logger.Info("Closing cartographer module")
+
 	defer cartoSvc.mu.Unlock()
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("Close() called multiple times")
@@ -718,6 +719,8 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 	cartoSvc.cancelCartoFacadeFunc()
 	cartoSvc.cartoFacadeWorkers.Wait()
 	cartoSvc.closed = true
+
+	cartoSvc.logger.Info("Closing complete")
 	return nil
 }
 
