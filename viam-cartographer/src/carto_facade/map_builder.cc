@@ -132,6 +132,7 @@ MapBuilder::GetLocalSlamResultCallback() {
             std::lock_guard<std::mutex> lk(local_slam_result_pose_mutex);
             local_slam_result_pose = local_pose;
         }
+        local_pose_initialized = true;
     };
 }
 
