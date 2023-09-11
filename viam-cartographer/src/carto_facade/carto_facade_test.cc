@@ -792,7 +792,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
         viam_carto_get_position_response pr;
         // Test get position before any data is provided
         // it should return an error
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
     std::vector<std::vector<double>> points = {
@@ -927,7 +928,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
         viam_carto_get_position_response pr;
         // Test get position before any data is provided
         // it should return an error
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
     // GetPosition is unchanged from first AddLidarReading request
@@ -952,7 +954,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
 
     {
         viam_carto_get_position_response pr;
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
     {

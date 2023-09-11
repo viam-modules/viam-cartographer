@@ -199,9 +199,9 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 
 		// test position before sensor data is added
 		position, err := vc.position()
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
-		positionIsZero(t, position)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_GET_POSITION_NOT_INITIALIZED"))
+		test.That(t, position, test.ShouldResemble, Position{})
 
 		// test pointCloudMap before sensor data is added
 		pcd, err := vc.pointCloudMap()
@@ -250,11 +250,11 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		timestamp = timestamp.Add(time.Second * 2)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
 
-		// test position zeroed if not enough sensor data has been provided
+		// test position not initialized after first sensor data has been provided
 		position, err = vc.position()
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
-		positionIsZero(t, position)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_GET_POSITION_NOT_INITIALIZED"))
+		test.That(t, position, test.ShouldResemble, Position{})
 
 		// test pointCloudMap returns error if not enough sensor data has been provided
 		pcd, err = vc.pointCloudMap()
@@ -390,9 +390,9 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// test position before sensor data is added
 		position, err := vc.position()
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
-		positionIsZero(t, position)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_GET_POSITION_NOT_INITIALIZED"))
+		test.That(t, position, test.ShouldResemble, Position{})
 
 		// test pointCloudMap before sensor data is added
 		pcd, err := vc.pointCloudMap()

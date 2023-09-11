@@ -608,7 +608,7 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
         if (!map_builder.local_pose_initialized) {
             LOG(ERROR) << "position is not yet initialized";
-            throw VIAM_CARTO_GET_POSITION_NOT_INITIALIZED; 
+            throw VIAM_CARTO_GET_POSITION_NOT_INITIALIZED;
         }
     }
     cartographer::transform::Rigid3d global_pose;
