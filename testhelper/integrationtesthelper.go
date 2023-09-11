@@ -63,7 +63,7 @@ type TimeTracker struct {
 // ReadingTime incremented by the sensorReadingInterval.
 // The Replay sensor field of the mock readings will match the replay parameter.
 // When the end of the mock lidar readings is reached, the done channel
-// is written to once so the caller can detect all lidar readings have been emitted
+// is written to once so the caller can detect when all lidar readings have been emitted
 // from the mock. This is intended to match the same "end of dataset" behavior of a
 // replay sensor.
 // It is important to provide deterministic time information to cartographer to
@@ -76,7 +76,7 @@ func IntegrationTimedLidarSensor(
 	done chan struct{},
 	timeTracker *TimeTracker,
 ) (sensors.TimedLidarSensor, error) {
-	// Check required amount of lidar data is present
+	// Check that the required amount of lidar data is present
 	err := mockLidarReadingsValid()
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func IntegrationTimedLidarSensor(
 // ReadingTime incremented by the sensorReadingInterval.
 // The Replay sensor field of the mock readings will match the replay parameter.
 // When the end of the mock IMU readings is reached, the done channel
-// is written to once so the caller can detect all IMU readings have been emitted
+// is written to once so the caller can detect when all IMU readings have been emitted
 // from the mock. This is intended to match the same "end of dataset" behavior of a
 // replay sensor.
 // It is important to provide deterministic time information to cartographer to
@@ -162,7 +162,7 @@ func IntegrationTimedIMUSensor(
 		return nil, nil
 	}
 
-	// Check required amount of IMU data is present and creates mock dataset from provided mock data artifact file.
+	// Check that the required amount of IMU data is present and create a mock dataset from provided mock data artifact file.
 	mockDataset, err := mockIMUReadingsValid(t)
 	if err != nil {
 		return nil, err

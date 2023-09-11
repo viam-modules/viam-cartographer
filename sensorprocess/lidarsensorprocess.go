@@ -15,7 +15,7 @@ import (
 )
 
 // StartLidar polls the lidar to get the next sensor reading and adds it to the cartofacade.
-// stops when the context is Done.
+// Stops when the context is Done.
 func (config *Config) StartLidar(ctx context.Context) bool {
 	for {
 		select {
@@ -43,7 +43,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 	return config.addLidarReadingsInOffline(ctx)
 }
 
-// addLidarReadingsInOnline ensure the most recent lidar scan, after any corresponding imu scans, gets processed by cartographer.
+// addLidarReadingsInOnline ensures the most recent lidar scan, after any corresponding IMU scans, gets processed by cartographer.
 func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	// get next lidar data response
 	tsr, status, err := getTimedLidarSensorReading(ctx, config)
@@ -62,14 +62,14 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	return false
 }
 
-// addLidarReadingsInOffline ensures lidar scans get added in a time ordered series with any desired imu scans without skipping any.
+// addLidarReadingsInOffline ensures lidar scans get added in a time ordered series with any desired IMU scans without skipping any.
 func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
-	// Extract current imu reading time for ordering data ingestion
+	// Extract current IMU reading time for ordering data ingestion
 	config.Mutex.Lock()
 	currentIMUTime := config.currentIMUData.time
 	config.Mutex.Unlock()
 
-	// If an IMU exists, skip adding measurement until the current lidar time is after the current imu timestamp
+	// If an IMU exists, skip adding measurement until the current lidar time is after the current IMU timestamp
 	if config.IMUName != "" && config.currentLidarData.time.Sub(currentIMUTime).Milliseconds() > 0 {
 		time.Sleep(10 * time.Millisecond)
 		return false

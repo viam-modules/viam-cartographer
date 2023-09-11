@@ -15,7 +15,7 @@ import (
 )
 
 // StartIMU polls the IMU to get the next sensor reading and adds it to the cartofacade.
-// stops when the context is Done.
+// Stops when the context is Done.
 func (config *Config) StartIMU(ctx context.Context) bool {
 	for {
 		select {
@@ -29,7 +29,7 @@ func (config *Config) StartIMU(ctx context.Context) bool {
 	}
 }
 
-// addIMUReading adds a imu reading to the cartofacade, using the lidar's data rate to determine whether to run in
+// addIMUReading adds an IMU reading to the cartofacade, using the lidar's data rate to determine whether to run in
 // offline or online mode.
 func (config *Config) addIMUReading(ctx context.Context) bool {
 	if config.LidarDataRateMsec != 0 {
@@ -38,24 +38,24 @@ func (config *Config) addIMUReading(ctx context.Context) bool {
 	return config.addIMUReadingInOffline(ctx)
 }
 
-// addIMUReadingInOnline ensure the most recent imu scan, after corresponding lidar scans, gets processed by cartographer.
+// addIMUReadingInOnline ensures the most recent IMU scan, after corresponding lidar scans, gets processed by cartographer.
 func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
-	// get next imu data response
+	// get next IMU data response
 	tsr, status, err := getTimedIMUSensorReading(ctx, config)
 	if err != nil {
 		return status
 	}
 
-	// parse imu reading
+	// parse IMU reading
 	sr := cartofacade.IMUReading{
 		LinearAcceleration: tsr.LinearAcceleration,
 		AngularVelocity:    tsr.AngularVelocity,
 	}
 
-	// update stored imu time
+	// update stored IMU time
 	config.updateMutexProtectedIMUData(tsr.ReadingTime, sr)
 
-	// add imu data to cartographer and sleep remainder of time interval
+	// add IMU data to cartographer and sleep remainder of time interval
 	timeToSleep := config.tryAddIMUReading(ctx, sr, tsr.ReadingTime)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
@@ -63,7 +63,7 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 	return false
 }
 
-// addIMUReadingInOffline ensures imu scans get added in a time ordered series with any desired lidar scans without skipping any.
+// addIMUReadingInOffline ensures IMU scans get added in a time ordered series with any desired lidar scans without skipping any.
 func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 	// extract current lidar reading time for ordering data ingestion
 	config.Mutex.Lock()
@@ -71,7 +71,7 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 	config.Mutex.Unlock()
 
 	if sensorProcessStartTime != defaultTime && config.currentIMUData.time != defaultTime {
-		// skip adding measurement if imu data has been defined but occurs before first lidar data
+		// skip adding measurement if IMU data has been defined but occurs before first lidar data
 		if sensorProcessStartTime.Sub(config.currentIMUData.time).Milliseconds() >= 0 {
 			time.Sleep(10 * time.Millisecond)
 			return false
@@ -81,21 +81,21 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 		config.tryAddIMUReadingUntilSuccess(ctx, config.currentIMUData.data, config.currentIMUData.time)
 	}
 
-	// get next imu data response
+	// get next IMU data response
 	tsr, status, err := getTimedIMUSensorReading(ctx, config)
 	if err != nil {
 		return status
 	}
 
-	// parse imu reading
+	// parse IMU reading
 	sr := cartofacade.IMUReading{
 		LinearAcceleration: tsr.LinearAcceleration,
 		AngularVelocity:    tsr.AngularVelocity,
 	}
 
-	// TODO: Remove dropping out of order imu readings after DATA-1812 has been complete
+	// TODO: Remove dropping out of order IMU readings after DATA-1812 has been complete
 	// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
-	// update current imu data and time
+	// update current IMU data and time
 	if config.currentIMUData.time.Sub(tsr.ReadingTime).Milliseconds() < 0 {
 		config.updateMutexProtectedIMUData(tsr.ReadingTime, sr)
 	} else {
@@ -144,7 +144,7 @@ func (config *Config) tryAddIMUReading(ctx context.Context, reading cartofacade.
 	return int(math.Max(0, float64(config.IMUDataRateMsec-timeElapsedMs)))
 }
 
-// getTimedIMUSensorReading returns the next imu reading if available along with a status denoting if the end of dataset has been reached.
+// getTimedIMUSensorReading returns the next IMU reading if available along with a status denoting if the end of dataset has been reached.
 func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
 	if err != nil {
