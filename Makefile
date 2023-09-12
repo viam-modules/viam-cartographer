@@ -101,8 +101,12 @@ viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
 	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
 
 cartographer-module: viam-cartographer/build/unit_tests
-	rm -f bin/cartographer-module
-	mkdir -p bin && go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
+	rm -f bin/cartographer-module && mkdir -p bin
+# Newer versions of abseil require extra ld flags in our module, so this ugly thing.
+# It's expected that if NOT using brew, a prebuilt environment (like canon) is in use with the older abseil installed.
+	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
+	test "$$absl_version" -gt "20230801" && export CGO_LDFLAGS="$$CGO_LDFLAGS -labsl_log_internal_message -labsl_log_internal_check_op" || true; \
+	go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 

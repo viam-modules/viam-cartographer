@@ -2,13 +2,9 @@
 package testhelper
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"os"
-	"path"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -44,13 +40,11 @@ const (
 	// function for the while loop that attempts to grab data from the
 	// sensor that is used in the GetAndSaveData function.
 	SensorValidationIntervalSecForTest = 1
-	testDialMaxTimeoutSec              = 1
-	// NumPointClouds is the number of pointclouds saved in artifact
-	// for the cartographer integration tests.
-	NumPointClouds = 15
+	// CartoFacadeTimeoutForTest is the timeout used for capi requests for tests.
+	CartoFacadeTimeoutForTest = 5 * time.Second
+	// CartoFacadeInternalTimeoutForTest is the timeout used for internal capi requests for tests.
+	CartoFacadeInternalTimeoutForTest = 15 * time.Minute
 )
-
-var mockLidarPath = artifact.MustPath("viam-cartographer/mock_lidar")
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
@@ -114,175 +108,6 @@ func getStubIMU(t *testing.T) *inject.MovementSensor {
 	return imu
 }
 
-func mockLidarReadingsValid() error {
-	dirEntries, err := os.ReadDir(mockLidarPath)
-	if err != nil {
-		return err
-	}
-
-	var files []string
-	for _, f := range dirEntries {
-		if !f.IsDir() {
-			files = append(files, f.Name())
-		}
-	}
-	if len(files) < NumPointClouds {
-		return errors.New("expected at least 15 lidar readings for integration test")
-	}
-	for i := 0; i < NumPointClouds; i++ {
-		found := false
-		expectedFile := fmt.Sprintf("%d.pcd", i)
-		for _, file := range files {
-			if file == expectedFile {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			return errors.Errorf("expected %s to exist for integration test", path.Join(mockLidarPath, expectedFile))
-		}
-	}
-	return nil
-}
-
-// IntegrationTimedLidarSensor returns a mock timed lidar sensor
-// or an error if preconditions to build the mock are not met.
-// It validates that all required mock lidar reading files are able to be found.
-// When the mock is called, it returns the next mock lidar reading, with the
-// ReadingTime incremented by the sensorReadingInterval.
-// The Replay sensor field of the mock readings will match the replay parameter.
-// When the end of the mock lidar readings is reached, the done channel
-// is written to once so the caller can detect all lidar readings have been emitted
-// from the mock. This is intended to match the same "end of dataset" behavior of a
-// replay sensor.
-// It is important to provide deterministic time information to cartographer to
-// ensure test outputs of cartographer are deterministic.
-func IntegrationTimedLidarSensor(
-	t *testing.T,
-	lidar string,
-	replay bool,
-	sensorReadingInterval time.Duration,
-	done chan struct{},
-) (s.TimedLidarSensor, error) {
-	err := mockLidarReadingsValid()
-	if err != nil {
-		return nil, err
-	}
-
-	var i uint64
-	closed := false
-
-	ts := &s.TimedLidarSensorMock{}
-	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-
-	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
-		readingTime = readingTime.Add(sensorReadingInterval)
-		t.Logf("TimedLidarSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
-		if i >= NumPointClouds {
-			// communicate to the test that all lidar readings have been written
-			if !closed {
-				done <- struct{}{}
-				closed = true
-			}
-			return s.TimedLidarSensorReadingResponse{}, errors.New("end of dataset")
-		}
-
-		file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
-		if err != nil {
-			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to open pcd file")
-			return s.TimedLidarSensorReadingResponse{}, err
-		}
-		readingPc, err := pointcloud.ReadPCD(file)
-		if err != nil {
-			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to read pcd")
-			return s.TimedLidarSensorReadingResponse{}, err
-		}
-
-		buf := new(bytes.Buffer)
-		err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
-		if err != nil {
-			t.Error("TEST FAILED TimedLidarSensorReading Mock failed to parse pcd")
-			return s.TimedLidarSensorReadingResponse{}, err
-		}
-
-		i++
-		return s.TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
-	}
-
-	return ts, nil
-}
-
-// IntegrationTimedIMUSensor returns a mock timed IMU sensor.
-// When the mock is called, it returns the next mock IMU readings, with the
-// ReadingTime incremented by the sensorReadingInterval.
-// The Replay sensor field of the mock readings will match the replay parameter.
-// When the end of the mock IMU readings is reached, the done channel
-// is written to once so the caller can detect all IMU readings have been emitted
-// from the mock. This is intended to match the same "end of dataset" behavior of a
-// replay sensor.
-// It is important to provide deterministic time information to cartographer to
-// ensure test outputs of cartographer are deterministic.
-// Note that IMU replay sensors are not yet fully supported.
-func IntegrationTimedIMUSensor(
-	t *testing.T,
-	imu string,
-	replay bool,
-	sensorReadingInterval time.Duration,
-	done chan struct{},
-) (s.TimedIMUSensor, error) {
-	if imu == "" {
-		return nil, nil
-	}
-	var i uint64
-	closed := false
-
-	ts := &s.TimedIMUSensorMock{}
-	mockLinearAccelerationData := []r3.Vector{
-		{X: 1, Y: 1, Z: 1},
-		{X: 2, Y: 1, Z: 1},
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 1, Z: 2},
-		{X: 1, Y: 1, Z: 3},
-		{X: 1, Y: 3, Z: 1},
-		{X: 3, Y: 1, Z: 1},
-		{X: 2, Y: 1, Z: 1},
-	}
-	mockAngularVelocityData := []spatialmath.AngularVelocity{
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 2, Z: 1},
-		{X: 1, Y: 1, Z: 2},
-		{X: 1, Y: 1, Z: 2},
-		{X: 1, Y: 1, Z: 2},
-		{X: 5, Y: 1, Z: 1},
-		{X: 5, Y: 1, Z: 1},
-	}
-
-	readingTime := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-
-	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
-		readingTime = readingTime.Add(sensorReadingInterval)
-		t.Logf("TimedIMUSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, readingTime.String())
-		if int(i) >= len(mockLinearAccelerationData) {
-			// communicate to the test that all imu readings have been written
-			if !closed {
-				// This will be added back once synced mock lidar and IMU data is collected,
-				// see https://viam.atlassian.net/browse/RSDK-4495
-				// done <- struct{}{}
-				closed = true
-			}
-			return s.TimedIMUSensorReadingResponse{}, errors.New("end of dataset")
-		}
-		linAcc := mockLinearAccelerationData[i]
-		angVel := mockAngularVelocityData[i]
-		i++
-		return s.TimedIMUSensorReadingResponse{LinearAcceleration: linAcc, AngularVelocity: angVel, ReadingTime: readingTime, Replay: replay}, nil
-	}
-
-	return ts, nil
-}
-
 // ClearDirectory deletes the contents in the path directory
 // without deleting path itself.
 func ClearDirectory(t *testing.T, path string) {
@@ -323,7 +148,8 @@ func CreateIntegrationSLAMService(
 		logger,
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
-		5*time.Second,
+		CartoFacadeTimeoutForTest,
+		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
 		timedIMU,
 	)
@@ -382,7 +208,8 @@ func CreateSLAMService(
 		logger,
 		SensorValidationMaxTimeoutSecForTest,
 		SensorValidationIntervalSecForTest,
-		5*time.Second,
+		CartoFacadeTimeoutForTest,
+		CartoFacadeInternalTimeoutForTest,
 		nil,
 		nil,
 	)

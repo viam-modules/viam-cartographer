@@ -65,15 +65,15 @@ type Mock struct {
 		currentReading IMUReading,
 		readingTimestamp time.Time,
 	) error
-	GetPositionFunc func(
+	PositionFunc func(
 		ctx context.Context,
 		timeout time.Duration,
-	) (GetPosition, error)
-	GetInternalStateFunc func(
+	) (Position, error)
+	InternalStateFunc func(
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error)
-	GetPointCloudMapFunc func(
+	PointCloudMapFunc func(
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error)
@@ -176,35 +176,35 @@ func (cf *Mock) AddIMUReading(
 	return cf.AddIMUReadingFunc(ctx, timeout, imuName, currentReading, readingTimestamp)
 }
 
-// GetPosition calls the injected GetPositionFunc or the real version.
-func (cf *Mock) GetPosition(
+// Position calls the injected PositionFunc or the real version.
+func (cf *Mock) Position(
 	ctx context.Context,
 	timeout time.Duration,
-) (GetPosition, error) {
-	if cf.GetPositionFunc == nil {
-		return cf.CartoFacade.GetPosition(ctx, timeout)
+) (Position, error) {
+	if cf.PositionFunc == nil {
+		return cf.CartoFacade.Position(ctx, timeout)
 	}
-	return cf.GetPositionFunc(ctx, timeout)
+	return cf.PositionFunc(ctx, timeout)
 }
 
-// GetInternalState calls the injected GetInternalStateFunc or the real version.
-func (cf *Mock) GetInternalState(
+// InternalState calls the injected InternalStateFunc or the real version.
+func (cf *Mock) InternalState(
 	ctx context.Context,
 	timeout time.Duration,
 ) ([]byte, error) {
-	if cf.GetInternalStateFunc == nil {
-		return cf.CartoFacade.GetInternalState(ctx, timeout)
+	if cf.InternalStateFunc == nil {
+		return cf.CartoFacade.InternalState(ctx, timeout)
 	}
-	return cf.GetInternalStateFunc(ctx, timeout)
+	return cf.InternalStateFunc(ctx, timeout)
 }
 
-// GetPointCloudMap calls the injected GetPointCloudMapFunc or the real version.
-func (cf *Mock) GetPointCloudMap(
+// PointCloudMap calls the injected PointCloudMapFunc or the real version.
+func (cf *Mock) PointCloudMap(
 	ctx context.Context,
 	timeout time.Duration,
 ) ([]byte, error) {
-	if cf.GetPointCloudMapFunc == nil {
-		return cf.CartoFacade.GetPointCloudMap(ctx, timeout)
+	if cf.PointCloudMapFunc == nil {
+		return cf.CartoFacade.PointCloudMap(ctx, timeout)
 	}
-	return cf.GetPointCloudMapFunc(ctx, timeout)
+	return cf.PointCloudMapFunc(ctx, timeout)
 }

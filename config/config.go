@@ -136,7 +136,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 						"setting movement_sensor[data_frequency_hz] to 0")
 				} else {
 					optionalConfigParams.ImuDataRateMsec = defaultIMUDataRateMsec
-					logger.Warn("config did not provide movement_sensor[data_frequency_hz], "+
+					logger.Warnf("config did not provide movement_sensor[data_frequency_hz], "+
 						"setting to default value of %d", 1000/defaultIMUDataRateMsec)
 				}
 			} else {
