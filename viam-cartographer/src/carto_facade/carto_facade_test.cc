@@ -791,7 +791,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
     {
         viam_carto_get_position_response pr;
         // Test get position before any data is provided
-        // it should return an error
+        // it should return the position uninitialized error
         BOOST_TEST(viam_carto_get_position(vc, &pr) ==
                    VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
