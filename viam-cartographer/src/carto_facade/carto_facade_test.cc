@@ -791,19 +791,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
     {
         viam_carto_get_position_response pr;
         // Test get position before any data is provided
-        // it should be all zeroed out
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x == 0);
-        BOOST_TEST(pr.y == 0);
-        BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.imag == 0);
-        BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.real == 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
-
-        BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
-                   VIAM_CARTO_SUCCESS);
+        // it should return the position uninitialized error
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
     std::vector<std::vector<double>> points = {
@@ -937,19 +927,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
     {
         viam_carto_get_position_response pr;
         // Test get position before any data is provided
-        // it should be all zeroed out
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x == 0);
-        BOOST_TEST(pr.y == 0);
-        BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.imag == 0);
-        BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.real == 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
-
-        BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
-                   VIAM_CARTO_SUCCESS);
+        // it should return an error
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
     // GetPosition is unchanged from first AddLidarReading request
@@ -974,18 +954,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
 
     {
         viam_carto_get_position_response pr;
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x == 0);
-        BOOST_TEST(pr.y == 0);
-        BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.imag == 0);
-        BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.real == 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
-
-        BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
-                   VIAM_CARTO_SUCCESS);
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
     {

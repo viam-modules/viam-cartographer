@@ -118,6 +118,7 @@ class MapBuilder {
     cartographer::mapping::proto::MapBuilderOptions map_builder_options_;
     cartographer::mapping::proto::TrajectoryBuilderOptions
         trajectory_builder_options_;
+    std::atomic<bool> local_pose_initialized{false};
 
    private:
     std::mutex local_slam_result_pose_mutex;
