@@ -243,9 +243,11 @@ func TestNew(t *testing.T) {
 		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
-		_, componentReference, err := svc.Position(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "replay_lidar")
+		pose, componentReference, err := svc.Position(context.Background())
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentReference, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
 		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -290,9 +292,11 @@ func TestNew(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.UpdatingMode)
 
-		_, componentReference, err := svc.Position(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
+		pose, componentReference, err := svc.Position(context.Background())
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentReference, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
 		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -467,9 +471,11 @@ func TestNewFeatureFlag(t *testing.T) {
 		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
-		_, componentReference, err := svc.Position(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
+		pose, componentReference, err := svc.Position(context.Background())
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentReference, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
 		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -514,9 +520,11 @@ func TestNewFeatureFlag(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.UpdatingMode)
 
-		_, componentReference, err := svc.Position(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "good_lidar")
+		pose, componentReference, err := svc.Position(context.Background())
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentReference, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
 		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
