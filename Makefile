@@ -1,9 +1,6 @@
 BUILD_CHANNEL?=local
-MKDIR_P = mkdir -p
-
 BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
 BIN_OUTPUT_PATH = bin/$(shell uname -s)-$(shell uname -m)
-
 TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
 GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
@@ -107,9 +104,6 @@ viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
 
 cartographer-module: viam-cartographer/build/unit_tests
 	rm -f $(BIN_OUTPUT_PATH)/cartographer-module && mkdir -p bin
-	echo HHIIIII
-	echo $(shell pwd)/viam-cartographer/$(BUILD_DIR)
-	echo $(shell pwd)/viam-cartographer/$(BUILD_DIR)/cartographer
 # Newer versions of abseil require extra ld flags in our module, so this ugly thing.
 # It's expected that if NOT using brew, a prebuilt environment (like canon) is in use with the older abseil installed.
 	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
