@@ -6,8 +6,8 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v?[0-9]+.[0-9]+.[0-9]+'
+  release:
+    types: [released]
 
 env:
   VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.0.0-{0}.{1}', github.ref_name, github.run_number) }}
@@ -60,6 +60,7 @@ jobs:
         tar czf module.tar.gz cartographer-module.AppImage
 
     - uses: viamrobotics/upload-module@main
+      if: github.event_name == 'release'
       with:
         module-path: module.tar.gz
         platform: ${{ matrix.platform }}
