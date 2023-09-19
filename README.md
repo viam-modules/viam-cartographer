@@ -136,6 +136,9 @@ git submodule update --init --recursive
 ```
 
 ### Troubleshooting Build Failures
+
+#### Protobuf errors
+
 When building on `MacOS` and seeing errors related to `protobuf` such as
 
 ```
@@ -187,6 +190,27 @@ echo $PATH
 ```
 protoc --version
 ```
+
+#### CMake error about CMakeCache.txt
+
+If you see an error during `make build` like:
+
+```
+$ make build
+Submodule found successfully
+grep -q viam-patched viam-cartographer/cartographer/CMakeLists.txt || \
+	(cd viam-cartographer/cartographer && git checkout . && git apply ../cartographer_patches/carto.patch)
+buf generate --template ./buf/buf.gen.yaml buf.build/viamrobotics/api
+buf generate --template ./buf/buf.grpc.gen.yaml buf.build/viamrobotics/api
+buf generate --template ./buf/buf.gen.yaml buf.build/googleapis/googleapis
+# Touch this file so that we don't regenerate the buf compiled C++ files
+# every time we build
+cd viam-cartographer && cmake -Bbuild -G Ninja -DCMAKE_PREFIX_PATH=/opt/homebrew -DQt5_DIR=/opt/homebrew/opt/qt@5/lib/cmake/Qt5 && cmake --build build
+CMake Error: The current CMakeCache.txt directory /Users/eshamaharishi/Documents/code/viam-cartographer/viam-cartographer/build/CMakeCache.txt is different than the directory /host/viam-cartographer/build where CMakeCache.txt was created. This may result in binaries being created in the wrong place. If you are not sure, reedit the CMakeCache.txt
+CMake Error: The source "/Users/eshamaharishi/Documents/code/viam-cartographer/viam-cartographer/CMakeLists.txt" does not match the source "/host/viam-cartographer/CMakeLists.txt" used to generate cache.  Re-run cmake with a different source directory.
+```
+
+then you probably previously built for a different architecture. You should run `make clean` and then run `make build` again.
 
 ## License
 Copyright 2023 Viam Inc.
