@@ -5,6 +5,7 @@ TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
 GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
 GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+CGO_BUILD_LDFLAGS := -L$(shell pwd)/viam-cartographer/$(BUILD_DIR) -L$(shell pwd)/viam-cartographer/$(BUILD_DIR)/cartographer
 SHELL := /usr/bin/env bash
 export PATH := $(TOOL_BIN):$(PATH)
 export GOBIN := $(TOOL_BIN)
@@ -107,7 +108,7 @@ cartographer-module: viam-cartographer/build/unit_tests
 # Newer versions of abseil require extra ld flags in our module, so this ugly thing.
 # It's expected that if NOT using brew, a prebuilt environment (like canon) is in use with the older abseil installed.
 	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
-	export CGO_LDFLAGS="$$CGO_LDFLAGS -L$(shell pwd)/viam-cartographer/$(BUILD_DIR) -L$(shell pwd)/viam-cartographer/$(BUILD_DIR)/cartographer"; \
+	export CGO_LDFLAGS="$$CGO_LDFLAGS $(CGO_BUILD_LDFLAGS)"; \
 	test "$$absl_version" -gt "20230801" && export CGO_LDFLAGS="$$CGO_LDFLAGS -labsl_log_internal_message -labsl_log_internal_check_op" || true; \
 	go build $(GO_BUILD_LDFLAGS) -o $(BIN_OUTPUT_PATH)/cartographer-module module/main.go
 
@@ -143,6 +144,9 @@ test-cpp-asan: build-asan
 	viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 test-go:
+	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
+	export CGO_LDFLAGS="$$CGO_LDFLAGS $(CGO_BUILD_LDFLAGS)"; \
+	test "$$absl_version" -gt "20230801" && export CGO_LDFLAGS="$$CGO_LDFLAGS -labsl_log_internal_message -labsl_log_internal_check_op" || true; \
 	go test -race ./...
 
 test: test-cpp test-go
