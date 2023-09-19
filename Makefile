@@ -129,18 +129,18 @@ setup-cpp-debug:
 	sudo apt install -y valgrind gdb
 
 test-cpp:
-	viam-cartographer/build/unit_tests -p -l all
+	viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 # Linux only
 test-cpp-valgrind: build-debug
-	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all
+	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 # Linux only
 test-cpp-gdb: build-debug
-	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all
+	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 test-cpp-asan: build-asan
-	viam-cartographer/build/unit_tests -p -l all
+	viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 test-go:
 	go test -race ./...
