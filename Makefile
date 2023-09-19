@@ -41,7 +41,7 @@ grpc/buf_clean:
 	rm -rf grpc
 
 clean:
-	rm -rf grpc bin viam-cartographer/build
+	rm -rf grpc bin viam-cartographer/$(BUILD_DIR)
 
 clean-all:
 	git clean -fxd
