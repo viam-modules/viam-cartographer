@@ -19,17 +19,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: [ubuntu-latest]
+          - arch: [x64, linux, self-hosted]
             image: ghcr.io/viamrobotics/canon:amd64-cache
             platform: linux/amd64
-          - arch: [buildjet-2vcpu-ubuntu-2204-arm]
+          - arch: [arm64, linux, self-hosted]
             image: ghcr.io/viamrobotics/canon:arm64-cache
             platform: linux/arm64
     runs-on: ${{ matrix.arch }}
     container:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
     - name: Check out code
