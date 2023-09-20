@@ -6,8 +6,8 @@ concurrency:
 on:
   workflow_dispatch:
   push:
-    tags:
-      - 'v?[0-9]+.[0-9]+.[0-9]+'
+  release:
+    types: [released]
 
 env:
   VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.0.0-{0}.{1}', github.ref_name, github.run_number) }}
@@ -19,17 +19,17 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - arch: [ubuntu-latest]
+          - arch: [x64, linux, self-hosted]
             image: ghcr.io/viamrobotics/canon:amd64-cache
             platform: linux/amd64
-          - arch: [buildjet-2vcpu-ubuntu-2204-arm]
+          - arch: [arm64, linux, self-hosted]
             image: ghcr.io/viamrobotics/canon:arm64-cache
             platform: linux/arm64
     runs-on: ${{ matrix.arch }}
     container:
       image: ${{ matrix.image }}
       options: --platform ${{ matrix.platform }}
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
     - name: Check out code
@@ -60,6 +60,7 @@ jobs:
         tar czf module.tar.gz cartographer-module.AppImage
 
     - uses: viamrobotics/upload-module@main
+      if: github.event_name == 'release'
       with:
         module-path: module.tar.gz
         platform: ${{ matrix.platform }}
