@@ -10,7 +10,7 @@ on:
     types: [released]
 
 env:
-  VERSION: ${{ github.event_name == 'release' && github.ref_name || format('0.0.0-{0}.{1}', github.ref_name, github.run_number) }}
+  VERSION: ${{ github.ref_name }}
 
 jobs:
   appimage:
@@ -59,11 +59,14 @@ jobs:
         cp etc/packaging/appimages/deploy/cartographer-module-*.AppImage cartographer-module.AppImage
         tar czf module.tar.gz cartographer-module.AppImage
 
+    - id: stripped-version
+      run: echo version=${VERSION#v} >> $GITHUB_OUTPUT
+
     - uses: viamrobotics/upload-module@main
       if: github.event_name == 'release'
       with:
         module-path: module.tar.gz
         platform: ${{ matrix.platform }}
-        version: ${{ env.VERSION }}
+        version: ${{ steps.stripped-version.outputs.version }}
         key-id: ${{ secrets.viam_key_id }}
         key-value: ${{ secrets.viam_key_value }}
