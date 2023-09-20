@@ -1,8 +1,11 @@
 BUILD_CHANNEL?=local
+BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
+BIN_OUTPUT_PATH = bin/$(shell uname -s)-$(shell uname -m)
 TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
 GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
 GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+CGO_BUILD_LDFLAGS := -L$(shell pwd)/viam-cartographer/$(BUILD_DIR) -L$(shell pwd)/viam-cartographer/$(BUILD_DIR)/cartographer
 SHELL := /usr/bin/env bash
 export PATH := $(TOOL_BIN):$(PATH)
 export GOBIN := $(TOOL_BIN)
@@ -39,7 +42,7 @@ grpc/buf_clean:
 	rm -rf grpc
 
 clean:
-	rm -rf grpc bin viam-cartographer/build
+	rm -rf grpc $(BIN_OUTPUT_PATH) viam-cartographer/$(BUILD_DIR)
 
 clean-all:
 	git clean -fxd
@@ -98,15 +101,16 @@ endif
 build: cartographer-module
 
 viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
-	cd viam-cartographer && cmake -Bbuild -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build build
+	cd viam-cartographer && cmake -B$(BUILD_DIR) -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build $(BUILD_DIR)
 
 cartographer-module: viam-cartographer/build/unit_tests
-	rm -f bin/cartographer-module && mkdir -p bin
+	rm -f $(BIN_OUTPUT_PATH)/cartographer-module && mkdir -p bin
 # Newer versions of abseil require extra ld flags in our module, so this ugly thing.
 # It's expected that if NOT using brew, a prebuilt environment (like canon) is in use with the older abseil installed.
 	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
+	export CGO_LDFLAGS="$$CGO_LDFLAGS $(CGO_BUILD_LDFLAGS)"; \
 	test "$$absl_version" -gt "20230801" && export CGO_LDFLAGS="$$CGO_LDFLAGS -labsl_log_internal_message -labsl_log_internal_check_op" || true; \
-	go build $(GO_BUILD_LDFLAGS) -o bin/cartographer-module module/main.go
+	go build $(GO_BUILD_LDFLAGS) -o $(BIN_OUTPUT_PATH)/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 
@@ -126,20 +130,23 @@ setup-cpp-debug:
 	sudo apt install -y valgrind gdb
 
 test-cpp:
-	viam-cartographer/build/unit_tests -p -l all
+	viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 # Linux only
 test-cpp-valgrind: build-debug
-	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/build/unit_tests -p -l all
+	valgrind --error-exitcode=1 --leak-check=full -s viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 # Linux only
 test-cpp-gdb: build-debug
-	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/build/unit_tests -p -l all
+	gdb --batch --ex run --ex bt --ex q --args viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 test-cpp-asan: build-asan
-	viam-cartographer/build/unit_tests -p -l all
+	viam-cartographer/$(BUILD_DIR)/unit_tests -p -l all
 
 test-go:
+	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
+	export CGO_LDFLAGS="$$CGO_LDFLAGS $(CGO_BUILD_LDFLAGS)"; \
+	test "$$absl_version" -gt "20230801" && export CGO_LDFLAGS="$$CGO_LDFLAGS -labsl_log_internal_message -labsl_log_internal_check_op" || true; \
 	go test -race ./...
 
 test: test-cpp test-go
@@ -150,6 +157,6 @@ install-lua-files:
 
 install: install-lua-files
 	sudo rm -f /usr/local/bin/cartographer-module
-	sudo cp bin/cartographer-module /usr/local/bin/cartographer-module
+	sudo cp $(BIN_OUTPUT_PATH)/cartographer-module /usr/local/bin/cartographer-module
 
 include *.make
