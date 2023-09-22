@@ -29,7 +29,7 @@ func testValidateTesthelper(
 		}
 
 		if imuIntegrationEnabled {
-			cfgService.Attributes["imu_integration_enabled"] = true
+			cfgService.Attributes["new_config_flag"] = true
 		}
 
 		if cloudStoryEnabled {
@@ -184,7 +184,7 @@ func makeCfgService(IMUIntegrationEnabled, cloudStoryEnabled bool) resource.Conf
 	}
 
 	if IMUIntegrationEnabled {
-		cfgService.Attributes["imu_integration_enabled"] = true
+		cfgService.Attributes["new_config_flag"] = true
 		cfgService.Attributes["camera"] = map[string]string{
 			"name": "a",
 		}
