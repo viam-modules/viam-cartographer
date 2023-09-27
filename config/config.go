@@ -30,7 +30,7 @@ type Config struct {
 	EnableMapping     *bool  `json:"enable_mapping"`
 	UseCloudSlam      *bool  `json:"use_cloud_slam"`
 
-	NewConfigFlag bool `json:"new_config_param"`
+	NewConfigFlag bool `json:"new_config_flag"`
 }
 
 // OptionalConfigParams holds the optional config parameters of SLAM.
