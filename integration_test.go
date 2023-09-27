@@ -158,9 +158,9 @@ func testHelperCartographer(
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
-		MapRateSec:            &mapRateSec,
-		DataDirectory:         dataDirectory,
-		IMUIntegrationEnabled: true,
+		MapRateSec:    &mapRateSec,
+		DataDirectory: dataDirectory,
+		NewConfigFlag: true,
 	}
 
 	// Add lidar component to config (required)
