@@ -14,7 +14,7 @@ import (
 
 func testValidateTesthelper(
 	t *testing.T,
-	imuIntegrationEnabled bool,
+	newConfigFlag bool,
 	cloudStoryEnabled bool,
 	suffix string,
 ) {
@@ -24,12 +24,12 @@ func testValidateTesthelper(
 	t.Run(fmt.Sprintf("Empty config %s", suffix), func(t *testing.T) {
 		model := resource.DefaultModelFamily.WithModel("test")
 		cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
-		if imuIntegrationEnabled || cloudStoryEnabled {
+		if newConfigFlag || cloudStoryEnabled {
 			cfgService.Attributes = make(map[string]interface{})
 		}
 
-		if imuIntegrationEnabled {
-			cfgService.Attributes["imu_integration_enabled"] = true
+		if newConfigFlag {
+			cfgService.Attributes["new_config_flag"] = true
 		}
 
 		if cloudStoryEnabled {
@@ -37,7 +37,7 @@ func testValidateTesthelper(
 		}
 		_, err := newConfig(cfgService)
 
-		if imuIntegrationEnabled {
+		if newConfigFlag {
 			test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"camera[name]\" is required"))
 		} else {
 			test.That(t, err, test.ShouldBeError, newError("error validating \"services.slam.attributes.fake\": \"sensors\" must not be empty"))
@@ -45,14 +45,13 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("Simplest valid config %s", suffix), func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run(fmt.Sprintf("Config without required fields %s", suffix), func(t *testing.T) {
-		requiredFields := getRequiredFields(imuIntegrationEnabled, cloudStoryEnabled)
-
+		requiredFields := getRequiredFields(newConfigFlag, cloudStoryEnabled)
 		dataDirErr := utils.NewConfigValidationFieldRequiredError(testCfgPath, "data_dir")
 		sensorErr := utils.NewConfigValidationError(testCfgPath, errSensorsMustNotBeEmpty)
 		cameraErr := utils.NewConfigValidationError(testCfgPath, errCameraMustHaveName)
@@ -64,7 +63,7 @@ func testValidateTesthelper(
 		}
 		for _, requiredField := range requiredFields {
 			logger.Debugf("Testing SLAM config without %s\n", requiredField)
-			cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+			cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 			delete(cfgService.Attributes, requiredField)
 			_, err := newConfig(cfgService)
 
@@ -72,7 +71,7 @@ func testValidateTesthelper(
 		}
 		// Test for missing config_params attributes
 		logger.Debug("Testing SLAM config without config_params[mode]")
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
 		_, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
@@ -81,7 +80,7 @@ func testValidateTesthelper(
 	t.Run(fmt.Sprintf("Config with invalid parameter type %s", suffix), func(t *testing.T) {
 		key := "data_dir"
 
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		cfgService.Attributes[key] = true
 
 		_, err := newConfig(cfgService)
@@ -96,8 +95,8 @@ func testValidateTesthelper(
 
 	t.Run(fmt.Sprintf("Config with out of range values %s", suffix), func(t *testing.T) {
 		var mapRateSecError error
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
-		if imuIntegrationEnabled {
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
+		if newConfigFlag {
 			cfgService.Attributes["camera"] = map[string]string{
 				"name":              "a",
 				"data_frequency_hz": "-1",
@@ -130,7 +129,7 @@ func testValidateTesthelper(
 	})
 
 	t.Run(fmt.Sprintf("All parameters e2e %s", suffix), func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a", "b"}
 		cfgService.Attributes["data_rate_msec"] = 1001
 		cfgService.Attributes["map_rate_sec"] = 1002
@@ -150,10 +149,10 @@ func testValidateTesthelper(
 	})
 }
 
-func getRequiredFields(imuIntegrationEnabled, cloudStoryEnabled bool) []string {
+func getRequiredFields(newConfigFlag, cloudStoryEnabled bool) []string {
 	requiredFields := []string{}
 
-	if imuIntegrationEnabled {
+	if newConfigFlag {
 		requiredFields = append(requiredFields, "camera")
 	} else {
 		requiredFields = append(requiredFields, "sensors")
@@ -166,16 +165,16 @@ func getRequiredFields(imuIntegrationEnabled, cloudStoryEnabled bool) []string {
 }
 
 func TestValidate(t *testing.T) {
-	for _, imuEnabled := range []bool{true, false} {
+	for _, newConfigFlag := range []bool{true, false} {
 		for _, cloudStoryEnabled := range []bool{true, false} {
-			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-			testValidateTesthelper(t, imuEnabled, cloudStoryEnabled, suffix)
+			suffix := fmt.Sprintf("with newConfigFlag = %t & cloudStoryEnabled = %t", newConfigFlag, cloudStoryEnabled)
+			testValidateTesthelper(t, newConfigFlag, cloudStoryEnabled, suffix)
 		}
 	}
 }
 
 // makeCfgService creates the simplest possible config that can pass validation.
-func makeCfgService(IMUIntegrationEnabled, cloudStoryEnabled bool) resource.Config {
+func makeCfgService(NewConfigFlag, cloudStoryEnabled bool) resource.Config {
 	model := resource.DefaultModelFamily.WithModel("test")
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: model}
 	cfgService.Attributes = map[string]interface{}{
@@ -183,8 +182,8 @@ func makeCfgService(IMUIntegrationEnabled, cloudStoryEnabled bool) resource.Conf
 		"data_dir":      "path",
 	}
 
-	if IMUIntegrationEnabled {
-		cfgService.Attributes["imu_integration_enabled"] = true
+	if NewConfigFlag {
+		cfgService.Attributes["new_config_flag"] = true
 		cfgService.Attributes["camera"] = map[string]string{
 			"name": "a",
 		}
@@ -201,14 +200,14 @@ func makeCfgService(IMUIntegrationEnabled, cloudStoryEnabled bool) resource.Conf
 
 func getOptionalParametersTestHelper(
 	t *testing.T,
-	imuIntegrationEnabled bool,
+	newConfigFlag bool,
 	cloudStoryEnabled bool,
 	suffix string,
 ) {
 	logger := golog.NewTestLogger(t)
 
 	t.Run(fmt.Sprintf("Pass default parameters %s", suffix), func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
@@ -230,8 +229,8 @@ func getOptionalParametersTestHelper(
 	})
 
 	t.Run(fmt.Sprintf("Return overrides %s", suffix), func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
-		if imuIntegrationEnabled {
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
+		if newConfigFlag {
 			cfgService.Attributes["camera"] = map[string]string{
 				"name":              "testNameCamera",
 				"data_frequency_hz": "2",
@@ -259,7 +258,7 @@ func getOptionalParametersTestHelper(
 			1002,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
-		if imuIntegrationEnabled {
+		if newConfigFlag {
 			test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "testNameSensor")
 			test.That(t, optionalConfigParams.ImuDataRateMsec, test.ShouldEqual, 500)
 			test.That(t, optionalConfigParams.LidarDataRateMsec, test.ShouldEqual, 500)
@@ -277,7 +276,7 @@ func getOptionalParametersTestHelper(
 	})
 
 	t.Run(fmt.Sprintf("Pass invalid existing map %s", suffix), func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		cfgService.Attributes["existing_map"] = "test-file"
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
@@ -298,10 +297,10 @@ func getOptionalParametersTestHelper(
 	})
 
 	t.Run(fmt.Sprintf("config that puts cartographer in offline mode and in localization mode %s", suffix), func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		cfgService.Attributes["existing_map"] = "test-file.pbstream"
 		cfgService.Attributes["enable_mapping"] = false
-		if imuIntegrationEnabled {
+		if newConfigFlag {
 			cfgService.Attributes["camera"] = map[string]string{
 				"name":              "testcam",
 				"data_frequency_hz": "0",
@@ -318,7 +317,7 @@ func getOptionalParametersTestHelper(
 			1002,
 			logger)
 		if cloudStoryEnabled {
-			if imuIntegrationEnabled {
+			if newConfigFlag {
 				test.That(t, err, test.ShouldBeError, errLocalizationInOfflineModeIMU)
 			} else {
 				test.That(t, err, test.ShouldBeError, errLocalizationInOfflineMode)
@@ -331,19 +330,19 @@ func getOptionalParametersTestHelper(
 		}
 	})
 
-	if imuIntegrationEnabled {
-		sensorAttributeTestHelper(t, logger, imuIntegrationEnabled, cloudStoryEnabled)
+	if newConfigFlag {
+		sensorAttributeTestHelper(t, logger, newConfigFlag, cloudStoryEnabled)
 	}
 }
 
 func sensorAttributeTestHelper(
 	t *testing.T,
 	logger *zap.SugaredLogger,
-	imuIntegrationEnabled bool,
+	newConfigFlag bool,
 	cloudStoryEnabled bool,
 ) {
 	t.Run("Unit test return error if lidar data frequency is invalid", func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "b",
@@ -360,7 +359,7 @@ func sensorAttributeTestHelper(
 	})
 
 	t.Run("Unit test return error if imu data frequency is invalid", func(t *testing.T) {
-		cfgService := makeCfgService(imuIntegrationEnabled, cloudStoryEnabled)
+		cfgService := makeCfgService(newConfigFlag, cloudStoryEnabled)
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",
 			"data_frequency_hz": "1",
@@ -382,10 +381,10 @@ func sensorAttributeTestHelper(
 }
 
 func TestGetOptionalParameters(t *testing.T) {
-	for _, imuEnabled := range []bool{true, false} {
+	for _, newConfigFlag := range []bool{true, false} {
 		for _, cloudStoryEnabled := range []bool{true, false} {
-			suffix := fmt.Sprintf("with imuIntegrationEnabled = %t & cloudStoryEnabled = %t", imuEnabled, cloudStoryEnabled)
-			getOptionalParametersTestHelper(t, imuEnabled, cloudStoryEnabled, suffix)
+			suffix := fmt.Sprintf("with newConfigFlag = %t & cloudStoryEnabled = %t", newConfigFlag, cloudStoryEnabled)
+			getOptionalParametersTestHelper(t, newConfigFlag, cloudStoryEnabled, suffix)
 		}
 	}
 }

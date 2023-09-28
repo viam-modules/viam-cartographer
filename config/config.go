@@ -17,19 +17,21 @@ func newError(configError string) error {
 
 // Config describes how to configure the SLAM service.
 type Config struct {
-	Camera                map[string]string `json:"camera"`
-	MovementSensor        map[string]string `json:"movement_sensor"`
-	ConfigParams          map[string]string `json:"config_params"`
-	DataDirectory         string            `json:"data_dir"`
-	MapRateSec            *int              `json:"map_rate_sec"`
-	IMUIntegrationEnabled bool              `json:"imu_integration_enabled"`
-	Sensors               []string          `json:"sensors"`
-	DataRateMsec          *int              `json:"data_rate_msec"`
+	Camera         map[string]string `json:"camera"`
+	MovementSensor map[string]string `json:"movement_sensor"`
+	ConfigParams   map[string]string `json:"config_params"`
+	DataDirectory  string            `json:"data_dir"`
+	MapRateSec     *int              `json:"map_rate_sec"`
+	Sensors        []string          `json:"sensors"`
+	DataRateMsec   *int              `json:"data_rate_msec"`
 
 	CloudStoryEnabled bool   `json:"cloud_story_enabled"`
 	ExistingMap       string `json:"existing_map"`
 	EnableMapping     *bool  `json:"enable_mapping"`
 	UseCloudSlam      *bool  `json:"use_cloud_slam"`
+	// NewConfigFlag is used to access the config changes from imu and cloud story work while providing backwards compatibility
+	// To be removed during JIRA Ticket: RSDK-4742 https://viam.atlassian.net/browse/RSDK-4742
+	NewConfigFlag bool `json:"new_config_flag"`
 }
 
 // OptionalConfigParams holds the optional config parameters of SLAM.
@@ -54,7 +56,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 	cameraName := ""
 	imuName := ""
 	imuExists := false
-	if config.IMUIntegrationEnabled {
+	if config.NewConfigFlag {
 		var ok bool
 		cameraName, ok = config.Camera["name"]
 		if !ok {
@@ -111,7 +113,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 ) (OptionalConfigParams, error) {
 	var optionalConfigParams OptionalConfigParams
 	// feature flag for new config
-	if config.IMUIntegrationEnabled {
+	if config.NewConfigFlag {
 		strCameraDataFreqHz, exists := config.Camera["data_frequency_hz"]
 		if !exists {
 			optionalConfigParams.LidarDataRateMsec = defaultLidarDataRateMsec
@@ -174,7 +176,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataRateMsec, defaultIMUD
 			optionalConfigParams.EnableMapping = *config.EnableMapping
 		}
 
-		if err := validateModes(optionalConfigParams, config.IMUIntegrationEnabled); err != nil {
+		if err := validateModes(optionalConfigParams, config.NewConfigFlag); err != nil {
 			return OptionalConfigParams{}, err
 		}
 
