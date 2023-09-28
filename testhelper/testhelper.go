@@ -182,7 +182,7 @@ func CreateSLAMService(
 	// feature flag for IMU Integration sets whether to use the dictionary or list format for configuring sensors
 	cameraName := ""
 	imuName := ""
-	if cfg.IMUIntegrationEnabled {
+	if cfg.NewConfigFlag {
 		cameraName = cfg.Camera["name"]
 		imuName = cfg.MovementSensor["name"]
 	} else {
