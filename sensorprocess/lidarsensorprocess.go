@@ -48,6 +48,9 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	// get next lidar data response
 	tsr, status, err := getTimedLidarSensorReading(ctx, config)
 	if err != nil {
+		if tsr.Replay {
+			time.Sleep(time.Duration(config.LidarDataRateMsec) * time.Millisecond)
+		}
 		return status
 	}
 
@@ -56,8 +59,10 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 
 	// add lidar data to cartographer and sleep remainder of time interval
 	timeToSleep := config.tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime)
-	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-	config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
+	if !tsr.Replay {
+		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+		config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
+	}
 
 	return false
 }
