@@ -29,7 +29,8 @@ type Config struct {
 	ExistingMap       string `json:"existing_map"`
 	EnableMapping     *bool  `json:"enable_mapping"`
 	UseCloudSlam      *bool  `json:"use_cloud_slam"`
-
+	// NewConfigFlag is used to access the config changes from imu and cloud story work while providing backwards compatibility
+	// To be removed during JIRA Ticket: RSDK-4742 https://viam.atlassian.net/browse/RSDK-4742
 	NewConfigFlag bool `json:"new_config_flag"`
 }
 
