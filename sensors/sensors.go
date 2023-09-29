@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -12,7 +13,9 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/components/camera"
+	"go.viam.com/rdk/components/camera/replaypcd"
 	"go.viam.com/rdk/components/movementsensor"
+	"go.viam.com/rdk/components/movementsensor/replay"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
@@ -155,6 +158,11 @@ func ValidateGetLidarData(
 		}
 
 		logger.Debugw("ValidateGetLidarData hit error: ", "error", err)
+		// if the sensor is a replay camera with no data ready, allow validation to pass
+		// offline mode will stop the mapping session if the sensor still has no data
+		if strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()) {
+			break
+		}
 		if time.Since(startTime) >= sensorValidationMaxTimeout {
 			return errors.Wrap(err, "ValidateGetLidarData timeout")
 		}
@@ -189,6 +197,11 @@ func ValidateGetIMUData(
 		}
 
 		logger.Debugw("ValidateGetIMUData hit error: ", "error", err)
+		// if the sensor is a replay imu with no data ready, allow validation to pass
+		// offline mode will stop the mapping session if the sensor still has no data
+		if strings.Contains(err.Error(), replay.ErrEndOfDataset.Error()) {
+			break
+		}
 		if time.Since(startTime) >= sensorValidationMaxTimeout {
 			return errors.Wrap(err, "ValidateGetIMUData timeout")
 		}
