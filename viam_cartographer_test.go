@@ -358,10 +358,10 @@ func TestNewFeatureFlag(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			IMUIntegrationEnabled: true,
+			Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			NewConfigFlag: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -382,11 +382,11 @@ func TestNewFeatureFlag(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			IMUIntegrationEnabled: true,
-			MovementSensor:        map[string]string{"name": "good_imu", "data_frequency_hz": testIMUDataFreqHz},
+			Camera:         map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+			ConfigParams:   map[string]string{"mode": "2d"},
+			DataDirectory:  dataDirectory,
+			NewConfigFlag:  true,
+			MovementSensor: map[string]string{"name": "good_imu", "data_frequency_hz": testIMUDataFreqHz},
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -408,10 +408,10 @@ func TestNewFeatureFlag(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "lidar_with_erroring_functions", "data_frequency_hz": testLidarDataFreqHz},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			IMUIntegrationEnabled: true,
+			Camera:        map[string]string{"name": "lidar_with_erroring_functions", "data_frequency_hz": testLidarDataFreqHz},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			NewConfigFlag: true,
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -433,11 +433,11 @@ func TestNewFeatureFlag(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			IMUIntegrationEnabled: true,
-			MovementSensor:        map[string]string{"name": "imu_with_invalid_properties", "data_frequency_hz": testIMUDataFreqHz},
+			Camera:         map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+			ConfigParams:   map[string]string{"mode": "2d"},
+			DataDirectory:  dataDirectory,
+			NewConfigFlag:  true,
+			MovementSensor: map[string]string{"name": "imu_with_invalid_properties", "data_frequency_hz": testIMUDataFreqHz},
 		}
 
 		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -454,11 +454,11 @@ func TestNewFeatureFlag(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "good_lidar"},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			MapRateSec:            &_zeroInt,
-			IMUIntegrationEnabled: true,
+			Camera:        map[string]string{"name": "good_lidar"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			MapRateSec:    &_zeroInt,
+			NewConfigFlag: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -507,10 +507,10 @@ func TestNewFeatureFlag(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "good_lidar"},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			IMUIntegrationEnabled: true,
+			Camera:        map[string]string{"name": "good_lidar"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			NewConfigFlag: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -560,10 +560,10 @@ func TestNewFeatureFlag(t *testing.T) {
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			IMUIntegrationEnabled: true,
+			Camera:        map[string]string{},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			NewConfigFlag: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -588,11 +588,11 @@ func TestClose(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:                map[string]string{"name": "replay_lidar"},
-			ConfigParams:          map[string]string{"mode": "2d"},
-			DataDirectory:         dataDirectory,
-			MapRateSec:            &testMapRateSec,
-			IMUIntegrationEnabled: true,
+			Camera:        map[string]string{"name": "replay_lidar"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			DataDirectory: dataDirectory,
+			MapRateSec:    &testMapRateSec,
+			NewConfigFlag: true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -641,11 +641,11 @@ func TestDoCommand(t *testing.T) {
 
 	test.That(t, err, test.ShouldBeNil)
 	attrCfg := &vcConfig.Config{
-		Camera:                map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
-		ConfigParams:          map[string]string{"mode": "2d", "test_param": "viam"},
-		DataDirectory:         dataDirectory,
-		MapRateSec:            &testMapRateSec,
-		IMUIntegrationEnabled: true,
+		Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
+		DataDirectory: dataDirectory,
+		MapRateSec:    &testMapRateSec,
+		NewConfigFlag: true,
 	}
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 	test.That(t, err, test.ShouldBeNil)

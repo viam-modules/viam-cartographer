@@ -202,7 +202,7 @@ func New(
 
 	// feature flag for new config
 	lidarName := ""
-	if svcConfig.IMUIntegrationEnabled {
+	if svcConfig.NewConfigFlag {
 		lidarName = svcConfig.Camera["name"]
 	} else {
 		lidarName = svcConfig.Sensors[0]
