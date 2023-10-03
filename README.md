@@ -1,5 +1,9 @@
 # viam-cartographer
 
+## User documentation
+
+For user documentation, see [Cartographer Modular Resource](https://docs.viam.com/services/slam/cartographer/).
+
 ## (In)stability Notice
 > **Warning**
 > This is an experimental feature. Stability is not guaranteed. Breaking changes are likely to occur, and occur often.
@@ -29,8 +33,6 @@ Install viam-cartographer:
     ```bash
     brew tap viamrobotics/brews && brew install cartographer-module
     ```
-
-For next steps, see the [Run Cartographer SLAM on your Robot with a LIDAR Tutorial](https://docs.viam.com/services/slam/run-slam-cartographer/).
 
 ## Development
 
