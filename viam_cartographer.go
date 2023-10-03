@@ -45,7 +45,7 @@ const (
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
 	defaultSensorValidationIntervalSec   = 1
-	defaultCartoFacadeTimeout            = 5 * time.Second
+	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
 )
