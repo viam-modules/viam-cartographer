@@ -159,7 +159,8 @@ func ValidateGetLidarData(
 
 		logger.Debugw("ValidateGetLidarData hit error: ", "error", err)
 		// if the sensor is a replay camera with no data ready, allow validation to pass
-		// offline mode will stop the mapping session if the sensor still has no data
+		// offline mode will stop the mapping session if the sensor still has no data,
+		// while online mode will continue mapping once data is found by the replay sensor
 		if strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()) {
 			break
 		}
@@ -198,7 +199,8 @@ func ValidateGetIMUData(
 
 		logger.Debugw("ValidateGetIMUData hit error: ", "error", err)
 		// if the sensor is a replay imu with no data ready, allow validation to pass
-		// offline mode will stop the mapping session if the sensor still has no data
+		// offline mode will stop the mapping session if the sensor still has no data,
+		// while online mode will continue mapping once data is found by the replay sensor
 		if strings.Contains(err.Error(), replay.ErrEndOfDataset.Error()) {
 			break
 		}
