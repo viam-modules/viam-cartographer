@@ -167,6 +167,7 @@ func ValidateGetLidarData(
 		if time.Since(startTime) >= sensorValidationMaxTimeout {
 			return errors.Wrap(err, "ValidateGetLidarData timeout")
 		}
+
 		if !goutils.SelectContextOrWait(ctx, sensorValidationInterval) {
 			return ctx.Err()
 		}
