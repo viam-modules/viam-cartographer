@@ -239,14 +239,12 @@ func New(
 	lidar := Lidar{
 		name:            lidarName,
 		dataFrequencyHz: optionalConfigParams.LidarDataFrequencyHz,
-		actual:          lidarObject,
 		timed:           timedLidar,
 	}
 
 	imu := IMU{
 		name:            optionalConfigParams.ImuName,
 		dataFrequencyHz: optionalConfigParams.ImuDataFrequencyHz,
-		actual:          imuObject,
 		timed:           timedIMU,
 	}
 
@@ -494,7 +492,6 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 type Lidar struct {
 	name            string
 	dataFrequencyHz int
-	actual          s.Lidar
 	timed           s.TimedLidarSensor
 }
 
@@ -502,7 +499,6 @@ type Lidar struct {
 type IMU struct {
 	name            string
 	dataFrequencyHz int
-	actual          s.IMU
 	timed           s.TimedIMUSensor
 }
 
