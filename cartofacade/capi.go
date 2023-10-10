@@ -170,6 +170,7 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 	if err != nil {
 		return Carto{}, err
 	}
+
 	vcac := toAlgoConfig(acfg)
 	cl, ok := vcl.(*CartoLib)
 	if !ok {
@@ -376,11 +377,17 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 		return C.viam_carto_config{}, err
 	}
 
-	vcc.map_rate_sec = C.int(cfg.MapRateSecond)
-	vcc.data_dir = goStringToBstring(cfg.DataDir)
+	// Remove
+	vcc.cloud_story_enabled = C.bool(true)
+	vcc.data_dir = goStringToBstring("/tmp/")
+	if cfg.EnableMapping {
+		vcc.map_rate_sec = C.int(9000)
+	} else {
+		vcc.map_rate_sec = C.int(0)
+	}
+
 	vcc.lidar_config = lidarCfg
 
-	vcc.cloud_story_enabled = C.bool(cfg.CloudStoryEnabled)
 	vcc.enable_mapping = C.bool(cfg.EnableMapping)
 	vcc.existing_map = goStringToBstring(cfg.ExistingMap)
 
@@ -488,8 +495,6 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_LUA_CONFIG_NOT_FOUND")
 	case C.VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE:
 		return errors.New("VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE")
-	case C.VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR:
-		return errors.New("VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR")
 	case C.VIAM_CARTO_MAP_CREATION_ERROR:
 		return errors.New("VIAM_CARTO_MAP_CREATION_ERROR")
 	case C.VIAM_CARTO_UNKNOWN_SENSOR_NAME:

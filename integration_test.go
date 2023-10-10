@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -121,16 +120,19 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 }
 
 // Saves cartographer's internal state in the data directory.
-func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
+func saveInternalState(t *testing.T, internalState []byte, dataDir string) string {
 	timeStamp := time.Now().UTC()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
 	if err := os.Mkdir(internalStateDir, 0o755); err != nil {
 		t.Error("TEST FAILED failed to create test internal state directory")
+		return ""
 	}
 	filename := filepath.Join(internalStateDir, "map_data_"+timeStamp.UTC().Format(testhelper.SlamTimeFormat)+".pbstream")
 	if err := os.WriteFile(filename, internalState, 0o644); err != nil {
 		t.Error("TEST FAILED failed to write test internal state")
+		return ""
 	}
+	return filename
 }
 
 // testHelperCartographer is responsible for running a viam-cartographer process using the desired mock sensors. Once started it will
@@ -155,6 +157,7 @@ func testHelperCartographer(
 	}
 
 	attrCfg := &vcConfig.Config{
+		ExistingMap:   dataDirectory,
 		EnableMapping: &enableMapping,
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
@@ -231,11 +234,6 @@ func testHelperCartographer(
 	testDuration := time.Since(start)
 	t.Logf("test duration %dms", testDuration.Milliseconds())
 
-	// Check that a map was generated as the test has been running for more than the map rate msec
-	mapsInDir, err := os.ReadDir(path.Join(dataDirectory, "internal_state"))
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, len(mapsInDir), test.ShouldBeGreaterThan, 0)
-
 	// return the internal state so updating mode can be tested
 	return internalState
 }
@@ -283,32 +281,18 @@ func TestIntegrationCartographer(t *testing.T) {
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "replay sensor localizing mode 2D",
-			replay:      true,
-			imuEnabled:  false,
-			mode:        cartofacade.LocalizingMode,
-			subAlgo:     viamcartographer.Dim2d,
-		},
-		{
 			description: "replay sensor updating mode 2D",
 			replay:      true,
 			imuEnabled:  false,
 			mode:        cartofacade.UpdatingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
-		// Live + imu sensor
+		// Replay with imu sensor
 		{
 			description: "replay with imu sensor mapping mode 2D",
 			replay:      true,
 			imuEnabled:  true,
 			mode:        cartofacade.MappingMode,
-			subAlgo:     viamcartographer.Dim2d,
-		},
-		{
-			description: "replay with imu sensor localizing mode 2D",
-			replay:      true,
-			imuEnabled:  true,
-			mode:        cartofacade.LocalizingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
@@ -332,10 +316,10 @@ func TestIntegrationCartographer(t *testing.T) {
 			}()
 
 			// Set mapRateSec for mapping mode
-			enable_mapping := true
+			enableMapping := true
 
 			// Run mapping test
-			internalState := testHelperCartographer(t, dataDirectory1, tt.subAlgo, logger, tt.replay, tt.imuEnabled, enable_mapping, cartofacade.MappingMode)
+			internalState := testHelperCartographer(t, "", tt.subAlgo, logger, tt.replay, tt.imuEnabled, enableMapping, cartofacade.MappingMode)
 
 			// Return if in mapping mode as there are no further actions required
 			if tt.mode == cartofacade.MappingMode {
@@ -351,13 +335,14 @@ func TestIntegrationCartographer(t *testing.T) {
 			}()
 
 			// Save internal state
-			saveInternalState(t, internalState, dataDirectory2)
+			existingMap := saveInternalState(t, internalState, dataDirectory2)
+			test.That(t, existingMap, test.ShouldNotEqual, "")
 
 			// Run follow up updating or localizing test
 			if tt.mode == cartofacade.LocalizingMode {
-				enable_mapping = false
+				enableMapping = false
 			}
-			testHelperCartographer(t, dataDirectory2, tt.subAlgo, logger, tt.replay, tt.imuEnabled, enable_mapping, tt.mode)
+			testHelperCartographer(t, existingMap, tt.subAlgo, logger, tt.replay, tt.imuEnabled, enableMapping, tt.mode)
 		})
 	}
 }

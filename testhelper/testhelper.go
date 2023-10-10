@@ -258,7 +258,7 @@ func InitInternalState(t *testing.T) (string, func()) {
 	err = os.WriteFile(filename, internalState, os.ModePerm)
 	test.That(t, err, test.ShouldBeNil)
 
-	return dataDirectory, func() {
+	return filename, func() {
 		err := os.RemoveAll(dataDirectory)
 		test.That(t, err, test.ShouldBeNil)
 	}

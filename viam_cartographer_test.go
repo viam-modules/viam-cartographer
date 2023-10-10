@@ -31,12 +31,9 @@ const (
 )
 
 var (
-	testMapRateSec   = 200
-	_zeroInt         = 0
-	_zeroTime        = time.Time{}
-	testDataRateMsec = 200
-	_true            = true
-	_false           = false
+	_zeroTime = time.Time{}
+	_true     = true
+	_false    = false
 )
 
 func TestNew(t *testing.T) {
@@ -45,13 +42,6 @@ func TestNew(t *testing.T) {
 	t.Run("Successful creation of cartographer slam service with good lidar without IMU", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
-
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
 
 		attrCfg := &vcConfig.Config{
 			Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
@@ -68,13 +58,6 @@ func TestNew(t *testing.T) {
 	t.Run("Successful creation of cartographer slam service with good lidar with IMU", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
-
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
 
 		attrCfg := &vcConfig.Config{
 			Camera:         map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
@@ -94,22 +77,14 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
 		attrCfg := &vcConfig.Config{
 			Camera:        map[string]string{"name": "lidar_with_erroring_functions", "data_frequency_hz": testLidarDataFreqHz},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			EnableMapping: &_true,
 		}
 
-		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
+		_, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
-
 			errors.New("failed to get data from lidar: ValidateGetLidarData timeout: NextPointCloud error: invalid sensor"))
 	})
 
@@ -118,13 +93,6 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		dataDirectory, err := os.MkdirTemp("", "*")
-		test.That(t, err, test.ShouldBeNil)
-		defer func() {
-			err := os.RemoveAll(dataDirectory)
-			test.That(t, err, test.ShouldBeNil)
-		}()
-
 		attrCfg := &vcConfig.Config{
 			Camera:         map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
 			ConfigParams:   map[string]string{"mode": "2d"},
@@ -132,9 +100,8 @@ func TestNew(t *testing.T) {
 			EnableMapping:  &_true,
 		}
 
-		_, err = testhelper.CreateSLAMService(t, attrCfg, logger)
+		_, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
-
 			errors.New("configuring IMU movement sensor error: 'movement_sensor' must support both LinearAcceleration and AngularVelocity"))
 	})
 
@@ -142,13 +109,14 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		_, fsCleanupFunc := testhelper.InitInternalState(t)
+		previousMap, fsCleanupFunc := testhelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
 			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			EnableMapping: &_false,
+			ExistingMap:   previousMap,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -193,13 +161,14 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		_, fsCleanupFunc := testhelper.InitInternalState(t)
+		previousMap, fsCleanupFunc := testhelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
 			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			EnableMapping: &_true,
+			ExistingMap:   previousMap,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -275,8 +244,9 @@ func TestClose(t *testing.T) {
 		}()
 
 		attrCfg := &vcConfig.Config{
-			Camera:       map[string]string{"name": "replay_lidar"},
-			ConfigParams: map[string]string{"mode": "2d"},
+			Camera:        map[string]string{"name": "replay_lidar"},
+			ConfigParams:  map[string]string{"mode": "2d"},
+			EnableMapping: &_true,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -325,8 +295,9 @@ func TestDoCommand(t *testing.T) {
 
 	test.That(t, err, test.ShouldBeNil)
 	attrCfg := &vcConfig.Config{
-		Camera:       map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
-		ConfigParams: map[string]string{"mode": "2d", "test_param": "viam"},
+		Camera:        map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+		ConfigParams:  map[string]string{"mode": "2d", "test_param": "viam"},
+		EnableMapping: &_true,
 	}
 	svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 	test.That(t, err, test.ShouldBeNil)

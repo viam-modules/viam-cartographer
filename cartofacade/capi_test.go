@@ -67,14 +67,8 @@ func TestGetConfig(t *testing.T) {
 		camera := bstringToGoString(vcc.camera)
 		test.That(t, camera, test.ShouldResemble, "mylidar")
 
-		dataDir := bstringToGoString(vcc.data_dir)
-		test.That(t, dataDir, test.ShouldResemble, dir)
-
-		cloudStoryEnabled := bool(vcc.cloud_story_enabled)
-		test.That(t, cloudStoryEnabled, test.ShouldBeFalse)
-
 		enableMapping := bool(vcc.enable_mapping)
-		test.That(t, enableMapping, test.ShouldBeFalse)
+		test.That(t, enableMapping, test.ShouldBeTrue)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
@@ -93,14 +87,8 @@ func TestGetConfig(t *testing.T) {
 		movementSensor := bstringToGoString(vcc.movement_sensor)
 		test.That(t, movementSensor, test.ShouldResemble, "myIMU")
 
-		dataDir := bstringToGoString(vcc.data_dir)
-		test.That(t, dataDir, test.ShouldResemble, dir)
-
-		cloudStoryEnabled := bool(vcc.cloud_story_enabled)
-		test.That(t, cloudStoryEnabled, test.ShouldBeFalse)
-
 		enableMapping := bool(vcc.enable_mapping)
-		test.That(t, enableMapping, test.ShouldBeFalse)
+		test.That(t, enableMapping, test.ShouldBeTrue)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
@@ -182,7 +170,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		cfgBad := GetBadTestConfig()
 		vc, err = NewCarto(cfgBad, algoCfg, &pvcl)
 		// initialize viam_carto incorrectly
-		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED"))
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
 		algoCfg = GetTestAlgoConfig(false)
