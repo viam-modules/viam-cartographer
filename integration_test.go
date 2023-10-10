@@ -143,7 +143,7 @@ func testHelperCartographer(
 	logger golog.Logger,
 	replaySensor bool,
 	useIMU bool,
-	mapRateSec int,
+	enableMapping bool,
 	expectedMode cartofacade.SlamMode,
 ) []byte {
 	termFunc := testhelper.InitTestCL(t, logger)
@@ -155,12 +155,10 @@ func testHelperCartographer(
 	}
 
 	attrCfg := &vcConfig.Config{
+		EnableMapping: &enableMapping,
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
-		MapRateSec:    &mapRateSec,
-		DataDirectory: dataDirectory,
-		NewConfigFlag: true,
 	}
 
 	// Add lidar component to config (required)
@@ -236,7 +234,6 @@ func testHelperCartographer(
 	// Check that a map was generated as the test has been running for more than the map rate msec
 	mapsInDir, err := os.ReadDir(path.Join(dataDirectory, "internal_state"))
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, testDuration.Seconds(), test.ShouldBeGreaterThanOrEqualTo, time.Duration(*attrCfg.MapRateSec).Seconds())
 	test.That(t, len(mapsInDir), test.ShouldBeGreaterThan, 0)
 
 	// return the internal state so updating mode can be tested
@@ -335,10 +332,10 @@ func TestIntegrationCartographer(t *testing.T) {
 			}()
 
 			// Set mapRateSec for mapping mode
-			mapRateSec := 1
+			enable_mapping := true
 
 			// Run mapping test
-			internalState := testHelperCartographer(t, dataDirectory1, tt.subAlgo, logger, tt.replay, tt.imuEnabled, 1, cartofacade.MappingMode)
+			internalState := testHelperCartographer(t, dataDirectory1, tt.subAlgo, logger, tt.replay, tt.imuEnabled, enable_mapping, cartofacade.MappingMode)
 
 			// Return if in mapping mode as there are no further actions required
 			if tt.mode == cartofacade.MappingMode {
@@ -358,9 +355,9 @@ func TestIntegrationCartographer(t *testing.T) {
 
 			// Run follow up updating or localizing test
 			if tt.mode == cartofacade.LocalizingMode {
-				mapRateSec = 0
+				enable_mapping = false
 			}
-			testHelperCartographer(t, dataDirectory2, tt.subAlgo, logger, tt.replay, tt.imuEnabled, mapRateSec, tt.mode)
+			testHelperCartographer(t, dataDirectory2, tt.subAlgo, logger, tt.replay, tt.imuEnabled, enable_mapping, tt.mode)
 		})
 	}
 }

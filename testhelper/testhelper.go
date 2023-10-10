@@ -5,7 +5,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -179,20 +178,9 @@ func CreateSLAMService(
 		return nil, err
 	}
 
-	// feature flag for IMU Integration sets whether to use the dictionary or list format for configuring sensors
-	cameraName := ""
-	imuName := ""
-	if cfg.NewConfigFlag {
-		cameraName = cfg.Camera["name"]
-		imuName = cfg.MovementSensor["name"]
-	} else {
-		if len(cfg.Sensors) > 1 {
-			return nil, errors.Errorf("configuring lidar camera error: "+
-				"'sensors' must contain only one lidar camera, but is 'sensors: [%v]'",
-				strings.Join(cfg.Sensors, ", "))
-		}
-		cameraName = cfg.Sensors[0]
-	}
+	cameraName := cfg.Camera["name"]
+	imuName := cfg.MovementSensor["name"]
+
 	if imuName == "" {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
 	} else {

@@ -26,7 +26,6 @@ func GetTestConfig(cameraName, movementSensorName string) (CartoConfig, string, 
 // GetBadTestConfig gets a sample config for testing purposes that will cause a failure.
 func GetBadTestConfig() CartoConfig {
 	return CartoConfig{
-		Camera:      "rplidar",
 		LidarConfig: TwoD,
 	}
 }
