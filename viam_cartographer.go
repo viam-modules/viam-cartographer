@@ -37,8 +37,6 @@ var (
 )
 
 const (
-	// DefaultExecutableName is what this program expects to call to start the cartographer grpc server.
-	DefaultExecutableName                = "carto_grpc_server"
 	defaultLidarDataFrequencyHz          = 5
 	defaultIMUDataFrequencyHz            = 20
 	defaultDialMaxTimeoutSec             = 30
