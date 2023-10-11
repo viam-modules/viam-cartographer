@@ -214,7 +214,8 @@ func ValidateGetIMUData(
 	return nil
 }
 
-// TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether it was a replay sensor or not.
+// TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether
+// it was a replay sensor or not.
 func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error) {
 	live := true
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)

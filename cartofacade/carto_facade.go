@@ -305,8 +305,7 @@ func New(cartoLib CartoLibInterface, cartoCfg CartoConfig, cartoAlgoCfg CartoAlg
 	}
 }
 
-// DoWork provides the logic to call the correct cgo functions with the correct input.
-// It should not be called outside of this package but needs to be public for testing purposes.
+// doWork provides the logic to call the correct cgo functions with the correct input.
 func (r *Request) doWork(
 	cf *CartoFacade,
 ) (interface{}, error) {
@@ -365,7 +364,8 @@ func (r *Request) doWork(
 	return nil, fmt.Errorf("no worktype found for: %v", r.requestType)
 }
 
-// request wraps calls into C. This function requires the caller to know which RequestTypes requires casting to which response values.
+// request wraps calls into C. This function requires the caller to know which RequestTypes
+// requires casting to which response values.
 func (cf *CartoFacade) request(
 	ctxParent context.Context,
 	requestType RequestType,
@@ -397,7 +397,8 @@ func (cf *CartoFacade) request(
 	}
 }
 
-// startCGoroutine starts the background goroutine that is responsible for ensuring only one call into C is being made at a time.
+// startCGoroutine starts the background goroutine that is responsible for ensuring only one call
+// into C is being made at a time.
 func (cf *CartoFacade) startCGoroutine(ctx context.Context, activeBackgroundWorkers *sync.WaitGroup) {
 	activeBackgroundWorkers.Add(1)
 	go func() {

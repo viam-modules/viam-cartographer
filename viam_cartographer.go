@@ -699,7 +699,8 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 	return nil
 }
 
-// CheckQuaternionFromClientAlgo checks to see if the internal SLAM algorithm sent a quaternion. If it did, return the updated pose.
+// CheckQuaternionFromClientAlgo checks to see if the internal SLAM algorithm sent a quaternion. If it did,
+// return the updated pose.
 func CheckQuaternionFromClientAlgo(pose spatialmath.Pose, componentReference string,
 	returnedExt map[string]interface{},
 ) (spatialmath.Pose, string, error) {
