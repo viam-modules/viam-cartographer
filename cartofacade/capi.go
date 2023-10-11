@@ -170,7 +170,6 @@ func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Car
 	if err != nil {
 		return Carto{}, err
 	}
-
 	vcac := toAlgoConfig(acfg)
 	cl, ok := vcl.(*CartoLib)
 	if !ok {
@@ -377,7 +376,8 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 		return C.viam_carto_config{}, err
 	}
 
-	// Remove
+	// Remove cloud_story_enabled, map_rate_sec, and data_dir from C++ code
+	// JIRA Ticket: RSDK-52334 https://viam.atlassian.net/browse/RSDK-5334
 	vcc.cloud_story_enabled = C.bool(true)
 	vcc.data_dir = goStringToBstring("/tmp/")
 	if cfg.EnableMapping {

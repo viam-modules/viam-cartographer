@@ -39,6 +39,46 @@ var (
 func TestNew(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 
+	t.Run("Succeeds if use_cloud_slam is set to true. Causes all endpoints return errors.", func(t *testing.T) {
+		termFunc := testhelper.InitTestCL(t, logger)
+		defer termFunc()
+
+		attrCfg := &vcConfig.Config{
+			Camera:       map[string]string{"name": "good_lidar", "data_frequency_hz": "5"},
+			ConfigParams: map[string]string{"mode": "2d"},
+			UseCloudSlam: &_true,
+		}
+
+		ctx := context.Background()
+
+		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
+		test.That(t, err, test.ShouldBeNil)
+
+		pose, componentRef, err := svc.Position(ctx)
+		test.That(t, pose, test.ShouldBeNil)
+		test.That(t, componentRef, test.ShouldBeEmpty)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		gpcmF, err := svc.PointCloudMap(ctx)
+		test.That(t, gpcmF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		gisF, err := svc.InternalState(ctx)
+		test.That(t, gisF, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		mapTime, err := svc.LatestMapInfo(ctx)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+		test.That(t, mapTime, test.ShouldResemble, time.Time{})
+
+		cmd := map[string]interface{}{}
+		resp, err := svc.DoCommand(ctx, cmd)
+		test.That(t, resp, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
+
 	t.Run("Successful creation of cartographer slam service with good lidar without IMU", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
@@ -109,14 +149,14 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		previousMap, fsCleanupFunc := testhelper.InitInternalState(t)
+		existingMap, fsCleanupFunc := testhelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
 			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			EnableMapping: &_false,
-			ExistingMap:   previousMap,
+			ExistingMap:   existingMap,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
@@ -161,14 +201,14 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		previousMap, fsCleanupFunc := testhelper.InitInternalState(t)
+		existingMap, fsCleanupFunc := testhelper.InitInternalState(t)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
 			Camera:        map[string]string{"name": "good_lidar"},
 			ConfigParams:  map[string]string{"mode": "2d"},
 			EnableMapping: &_true,
-			ExistingMap:   previousMap,
+			ExistingMap:   existingMap,
 		}
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)

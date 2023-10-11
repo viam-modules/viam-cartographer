@@ -140,7 +140,7 @@ func saveInternalState(t *testing.T, internalState []byte, dataDir string) strin
 // PointCloudMap, InternalState are evaluated and the process is closed out. The final internal state of cartographer is then returned.
 func testHelperCartographer(
 	t *testing.T,
-	dataDirectory string,
+	existingMap string,
 	subAlgo viamcartographer.SubAlgo,
 	logger golog.Logger,
 	replaySensor bool,
@@ -157,7 +157,7 @@ func testHelperCartographer(
 	}
 
 	attrCfg := &vcConfig.Config{
-		ExistingMap:   dataDirectory,
+		ExistingMap:   existingMap,
 		EnableMapping: &enableMapping,
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),

@@ -43,11 +43,11 @@ var (
 
 // Validate creates the list of implicit dependencies.
 func (config *Config) Validate(path string) ([]string, error) {
+	var deps []string
 	cameraName, ok := config.Camera["name"]
 	if !ok {
 		return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
 	}
-
 	dataFreqHz, ok := config.Camera["data_frequency_hz"]
 	if ok {
 		dataFreqHz, err := strconv.Atoi(dataFreqHz)
@@ -58,17 +58,17 @@ func (config *Config) Validate(path string) ([]string, error) {
 			return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
 		}
 	}
+	deps = append(deps, cameraName)
 
 	imuName, imuExists := config.MovementSensor["name"]
+	if imuExists {
+		deps = append(deps, imuName)
+	}
 
 	if config.ConfigParams["mode"] == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
 
-	deps := []string{cameraName}
-	if imuExists {
-		deps = []string{cameraName, imuName}
-	}
 	return deps, nil
 }
 
@@ -78,6 +78,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 ) (OptionalConfigParams, error) {
 	var optionalConfigParams OptionalConfigParams
 
+	// Validate camera info and set defaults
 	strCameraDataFreqHz, exists := config.Camera["data_frequency_hz"]
 	if !exists {
 		optionalConfigParams.LidarDataFrequencyHz = defaultLidarDataFrequencyHz
@@ -91,6 +92,8 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 			optionalConfigParams.LidarDataFrequencyHz = lidarDataFreqHz
 		}
 	}
+
+	// Validate movement sensor info and set defaults
 	imuName, exists := config.MovementSensor["name"]
 	if exists {
 		optionalConfigParams.ImuName = imuName
@@ -115,6 +118,8 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 			}
 		}
 	}
+
+	// Check if apriori map exists and is in correct format
 	if config.ExistingMap == "" {
 		logger.Debug("no existing_map provided, entering mapping mode")
 	} else {
@@ -124,18 +129,16 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 		optionalConfigParams.ExistingMap = config.ExistingMap
 	}
 
+	// Setting enable mapping
 	if config.EnableMapping == nil {
 		logger.Debug("no enable_mapping given, setting to default value of false")
 	} else {
 		optionalConfigParams.EnableMapping = *config.EnableMapping
 	}
 
+	// Validate slam mode
 	if err := validateModes(optionalConfigParams); err != nil {
 		return OptionalConfigParams{}, err
-	}
-
-	if config.EnableMapping != nil && *config.EnableMapping {
-		logger.Warn("enable_mapping set to true while cloud_story_enabled = false will not change any behavior")
 	}
 
 	return optionalConfigParams, nil

@@ -190,7 +190,6 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     config = from_viam_carto_config(c);
     algo_config = ac;
     path_to_internal_state = config.data_dir + "/internal_state";
-    LOG(INFO) << "PATH TO INTERNAL STATE FILE: " << config.existing_map << "\n";
     path_to_internal_state_file = config.existing_map;
 };
 

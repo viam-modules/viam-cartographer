@@ -33,11 +33,10 @@ func TestValidate(t *testing.T) {
 
 	t.Run("Config without required fields", func(t *testing.T) {
 		requiredFields := []string{"camera"}
-		cameraErr := utils.NewConfigValidationError(testCfgPath, errCameraMustHaveName)
-
 		expectedErrors := map[string]error{
-			"camera": newError(cameraErr.Error()),
+			"camera": newError(utils.NewConfigValidationError(testCfgPath, errCameraMustHaveName).Error()),
 		}
+
 		for _, requiredField := range requiredFields {
 			logger.Debugf("Testing SLAM config without %s\n", requiredField)
 			cfgService := makeCfgService()
@@ -46,6 +45,7 @@ func TestValidate(t *testing.T) {
 
 			test.That(t, err, test.ShouldBeError, expectedErrors[requiredField])
 		}
+
 		// Test for missing config_params attributes
 		logger.Debug("Testing SLAM config without config_params[mode]")
 		cfgService := makeCfgService()
