@@ -248,53 +248,60 @@ func TestIntegrationCartographer(t *testing.T) {
 		mode        cartofacade.SlamMode
 		subAlgo     viamcartographer.SubAlgo
 	}{
-		// Live sensor
+		// Online sensor
 		{
-			description: "live sensor mapping mode 2D",
+			description: "online sensor mapping mode 2D",
 			replay:      false,
 			imuEnabled:  false,
 			mode:        cartofacade.MappingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "live sensor localizing mode 2D",
+			description: "online sensor localizing mode 2D",
 			replay:      false,
 			imuEnabled:  false,
 			mode:        cartofacade.LocalizingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "live sensor updating mode 2D",
+			description: "online sensor updating mode 2D",
 			replay:      false,
 			imuEnabled:  false,
 			mode:        cartofacade.UpdatingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
-		// Replay sensor
+		// Offline sensor
 		{
-			description: "replay sensor mapping mode 2D",
+			description: "offline sensor mapping mode 2D",
 			replay:      true,
 			imuEnabled:  false,
 			mode:        cartofacade.MappingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "replay sensor updating mode 2D",
+			description: "offline sensor updating mode 2D",
 			replay:      true,
 			imuEnabled:  false,
 			mode:        cartofacade.UpdatingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
-		// Replay with imu sensor
+		// Online with imu sensor
 		{
-			description: "replay with imu sensor mapping mode 2D",
+			description: "online with imu sensor mapping mode 2D",
 			replay:      true,
 			imuEnabled:  true,
 			mode:        cartofacade.MappingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "replay with imu sensor updating mode 2D",
+			description: "online with imu sensor localizing mode 2D",
+			replay:      true,
+			imuEnabled:  true,
+			mode:        cartofacade.LocalizingMode,
+			subAlgo:     viamcartographer.Dim2d,
+		},
+		{
+			description: "online with imu sensor updating mode 2D",
 			replay:      true,
 			imuEnabled:  true,
 			mode:        cartofacade.UpdatingMode,
