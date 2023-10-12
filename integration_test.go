@@ -123,15 +123,13 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 func saveInternalState(t *testing.T, internalState []byte, dataDir string) string {
 	timeStamp := time.Now().UTC()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
-	if err := os.Mkdir(internalStateDir, 0o755); err != nil {
-		t.Error("TEST FAILED failed to create test internal state directory")
-		return ""
-	}
+	err := os.Mkdir(internalStateDir, 0o755)
+	test.That(t, err, test.ShouldBeNil)
+
 	filename := filepath.Join(internalStateDir, "map_data_"+timeStamp.UTC().Format(testhelper.SlamTimeFormat)+".pbstream")
-	if err := os.WriteFile(filename, internalState, 0o644); err != nil {
-		t.Error("TEST FAILED failed to write test internal state")
-		return ""
-	}
+	err = os.WriteFile(filename, internalState, 0o644)
+	test.That(t, err, test.ShouldBeNil)
+
 	return filename
 }
 

@@ -68,7 +68,7 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, camera, test.ShouldResemble, "mylidar")
 
 		enableMapping := bool(vcc.enable_mapping)
-		test.That(t, enableMapping, test.ShouldBeTrue)
+		test.That(t, enableMapping, test.ShouldBeFalse)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
@@ -88,7 +88,7 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, movementSensor, test.ShouldResemble, "myIMU")
 
 		enableMapping := bool(vcc.enable_mapping)
-		test.That(t, enableMapping, test.ShouldBeTrue)
+		test.That(t, enableMapping, test.ShouldBeFalse)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
