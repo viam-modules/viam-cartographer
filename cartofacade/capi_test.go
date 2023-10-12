@@ -57,10 +57,7 @@ func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.
 
 func TestGetConfig(t *testing.T) {
 	t.Run("config properly converted between C and go with no IMU specified", func(t *testing.T) {
-		cfg, dir, err := GetTestConfig("mylidar", "")
-		defer os.RemoveAll(dir)
-		test.That(t, err, test.ShouldBeNil)
-
+		cfg := GetTestConfig("mylidar", "", "", true)
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -68,16 +65,32 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, camera, test.ShouldResemble, "mylidar")
 
 		enableMapping := bool(vcc.enable_mapping)
-		test.That(t, enableMapping, test.ShouldBeFalse)
+		test.That(t, enableMapping, test.ShouldBeTrue)
 
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
 
 	t.Run("config properly converted between C and go with an IMU specified", func(t *testing.T) {
-		cfg, dir, err := GetTestConfig("mylidar", "myIMU")
-		defer os.RemoveAll(dir)
+		cfg := GetTestConfig("mylidar", "myIMU", "", true)
+		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
+		camera := bstringToGoString(vcc.camera)
+		test.That(t, camera, test.ShouldResemble, "mylidar")
+
+		movementSensor := bstringToGoString(vcc.movement_sensor)
+		test.That(t, movementSensor, test.ShouldResemble, "myIMU")
+
+		enableMapping := bool(vcc.enable_mapping)
+		test.That(t, enableMapping, test.ShouldBeTrue)
+
+		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
+	})
+
+	t.Run("config properly converted between C and go with an IMU specified and existing map", func(t *testing.T) {
+		filename := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
+
+		cfg := GetTestConfig("mylidar", "myIMU", filename, false)
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -155,11 +168,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg, dir, err := GetTestConfig("mylidar", "")
-		defer os.RemoveAll(dir)
-
-		test.That(t, err, test.ShouldBeNil)
-
+		cfg := GetTestConfig("mylidar", "", "", true)
 		algoCfg := GetTestAlgoConfig(false)
 		vc, err := NewCarto(cfg, algoCfg, &CartoLibMock{})
 
@@ -353,10 +362,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg, dir, err := GetTestConfig("mylidar", "myIMU")
-		defer os.RemoveAll(dir)
-
-		test.That(t, err, test.ShouldBeNil)
+		cfg := GetTestConfig("mylidar", "myIMU", "", true)
 
 		// test invalid IMU enabling configuration
 		algoCfg := GetTestAlgoConfig(false)
