@@ -111,7 +111,6 @@ func NewIMU(
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewIMU")
 	defer span.End()
 	if imuName == "" {
-		logger.Info("no movement sensor configured, proceeding without IMU")
 		return IMU{}, nil
 	}
 	newIMU, err := movementsensor.FromDependencies(deps, imuName)
