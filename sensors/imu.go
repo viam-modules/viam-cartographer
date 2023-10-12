@@ -29,6 +29,8 @@ var defaultTime = time.Time{}
 
 // TimedIMUSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
 type TimedIMUSensor interface {
+	Name() string
+	DataRateMsec() int
 	TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error)
 }
 
@@ -43,8 +45,19 @@ type TimedIMUSensorReadingResponse struct {
 
 // IMU represents an IMU movement sensor.
 type IMU struct {
-	Name string
-	imu  movementsensor.MovementSensor
+	name         string
+	dataRateMsec int
+	Imu          movementsensor.MovementSensor
+}
+
+// Name returns the name of the IMU.
+func (imu IMU) Name() string {
+	return imu.name
+}
+
+// DataRateMsec returns the data rate in ms of the IMU.
+func (imu IMU) DataRateMsec() int {
+	return imu.dataRateMsec
 }
 
 // TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.
@@ -63,7 +76,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 		default:
 			if timeLinearAcc == defaultTime || timeLinearAcc.Sub(timeAngularVel).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-				linAcc, err = imu.imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
+				linAcc, err = imu.Imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
 				if err != nil {
 					msg := "LinearAcceleration error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
@@ -82,7 +95,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 
 			if timeAngularVel == defaultTime || timeAngularVel.Sub(timeLinearAcc).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-				angVel, err = imu.imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
+				angVel, err = imu.Imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
 				if err != nil {
 					msg := "AngularVelocity error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
@@ -119,20 +132,21 @@ func NewIMU(
 	ctx context.Context,
 	deps resource.Dependencies,
 	imuName string,
+	dataRateMsec int,
 	logger golog.Logger,
-) (IMU, error) {
+) (TimedIMUSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewIMU")
 	defer span.End()
 	if imuName == "" {
 		return IMU{}, nil
 	}
-	newIMU, err := movementsensor.FromDependencies(deps, imuName)
+	movementSensor, err := movementsensor.FromDependencies(deps, imuName)
 	if err != nil {
 		return IMU{}, errors.Wrapf(err, "error getting IMU movement sensor %v for slam service", imuName)
 	}
 
 	// A movement_sensor used as an IMU must support LinearAcceleration and AngularVelocity.
-	properties, err := newIMU.Properties(ctx, make(map[string]interface{}))
+	properties, err := movementSensor.Properties(ctx, make(map[string]interface{}))
 	if err != nil {
 		return IMU{}, errors.Wrapf(err, "error getting movement sensor properties %v for slam service", imuName)
 	}
@@ -142,8 +156,9 @@ func NewIMU(
 	}
 
 	return IMU{
-		Name: imuName,
-		imu:  newIMU,
+		name:         imuName,
+		dataRateMsec: dataRateMsec,
+		Imu:          movementSensor,
 	}, nil
 }
 

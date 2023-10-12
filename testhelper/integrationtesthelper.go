@@ -70,7 +70,7 @@ type TimeTracker struct {
 // ensure test outputs of cartographer are deterministic.
 func IntegrationTimedLidarSensor(
 	t *testing.T,
-	lidar string,
+	lidarName string,
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
@@ -86,6 +86,9 @@ func IntegrationTimedLidarSensor(
 
 	closed := false
 	ts := &sensors.TimedLidarSensorMock{}
+	ts.NameFunc = func() string {
+		return lidarName
+	}
 	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (sensors.TimedLidarSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*
@@ -151,14 +154,14 @@ func IntegrationTimedLidarSensor(
 // Note that IMU replay sensors are not yet fully supported.
 func IntegrationTimedIMUSensor(
 	t *testing.T,
-	imu string,
+	imuName string,
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *TimeTracker,
 ) (sensors.TimedIMUSensor, error) {
 	// Return nil if IMU is not requested
-	if imu == "" {
+	if imuName == "" {
 		return nil, nil
 	}
 
@@ -171,6 +174,7 @@ func IntegrationTimedIMUSensor(
 	var i uint64
 	closed := false
 	ts := &sensors.TimedIMUSensorMock{}
+	ts.NameFunc = func() string { return imuName }
 	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (sensors.TimedIMUSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*

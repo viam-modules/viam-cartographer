@@ -486,10 +486,11 @@ func onlineModeLidarTestHelper(
 	t *testing.T,
 	config Config,
 	cf cartofacade.Mock,
-	cam string,
+	cameraName string,
 ) {
 	logger := golog.NewTestLogger(t)
-	onlineSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
+	dataRateMsec := 100
+	onlineSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, dataRateMsec, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addLidarReadingArgs
@@ -518,8 +519,8 @@ func onlineModeLidarTestHelper(
 
 	config.CartoFacade = &cf
 	config.Lidar = onlineSensor
-	config.LidarName = onlineSensor.Name
-	config.LidarDataFrequencyHz = 100
+	config.LidarName = onlineSensor.Name()
+	config.LidarDataRateMsec = dataRateMsec
 
 	jobDone := config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
@@ -535,22 +536,22 @@ func onlineModeLidarTestHelper(
 
 	for i, call := range calls {
 		t.Logf("call %d", i)
-		test.That(t, call.sensorName, test.ShouldResemble, cam)
+		test.That(t, call.sensorName, test.ShouldResemble, cameraName)
 		// the lidar test fixture happens to always return the same pcd currently
 		// in reality it could be a new pcd every time
 		test.That(t, call.currentReading, test.ShouldResemble, expectedPCD)
 		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
 	}
 
-	if cam == "good_lidar" {
+	if cameraName == "good_lidar" {
 		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
-	} else if cam == "replay_lidar" {
+	} else if cameraName == "replay_lidar" {
 		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, calls[0].readingTimestamp.Equal(readingTime), test.ShouldBeTrue)
 	} else {
-		t.Errorf("no timestamp tests provided for %v", cam)
+		t.Errorf("no timestamp tests provided for %v", cameraName)
 	}
 }
 
@@ -559,10 +560,11 @@ func onlineModeIMUTestHelper(
 	t *testing.T,
 	config Config,
 	cf cartofacade.Mock,
-	movementSensor string,
+	movementSensorName string,
 ) {
 	logger := golog.NewTestLogger(t)
-	onlineIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensor), movementSensor, logger)
+	dataRateMsec := 100
+	onlineIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, dataRateMsec, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addIMUReadingArgs
@@ -591,8 +593,8 @@ func onlineModeIMUTestHelper(
 
 	config.CartoFacade = &cf
 	config.IMU = onlineIMU
-	config.IMUName = onlineIMU.Name
-	config.IMUDataFrequencyHz = 100
+	config.IMUName = onlineIMU.Name()
+	config.IMUDataRateMsec = dataRateMsec
 
 	// set lidar data rate to signify that we are in online mode
 	config.LidarDataFrequencyHz = 100
@@ -613,22 +615,22 @@ func onlineModeIMUTestHelper(
 
 	for i, call := range calls {
 		t.Logf("call %d", i)
-		test.That(t, call.sensorName, test.ShouldResemble, movementSensor)
+		test.That(t, call.sensorName, test.ShouldResemble, movementSensorName)
 		// the IMU test fixture happens to always return the same readings currently
 		// in reality they are likely different every time
 		test.That(t, call.currentReading, test.ShouldResemble, expectedIMUReading)
 		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
 	}
 
-	if movementSensor == "good_imu" {
+	if movementSensorName == "good_imu" {
 		test.That(t, calls[0].readingTimestamp.Before(calls[1].readingTimestamp), test.ShouldBeTrue)
 		test.That(t, calls[1].readingTimestamp.Before(calls[2].readingTimestamp), test.ShouldBeTrue)
-	} else if movementSensor == "replay_imu" {
+	} else if movementSensorName == "replay_imu" {
 		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, calls[0].readingTimestamp.Equal(readingTime), test.ShouldBeTrue)
 	} else {
-		t.Errorf("no timestamp tests provided for %v", movementSensor)
+		t.Errorf("no timestamp tests provided for %v", movementSensorName)
 	}
 }
 
@@ -641,7 +643,7 @@ func invalidLidarTestHelper(
 	lidarDataFrequencyHz int,
 ) {
 	logger := golog.NewTestLogger(t)
-	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, logger)
+	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, lidarDataRateMsec, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addLidarReadingArgs
@@ -662,7 +664,7 @@ func invalidLidarTestHelper(
 		return nil
 	}
 	config.Lidar = lidar
-	config.LidarName = lidar.Name
+	config.LidarName = lidar.Name()
 	config.LidarDataFrequencyHz = lidarDataFrequencyHz
 
 	jobDone := config.addLidarReading(ctx)
@@ -680,7 +682,7 @@ func invalidIMUTestHelper(
 	imuDataFrequencyHz int,
 ) {
 	logger := golog.NewTestLogger(t)
-	imu, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, logger)
+	imu, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, lidarDataRateMsec, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addIMUReadingArgs
@@ -702,7 +704,7 @@ func invalidIMUTestHelper(
 	}
 	config.LidarDataFrequencyHz = lidarDataFrequencyHz
 	config.IMU = imu
-	config.IMUName = imu.Name
+	config.IMUName = imu.Name()
 	config.IMUDataFrequencyHz = imuDataFrequencyHz
 
 	jobDone := config.addIMUReading(ctx)
@@ -729,33 +731,34 @@ func TestAddLidarReading(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("returns error in online mode when lidar GetData returns error, doesn't try to add lidar data", func(t *testing.T) {
-		cam := "lidar_with_erroring_functions"
+		cameraName := "lidar_with_erroring_functions"
 		invalidLidarTestHelper(
 			ctx,
 			t,
 			cf,
 			config,
-			cam,
+			cameraName,
 			10,
 		)
 	})
 
 	t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-		cam := "invalid_replay_lidar"
+		cameraName := "invalid_replay_lidar"
 		invalidLidarTestHelper(
 			ctx,
 			t,
 			cf,
 			config,
-			cam,
+			cameraName,
 			10,
 		)
 	})
 
 	t.Run("replay sensor adds sensor data until success in offline mode", func(t *testing.T) {
-		cam := "replay_lidar"
+		cameraName := "replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
+		dataRateMsec := 0
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addLidarReadingArgs
@@ -782,8 +785,8 @@ func TestAddLidarReading(t *testing.T) {
 			return nil
 		}
 		config.Lidar = replaySensor
-		config.LidarName = replaySensor.Name
-		config.LidarDataFrequencyHz = 0
+		config.LidarName = replaySensor.Name()
+		config.LidarDataFrequencyHz = dataRateMsec
 
 		_ = config.addLidarReading(ctx) // first call gets data
 		jobDone := config.addLidarReading(ctx)
@@ -809,13 +812,14 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function succeeds", func(t *testing.T) {
-		cam := "finished_replay_lidar"
+		cameraName := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
+		dataRateMsec := 0
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataFrequencyHz = 0
+		config.LidarDataFrequencyHz = dataRateMsec
 
 		jobDone := config.addLidarReading(ctx)
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -827,13 +831,14 @@ func TestAddLidarReading(t *testing.T) {
 		}
 		config.RunFinalOptimizationFunc = runFinalOptimizationFunc
 
-		cam := "finished_replay_lidar"
+		cameraName := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
+		dataRateMsec := 0
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataFrequencyHz = 0
+		config.LidarDataFrequencyHz = dataRateMsec
 
 		jobDone := config.addLidarReading(ctx)
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -882,7 +887,8 @@ func TestAddIMUReading(t *testing.T) {
 	t.Run("replay sensor adds IMU data until success in offline mode", func(t *testing.T) {
 		movementsensor := "replay_imu"
 		logger := golog.NewTestLogger(t)
-		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		dataRateMsec := 0
+		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		var calls []addIMUReadingArgs
@@ -909,9 +915,9 @@ func TestAddIMUReading(t *testing.T) {
 			return nil
 		}
 		config.IMU = replayIMU
-		config.IMUName = replayIMU.Name
+		config.IMUName = replayIMU.Name()
 		config.IMUDataFrequencyHz = 0
-		config.LidarDataFrequencyHz = 0
+		config.LidarDataFrequencyHz = dataRateMsec
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 		config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
@@ -941,11 +947,12 @@ func TestAddIMUReading(t *testing.T) {
 	t.Run("returns true when IMU returns an error that it reached end of dataset", func(t *testing.T) {
 		movementsensor := "finished_replay_imu"
 		logger := golog.NewTestLogger(t)
-		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		dataRateMsec := 0
+		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replayIMU
-		config.IMUDataFrequencyHz = 0
+		config.IMUDataFrequencyHz = dataRdataRateMsec
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		jobDone := config.addIMUReading(ctx)
@@ -968,26 +975,28 @@ func TestStartLidar(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
-		cam := "finished_replay_lidar"
+		cameraName := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
+		dataRateMsec := 0
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataFrequencyHz = 0
+		config.LidarDataFrequencyHz = dataRateMsec
 
 		jobDone := config.StartLidar(context.Background())
 		test.That(t, jobDone, test.ShouldBeTrue)
 	})
 
 	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
-		cam := "finished_replay_lidar"
+		cameraName := "finished_replay_lidar"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cam, ""), cam, logger)
+		dataRateMsec := 0
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataFrequencyHz = 0
+		config.LidarDataFrequencyHz = dataRateMsec
 
 		cancelFunc()
 
@@ -1010,13 +1019,14 @@ func TestStartIMU(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	t.Run("returns true when IMU returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
-		movementsensor := "finished_replay_imu"
+		movementSensorName := "finished_replay_imu"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		dataRateMsec := 0
+		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replaySensor
-		config.IMUDataFrequencyHz = 0
+		config.IMUDataFrequencyHz = dataRateMsec
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		jobDone := config.StartIMU(context.Background())
@@ -1024,13 +1034,14 @@ func TestStartIMU(t *testing.T) {
 	})
 
 	t.Run("returns false when IMU returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
-		movementsensor := "finished_replay_imu"
+		movementSensorName := "finished_replay_imu"
 		logger := golog.NewTestLogger(t)
-		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps("", movementsensor), movementsensor, logger)
+		dataRateMsec := 0
+		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, dataRateMsec, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replaySensor
-		config.IMUDataFrequencyHz = 0
+		config.IMUDataFrequencyHz = dataRateMsec
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		cancelFunc()

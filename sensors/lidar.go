@@ -19,6 +19,8 @@ import (
 
 // TimedLidarSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
 type TimedLidarSensor interface {
+	Name() string
+	DataRateMsec() int
 	TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error)
 }
 
@@ -32,8 +34,19 @@ type TimedLidarSensorReadingResponse struct {
 
 // Lidar represents a LIDAR sensor.
 type Lidar struct {
-	Name  string
-	lidar camera.Camera
+	name         string
+	dataRateMsec int
+	Lidar        camera.Camera
+}
+
+// Name returns the name of the lidar.
+func (lidar Lidar) Name() string {
+	return lidar.name
+}
+
+// DataRateMsec returns the data rate in ms of the lidar.
+func (lidar Lidar) DataRateMsec() int {
+	return lidar.dataRateMsec
 }
 
 // TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether
@@ -41,7 +54,7 @@ type Lidar struct {
 func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error) {
 	live := true
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-	readingPc, err := lidar.lidar.NextPointCloud(ctxWithMetadata)
+	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata)
 	if err != nil {
 		msg := "NextPointCloud error"
 		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
@@ -71,17 +84,18 @@ func NewLidar(
 	ctx context.Context,
 	deps resource.Dependencies,
 	cameraName string,
+	dataRateMsec int,
 	logger golog.Logger,
-) (Lidar, error) {
+) (TimedLidarSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
-	newLidar, err := camera.FromDependencies(deps, cameraName)
+	lidar, err := camera.FromDependencies(deps, cameraName)
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
 	}
 
 	// If there is a camera provided in the 'camera' field, we enforce that it supports PCD.
-	properties, err := newLidar.Properties(ctx)
+	properties, err := lidar.Properties(ctx)
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera properties %v for slam service", cameraName)
 	}
@@ -92,8 +106,9 @@ func NewLidar(
 	}
 
 	return Lidar{
-		Name:  cameraName,
-		lidar: newLidar,
+		name:         cameraName,
+		dataRateMsec: dataRateMsec,
+		Lidar:        lidar,
 	}, nil
 }
 

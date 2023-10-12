@@ -18,6 +18,7 @@ import (
 	"go.viam.com/utils/artifact"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
+	"github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orientation {
@@ -92,31 +93,44 @@ func TestPositionEndpoint(t *testing.T) {
 	var inputQuat map[string]interface{}
 
 	t.Run("empty component reference success", func(t *testing.T) {
-		svc.lidar.name = ""
+		lidarName := ""
+		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &mockLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "", svc, originPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, lidarName, svc, originPos)
 	})
 
 	t.Run("origin pose success", func(t *testing.T) {
-		svc.lidar.name = "primarySensor1"
+		lidarName := "primarySensor1"
+		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &mockLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "primarySensor1", svc, originPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, lidarName, svc, originPos)
 	})
 
 	t.Run("non origin pose success", func(t *testing.T) {
-		svc.lidar.name = "primarySensor2"
+		lidarName := "primarySensor2"
+		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &mockLidar
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, "primarySensor2", svc, nonOriginPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, lidarName, svc, nonOriginPos)
 	})
 
 	t.Run("error case", func(t *testing.T) {
-		svc.lidar.name = "primarySensor3"
+		lidarName := "primarySensor3"
+		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &mockLidar
+
 		mockCartoFacade.PositionFunc = func(
 			ctx context.Context,
 			timeout time.Duration,

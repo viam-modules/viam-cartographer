@@ -120,12 +120,12 @@ func TerminateCartoLib() error {
 func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
 		CartoFacade:              cartoSvc.cartofacade,
-		Lidar:                    cartoSvc.lidar.timed,
-		LidarName:                cartoSvc.lidar.name,
-		LidarDataFrequencyHz:     cartoSvc.lidar.dataFrequencyHz,
-		IMU:                      cartoSvc.imu.timed,
-		IMUName:                  cartoSvc.imu.name,
-		IMUDataFrequencyHz:       cartoSvc.imu.dataFrequencyHz,
+		Lidar:                    cartoSvc.lidar,
+		LidarName:                cartoSvc.lidar.Name(),
+		LidarDataRateMsec:        cartoSvc.lidar.DataRateMsec(),
+		IMU:                      cartoSvc.imu,
+		IMUName:                  cartoSvc.imu.Name(),
+		IMUDataRateMsec:          cartoSvc.imu.DataRateMsec(),
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
@@ -209,13 +209,13 @@ func New(
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	lidarObject, err := s.NewLidar(ctx, deps, lidarName, logger)
+	timedLidar, err := s.NewLidar(ctx, deps, lidarName, optionalConfigParams.LidarDataRateMsec, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the IMU if one is configured
-	imuObject, err := s.NewIMU(ctx, deps, optionalConfigParams.ImuName, logger)
+	timedIMU, err := s.NewIMU(ctx, deps, optionalConfigParams.ImuName, optionalConfigParams.ImuDataRateMsec, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -224,35 +224,19 @@ func New(
 	cancelSensorProcessCtx, cancelSensorProcessFunc := context.WithCancel(context.Background())
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
 
-	// use the override in testing if non nil
-	// otherwise use the sensors from deps as the
-	// timed sensors
-	timedLidar := testTimedLidarSensorOverride
-	timedIMU := testTimedIMUSensorOverride
-	if timedLidar == nil {
-		timedLidar = lidarObject
+	// Override the sensors for testing if the override sensors are not nil
+	if testTimedLidarSensorOverride != nil {
+		timedLidar = testTimedLidarSensorOverride
 	}
-	if timedIMU == nil {
-		timedIMU = imuObject
-	}
-
-	lidar := Lidar{
-		name:            lidarName,
-		dataFrequencyHz: optionalConfigParams.LidarDataFrequencyHz,
-		timed:           timedLidar,
-	}
-
-	imu := IMU{
-		name:            optionalConfigParams.ImuName,
-		dataFrequencyHz: optionalConfigParams.ImuDataFrequencyHz,
-		timed:           timedIMU,
+	if testTimedIMUSensorOverride != nil {
+		timedIMU = testTimedIMUSensorOverride
 	}
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
 		Named:                         c.ResourceName().AsNamed(),
-		lidar:                         lidar,
-		imu:                           imu,
+		lidar:                         timedLidar,
+		imu:                           timedIMU,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
@@ -284,7 +268,7 @@ func New(
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
 	}
-	if cartoSvc.imu.name != "" {
+	if cartoSvc.imu.Name() != "" {
 		if err = s.ValidateGetIMUData(
 			cancelSensorProcessCtx,
 			timedIMU,
@@ -430,9 +414,9 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	}
 
 	cartoCfg := cartofacade.CartoConfig{
-		Camera:             cartoSvc.lidar.name,
-		MovementSensor:     cartoSvc.imu.name,
-		ComponentReference: cartoSvc.lidar.name,
+		Camera:             cartoSvc.lidar.Name(),
+		MovementSensor:     cartoSvc.imu.Name(),
+		ComponentReference: cartoSvc.lidar.Name(),
 		LidarConfig:        cartofacade.TwoD,
 		EnableMapping:      cartoSvc.enableMapping,
 		ExistingMap:        cartoSvc.existingMap,
@@ -488,20 +472,6 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 	return stopErr
 }
 
-// Lidar is the structure containing all field related to lidar.
-type Lidar struct {
-	name            string
-	dataFrequencyHz int
-	timed           s.TimedLidarSensor
-}
-
-// IMU is the structure containing all fields related to IMU.
-type IMU struct {
-	name            string
-	dataFrequencyHz int
-	timed           s.TimedIMUSensor
-}
-
 // CartographerService is the structure of the slam service.
 type CartographerService struct {
 	resource.Named
@@ -509,8 +479,8 @@ type CartographerService struct {
 	mu       sync.Mutex
 	SlamMode cartofacade.SlamMode
 	closed   bool
-	lidar    Lidar
-	imu      IMU
+	lidar    s.TimedLidarSensor
+	imu      s.TimedIMUSensor
 	subAlgo  SubAlgo
 
 	configParams map[string]string
@@ -563,7 +533,7 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 			"kmag": pos.Kmag,
 		},
 	}
-	return CheckQuaternionFromClientAlgo(pose, cartoSvc.lidar.name, returnedExt)
+	return CheckQuaternionFromClientAlgo(pose, cartoSvc.lidar.Name(), returnedExt)
 }
 
 // PointCloudMap creates a request calls the slam algorithms PointCloudMap endpoint and returns a callback
