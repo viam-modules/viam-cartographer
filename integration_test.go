@@ -182,7 +182,7 @@ func testHelperCartographer(
 		} else {
 			attrCfg.MovementSensor = map[string]string{"name": "stub_imu", "data_frequency_hz": strconv.Itoa(defaultIMUTimeInterval)}
 		}
-		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 2, time.UTC)
+		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	}
 	// Start Sensors
 	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"],
