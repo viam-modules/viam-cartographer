@@ -381,6 +381,7 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 	vcc.cloud_story_enabled = C.bool(true)
 	vcc.data_dir = goStringToBstring("/tmp/")
 	if cfg.EnableMapping {
+		// Set to arbitrarily high value to ensure no maps get saved during operation
 		vcc.map_rate_sec = C.int(9000)
 	} else {
 		vcc.map_rate_sec = C.int(0)
