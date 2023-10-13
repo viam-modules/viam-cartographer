@@ -61,7 +61,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 	deps = append(deps, cameraName)
 
 	imuName, imuExists := config.MovementSensor["name"]
-	if imuExists {
+	if imuExists && imuName != "" {
 		deps = append(deps, imuName)
 	}
 
@@ -95,7 +95,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 
 	// Validate movement sensor info and set defaults
 	imuName, exists := config.MovementSensor["name"]
-	if exists {
+	if exists && imuName != "" {
 		optionalConfigParams.ImuName = imuName
 		strMovementSensorDataFreqHz, ok := config.MovementSensor["data_frequency_hz"]
 		if !ok {
