@@ -134,7 +134,11 @@ func TestGetOptionalParameters(t *testing.T) {
 
 	t.Run("Pass default parameters with no IMU name specified", func(t *testing.T) {
 		cfgService := makeCfgService()
-		cfgService.Attributes["sensors"] = []string{"a"}
+
+		cfgService.Attributes["movement_sensor"] = map[string]string{
+			"name": "",
+		}
+
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		optionalConfigParams, err := GetOptionalParameters(
@@ -149,34 +153,6 @@ func TestGetOptionalParameters(t *testing.T) {
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.ExistingMap, test.ShouldEqual, "")
-	})
-
-	t.Run("Return overrides", func(t *testing.T) {
-		cfgService := makeCfgService()
-
-		cfgService.Attributes["camera"] = map[string]string{
-			"name":              "testNameCamera",
-			"data_frequency_hz": "2",
-		}
-		cfgService.Attributes["movement_sensor"] = map[string]string{
-			"name":              "testNameSensor",
-			"data_frequency_hz": "2",
-		}
-
-		cfgService.Attributes["enable_mapping"] = true
-
-		cfg, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeNil)
-		optionalConfigParams, err := GetOptionalParameters(
-			cfg,
-			1000,
-			1000,
-			logger)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "testNameSensor")
-		test.That(t, optionalConfigParams.ImuDataFrequencyHz, test.ShouldEqual, 2)
-		test.That(t, optionalConfigParams.LidarDataFrequencyHz, test.ShouldEqual, 2)
-		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeTrue)
 	})
 
 	t.Run("Return overrides", func(t *testing.T) {
