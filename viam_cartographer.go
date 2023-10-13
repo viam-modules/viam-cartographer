@@ -37,9 +37,8 @@ var (
 )
 
 const (
-	defaultLidarDataRateMsec             = 200
-	defaultIMUDataRateMsec               = 50
-	defaultMapRateSec                    = 60
+	defaultLidarDataFrequencyHz          = 5
+	defaultIMUDataFrequencyHz            = 20
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
 	defaultSensorValidationIntervalSec   = 1
@@ -123,10 +122,10 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		CartoFacade:              cartoSvc.cartofacade,
 		Lidar:                    cartoSvc.lidar.timed,
 		LidarName:                cartoSvc.lidar.name,
-		LidarDataRateMsec:        cartoSvc.lidar.dataRateMsec,
+		LidarDataFrequencyHz:     cartoSvc.lidar.dataFrequencyHz,
 		IMU:                      cartoSvc.imu.timed,
 		IMUName:                  cartoSvc.imu.name,
-		IMUDataRateMsec:          cartoSvc.imu.dataRateMsec,
+		IMUDataFrequencyHz:       cartoSvc.imu.dataFrequencyHz,
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
@@ -189,29 +188,22 @@ func New(
 
 	optionalConfigParams, err := vcConfig.GetOptionalParameters(
 		svcConfig,
-		defaultLidarDataRateMsec,
-		defaultIMUDataRateMsec,
-		defaultMapRateSec,
+		defaultLidarDataFrequencyHz,
+		defaultIMUDataFrequencyHz,
 		logger,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	// feature flag for new config
-	lidarName := ""
-	if svcConfig.NewConfigFlag {
-		lidarName = svcConfig.Camera["name"]
-	} else {
-		lidarName = svcConfig.Sensors[0]
-	}
+	lidarName := svcConfig.Camera["name"]
 
 	if optionalConfigParams.ImuName != "" {
-		if optionalConfigParams.LidarDataRateMsec == 0 && optionalConfigParams.ImuDataRateMsec != 0 {
+		if optionalConfigParams.LidarDataFrequencyHz == 0 && optionalConfigParams.ImuDataFrequencyHz != 0 {
 			return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
 		}
 
-		if optionalConfigParams.LidarDataRateMsec != 0 && optionalConfigParams.ImuDataRateMsec == 0 {
+		if optionalConfigParams.LidarDataFrequencyHz != 0 && optionalConfigParams.ImuDataFrequencyHz == 0 {
 			return nil, errors.New("In online mode, but IMU data frequency is zero")
 		}
 	}
@@ -245,17 +237,17 @@ func New(
 	}
 
 	lidar := Lidar{
-		name:         lidarName,
-		dataRateMsec: optionalConfigParams.LidarDataRateMsec,
-		actual:       lidarObject,
-		timed:        timedLidar,
+		name:            lidarName,
+		dataFrequencyHz: optionalConfigParams.LidarDataFrequencyHz,
+		actual:          lidarObject,
+		timed:           timedLidar,
 	}
 
 	imu := IMU{
-		name:         optionalConfigParams.ImuName,
-		dataRateMsec: optionalConfigParams.ImuDataRateMsec,
-		actual:       imuObject,
-		timed:        timedIMU,
+		name:            optionalConfigParams.ImuName,
+		dataFrequencyHz: optionalConfigParams.ImuDataFrequencyHz,
+		actual:          imuObject,
+		timed:           timedIMU,
 	}
 
 	// Cartographer SLAM Service Object
@@ -265,8 +257,6 @@ func New(
 		imu:                           imu,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
-		dataDirectory:                 svcConfig.DataDirectory,
-		mapRateSec:                    optionalConfigParams.MapRateSec,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
 		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
 		logger:                        logger,
@@ -275,7 +265,6 @@ func New(
 		cartoFacadeTimeout:            cartoFacadeTimeout,
 		cartoFacadeInternalTimeout:    cartoFacadeInternalTimeout,
 		mapTimestamp:                  time.Now().UTC(),
-		cloudStoryEnabled:             svcConfig.CloudStoryEnabled,
 		enableMapping:                 optionalConfigParams.EnableMapping,
 		existingMap:                   optionalConfigParams.ExistingMap,
 	}
@@ -445,11 +434,8 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	cartoCfg := cartofacade.CartoConfig{
 		Camera:             cartoSvc.lidar.name,
 		MovementSensor:     cartoSvc.imu.name,
-		MapRateSecond:      cartoSvc.mapRateSec,
-		DataDir:            cartoSvc.dataDirectory,
 		ComponentReference: cartoSvc.lidar.name,
 		LidarConfig:        cartofacade.TwoD,
-		CloudStoryEnabled:  cartoSvc.cloudStoryEnabled,
 		EnableMapping:      cartoSvc.enableMapping,
 		ExistingMap:        cartoSvc.existingMap,
 	}
@@ -506,18 +492,18 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 
 // Lidar is the structure containing all field related to lidar.
 type Lidar struct {
-	name         string
-	dataRateMsec int
-	actual       s.Lidar
-	timed        s.TimedLidarSensor
+	name            string
+	dataFrequencyHz int
+	actual          s.Lidar
+	timed           s.TimedLidarSensor
 }
 
 // IMU is the structure containing all fields related to IMU.
 type IMU struct {
-	name         string
-	dataRateMsec int
-	actual       s.IMU
-	timed        s.TimedIMUSensor
+	name            string
+	dataFrequencyHz int
+	actual          s.IMU
+	timed           s.TimedIMUSensor
 }
 
 // CartographerService is the structure of the slam service.
@@ -531,16 +517,11 @@ type CartographerService struct {
 	imu      IMU
 	subAlgo  SubAlgo
 
-	useCloudSlam bool
-
-	configParams  map[string]string
-	dataDirectory string
+	configParams map[string]string
 
 	cartofacade                cartofacade.Interface
 	cartoFacadeTimeout         time.Duration
 	cartoFacadeInternalTimeout time.Duration
-
-	mapRateSec int
 
 	cancelSensorProcessFunc func()
 	cancelCartoFacadeFunc   func()
@@ -553,9 +534,9 @@ type CartographerService struct {
 	sensorValidationIntervalSec   int
 	jobDone                       atomic.Bool
 
-	cloudStoryEnabled bool
-	enableMapping     bool
-	existingMap       string
+	useCloudSlam  bool
+	enableMapping bool
+	existingMap   string
 }
 
 // Position forwards the request for positional data to the slam library's gRPC service. Once a response is received,

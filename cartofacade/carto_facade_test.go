@@ -30,17 +30,15 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor", "")
-		defer os.RemoveAll(dir)
-		test.That(t, err, test.ShouldBeNil)
+		cfg := GetTestConfig("mysensor", "", "", true)
+		algoCfg := GetTestAlgoConfig(false)
 
-		algoConfig := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 		carto.PositionFunc = func() (Position, error) {
 			return Position{}, nil
 		}
 
-		cf := New(&cartoLib, config, algoConfig)
+		cf := New(&cartoLib, cfg, algoCfg)
 		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
@@ -56,22 +54,19 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor", "")
-		defer os.RemoveAll(dir)
-		test.That(t, err, test.ShouldBeNil)
-
-		algoConfig := GetTestAlgoConfig(false)
+		cfg := GetTestConfig("mysensor", "", "", true)
+		algoCfg := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
 			return testErr
 		}
 
-		cf := New(&cartoLib, config, algoConfig)
+		cf := New(&cartoLib, cfg, algoCfg)
 		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
+		_, err := cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 
 		cancelFunc()
@@ -82,24 +77,21 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor", "")
-		defer os.RemoveAll(dir)
-		test.That(t, err, test.ShouldBeNil)
-
-		algoConfig := GetTestAlgoConfig(false)
+		cfg := GetTestConfig("mysensor", "", "", true)
+		algoCfg := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
 			return testErr
 		}
 
-		cf := New(&cartoLib, config, algoConfig)
+		cf := New(&cartoLib, cfg, algoCfg)
 		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 		cancelFunc()
 		activeBackgroundWorkers.Wait()
 
-		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
+		_, err := cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		errMsg := "timeout writing to cartographer"
 		expectedErr := multierr.Combine(errors.New(errMsg), context.Canceled)
@@ -110,11 +102,8 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		config, dir, err := GetTestConfig("mysensor", "")
-		defer os.RemoveAll(dir)
-		test.That(t, err, test.ShouldBeNil)
-
-		algoConfig := GetTestAlgoConfig(false)
+		cfg := GetTestConfig("mysensor", "", "", true)
+		algoCfg := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
 		carto.StartFunc = func() error {
@@ -122,11 +111,11 @@ func TestRequest(t *testing.T) {
 			return nil
 		}
 
-		cf := New(&cartoLib, config, algoConfig)
+		cf := New(&cartoLib, cfg, algoCfg)
 		cf.carto = &carto
 		cf.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
-		_, err = cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 10*time.Millisecond)
+		_, err := cf.request(cancelCtx, start, map[RequestParamType]interface{}{}, 10*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -146,10 +135,8 @@ func TestInitialize(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 
@@ -173,10 +160,8 @@ func TestStart(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -187,7 +172,7 @@ func TestStart(t *testing.T) {
 		carto.StartFunc = func() error {
 			return nil
 		}
-		err = cartoFacade.Start(cancelCtx, 5*time.Second)
+		err := cartoFacade.Start(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -196,7 +181,7 @@ func TestStart(t *testing.T) {
 		carto.StartFunc = func() error {
 			return expectedErr
 		}
-		err = cartoFacade.Start(cancelCtx, 5*time.Second)
+		err := cartoFacade.Start(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -206,7 +191,7 @@ func TestStart(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		err = cartoFacade.Start(cancelCtx, 1*time.Millisecond)
+		err := cartoFacade.Start(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -222,10 +207,8 @@ func TestStop(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -236,7 +219,7 @@ func TestStop(t *testing.T) {
 		carto.StopFunc = func() error {
 			return nil
 		}
-		err = cartoFacade.Stop(cancelCtx, 5*time.Second)
+		err := cartoFacade.Stop(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -245,7 +228,7 @@ func TestStop(t *testing.T) {
 		carto.StopFunc = func() error {
 			return expectedErr
 		}
-		err = cartoFacade.Stop(cancelCtx, 5*time.Second)
+		err := cartoFacade.Stop(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -255,7 +238,7 @@ func TestStop(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		err = cartoFacade.Stop(cancelCtx, 1*time.Millisecond)
+		err := cartoFacade.Stop(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -271,10 +254,8 @@ func TestTerminate(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -285,7 +266,7 @@ func TestTerminate(t *testing.T) {
 		carto.TerminateFunc = func() error {
 			return nil
 		}
-		err = cartoFacade.Terminate(cancelCtx, 5*time.Second)
+		err := cartoFacade.Terminate(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -294,7 +275,7 @@ func TestTerminate(t *testing.T) {
 		carto.TerminateFunc = func() error {
 			return expectedErr
 		}
-		err = cartoFacade.Terminate(cancelCtx, 5*time.Second)
+		err := cartoFacade.Terminate(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -304,7 +285,7 @@ func TestTerminate(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		err = cartoFacade.Terminate(cancelCtx, 1*time.Millisecond)
+		err := cartoFacade.Terminate(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -320,10 +301,8 @@ func TestAddLidarReading(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
-	test.That(t, err, test.ShouldBeNil)
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -380,10 +359,8 @@ func TestAddIMUReading(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mylidar", "myIMU")
-	test.That(t, err, test.ShouldBeNil)
+	cfg := GetTestConfig("mylidar", "myIMU", "", true)
 	algoCfg := GetTestAlgoConfig(true)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -400,7 +377,7 @@ func TestAddIMUReading(t *testing.T) {
 		carto.AddIMUReadingFunc = func(name string, reading IMUReading, time time.Time) error {
 			return nil
 		}
-		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
+		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -409,7 +386,7 @@ func TestAddIMUReading(t *testing.T) {
 		carto.AddIMUReadingFunc = func(name string, reading IMUReading, time time.Time) error {
 			return expectedErr
 		}
-		err = cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
+		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -419,7 +396,7 @@ func TestAddIMUReading(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		err = cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "myIMU", testIMUReading, timestamp)
+		err := cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "myIMU", testIMUReading, timestamp)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -435,10 +412,8 @@ func TestPosition(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -462,7 +437,7 @@ func TestPosition(t *testing.T) {
 		carto.PositionFunc = func() (Position, error) {
 			return Position{}, expectedErr
 		}
-		_, err = cartoFacade.Position(cancelCtx, 5*time.Second)
+		_, err := cartoFacade.Position(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -472,7 +447,7 @@ func TestPosition(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return Position{}, nil
 		}
-		_, err = cartoFacade.Position(cancelCtx, 1*time.Millisecond)
+		_, err := cartoFacade.Position(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -488,10 +463,8 @@ func TestInternalState(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -513,7 +486,7 @@ func TestInternalState(t *testing.T) {
 		carto.InternalStateFunc = func() ([]byte, error) {
 			return []byte{}, expectedErr
 		}
-		_, err = cartoFacade.InternalState(cancelCtx, 5*time.Second)
+		_, err := cartoFacade.InternalState(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -523,7 +496,7 @@ func TestInternalState(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
-		_, err = cartoFacade.InternalState(cancelCtx, 1*time.Millisecond)
+		_, err := cartoFacade.InternalState(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -539,10 +512,8 @@ func TestPointCloudMap(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -564,7 +535,7 @@ func TestPointCloudMap(t *testing.T) {
 		carto.PointCloudMapFunc = func() ([]byte, error) {
 			return []byte{}, expectedErr
 		}
-		_, err = cartoFacade.PointCloudMap(cancelCtx, 5*time.Second)
+		_, err := cartoFacade.PointCloudMap(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -574,7 +545,7 @@ func TestPointCloudMap(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return []byte{}, nil
 		}
-		_, err = cartoFacade.PointCloudMap(cancelCtx, 1*time.Millisecond)
+		_, err := cartoFacade.PointCloudMap(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -590,10 +561,8 @@ func TestRunFinalOptimization(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg, dir, err := GetTestConfig("mysensor", "")
+	cfg := GetTestConfig("mysensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
-	test.That(t, err, test.ShouldBeNil)
-	defer os.RemoveAll(dir)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
 	carto := CartoMock{}
@@ -604,7 +573,7 @@ func TestRunFinalOptimization(t *testing.T) {
 		carto.RunFinalOptimizationFunc = func() error {
 			return nil
 		}
-		err = cartoFacade.RunFinalOptimization(cancelCtx, 5*time.Second)
+		err := cartoFacade.RunFinalOptimization(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -613,7 +582,7 @@ func TestRunFinalOptimization(t *testing.T) {
 		carto.RunFinalOptimizationFunc = func() error {
 			return expectedErr
 		}
-		err = cartoFacade.RunFinalOptimization(cancelCtx, 5*time.Second)
+		err := cartoFacade.RunFinalOptimization(cancelCtx, 5*time.Second)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -623,7 +592,7 @@ func TestRunFinalOptimization(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		err = cartoFacade.RunFinalOptimization(cancelCtx, 1*time.Millisecond)
+		err := cartoFacade.RunFinalOptimization(cancelCtx, 1*time.Millisecond)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)

@@ -62,7 +62,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 		Logger:                   logger,
 		CartoFacade:              &cf,
 		LidarName:                "good_lidar",
-		LidarDataRateMsec:        200,
+		LidarDataFrequencyHz:     5,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: runFinalOptimizationFunc,
 	}
@@ -161,11 +161,11 @@ func TestAddIMUReadingOffline(t *testing.T) {
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
 	config := Config{
-		Logger:          logger,
-		CartoFacade:     &cf,
-		IMUName:         "good_imu",
-		IMUDataRateMsec: 50,
-		Timeout:         10 * time.Second,
+		Logger:             logger,
+		CartoFacade:        &cf,
+		IMUName:            "good_imu",
+		IMUDataFrequencyHz: 20,
+		Timeout:            10 * time.Second,
 	}
 	t.Run("success, no infinite loop", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
@@ -261,12 +261,12 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		Logger:                   logger,
 		CartoFacade:              &cf,
 		LidarName:                "good_lidar",
-		LidarDataRateMsec:        200,
+		LidarDataFrequencyHz:     5,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
 	}
 
-	t.Run("when AddLidarReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddLidarReading blocks for more than the data rate and succeeds, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -282,7 +282,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("when AddLidarReading is slower than DataRateMsec and returns a lock error, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddLidarReading is slower than data rate and returns a lock error, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -298,7 +298,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("when AddLidarReading blocks for more than the DataRateMsec "+
+	t.Run("when AddLidarReading blocks for more than the date rate "+
 		"and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
@@ -315,7 +315,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("when AddLidarReading is faster than the DataRateMsec and succeeds, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddLidarReading is faster than the date rate and succeeds, time to sleep is <= date rate", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -328,11 +328,11 @@ func TestAddLidarReadingOnline(t *testing.T) {
 
 		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.LidarDataFrequencyHz)
 	})
 
-	t.Run("when AddLidarReading is faster than the DataRateMsec "+
-		"and returns lock error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddLidarReading is faster than the date rate "+
+		"and returns lock error, time to sleep is <= date rate", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -345,11 +345,11 @@ func TestAddLidarReadingOnline(t *testing.T) {
 
 		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.LidarDataFrequencyHz)
 	})
 
-	t.Run("when AddLidarReading is faster than DataRateMsec "+
-		"and returns an unexpected error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddLidarReading is faster than date rate "+
+		"and returns an unexpected error, time to sleep is <= date rate", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -362,7 +362,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 
 		timeToSleep := config.tryAddLidarReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.LidarDataRateMsec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.LidarDataFrequencyHz)
 	})
 }
 
@@ -375,15 +375,15 @@ func TestAddIMUReadingOnline(t *testing.T) {
 	}
 	readingTimestamp := time.Now().UTC()
 	config := Config{
-		Logger:            logger,
-		CartoFacade:       &cf,
-		LidarDataRateMsec: 200,
-		IMUName:           "good_imu",
-		IMUDataRateMsec:   50,
-		Timeout:           10 * time.Second,
+		Logger:               logger,
+		CartoFacade:          &cf,
+		LidarDataFrequencyHz: 5,
+		IMUName:              "good_imu",
+		IMUDataFrequencyHz:   20,
+		Timeout:              10 * time.Second,
 	}
 
-	t.Run("when AddIMUReading blocks for more than the DataRateMsec and succeeds, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddIMUReading blocks for more than the date rate and succeeds, time to sleep is 0", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -399,7 +399,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("when AddIMUReading is slower than DataRateMsec and returns a lock error, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddIMUReading is slower than date rate and returns a lock error, time to sleep is 0", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -415,7 +415,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("when AddIMUReading blocks for more than the DataRateMsec and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+	t.Run("when AddIMUReading blocks for more than the date rate and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -431,7 +431,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
-	t.Run("when AddIMUReading is faster than the DataRateMsec and succeeds, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddIMUReading is faster than the date rate and succeeds, time to sleep is <= date rate", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -444,10 +444,10 @@ func TestAddIMUReadingOnline(t *testing.T) {
 
 		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMUDataFrequencyHz)
 	})
 
-	t.Run("when AddIMUReading is faster than the DataRateMsec and returns a lock error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddIMUReading is faster than the date rate and returns a lock error, time to sleep is <= date rate", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -460,11 +460,11 @@ func TestAddIMUReadingOnline(t *testing.T) {
 
 		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMUDataFrequencyHz)
 	})
 
-	t.Run("when AddIMUReading is faster than DataRateMsec "+
-		"and returns an unexpected error, time to sleep is <= DataRateMsec", func(t *testing.T) {
+	t.Run("when AddIMUReading is faster than date rate "+
+		"and returns an unexpected error, time to sleep is <= date rate", func(t *testing.T) {
 		cf.AddIMUReadingFunc = func(
 			ctx context.Context,
 			timeout time.Duration,
@@ -477,7 +477,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 
 		timeToSleep := config.tryAddIMUReading(context.Background(), reading, readingTimestamp)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, config.IMUDataRateMsec)
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMUDataFrequencyHz)
 	})
 }
 
@@ -519,7 +519,7 @@ func onlineModeLidarTestHelper(
 	config.CartoFacade = &cf
 	config.Lidar = onlineSensor
 	config.LidarName = onlineSensor.Name
-	config.LidarDataRateMsec = 10
+	config.LidarDataFrequencyHz = 100
 
 	jobDone := config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
@@ -592,10 +592,10 @@ func onlineModeIMUTestHelper(
 	config.CartoFacade = &cf
 	config.IMU = onlineIMU
 	config.IMUName = onlineIMU.Name
-	config.IMUDataRateMsec = 10
+	config.IMUDataFrequencyHz = 100
 
 	// set lidar data rate to signify that we are in online mode
-	config.LidarDataRateMsec = 10
+	config.LidarDataFrequencyHz = 100
 	config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 	config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
@@ -638,7 +638,7 @@ func invalidLidarTestHelper(
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
 	cameraName string,
-	lidarDataRateMsec int,
+	lidarDataFrequencyHz int,
 ) {
 	logger := golog.NewTestLogger(t)
 	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, logger)
@@ -663,7 +663,7 @@ func invalidLidarTestHelper(
 	}
 	config.Lidar = lidar
 	config.LidarName = lidar.Name
-	config.LidarDataRateMsec = lidarDataRateMsec
+	config.LidarDataFrequencyHz = lidarDataFrequencyHz
 
 	jobDone := config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 0)
@@ -675,9 +675,9 @@ func invalidIMUTestHelper(
 	t *testing.T,
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
-	lidarDataRateMsec int,
+	lidarDataFrequencyHz int,
 	movementSensorName string,
-	imuDataRateMsec int,
+	imuDataFrequencyHz int,
 ) {
 	logger := golog.NewTestLogger(t)
 	imu, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, logger)
@@ -700,10 +700,10 @@ func invalidIMUTestHelper(
 		calls = append(calls, args)
 		return nil
 	}
-	config.LidarDataRateMsec = lidarDataRateMsec
+	config.LidarDataFrequencyHz = lidarDataFrequencyHz
 	config.IMU = imu
 	config.IMUName = imu.Name
-	config.IMUDataRateMsec = imuDataRateMsec
+	config.IMUDataFrequencyHz = imuDataFrequencyHz
 
 	jobDone := config.addIMUReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 0)
@@ -721,7 +721,7 @@ func TestAddLidarReading(t *testing.T) {
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		LidarDataRateMsec:        200,
+		LidarDataFrequencyHz:     5,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: runFinalOptimizationFunc,
 		Mutex:                    &sync.Mutex{},
@@ -783,7 +783,7 @@ func TestAddLidarReading(t *testing.T) {
 		}
 		config.Lidar = replaySensor
 		config.LidarName = replaySensor.Name
-		config.LidarDataRateMsec = 0
+		config.LidarDataFrequencyHz = 0
 
 		_ = config.addLidarReading(ctx) // first call gets data
 		jobDone := config.addLidarReading(ctx)
@@ -815,7 +815,7 @@ func TestAddLidarReading(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataRateMsec = 0
+		config.LidarDataFrequencyHz = 0
 
 		jobDone := config.addLidarReading(ctx)
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -833,7 +833,7 @@ func TestAddLidarReading(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataRateMsec = 0
+		config.LidarDataFrequencyHz = 0
 
 		jobDone := config.addLidarReading(ctx)
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -845,11 +845,11 @@ func TestAddIMUReading(t *testing.T) {
 	cf := cartofacade.Mock{}
 
 	config := Config{
-		Logger:          logger,
-		CartoFacade:     &cf,
-		IMUDataRateMsec: 50,
-		Timeout:         10 * time.Second,
-		Mutex:           &sync.Mutex{},
+		Logger:             logger,
+		CartoFacade:        &cf,
+		IMUDataFrequencyHz: 20,
+		Timeout:            10 * time.Second,
+		Mutex:              &sync.Mutex{},
 	}
 	ctx := context.Background()
 
@@ -910,8 +910,8 @@ func TestAddIMUReading(t *testing.T) {
 		}
 		config.IMU = replayIMU
 		config.IMUName = replayIMU.Name
-		config.IMUDataRateMsec = 0
-		config.LidarDataRateMsec = 0
+		config.IMUDataFrequencyHz = 0
+		config.LidarDataFrequencyHz = 0
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 		config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
@@ -945,7 +945,7 @@ func TestAddIMUReading(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replayIMU
-		config.IMUDataRateMsec = 0
+		config.IMUDataFrequencyHz = 0
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		jobDone := config.addIMUReading(ctx)
@@ -960,7 +960,7 @@ func TestStartLidar(t *testing.T) {
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		LidarDataRateMsec:        200,
+		LidarDataFrequencyHz:     5,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
 		Mutex:                    &sync.Mutex{},
@@ -974,7 +974,7 @@ func TestStartLidar(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataRateMsec = 0
+		config.LidarDataFrequencyHz = 0
 
 		jobDone := config.StartLidar(context.Background())
 		test.That(t, jobDone, test.ShouldBeTrue)
@@ -987,7 +987,7 @@ func TestStartLidar(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
-		config.LidarDataRateMsec = 0
+		config.LidarDataFrequencyHz = 0
 
 		cancelFunc()
 
@@ -1001,11 +1001,11 @@ func TestStartIMU(t *testing.T) {
 	cf := cartofacade.Mock{}
 
 	config := Config{
-		Logger:          logger,
-		CartoFacade:     &cf,
-		IMUDataRateMsec: 50,
-		Timeout:         10 * time.Second,
-		Mutex:           &sync.Mutex{},
+		Logger:             logger,
+		CartoFacade:        &cf,
+		IMUDataFrequencyHz: 20,
+		Timeout:            10 * time.Second,
+		Mutex:              &sync.Mutex{},
 	}
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
@@ -1016,7 +1016,7 @@ func TestStartIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replaySensor
-		config.IMUDataRateMsec = 0
+		config.IMUDataFrequencyHz = 0
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		jobDone := config.StartIMU(context.Background())
@@ -1030,7 +1030,7 @@ func TestStartIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replaySensor
-		config.IMUDataRateMsec = 0
+		config.IMUDataFrequencyHz = 0
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		cancelFunc()
