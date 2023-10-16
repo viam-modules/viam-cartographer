@@ -95,6 +95,23 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
+	t.Run("Successful creation of cartographer slam service with good lidar without IMU name specified", func(t *testing.T) {
+		termFunc := testhelper.InitTestCL(t, logger)
+		defer termFunc()
+
+		attrCfg := &vcConfig.Config{
+			Camera:         map[string]string{"name": "good_lidar", "data_frequency_hz": testLidarDataFreqHz},
+			MovementSensor: map[string]string{"name": ""},
+			ConfigParams:   map[string]string{"mode": "2d"},
+			EnableMapping:  &_true,
+		}
+
+		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
+		test.That(t, err, test.ShouldBeNil)
+
+		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
+	})
+
 	t.Run("Successful creation of cartographer slam service with good lidar with IMU", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
