@@ -124,14 +124,14 @@ func TestGetOptionalParameters(t *testing.T) {
 			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, optionalConfigParams.LidarDataFrequencyHz, test.ShouldEqual, 1000)
-		test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "")
-		test.That(t, optionalConfigParams.ImuDataFrequencyHz, test.ShouldEqual, 0)
+		test.That(t, optionalConfigParams.MovementSensorName, test.ShouldEqual, "")
+		test.That(t, optionalConfigParams.MovementSensorDataFrequencyHz, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.ExistingMap, test.ShouldEqual, "")
 	})
 
-	t.Run("Pass default parameters with no IMU name specified", func(t *testing.T) {
+	t.Run("Pass default parameters with no movement sensor name specified", func(t *testing.T) {
 		cfgService := makeCfgService()
 
 		cfgService.Attributes["movement_sensor"] = map[string]string{
@@ -148,8 +148,8 @@ func TestGetOptionalParameters(t *testing.T) {
 			logger)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, optionalConfigParams.LidarDataFrequencyHz, test.ShouldEqual, 1000)
-		test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "")
-		test.That(t, optionalConfigParams.ImuDataFrequencyHz, test.ShouldEqual, 0)
+		test.That(t, optionalConfigParams.MovementSensorName, test.ShouldEqual, "")
+		test.That(t, optionalConfigParams.MovementSensorDataFrequencyHz, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
 		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.ExistingMap, test.ShouldEqual, "")
@@ -177,8 +177,8 @@ func TestGetOptionalParameters(t *testing.T) {
 			1000,
 			logger)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, optionalConfigParams.ImuName, test.ShouldEqual, "testNameSensor")
-		test.That(t, optionalConfigParams.ImuDataFrequencyHz, test.ShouldEqual, 2)
+		test.That(t, optionalConfigParams.MovementSensorName, test.ShouldEqual, "testNameSensor")
+		test.That(t, optionalConfigParams.MovementSensorDataFrequencyHz, test.ShouldEqual, 2)
 		test.That(t, optionalConfigParams.LidarDataFrequencyHz, test.ShouldEqual, 2)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeTrue)
 	})
@@ -240,7 +240,7 @@ func sensorAttributeTestHelper(
 		test.That(t, err, test.ShouldBeError, newError("camera[data_frequency_hz] must only contain digits"))
 	})
 
-	t.Run("Unit test return error if imu data frequency is invalid", func(t *testing.T) {
+	t.Run("Unit test return error if movement sensor data frequency is invalid", func(t *testing.T) {
 		cfgService := makeCfgService()
 		cfgService.Attributes["camera"] = map[string]string{
 			"name":              "a",

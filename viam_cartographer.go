@@ -14,7 +14,9 @@ import (
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"go.viam.com/rdk/components/movementsensor"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
@@ -38,7 +40,7 @@ var (
 
 const (
 	defaultLidarDataFrequencyHz          = 5
-	defaultIMUDataFrequencyHz            = 20
+	defaultMovementSensorDataFrequencyHz = 20
 	defaultDialMaxTimeoutSec             = 30
 	defaultSensorValidationMaxTimeoutSec = 30
 	defaultSensorValidationIntervalSec   = 1
@@ -55,6 +57,7 @@ var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
 	MaxRange:             25.0,
 	MinRange:             0.2,
 	UseIMUData:           false,
+	UseOdometerData:      false,
 	MaxSubmapsToKeep:     3,
 	FreshSubmapsCount:    3,
 	MinCoveredArea:       1.0,
@@ -189,7 +192,7 @@ func New(
 	optionalConfigParams, err := vcConfig.GetOptionalParameters(
 		svcConfig,
 		defaultLidarDataFrequencyHz,
-		defaultIMUDataFrequencyHz,
+		defaultMovementSensorDataFrequencyHz,
 		logger,
 	)
 	if err != nil {
@@ -198,13 +201,14 @@ func New(
 
 	lidarName := svcConfig.Camera["name"]
 
-	if optionalConfigParams.ImuName != "" {
-		if optionalConfigParams.LidarDataFrequencyHz == 0 && optionalConfigParams.ImuDataFrequencyHz != 0 {
-			return nil, errors.New("In offline mode, but IMU data frequency is nonzero")
+	movementSensorName := optionalConfigParams.MovementSensorName
+	if movementSensorName != "" {
+		if optionalConfigParams.LidarDataFrequencyHz == 0 && optionalConfigParams.MovementSensorDataFrequencyHz != 0 {
+			return nil, errors.New("In offline mode, but movement sensor data frequency is nonzero")
 		}
 
-		if optionalConfigParams.LidarDataFrequencyHz != 0 && optionalConfigParams.ImuDataFrequencyHz == 0 {
-			return nil, errors.New("In online mode, but IMU data frequency is zero")
+		if optionalConfigParams.LidarDataFrequencyHz != 0 && optionalConfigParams.MovementSensorDataFrequencyHz == 0 {
+			return nil, errors.New("In online mode, but movement sensor data frequency is zero")
 		}
 	}
 
@@ -214,10 +218,26 @@ func New(
 		return nil, err
 	}
 
-	// Get the IMU if one is configured
-	timedIMU, err := s.NewIMU(ctx, deps, optionalConfigParams.ImuName, optionalConfigParams.ImuDataFrequencyHz, logger)
-	if err != nil {
-		return nil, err
+	// Get the movement sensor if one is configured and check if it supports an IMU and/or odometer.
+	var imuSupported, odometerSupported bool
+	if movementSensorName == "" {
+		logger.Info("no movement sensor configured, proceeding without IMU and without odometer")
+	} else {
+		imuSupported, odometerSupported, err = checkIfIMUAndOdometerSupported(ctx, deps, movementSensorName, logger)
+	}
+
+	// Get the IMU if it is supported
+	var timedIMU s.TimedIMUSensor
+	if imuSupported {
+		timedIMU, err = s.NewIMU(ctx, deps, movementSensorName, optionalConfigParams.MovementSensorDataFrequencyHz, logger)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Get the odometer if it is supported
+	if odometerSupported {
+		logger.Info("odometer is not yet supported")
 	}
 
 	// Need to be able to shut down the sensor process before the cartoFacade
@@ -237,6 +257,7 @@ func New(
 		Named:                         c.ResourceName().AsNamed(),
 		lidar:                         timedLidar,
 		imu:                           timedIMU,
+		movementSensorName:            movementSensorName,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
 		cancelSensorProcessFunc:       cancelSensorProcessFunc,
@@ -288,6 +309,29 @@ func New(
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
+}
+
+func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies,
+	movementSensorName string, logger *zap.SugaredLogger) (bool, bool, error) {
+
+	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
+	if err != nil {
+		return false, false, errors.Wrapf(err, "error getting movement sensor %v for slam service", movementSensorName)
+	}
+
+	properties, err := movementSensor.Properties(ctx, make(map[string]interface{}))
+	if err != nil {
+		return false, false, errors.Wrapf(err, "error getting movement sensor properties %v for slam service",
+			movementSensorName)
+	}
+
+	// A movement sensor used as an IMU must support LinearAcceleration and AngularVelocity.
+	imuSupported := properties.LinearAccelerationSupported && properties.AngularVelocitySupported
+
+	// A movement_sensor used as an odometer must support Position and Orientation.
+	odometerSupported := properties.PositionSupported && properties.OrientationSupported
+
+	return imuSupported, odometerSupported, nil
 }
 
 func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (cartofacade.CartoAlgoConfig, error) {
@@ -476,12 +520,13 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 type CartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
-	mu       sync.Mutex
-	SlamMode cartofacade.SlamMode
-	closed   bool
-	lidar    s.TimedLidarSensor
-	imu      s.TimedIMUSensor
-	subAlgo  SubAlgo
+	mu                 sync.Mutex
+	SlamMode           cartofacade.SlamMode
+	closed             bool
+	lidar              s.TimedLidarSensor
+	imu                s.TimedIMUSensor
+	movementSensorName string
+	subAlgo            SubAlgo
 
 	configParams map[string]string
 
