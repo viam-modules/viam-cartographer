@@ -115,7 +115,6 @@ func TestGetOptionalParameters(t *testing.T) {
 
 	t.Run("Pass default parameters", func(t *testing.T) {
 		cfgService := makeCfgService()
-		cfgService.Attributes["sensors"] = []string{"a"}
 		cfg, err := newConfig(cfgService)
 		test.That(t, err, test.ShouldBeNil)
 		optionalConfigParams, err := GetOptionalParameters(
