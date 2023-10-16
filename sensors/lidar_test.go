@@ -18,7 +18,7 @@ func TestNewLidar(t *testing.T) {
 	t.Run("No lidar provided", func(t *testing.T) {
 		lidarName := ""
 		deps := s.SetupDeps(lidarName, "")
-		_, err := s.NewLidar(context.Background(), deps, lidarName, dataRateMsec, logger)
+		_, err := s.NewLidar(context.Background(), deps, lidarName, dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("error getting lidar camera "+
 				" for slam service: \"rdk:component:camera/\" missing from dependencies"))
@@ -27,7 +27,7 @@ func TestNewLidar(t *testing.T) {
 	t.Run("Failed lidar creation with non-existing sensor", func(t *testing.T) {
 		lidarName := "gibberish"
 		deps := s.SetupDeps(lidarName, "")
-		actualLidar, err := s.NewLidar(context.Background(), deps, lidarName, dataRateMsec, logger)
+		actualLidar, err := s.NewLidar(context.Background(), deps, lidarName, dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("error getting lidar camera "+
 				"gibberish for slam service: \"rdk:component:camera/gibberish\" missing from dependencies"))
@@ -39,7 +39,7 @@ func TestNewLidar(t *testing.T) {
 		lidarName := "good_lidar"
 		ctx := context.Background()
 		deps := s.SetupDeps(lidarName, "")
-		actualLidar, err := s.NewLidar(ctx, deps, lidarName, dataRateMsec, logger)
+		actualLidar, err := s.NewLidar(ctx, deps, lidarName, dataFrequencyHz, logger)
 		test.That(t, actualLidar.Name(), test.ShouldEqual, lidarName)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -54,11 +54,11 @@ func TestValidateGetLidarData(t *testing.T) {
 	ctx := context.Background()
 
 	lidarName := "good_lidar"
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidarName = "lidar_with_invalid_properties"
-	_, err = s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+	_, err = s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeError, errors.New("configuring lidar camera error: 'camera' must support PCD"))
 
 	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
@@ -71,7 +71,7 @@ func TestValidateGetLidarData(t *testing.T) {
 
 	t.Run("returns nil if a lidar reading succeeds within the timeout", func(t *testing.T) {
 		lidarName = "warming_up_lidar"
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 		err = s.ValidateGetLidarData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -82,7 +82,7 @@ func TestValidateGetLidarData(t *testing.T) {
 		cancelFunc()
 
 		lidarName = "warming_up_lidar"
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		err = s.ValidateGetLidarData(cancelledCtx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
@@ -95,19 +95,19 @@ func TestTimedLidarSensorReading(t *testing.T) {
 	ctx := context.Background()
 
 	lidarName := "lidar_with_erroring_functions"
-	lidarWithErroringFunctions, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+	lidarWithErroringFunctions, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidarName = "invalid_replay_lidar"
-	invalidReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+	invalidReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidarName = "good_lidar"
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	lidarName = "replay_lidar"
-	goodReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataRateMsec, logger)
+	goodReplayLidar, err := s.NewLidar(ctx, s.SetupDeps(lidarName, ""), lidarName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("when the lidar returns an error, returns that error", func(t *testing.T) {

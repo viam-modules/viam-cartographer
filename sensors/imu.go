@@ -30,7 +30,7 @@ var defaultTime = time.Time{}
 // TimedIMUSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
 type TimedIMUSensor interface {
 	Name() string
-	DataRateMsec() int
+	DataFrequencyHz() int
 	TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error)
 }
 
@@ -45,9 +45,9 @@ type TimedIMUSensorReadingResponse struct {
 
 // IMU represents an IMU movement sensor.
 type IMU struct {
-	name         string
-	dataRateMsec int
-	Imu          movementsensor.MovementSensor
+	name            string
+	dataFrequencyHz int
+	Imu             movementsensor.MovementSensor
 }
 
 // Name returns the name of the IMU.
@@ -55,9 +55,9 @@ func (imu IMU) Name() string {
 	return imu.name
 }
 
-// DataRateMsec returns the data rate in ms of the IMU.
-func (imu IMU) DataRateMsec() int {
-	return imu.dataRateMsec
+// DataFrequencyHz returns the data rate in ms of the IMU.
+func (imu IMU) DataFrequencyHz() int {
+	return imu.dataFrequencyHz
 }
 
 // TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.
@@ -132,7 +132,7 @@ func NewIMU(
 	ctx context.Context,
 	deps resource.Dependencies,
 	imuName string,
-	dataRateMsec int,
+	dataFrequencyHz int,
 	logger golog.Logger,
 ) (TimedIMUSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewIMU")
@@ -156,9 +156,9 @@ func NewIMU(
 	}
 
 	return IMU{
-		name:         imuName,
-		dataRateMsec: dataRateMsec,
-		Imu:          movementSensor,
+		name:            imuName,
+		dataFrequencyHz: dataFrequencyHz,
+		Imu:             movementSensor,
 	}, nil
 }
 

@@ -20,7 +20,7 @@ import (
 // TimedLidarSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
 type TimedLidarSensor interface {
 	Name() string
-	DataRateMsec() int
+	DataFrequencyHz() int
 	TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error)
 }
 
@@ -34,9 +34,9 @@ type TimedLidarSensorReadingResponse struct {
 
 // Lidar represents a LIDAR sensor.
 type Lidar struct {
-	name         string
-	dataRateMsec int
-	Lidar        camera.Camera
+	name            string
+	dataFrequencyHz int
+	Lidar           camera.Camera
 }
 
 // Name returns the name of the lidar.
@@ -44,9 +44,9 @@ func (lidar Lidar) Name() string {
 	return lidar.name
 }
 
-// DataRateMsec returns the data rate in ms of the lidar.
-func (lidar Lidar) DataRateMsec() int {
-	return lidar.dataRateMsec
+// DataFrequencyHz returns the data rate in ms of the lidar.
+func (lidar Lidar) DataFrequencyHz() int {
+	return lidar.dataFrequencyHz
 }
 
 // TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether
@@ -84,7 +84,7 @@ func NewLidar(
 	ctx context.Context,
 	deps resource.Dependencies,
 	cameraName string,
-	dataRateMsec int,
+	dataFrequencyHz int,
 	logger golog.Logger,
 ) (TimedLidarSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
@@ -106,9 +106,9 @@ func NewLidar(
 	}
 
 	return Lidar{
-		name:         cameraName,
-		dataRateMsec: dataRateMsec,
-		Lidar:        lidar,
+		name:            cameraName,
+		dataFrequencyHz: dataFrequencyHz,
+		Lidar:           lidar,
 	}, nil
 }
 

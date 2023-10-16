@@ -122,10 +122,10 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		CartoFacade:              cartoSvc.cartofacade,
 		Lidar:                    cartoSvc.lidar,
 		LidarName:                cartoSvc.lidar.Name(),
-		LidarDataRateMsec:        cartoSvc.lidar.DataRateMsec(),
+		LidarDataFrequencyHz:     cartoSvc.lidar.DataFrequencyHz(),
 		IMU:                      cartoSvc.imu,
 		IMUName:                  cartoSvc.imu.Name(),
-		IMUDataRateMsec:          cartoSvc.imu.DataRateMsec(),
+		IMUDataFrequencyHz:       cartoSvc.imu.DataFrequencyHz(),
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
@@ -209,13 +209,13 @@ func New(
 	}
 
 	// Get the lidar for the Dim2D cartographer sub algorithm
-	timedLidar, err := s.NewLidar(ctx, deps, lidarName, optionalConfigParams.LidarDataRateMsec, logger)
+	timedLidar, err := s.NewLidar(ctx, deps, lidarName, optionalConfigParams.LidarDataFrequencyHz, logger)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get the IMU if one is configured
-	timedIMU, err := s.NewIMU(ctx, deps, optionalConfigParams.ImuName, optionalConfigParams.ImuDataRateMsec, logger)
+	timedIMU, err := s.NewIMU(ctx, deps, optionalConfigParams.ImuName, optionalConfigParams.ImuDataFrequencyHz, logger)
 	if err != nil {
 		return nil, err
 	}

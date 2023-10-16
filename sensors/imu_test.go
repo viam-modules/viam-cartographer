@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	dataRateMsec = 1
+	dataFrequencyHz = 1
 )
 
 func TestNewIMU(t *testing.T) {
@@ -26,7 +26,7 @@ func TestNewIMU(t *testing.T) {
 		imuName := ""
 		lidarName := "good_lidar"
 		deps := s.SetupDeps(lidarName, imuName)
-		_, err := s.NewIMU(context.Background(), deps, imuName, dataRateMsec, logger)
+		_, err := s.NewIMU(context.Background(), deps, imuName, dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -34,7 +34,7 @@ func TestNewIMU(t *testing.T) {
 		lidarName := "good_lidar"
 		imuName := "gibberish"
 		deps := s.SetupDeps(lidarName, imuName)
-		actualIMU, err := s.NewIMU(context.Background(), deps, imuName, dataRateMsec, logger)
+		actualIMU, err := s.NewIMU(context.Background(), deps, imuName, dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("error getting IMU movement sensor "+
 				"gibberish for slam service: \"rdk:component:movement_sensor/gibberish\" missing from dependencies"))
@@ -46,7 +46,7 @@ func TestNewIMU(t *testing.T) {
 		lidarName := "good_lidar"
 		imuName := "imu_with_invalid_properties"
 		deps := s.SetupDeps(lidarName, imuName)
-		actualIMU, err := s.NewIMU(context.Background(), deps, imuName, dataRateMsec, logger)
+		actualIMU, err := s.NewIMU(context.Background(), deps, imuName, dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring IMU movement sensor error: "+
 				"'movement_sensor' must support both LinearAcceleration and AngularVelocity"))
@@ -59,7 +59,7 @@ func TestNewIMU(t *testing.T) {
 		imuName := "good_imu"
 		ctx := context.Background()
 		deps := s.SetupDeps(lidarName, imuName)
-		actualIMU, err := s.NewIMU(ctx, deps, imuName, dataRateMsec, logger)
+		actualIMU, err := s.NewIMU(ctx, deps, imuName, dataFrequencyHz, logger)
 		test.That(t, actualIMU.Name(), test.ShouldEqual, imuName)
 		test.That(t, err, test.ShouldBeNil)
 
@@ -81,11 +81,11 @@ func TestTimedIMUSensorReading(t *testing.T) {
 
 	lidarName := "good_lidar"
 	imuName := "imu_with_erroring_functions"
-	imuWithErroringFunctions, err := s.NewIMU(ctx, s.SetupDeps(lidarName, imuName), imuName, dataRateMsec, logger)
+	imuWithErroringFunctions, err := s.NewIMU(ctx, s.SetupDeps(lidarName, imuName), imuName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	imuName = "good_imu"
-	goodIMU, err := s.NewIMU(ctx, s.SetupDeps(lidarName, imuName), imuName, dataRateMsec, logger)
+	goodIMU, err := s.NewIMU(ctx, s.SetupDeps(lidarName, imuName), imuName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	t.Run("when the IMU returns an error, returns that error", func(t *testing.T) {
