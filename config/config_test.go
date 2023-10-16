@@ -135,7 +135,8 @@ func TestGetOptionalParameters(t *testing.T) {
 		cfgService := makeCfgService()
 
 		cfgService.Attributes["movement_sensor"] = map[string]string{
-			"name": "",
+			"name":              "",
+			"data_frequency_hz": "5",
 		}
 
 		cfg, err := newConfig(cfgService)
