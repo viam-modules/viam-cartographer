@@ -1,32 +1,20 @@
 package cartofacade
 
-import (
-	"os"
-)
-
 // GetTestConfig gets a sample config for testing purposes.
-func GetTestConfig(cameraName, movementSensorName string) (CartoConfig, string, error) {
-	dir, err := os.MkdirTemp("", "slam-test")
-	if err != nil {
-		return CartoConfig{}, "", err
-	}
-
+func GetTestConfig(cameraName, movementSensorName, filename string, enableMapping bool) CartoConfig {
 	return CartoConfig{
 		Camera:             cameraName,
 		MovementSensor:     movementSensorName,
-		MapRateSecond:      5,
-		DataDir:            dir,
 		ComponentReference: "component",
 		LidarConfig:        TwoD,
-		CloudStoryEnabled:  false,
-		EnableMapping:      false,
-	}, dir, nil
+		EnableMapping:      enableMapping,
+		ExistingMap:        filename,
+	}
 }
 
 // GetBadTestConfig gets a sample config for testing purposes that will cause a failure.
 func GetBadTestConfig() CartoConfig {
 	return CartoConfig{
-		Camera:      "rplidar",
 		LidarConfig: TwoD,
 	}
 }

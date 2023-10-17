@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"context"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -64,20 +63,20 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 		}
 
 	case runtime.GOOS == "darwin" && useIMU:
-		expectedPos = r3.Vector{X: 4.4700878707562035, Y: 3.1781587655776358, Z: 0}
+		expectedPos = r3.Vector{X: 3.2858556935949954, Y: 2.707920249449911, Z: 0}
 		expectedOri = &spatialmath.R4AA{
-			RX:    0.9861776038047263,
-			RY:    0.1637212678758259,
-			RZ:    0.025477052402116784,
-			Theta: 0.02399255141454847,
+			RX:    0.985674239521596,
+			RY:    0.16629528269791533,
+			RZ:    0.028145559080315113,
+			Theta: 0.02419815380920185,
 		}
 	case runtime.GOOS == "linux" && useIMU:
-		expectedPos = r3.Vector{X: 3.2250269853115867, Y: 5.104006882925285, Z: 0}
+		expectedPos = r3.Vector{X: 2.818452534935628, Y: 4.638793228411633, Z: 0}
 		expectedOri = &spatialmath.R4AA{
-			RX:    0.9864461301028694,
-			RY:    0.16360809262540335,
-			RZ:    0.012506975355798564,
-			Theta: 0.02398663944371901,
+			RX:    0.9859779865188529,
+			RY:    0.1661869442158477,
+			RZ:    0.01514297435866381,
+			Theta: 0.024191340835320173,
 		}
 	}
 
@@ -121,16 +120,17 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 }
 
 // Saves cartographer's internal state in the data directory.
-func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
+func saveInternalState(t *testing.T, internalState []byte, dataDir string) string {
 	timeStamp := time.Now().UTC()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
-	if err := os.Mkdir(internalStateDir, 0o755); err != nil {
-		t.Error("TEST FAILED failed to create test internal state directory")
-	}
+	err := os.Mkdir(internalStateDir, 0o755)
+	test.That(t, err, test.ShouldBeNil)
+
 	filename := filepath.Join(internalStateDir, "map_data_"+timeStamp.UTC().Format(testhelper.SlamTimeFormat)+".pbstream")
-	if err := os.WriteFile(filename, internalState, 0o644); err != nil {
-		t.Error("TEST FAILED failed to write test internal state")
-	}
+	err = os.WriteFile(filename, internalState, 0o644)
+	test.That(t, err, test.ShouldBeNil)
+
+	return filename
 }
 
 // testHelperCartographer is responsible for running a viam-cartographer process using the desired mock sensors. Once started it will
@@ -138,12 +138,13 @@ func saveInternalState(t *testing.T, internalState []byte, dataDir string) {
 // PointCloudMap, InternalState are evaluated and the process is closed out. The final internal state of cartographer is then returned.
 func testHelperCartographer(
 	t *testing.T,
-	dataDirectory string,
+	existingMap string,
 	subAlgo viamcartographer.SubAlgo,
 	logger golog.Logger,
 	replaySensor bool,
+	online bool,
 	useIMU bool,
-	mapRateSec int,
+	enableMapping bool,
 	expectedMode cartofacade.SlamMode,
 ) []byte {
 	termFunc := testhelper.InitTestCL(t, logger)
@@ -155,19 +156,18 @@ func testHelperCartographer(
 	}
 
 	attrCfg := &vcConfig.Config{
+		ExistingMap:   existingMap,
+		EnableMapping: &enableMapping,
 		ConfigParams: map[string]string{
 			"mode": reflect.ValueOf(subAlgo).String(),
 		},
-		MapRateSec:    &mapRateSec,
-		DataDirectory: dataDirectory,
-		NewConfigFlag: true,
 	}
 
 	// Add lidar component to config (required)
 	lidarDone := make(chan struct{})
 	lidarReadingInterval := time.Millisecond * defaultLidarTimeInterval
 	timeTracker.LidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
-	if replaySensor {
+	if !online {
 		attrCfg.Camera = map[string]string{"name": "stub_lidar", "data_frequency_hz": "0"}
 	} else {
 		attrCfg.Camera = map[string]string{"name": "stub_lidar", "data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval)}
@@ -177,7 +177,7 @@ func testHelperCartographer(
 	imuDone := make(chan struct{})
 	imuReadingInterval := time.Millisecond * defaultIMUTimeInterval
 	if useIMU {
-		if replaySensor {
+		if !online {
 			attrCfg.MovementSensor = map[string]string{"name": "stub_imu", "data_frequency_hz": "0"}
 		} else {
 			attrCfg.MovementSensor = map[string]string{"name": "stub_imu", "data_frequency_hz": strconv.Itoa(defaultIMUTimeInterval)}
@@ -233,12 +233,6 @@ func testHelperCartographer(
 	testDuration := time.Since(start)
 	t.Logf("test duration %dms", testDuration.Milliseconds())
 
-	// Check that a map was generated as the test has been running for more than the map rate msec
-	mapsInDir, err := os.ReadDir(path.Join(dataDirectory, "internal_state"))
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, testDuration.Seconds(), test.ShouldBeGreaterThanOrEqualTo, time.Duration(*attrCfg.MapRateSec).Seconds())
-	test.That(t, len(mapsInDir), test.ShouldBeGreaterThan, 0)
-
 	// return the internal state so updating mode can be tested
 	return internalState
 }
@@ -250,72 +244,74 @@ func TestIntegrationCartographer(t *testing.T) {
 
 	cases := []struct {
 		description string
+		online      bool
 		replay      bool
 		imuEnabled  bool
 		mode        cartofacade.SlamMode
 		subAlgo     viamcartographer.SubAlgo
 	}{
-		// Live sensor
+		// Online sensor
 		{
-			description: "live sensor mapping mode 2D",
+			description: "online sensor mapping mode 2D",
+			online:      true,
 			replay:      false,
 			imuEnabled:  false,
 			mode:        cartofacade.MappingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "live sensor localizing mode 2D",
+			description: "online sensor localizing mode 2D",
+			online:      true,
 			replay:      false,
 			imuEnabled:  false,
 			mode:        cartofacade.LocalizingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "live sensor updating mode 2D",
+			description: "online sensor updating mode 2D",
+			online:      true,
 			replay:      false,
 			imuEnabled:  false,
 			mode:        cartofacade.UpdatingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
-		// Replay sensor
+		// Offline sensor
 		{
-			description: "replay sensor mapping mode 2D",
+			description: "offline sensor mapping mode 2D",
+			online:      false,
 			replay:      true,
 			imuEnabled:  false,
 			mode:        cartofacade.MappingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "replay sensor localizing mode 2D",
-			replay:      true,
-			imuEnabled:  false,
-			mode:        cartofacade.LocalizingMode,
-			subAlgo:     viamcartographer.Dim2d,
-		},
-		{
-			description: "replay sensor updating mode 2D",
+			description: "offline sensor updating mode 2D",
+			online:      false,
 			replay:      true,
 			imuEnabled:  false,
 			mode:        cartofacade.UpdatingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
-		// Live + imu sensor
+		// Offline with imu sensor
 		{
-			description: "replay with imu sensor mapping mode 2D",
+			description: "online with imu sensor mapping mode 2D",
+			online:      true,
 			replay:      true,
 			imuEnabled:  true,
 			mode:        cartofacade.MappingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "replay with imu sensor localizing mode 2D",
+			description: "online with imu sensor localizing mode 2D",
+			online:      true,
 			replay:      true,
 			imuEnabled:  true,
 			mode:        cartofacade.LocalizingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
 		{
-			description: "replay with imu sensor updating mode 2D",
+			description: "online with imu sensor updating mode 2D",
+			online:      true,
 			replay:      true,
 			imuEnabled:  true,
 			mode:        cartofacade.UpdatingMode,
@@ -335,10 +331,13 @@ func TestIntegrationCartographer(t *testing.T) {
 			}()
 
 			// Set mapRateSec for mapping mode
-			mapRateSec := 1
+			enableMapping := true
 
 			// Run mapping test
-			internalState := testHelperCartographer(t, dataDirectory1, tt.subAlgo, logger, tt.replay, tt.imuEnabled, 1, cartofacade.MappingMode)
+			internalState := testHelperCartographer(
+				t, "", tt.subAlgo, logger, tt.replay,
+				tt.online, tt.imuEnabled, enableMapping, cartofacade.MappingMode,
+			)
 
 			// Return if in mapping mode as there are no further actions required
 			if tt.mode == cartofacade.MappingMode {
@@ -354,13 +353,17 @@ func TestIntegrationCartographer(t *testing.T) {
 			}()
 
 			// Save internal state
-			saveInternalState(t, internalState, dataDirectory2)
+			existingMap := saveInternalState(t, internalState, dataDirectory2)
+			test.That(t, existingMap, test.ShouldNotEqual, "")
 
 			// Run follow up updating or localizing test
 			if tt.mode == cartofacade.LocalizingMode {
-				mapRateSec = 0
+				enableMapping = false
 			}
-			testHelperCartographer(t, dataDirectory2, tt.subAlgo, logger, tt.replay, tt.imuEnabled, mapRateSec, tt.mode)
+			testHelperCartographer(
+				t, existingMap, tt.subAlgo, logger, tt.replay,
+				tt.online, tt.imuEnabled, enableMapping, tt.mode,
+			)
 		})
 	}
 }
