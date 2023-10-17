@@ -124,11 +124,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 	spConfig := sensorprocess.Config{
 		CartoFacade:              cartoSvc.cartofacade,
 		Lidar:                    cartoSvc.lidar,
-		LidarName:                cartoSvc.lidar.Name(),
-		LidarDataFrequencyHz:     cartoSvc.lidar.DataFrequencyHz(),
 		IMU:                      cartoSvc.imu,
-		IMUName:                  cartoSvc.imu.Name(),
-		IMUDataFrequencyHz:       cartoSvc.imu.DataFrequencyHz(),
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
@@ -145,7 +141,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		}
 	}()
 
-	if spConfig.IMUName != "" {
+	if spConfig.IMU != nil {
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
@@ -227,7 +223,7 @@ func New(
 	}
 
 	// Get the IMU if it is supported
-	var timedIMU s.TimedIMUSensor = s.IMU{}
+	var timedIMU s.TimedIMUSensor
 	if imuSupported {
 		timedIMU, err = s.NewIMU(ctx, deps, movementSensorName, optionalConfigParams.MovementSensorDataFrequencyHz, logger)
 		if err != nil {
@@ -290,7 +286,7 @@ func New(
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
 	}
-	if cartoSvc.imu.Name() != "" {
+	if cartoSvc.imu != nil {
 		if err = s.ValidateGetIMUData(
 			cancelSensorProcessCtx,
 			timedIMU,
@@ -467,11 +463,11 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		ExistingMap:        cartoSvc.existingMap,
 	}
 
-	if cartoSvc.imu.Name() == "" {
-		cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
-	} else {
+	if cartoSvc.imu != nil {
 		cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
 		cartoAlgoConfig.UseIMUData = true
+	} else {
+		cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
