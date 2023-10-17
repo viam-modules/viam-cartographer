@@ -227,7 +227,7 @@ func New(
 	}
 
 	// Get the IMU if it is supported
-	var timedIMU s.TimedIMUSensor
+	var timedIMU s.TimedIMUSensor = s.IMU{}
 	if imuSupported {
 		timedIMU, err = s.NewIMU(ctx, deps, movementSensorName, optionalConfigParams.MovementSensorDataFrequencyHz, logger)
 		if err != nil {
@@ -237,6 +237,7 @@ func New(
 
 	// Get the odometer if it is supported
 	if odometerSupported {
+		// TODO[kat]: Add when working on https://viam.atlassian.net/browse/RSDK-4860
 		logger.Info("odometer is not yet supported")
 	}
 
@@ -459,18 +460,18 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 
 	cartoCfg := cartofacade.CartoConfig{
 		Camera:             cartoSvc.lidar.Name(),
-		MovementSensor:     cartoSvc.imu.Name(),
+		MovementSensor:     cartoSvc.movementSensorName,
 		ComponentReference: cartoSvc.lidar.Name(),
 		LidarConfig:        cartofacade.TwoD,
 		EnableMapping:      cartoSvc.enableMapping,
 		ExistingMap:        cartoSvc.existingMap,
 	}
 
-	if cartoCfg.MovementSensor != "" {
+	if cartoSvc.imu.Name() == "" {
+		cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
+	} else {
 		cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
 		cartoAlgoConfig.UseIMUData = true
-	} else {
-		cartoSvc.logger.Debug("No IMU configured, setting use_imu_data to false")
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)

@@ -36,8 +36,8 @@ func TestNewIMU(t *testing.T) {
 		deps := s.SetupDeps(lidarName, imuName)
 		actualIMU, err := s.NewIMU(context.Background(), deps, imuName, testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("error getting IMU movement sensor "+
-				"gibberish for slam service: \"rdk:component:movement_sensor/gibberish\" missing from dependencies"))
+			errors.New("error getting movement sensor "+
+				"\"gibberish\" for slam service: \"rdk:component:movement_sensor/gibberish\" missing from dependencies"))
 		expectedIMU := s.IMU{}
 		test.That(t, actualIMU, test.ShouldResemble, expectedIMU)
 	})
