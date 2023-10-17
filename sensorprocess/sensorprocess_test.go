@@ -682,7 +682,7 @@ func invalidIMUTestHelper(
 	imuDataFrequencyHz int,
 ) {
 	logger := golog.NewTestLogger(t)
-	imu, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, lidarDataFrequencyHz, logger)
+	imu, err := s.NewIMU(context.Background(), s.SetupDeps("", movementSensorName), movementSensorName, imuDataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addIMUReadingArgs
