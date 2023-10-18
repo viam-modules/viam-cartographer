@@ -19,6 +19,7 @@ import (
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	"github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orientation {
@@ -488,4 +489,43 @@ func TestBuiltinQuaternion(t *testing.T) {
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldBeEmpty)
 	})
+}
+
+func TestCheckIfIMUAndOdometerSupported(t *testing.T) {
+	ctx := context.Background()
+	t.Run("neither IMU nor Odometer supported", func(t *testing.T) {
+		lidar, movementSensor := s.NoLidar, s.MovementSensorNotIMUNotOdometer
+		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+			s.SetupDeps(lidar, movementSensor), string(movementSensor))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, imuSupported, test.ShouldBeFalse)
+		test.That(t, odometerSupported, test.ShouldBeFalse)
+	})
+
+	t.Run("only IMU supported", func(t *testing.T) {
+		lidar, movementSensor := s.NoLidar, s.GoodIMU
+		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+			s.SetupDeps(lidar, movementSensor), string(movementSensor))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, imuSupported, test.ShouldBeTrue)
+		test.That(t, odometerSupported, test.ShouldBeFalse)
+	})
+	t.Run("only Odometer supported", func(t *testing.T) {
+		lidar, movementSensor := s.NoLidar, s.GoodOdometer
+		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+			s.SetupDeps(lidar, movementSensor), string(movementSensor))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, imuSupported, test.ShouldBeFalse)
+		test.That(t, odometerSupported, test.ShouldBeTrue)
+	})
+	t.Run("both IMU and Odometer supported", func(t *testing.T) {
+		lidar, movementSensor := s.NoLidar, s.MovementSensorBothIMUAndOdometer
+		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+			s.SetupDeps(lidar, movementSensor), string(movementSensor))
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, imuSupported, test.ShouldBeTrue)
+		test.That(t, odometerSupported, test.ShouldBeTrue)
+	})
+
+	// TODO[kat]: Check for both errors (3 more tests)
 }

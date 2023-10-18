@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/geo/r3"
+	geo "github.com/kellydunn/golang-geo"
 	"github.com/pkg/errors"
 	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
@@ -27,8 +28,12 @@ var (
 	TestTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05.999999Z")
 	// LinAcc is the successful mock linear acceleration result used for testing.
 	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
-	// AngVel is the successful mock angular velocity  result used for testing.
+	// AngVel is the successful mock angular velocity result used for testing.
 	AngVel = spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
+
+	Orientation = spatialmath.NewZeroOrientation()
+
+	Position = geo.NewPoint(1, 2)
 )
 
 // TestSensor represents sensors used for testing.
@@ -74,8 +79,14 @@ const (
 	// dataset error.
 	FinishedReplayIMU TestSensor = "finished_replay_imu"
 
+	// GoodOdometer is an odometer that works as expected and returns position and orientation values.
+	GoodOdometer TestSensor = "good_odometer"
+
 	// MovementSensorNotIMUNotOdometer is a movement sensor that does neither support an IMU nor an odometer.
 	MovementSensorNotIMUNotOdometer TestSensor = "movement_sensor_not_imu_not_odometer"
+
+	// MovementSensorBothIMUAndOdometer is a movement sensor that dsupports both an IMU nor an odometer.
+	MovementSensorBothIMUAndOdometer TestSensor = "movement_sensor_imu_and_odometer"
 )
 
 var (
@@ -90,13 +101,15 @@ var (
 	}
 
 	testMovementSensors = map[TestSensor]func() *inject.MovementSensor{
-		GoodIMU:                         getGoodIMU,
-		IMUWithErroringFunctions:        getIMUWithErroringFunctions,
-		IMUWithInvalidProperties:        getIMUWithInvalidProperties,
-		MovementSensorNotIMUNotOdometer: getMovementSensorNotIMUAndNotOdometer,
-		ReplayIMU:                       func() *inject.MovementSensor { return getReplayIMU(TestTimestamp) },
-		InvalidReplayIMU:                func() *inject.MovementSensor { return getReplayIMU(BadTime) },
-		FinishedReplayIMU:               func() *inject.MovementSensor { return getFinishedReplayIMU() },
+		GoodIMU:                          getGoodIMU,
+		IMUWithErroringFunctions:         getIMUWithErroringFunctions,
+		IMUWithInvalidProperties:         getIMUWithInvalidProperties,
+		ReplayIMU:                        func() *inject.MovementSensor { return getReplayIMU(TestTimestamp) },
+		InvalidReplayIMU:                 func() *inject.MovementSensor { return getReplayIMU(BadTime) },
+		FinishedReplayIMU:                func() *inject.MovementSensor { return getFinishedReplayIMU() },
+		GoodOdometer:                     getGoodOdometer,
+		MovementSensorNotIMUNotOdometer:  getMovementSensorNotIMUAndNotOdometer,
+		MovementSensorBothIMUAndOdometer: getMovementSensorBothIMUAndOdometer,
 	}
 )
 
@@ -285,11 +298,11 @@ func getIMUWithErroringFunctions() *inject.MovementSensor {
 }
 
 func getMovementSensorNotIMUAndNotOdometer() *inject.MovementSensor {
-	imu := &inject.MovementSensor{}
-	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{}, nil
 	}
-	return imu
+	return movementSensor
 }
 
 func getIMUWithInvalidProperties() *inject.MovementSensor {
@@ -324,4 +337,46 @@ func getFinishedReplayIMU() *inject.MovementSensor {
 		}, nil
 	}
 	return imu
+}
+
+func getGoodOdometer() *inject.MovementSensor {
+	odometer := &inject.MovementSensor{}
+	odometer.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
+		return Position, 10, nil
+	}
+	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
+		return Orientation, nil
+	}
+	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			PositionSupported:    true,
+			OrientationSupported: true,
+		}, nil
+	}
+	return odometer
+}
+
+func getMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
+		return Position, 10, nil
+	}
+	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
+		return Orientation, nil
+	}
+	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		return LinAcc, nil
+	}
+	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		return AngVel, nil
+	}
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			OrientationSupported:        true,
+			PositionSupported:           true,
+			LinearAccelerationSupported: true,
+		}, nil
+	}
+	return movementSensor
 }

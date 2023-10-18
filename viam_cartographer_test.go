@@ -113,7 +113,7 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	t.Run("Successful creation of cartographer slam service with good lidar without movement"+
+	t.Run("Successful creation of cartographer slam service with good lidar with movement"+
 		"sensor that does not support IMU nor odometer", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
