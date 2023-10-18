@@ -14,7 +14,6 @@ import (
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
-	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.viam.com/rdk/components/movementsensor"
 	viamgrpc "go.viam.com/rdk/grpc"
@@ -219,7 +218,7 @@ func New(
 	if movementSensorName == "" {
 		logger.Info("no movement sensor configured, proceeding without IMU and without odometer")
 	} else {
-		imuSupported, odometerSupported, err = checkIfIMUAndOdometerSupported(ctx, deps, movementSensorName, logger)
+		imuSupported, odometerSupported, err = checkIfIMUAndOdometerSupported(ctx, deps, movementSensorName)
 	}
 
 	// Get the IMU if it is supported
@@ -308,9 +307,7 @@ func New(
 	return cartoSvc, nil
 }
 
-func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies,
-	movementSensorName string, logger *zap.SugaredLogger) (bool, bool, error) {
-
+func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies, movementSensorName string) (bool, bool, error) {
 	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
 	if err != nil {
 		return false, false, errors.Wrapf(err, "error getting movement sensor %v for slam service", movementSensorName)

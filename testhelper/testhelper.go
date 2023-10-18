@@ -179,15 +179,15 @@ func CreateSLAMService(
 	}
 
 	cameraName := cfg.Camera["name"]
-	imuName := cfg.MovementSensor["name"]
+	movementSensorName := cfg.MovementSensor["name"]
 
-	if imuName == "" {
+	if movementSensorName == "" {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
 	} else {
-		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName, imuName})
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName, movementSensorName})
 	}
 
-	deps := s.SetupDeps(cameraName, imuName)
+	deps := s.SetupDeps(s.TestSensor(cameraName), s.TestSensor(movementSensorName))
 
 	svc, err := viamcartographer.New(
 		ctx,
