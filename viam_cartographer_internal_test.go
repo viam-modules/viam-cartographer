@@ -18,7 +18,6 @@ import (
 	"go.viam.com/utils/artifact"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
@@ -95,7 +94,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("empty component reference success", func(t *testing.T) {
 		lidarName := ""
-		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar := s.TimedLidarSensorMock{}
 		mockLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &mockLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
@@ -106,7 +105,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("origin pose success", func(t *testing.T) {
 		lidarName := "primarySensor1"
-		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar := s.TimedLidarSensorMock{}
 		mockLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &mockLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
@@ -117,7 +116,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("non origin pose success", func(t *testing.T) {
 		lidarName := "primarySensor2"
-		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar := s.TimedLidarSensorMock{}
 		mockLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &mockLidar
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
@@ -128,7 +127,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("error case", func(t *testing.T) {
 		lidarName := "primarySensor3"
-		mockLidar := sensors.TimedLidarSensorMock{}
+		mockLidar := s.TimedLidarSensorMock{}
 		mockLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &mockLidar
 

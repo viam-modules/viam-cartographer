@@ -30,9 +30,9 @@ var (
 	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
 	// AngVel is the successful mock angular velocity result used for testing.
 	AngVel = spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
-
+	// Orientation is the successful mock orientation result used for testing.
 	Orientation = spatialmath.NewZeroOrientation()
-
+	// Position is the successful mock position result used for testing.
 	Position = geo.NewPoint(1, 2)
 )
 
