@@ -33,6 +33,7 @@ Install viam-cartographer:
     ```bash
     brew tap viamrobotics/brews && brew install cartographer-module
     ```
+Note that AppImages require FUSE to run. See [documentation](https://docs.viam.com/appendix/troubleshooting/#appimages-require-fuse-to-run).
 
 ## Development
 
@@ -51,6 +52,7 @@ You can install the latest AppImages using:
     sudo curl -o /usr/local/bin/cartographer-module https://storage.googleapis.com/packages.viam.com/apps/slam-servers/cartographer-module-latest-x86_64.AppImage
     sudo chmod a+rx /usr/local/bin/cartographer-module
     ```
+Note that AppImages require FUSE to run. See [documentation](https://docs.viam.com/appendix/troubleshooting/#appimages-require-fuse-to-run).
 
 ### Build from source
 
