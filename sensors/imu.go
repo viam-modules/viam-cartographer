@@ -47,7 +47,7 @@ type TimedIMUSensorReadingResponse struct {
 type IMU struct {
 	name            string
 	dataFrequencyHz int
-	Imu             movementsensor.MovementSensor
+	IMU             movementsensor.MovementSensor
 }
 
 // Name returns the name of the IMU.
@@ -76,7 +76,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 		default:
 			if timeLinearAcc == defaultTime || timeLinearAcc.Sub(timeAngularVel).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-				linAcc, err = imu.Imu.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
+				linAcc, err = imu.IMU.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
 				if err != nil {
 					msg := "LinearAcceleration error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
@@ -95,7 +95,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 
 			if timeAngularVel == defaultTime || timeAngularVel.Sub(timeLinearAcc).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-				angVel, err = imu.Imu.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
+				angVel, err = imu.IMU.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
 				if err != nil {
 					msg := "AngularVelocity error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
@@ -158,7 +158,7 @@ func NewIMU(
 	return IMU{
 		name:            imuName,
 		dataFrequencyHz: dataFrequencyHz,
-		Imu:             movementSensor,
+		IMU:             movementSensor,
 	}, nil
 }
 

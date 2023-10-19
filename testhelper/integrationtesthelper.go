@@ -86,9 +86,7 @@ func IntegrationTimedLidarSensor(
 
 	closed := false
 	ts := &sensors.TimedLidarSensorMock{}
-	ts.NameFunc = func() string {
-		return lidarName
-	}
+	ts.NameFunc = func() string { return lidarName }
 	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (sensors.TimedLidarSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*

@@ -489,7 +489,7 @@ func onlineModeLidarTestHelper(
 	cameraName string,
 ) {
 	logger := golog.NewTestLogger(t)
-	dataFrequencyHz := 100
+	dataFrequencyHz := 5
 	onlineSensor, err := s.NewLidar(context.Background(), s.SetupDeps(cameraName, ""), cameraName, dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
