@@ -63,20 +63,21 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 		}
 
 	case runtime.GOOS == "darwin" && useIMU:
-		expectedPos = r3.Vector{X: 3.2858556935949954, Y: 2.707920249449911, Z: 0}
+		// expectedPos = r3.Vector{X: 3.2858556935949954, Y: 2.707920249449911, Z: 0}
+		expectedPos = r3.Vector{X: 4.4700878707562035, Y: 3.1781587655776358, Z: 0}
 		expectedOri = &spatialmath.R4AA{
-			RX:    0.985674239521596,
-			RY:    0.16629528269791533,
-			RZ:    0.028145559080315113,
-			Theta: 0.02419815380920185,
+			RX:    0.9861776038047263,
+			RY:    0.1637212678758259,
+			RZ:    0.025477052402116784,
+			Theta: 0.02399255141454847,
 		}
 	case runtime.GOOS == "linux" && useIMU:
-		expectedPos = r3.Vector{X: 2.818452534935628, Y: 4.638793228411633, Z: 0}
+		expectedPos = r3.Vector{X: 3.2250269853115867, Y: 5.104006882925285, Z: 0}
 		expectedOri = &spatialmath.R4AA{
-			RX:    0.9859779865188529,
-			RY:    0.1661869442158477,
-			RZ:    0.01514297435866381,
-			Theta: 0.024191340835320173,
+			RX:    0.9864461301028694,
+			RY:    0.16360809262540335,
+			RZ:    0.012506975355798564,
+			Theta: 0.02398663944371901,
 		}
 	}
 

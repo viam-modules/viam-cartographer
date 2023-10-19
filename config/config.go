@@ -79,8 +79,7 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 	var optionalConfigParams OptionalConfigParams
 
 	// Validate camera info and set defaults
-	strCameraDataFreqHz, exists := config.Camera["data_frequency_hz"]
-	if !exists {
+	if strCameraDataFreqHz, exists := config.Camera["data_frequency_hz"]; !exists {
 		optionalConfigParams.LidarDataFrequencyHz = defaultLidarDataFrequencyHz
 		logger.Debugf("config did not provide camera[data_frequency_hz], setting to default value of %d", defaultLidarDataFrequencyHz)
 	} else {
@@ -94,11 +93,9 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 	}
 
 	// Validate movement sensor info and set defaults
-	imuName, exists := config.MovementSensor["name"]
-	if exists && imuName != "" {
+	if imuName, exists := config.MovementSensor["name"]; exists && imuName != "" {
 		optionalConfigParams.ImuName = imuName
-		strMovementSensorDataFreqHz, ok := config.MovementSensor["data_frequency_hz"]
-		if !ok {
+		if strMovementSensorDataFreqHz, ok := config.MovementSensor["data_frequency_hz"]; !ok {
 			if optionalConfigParams.LidarDataFrequencyHz == 0 {
 				optionalConfigParams.ImuDataFrequencyHz = 0
 				logger.Warn("camera[data_frequency_hz] is set to 0, " +
