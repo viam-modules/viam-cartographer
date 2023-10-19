@@ -323,7 +323,7 @@ func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependenc
 	// A movement sensor used as an IMU must support LinearAcceleration and AngularVelocity.
 	imuSupported := properties.LinearAccelerationSupported && properties.AngularVelocitySupported
 
-	// A movement_sensor used as an odometer must support Position and Orientation.
+	// A movement sensor used as an odometer must support Position and Orientation.
 	odometerSupported := properties.PositionSupported && properties.OrientationSupported
 
 	return imuSupported, odometerSupported, nil

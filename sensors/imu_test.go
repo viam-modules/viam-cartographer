@@ -38,7 +38,6 @@ func TestNewIMU(t *testing.T) {
 		test.That(t, actualIMU, test.ShouldResemble, s.IMU{})
 	})
 
-	// TODO[kat]: Rewrite/change this with the MovementSensorNotIMUNotOdometer movement sensor
 	t.Run("Failed IMU creation with sensor that does not support AngularVelocity", func(t *testing.T) {
 		lidar, imu := s.GoodLidar, s.IMUWithInvalidProperties
 		actualIMU, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
