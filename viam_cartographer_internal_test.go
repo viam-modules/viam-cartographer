@@ -527,5 +527,27 @@ func TestCheckIfIMUAndOdometerSupported(t *testing.T) {
 		test.That(t, odometerSupported, test.ShouldBeTrue)
 	})
 
-	// TODO[kat]: Check for both errors (3 more tests)
+	t.Run("failure to get movement sensor from dependencies", func(t *testing.T) {
+		lidar, movementSensor := s.NoLidar, s.GibberishMovementSensor
+		errMessage := "error getting movement sensor \"" + string(movementSensor) + "\" for slam service: \"" +
+			"rdk:component:movement_sensor/" + string(movementSensor) + "\" missing from dependencies"
+		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+			s.SetupDeps(lidar, movementSensor), string(movementSensor))
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
+		test.That(t, imuSupported, test.ShouldBeFalse)
+		test.That(t, odometerSupported, test.ShouldBeFalse)
+	})
+
+	t.Run("failure to get movement sensor properties", func(t *testing.T) {
+		lidar, movementSensor := s.NoLidar, s.MovementSensorWithErroringPropertiesFunc
+		errMessage := "error getting movement sensor properties from movement sensor \"" + string(movementSensor) +
+			"\" for slam service: error getting properties"
+		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+			s.SetupDeps(lidar, movementSensor), string(movementSensor))
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
+		test.That(t, imuSupported, test.ShouldBeFalse)
+		test.That(t, odometerSupported, test.ShouldBeFalse)
+	})
 }

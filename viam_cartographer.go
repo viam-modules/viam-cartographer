@@ -310,13 +310,14 @@ func New(
 func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies, movementSensorName string) (bool, bool, error) {
 	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
 	if err != nil {
-		return false, false, errors.Wrapf(err, "error getting movement sensor %v for slam service", movementSensorName)
+		return false, false, errors.Wrapf(err, "error getting movement sensor \"%v\" for slam service", movementSensorName)
 	}
 
 	properties, err := movementSensor.Properties(ctx, make(map[string]interface{}))
 	if err != nil {
-		return false, false, errors.Wrapf(err, "error getting movement sensor properties %v for slam service",
-			movementSensorName)
+		errMessage := "error getting movement sensor properties from movement sensor \"" + movementSensorName +
+			"\" for slam service"
+		return false, false, errors.Wrap(err, errMessage)
 	}
 
 	// A movement sensor used as an IMU must support LinearAcceleration and AngularVelocity.

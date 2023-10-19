@@ -66,8 +66,6 @@ const (
 	IMUWithErroringFunctions TestSensor = "imu_with_erroring_functions"
 	// IMUWithInvalidProperties is an IMU whose properties are invalid.
 	IMUWithInvalidProperties TestSensor = "imu_with_invalid_properties"
-	// GibberishIMU is an IMU that can't be found in the dependencies.
-	GibberishIMU TestSensor = "gibberish_imu"
 	// NoIMU is an IMU that represents that no IMU is set up or added.
 	NoIMU TestSensor = ""
 
@@ -87,6 +85,10 @@ const (
 
 	// MovementSensorBothIMUAndOdometer is a movement sensor that dsupports both an IMU nor an odometer.
 	MovementSensorBothIMUAndOdometer TestSensor = "movement_sensor_imu_and_odometer"
+	// GibberishMovementSensor is a movement sensor that can't be found in the dependencies.
+	GibberishMovementSensor TestSensor = "gibberish_movement_sensor"
+	// MovementSensorWithErroringPropertiesFunc is a movement sensor whose Properties function returns an error.
+	MovementSensorWithErroringPropertiesFunc TestSensor = "movement_sensor_with_erroring_properties_function"
 )
 
 var (
@@ -101,15 +103,16 @@ var (
 	}
 
 	testMovementSensors = map[TestSensor]func() *inject.MovementSensor{
-		GoodIMU:                          getGoodIMU,
-		IMUWithErroringFunctions:         getIMUWithErroringFunctions,
-		IMUWithInvalidProperties:         getIMUWithInvalidProperties,
-		ReplayIMU:                        func() *inject.MovementSensor { return getReplayIMU(TestTimestamp) },
-		InvalidReplayIMU:                 func() *inject.MovementSensor { return getReplayIMU(BadTime) },
-		FinishedReplayIMU:                func() *inject.MovementSensor { return getFinishedReplayIMU() },
-		GoodOdometer:                     getGoodOdometer,
-		MovementSensorNotIMUNotOdometer:  getMovementSensorNotIMUAndNotOdometer,
-		MovementSensorBothIMUAndOdometer: getMovementSensorBothIMUAndOdometer,
+		GoodIMU:                                  getGoodIMU,
+		IMUWithErroringFunctions:                 getIMUWithErroringFunctions,
+		IMUWithInvalidProperties:                 getIMUWithInvalidProperties,
+		ReplayIMU:                                func() *inject.MovementSensor { return getReplayIMU(TestTimestamp) },
+		InvalidReplayIMU:                         func() *inject.MovementSensor { return getReplayIMU(BadTime) },
+		FinishedReplayIMU:                        func() *inject.MovementSensor { return getFinishedReplayIMU() },
+		GoodOdometer:                             getGoodOdometer,
+		MovementSensorNotIMUNotOdometer:          getMovementSensorNotIMUAndNotOdometer,
+		MovementSensorBothIMUAndOdometer:         getMovementSensorBothIMUAndOdometer,
+		MovementSensorWithErroringPropertiesFunc: getMovementSensorWithErroringPropertiesFunc,
 	}
 )
 
@@ -377,6 +380,14 @@ func getMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
 			PositionSupported:           true,
 			LinearAccelerationSupported: true,
 		}, nil
+	}
+	return movementSensor
+}
+
+func getMovementSensorWithErroringPropertiesFunc() *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{}, errors.New("error getting properties")
 	}
 	return movementSensor
 }

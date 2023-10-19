@@ -29,14 +29,13 @@ func TestNewIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 	})
 
-	t.Run("Failed IMU creation with non-existing sensor", func(t *testing.T) {
-		lidar, imu := s.GoodLidar, s.GibberishIMU
-		expectedIMU := s.IMU{}
+	t.Run("Failed IMU creation with non-existing movement sensor", func(t *testing.T) {
+		lidar, imu := s.GoodLidar, s.GibberishMovementSensor
+		errMessage := "error getting movement sensor \"" + string(imu) + "\" for slam service: \"" +
+			"rdk:component:movement_sensor/" + string(imu) + "\" missing from dependencies"
 		actualIMU, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
-		test.That(t, err, test.ShouldBeError,
-			errors.New("error getting movement sensor "+
-				"\"gibberish_imu\" for slam service: \"rdk:component:movement_sensor/gibberish_imu\" missing from dependencies"))
-		test.That(t, actualIMU, test.ShouldResemble, expectedIMU)
+		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
+		test.That(t, actualIMU, test.ShouldResemble, s.IMU{})
 	})
 
 	// TODO[kat]: Rewrite/change this with the MovementSensorNotIMUNotOdometer movement sensor
