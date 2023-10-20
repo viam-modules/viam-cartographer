@@ -14,7 +14,6 @@ env:
 
 jobs:
   appimage:
-    # no-op edit
     name: AppImage Build and Upload Cartographer to Registry
     strategy:
       fail-fast: false

@@ -11,7 +11,6 @@ on:
 
 jobs:
   appimage_clean:
-    # no-op edit
     name: Remove PR AppImages
     runs-on: ubuntu-latest
 

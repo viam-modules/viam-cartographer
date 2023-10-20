@@ -14,11 +14,9 @@ on:
 
 jobs:
   test:
-    # no-op edit
     uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
 
   appimage:
-    # no-op edit
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     needs: test
     with:

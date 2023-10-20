@@ -7,7 +7,6 @@ on:
 
 jobs:
   pr_test_label_manager:
-    # no-op edit
     name: PR Test Label Manager
     runs-on: ubuntu-latest
     if: |

@@ -6,7 +6,6 @@ on:
 
 jobs:
   build_and_test:
-    # no-op edit
     name: Build and Test Cartographer
     strategy:
       matrix:
