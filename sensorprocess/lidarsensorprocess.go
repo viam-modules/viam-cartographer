@@ -43,7 +43,8 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 	return config.addLidarReadingsInOffline(ctx)
 }
 
-// addLidarReadingsInOnline ensures the most recent lidar scan, after any corresponding IMU scans, gets processed by cartographer.
+// addLidarReadingsInOnline ensures the most recent lidar scan, after any corresponding IMU scans, gets processed
+// by cartographer.
 func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	// get next lidar data response
 	tsr, status, err := getTimedLidarSensorReading(ctx, config)
@@ -62,7 +63,8 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	return false
 }
 
-// addLidarReadingsInOffline ensures lidar scans get added in a time ordered series with any desired IMU scans without skipping any.
+// addLidarReadingsInOffline ensures lidar scans get added in a time ordered series with any desired
+// IMU scans without skipping any.
 func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 	// Extract current IMU reading time for ordering data ingestion
 	config.Mutex.Lock()
@@ -138,8 +140,8 @@ func (config *Config) tryAddLidarReading(ctx context.Context, reading []byte, re
 	return int(math.Max(0, float64(1000/config.LidarDataFrequencyHz-timeElapsedMs)))
 }
 
-// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the end of dataset has been
-// reached.
+// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the
+// end of dataset has been reached.
 func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {

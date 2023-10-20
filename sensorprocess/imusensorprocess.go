@@ -63,7 +63,8 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 	return false
 }
 
-// addIMUReadingInOffline ensures IMU scans get added in a time ordered series with any desired lidar scans without skipping any.
+// addIMUReadingInOffline ensures IMU scans get added in a time ordered series with any desired
+// lidar scans without skipping any.
 func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 	// extract current lidar reading time for ordering data ingestion
 	config.Mutex.Lock()
@@ -105,9 +106,9 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 	return false
 }
 
-// tryAddIMUReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode). While add sensor reading
-// fails, keep trying to add the same reading - in offline mode we want to process each reading so if we cannot acquire the lock
-// we should try again.
+// tryAddIMUReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode).
+// While add sensor reading fails, keep trying to add the same reading - in offline mode we want to
+// process each reading so if we cannot acquire the lock we should try again.
 func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time) {
 	for {
 		select {
@@ -144,7 +145,8 @@ func (config *Config) tryAddIMUReading(ctx context.Context, reading cartofacade.
 	return int(math.Max(0, float64(1000/config.IMUDataFrequencyHz-timeElapsedMs)))
 }
 
-// getTimedIMUSensorReading returns the next IMU reading if available along with a status denoting if the end of dataset has been reached.
+// getTimedIMUSensorReading returns the next IMU reading if available along with a status denoting if the
+// end of dataset has been reached.
 func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
 	if err != nil {

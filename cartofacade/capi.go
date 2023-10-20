@@ -162,7 +162,8 @@ func toSlamMode(cSlamMode C.int) SlamMode {
 	}
 }
 
-// NewCarto calls viam_carto_init and returns a pointer to a viam carto object. vcl is only an interface to facilitate testing & that the only type vcl it is actually expected to have is a CartoLib
+// NewCarto calls viam_carto_init and returns a pointer to a viam carto object. vcl is only an
+// interface to facilitate testing. The only type vcl is expected to have is a CartoLib.
 func NewCarto(cfg CartoConfig, acfg CartoAlgoConfig, vcl CartoLibInterface) (Carto, error) {
 	var pVc *C.viam_carto
 
@@ -326,7 +327,8 @@ func (vc *Carto) runFinalOptimization() error {
 	return nil
 }
 
-// getTestPositionResponse is only used for testing purposes, but needs to be in this file as CGo is not supported in go test files
+// getTestPositionResponse is only used for testing purposes, but needs to be in this file
+// as CGo is not supported in go test files
 func getTestPositionResponse() C.viam_carto_get_position_response {
 	gpr := C.viam_carto_get_position_response{}
 
