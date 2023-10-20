@@ -16,6 +16,7 @@ on:
 
 jobs:
   test:
+    # no-op edit
     if: github.event.label.name == 'safe to test' || 
       contains(github.event.pull_request.labels.*.name, 'appimage') || 
       contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
@@ -23,6 +24,7 @@ jobs:
 
   # This lets people add an "appimage" tag to have appimages built for the PR
   appimage:
+    # no-op edit
     needs: [test]
     if: |
       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
@@ -35,6 +37,7 @@ jobs:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   appimage-ignore-tests:
+    # no-op edit
     if: |
        always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
        contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')

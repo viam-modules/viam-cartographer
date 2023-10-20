@@ -11,6 +11,7 @@ on:
 
 jobs:
   bump-versions:
+    # no-op edit
     name: Bump Package Versions
     if: github.repository_owner == 'viamrobotics'
     runs-on: [self-hosted, x64]
@@ -43,6 +44,7 @@ jobs:
           body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging.
 
   slack-workflow-status:
+      # no-op edit
       if: ${{ failure() }} 
       name: Post Workflow Status To Slack
       needs:

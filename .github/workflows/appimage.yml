@@ -17,6 +17,7 @@ on:
 
 jobs:
   appimage:
+    # no-op edit
     name: AppImage Build Cartographer
     strategy:
       matrix:

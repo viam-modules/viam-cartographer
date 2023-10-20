@@ -16,9 +16,11 @@ on:
 
 jobs:
   test:
+    # no-op edit
     uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
 
   appimage:
+    # no-op edit
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     needs: test
     with:
@@ -27,6 +29,7 @@ jobs:
       GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
 
   slack-workflow-status:
+      # no-op edit
       if: ${{ failure() }} 
       name: Post Workflow Status To Slack
       needs:
