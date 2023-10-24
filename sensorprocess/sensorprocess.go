@@ -9,7 +9,7 @@ import (
 	"github.com/edaniels/golog"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // defaultTime is used to check if timestamps have not been set yet.
@@ -20,10 +20,10 @@ type Config struct {
 	CartoFacade            cartofacade.Interface
 	sensorProcessStartTime time.Time
 
-	Lidar            sensors.TimedLidarSensor
+	Lidar            s.TimedLidarSensor
 	currentLidarData LidarData
 
-	IMU            sensors.TimedIMUSensor
+	IMU            s.TimedIMUSensor
 	currentIMUData IMUData
 
 	Timeout                  time.Duration

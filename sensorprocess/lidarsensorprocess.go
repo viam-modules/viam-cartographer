@@ -11,7 +11,7 @@ import (
 	"go.viam.com/rdk/components/camera/replaypcd"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // StartLidar polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -142,7 +142,7 @@ func (config *Config) tryAddLidarReading(ctx context.Context, reading []byte, re
 
 // getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the
 // end of dataset has been reached.
-func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
+func getTimedLidarSensorReading(ctx context.Context, config *Config) (s.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)

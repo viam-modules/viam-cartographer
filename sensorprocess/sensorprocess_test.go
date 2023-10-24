@@ -14,6 +14,7 @@ import (
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
+	"github.com/viamrobotics/viam-cartographer/sensors/inject"
 )
 
 type addLidarReadingArgs struct {
@@ -59,14 +60,14 @@ func TestAddLidarReadingOffline(t *testing.T) {
 		return nil
 	}
 
-	mockLidar := s.TimedLidarSensorMock{}
-	mockLidar.NameFunc = func() string { return "good_lidar" }
-	mockLidar.DataFrequencyHzFunc = func() int { return 5 }
+	injectLidar := inject.TimedLidarSensor{}
+	injectLidar.NameFunc = func() string { return "good_lidar" }
+	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		Lidar:                    &mockLidar,
+		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: runFinalOptimizationFunc,
 	}
@@ -165,14 +166,14 @@ func TestAddIMUReadingOffline(t *testing.T) {
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
 
-	mockImu := s.TimedIMUSensorMock{}
-	mockImu.NameFunc = func() string { return "good_imu" }
-	mockImu.DataFrequencyHzFunc = func() int { return 20 }
+	injectImu := inject.TimedIMUSensor{}
+	injectImu.NameFunc = func() string { return "good_imu" }
+	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		IMU:         &mockImu,
+		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
 	}
 	t.Run("success, no infinite loop", func(t *testing.T) {
@@ -266,14 +267,14 @@ func TestAddLidarReadingOnline(t *testing.T) {
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 
-	mockLidar := s.TimedLidarSensorMock{}
-	mockLidar.NameFunc = func() string { return "good_lidar" }
-	mockLidar.DataFrequencyHzFunc = func() int { return 5 }
+	injectLidar := inject.TimedLidarSensor{}
+	injectLidar.NameFunc = func() string { return "good_lidar" }
+	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		Lidar:                    &mockLidar,
+		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
 	}
@@ -387,18 +388,18 @@ func TestAddIMUReadingOnline(t *testing.T) {
 	}
 	readingTimestamp := time.Now().UTC()
 
-	mockLidar := s.TimedLidarSensorMock{}
-	mockLidar.DataFrequencyHzFunc = func() int { return 5 }
+	injectLidar := inject.TimedLidarSensor{}
+	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
-	mockImu := s.TimedIMUSensorMock{}
-	mockImu.NameFunc = func() string { return "good_imu" }
-	mockImu.DataFrequencyHzFunc = func() int { return 20 }
+	injectImu := inject.TimedIMUSensor{}
+	injectImu.NameFunc = func() string { return "good_imu" }
+	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		Lidar:       &mockLidar,
-		IMU:         &mockImu,
+		Lidar:       &injectLidar,
+		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
 	}
 
@@ -613,9 +614,9 @@ func onlineModeIMUTestHelper(
 	config.IMU = imu
 
 	// set lidar data rate to signify that we are in online mode
-	mockLidar := s.TimedLidarSensorMock{}
-	mockLidar.DataFrequencyHzFunc = func() int { return 100 }
-	config.Lidar = &mockLidar
+	injectLidar := inject.TimedLidarSensor{}
+	injectLidar.DataFrequencyHzFunc = func() int { return 100 }
+	config.Lidar = &injectLidar
 	config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 	config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
@@ -719,9 +720,9 @@ func invalidIMUTestHelper(
 		return nil
 	}
 
-	mockLidar := s.TimedLidarSensorMock{}
-	mockLidar.DataFrequencyHzFunc = func() int { return lidarDataFrequencyHz }
-	config.Lidar = &mockLidar
+	injectLidar := inject.TimedLidarSensor{}
+	injectLidar.DataFrequencyHzFunc = func() int { return lidarDataFrequencyHz }
+	config.Lidar = &injectLidar
 
 	config.IMU = imu
 
@@ -738,13 +739,13 @@ func TestAddLidarReading(t *testing.T) {
 		return nil
 	}
 
-	mockLidar := s.TimedLidarSensorMock{}
-	mockLidar.DataFrequencyHzFunc = func() int { return 5 }
+	injectLidar := inject.TimedLidarSensor{}
+	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		Lidar:                    &mockLidar,
+		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: runFinalOptimizationFunc,
 		Mutex:                    &sync.Mutex{},
@@ -863,13 +864,13 @@ func TestAddIMUReading(t *testing.T) {
 
 	cf := cartofacade.Mock{}
 
-	mockImu := s.TimedIMUSensorMock{}
-	mockImu.DataFrequencyHzFunc = func() int { return 20 }
+	injectImu := inject.TimedIMUSensor{}
+	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		IMU:         &mockImu,
+		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
 		Mutex:       &sync.Mutex{},
 	}
@@ -904,8 +905,8 @@ func TestAddIMUReading(t *testing.T) {
 		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 
-		mockLidar := s.TimedLidarSensorMock{}
-		mockLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
+		injectLidar := inject.TimedLidarSensor{}
+		injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 
 		var calls []addIMUReadingArgs
 		cf.AddIMUReadingFunc = func(
@@ -931,7 +932,7 @@ func TestAddIMUReading(t *testing.T) {
 			return nil
 		}
 		config.IMU = replayIMU
-		config.Lidar = &mockLidar
+		config.Lidar = &injectLidar
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 		config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
@@ -976,13 +977,13 @@ func TestStartLidar(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	mockLidar := s.TimedLidarSensorMock{}
-	mockLidar.DataFrequencyHzFunc = func() int { return 5 }
+	injectLidar := inject.TimedLidarSensor{}
+	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		Lidar:                    &mockLidar,
+		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
 		Mutex:                    &sync.Mutex{},
@@ -1020,13 +1021,13 @@ func TestStartIMU(t *testing.T) {
 	logger := golog.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	mockImu := s.TimedIMUSensorMock{}
-	mockImu.DataFrequencyHzFunc = func() int { return 20 }
+	injectImu := inject.TimedIMUSensor{}
+	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		IMU:         &mockImu,
+		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
 		Mutex:       &sync.Mutex{},
 	}
@@ -1038,11 +1039,11 @@ func TestStartIMU(t *testing.T) {
 		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 
-		mockLidar := s.TimedLidarSensorMock{}
-		mockLidar.DataFrequencyHzFunc = func() int { return 0 }
+		injectLidar := inject.TimedLidarSensor{}
+		injectLidar.DataFrequencyHzFunc = func() int { return 0 }
 
 		config.IMU = replaySensor
-		config.Lidar = &mockLidar
+		config.Lidar = &injectLidar
 		config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 
 		jobDone := config.StartIMU(context.Background())

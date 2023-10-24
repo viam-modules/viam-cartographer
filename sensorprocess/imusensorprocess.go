@@ -11,7 +11,7 @@ import (
 	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // StartIMU polls the IMU to get the next sensor reading and adds it to the cartofacade.
@@ -147,7 +147,7 @@ func (config *Config) tryAddIMUReading(ctx context.Context, reading cartofacade.
 
 // getTimedIMUSensorReading returns the next IMU reading if available along with a status denoting if the
 // end of dataset has been reached.
-func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
+func getTimedIMUSensorReading(ctx context.Context, config *Config) (s.TimedIMUSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)

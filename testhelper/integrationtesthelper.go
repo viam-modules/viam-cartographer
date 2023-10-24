@@ -22,7 +22,8 @@ import (
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/utils/artifact"
 
-	sensors "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
+	"github.com/viamrobotics/viam-cartographer/sensors/inject"
 )
 
 const (
@@ -75,7 +76,7 @@ func IntegrationTimedLidarSensor(
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *TimeTracker,
-) (sensors.TimedLidarSensor, error) {
+) (s.TimedLidarSensor, error) {
 	// Check that the required amount of lidar data is present
 	err := mockLidarReadingsValid()
 	if err != nil {
@@ -85,9 +86,9 @@ func IntegrationTimedLidarSensor(
 	var i uint64
 
 	closed := false
-	ts := &sensors.TimedLidarSensorMock{}
-	ts.NameFunc = func() string { return lidarName }
-	ts.TimedLidarSensorReadingFunc = func(ctx context.Context) (sensors.TimedLidarSensorReadingResponse, error) {
+	injectLidar := &inject.TimedLidarSensor{}
+	injectLidar.NameFunc = func() string { return lidarName }
+	injectLidar.TimedLidarSensorReadingFunc = func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*
 			Holds the process until for all necessary IMU data has been sent to cartographer. Only applicable
@@ -119,7 +120,7 @@ func IntegrationTimedLidarSensor(
 				timeTracker.LastLidarTime = timeTracker.LidarTime
 			}
 
-			return sensors.TimedLidarSensorReadingResponse{}, replaylidar.ErrEndOfDataset
+			return s.TimedLidarSensorReadingResponse{}, replaylidar.ErrEndOfDataset
 		}
 
 		// Get next lidar data
@@ -136,7 +137,7 @@ func IntegrationTimedLidarSensor(
 		return resp, nil
 	}
 
-	return ts, nil
+	return injectLidar, nil
 }
 
 // IntegrationTimedIMUSensor returns a mock timed IMU sensor.
@@ -157,7 +158,7 @@ func IntegrationTimedIMUSensor(
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *TimeTracker,
-) (sensors.TimedIMUSensor, error) {
+) (s.TimedIMUSensor, error) {
 	// Return nil if IMU is not requested
 	if imuName == "" {
 		return nil, nil
@@ -171,9 +172,9 @@ func IntegrationTimedIMUSensor(
 
 	var i uint64
 	closed := false
-	ts := &sensors.TimedIMUSensorMock{}
-	ts.NameFunc = func() string { return imuName }
-	ts.TimedIMUSensorReadingFunc = func(ctx context.Context) (sensors.TimedIMUSensorReadingResponse, error) {
+	injectIMU := &inject.TimedIMUSensor{}
+	injectIMU.NameFunc = func() string { return imuName }
+	injectIMU.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*
 			Holds the process until for all necessary lidar data has been sent to cartographer. Is always
@@ -199,7 +200,7 @@ func IntegrationTimedIMUSensor(
 				closed = true
 				timeTracker.LastImuTime = timeTracker.ImuTime
 			}
-			return sensors.TimedIMUSensorReadingResponse{}, replaymovementsensor.ErrEndOfDataset
+			return s.TimedIMUSensorReadingResponse{}, replaymovementsensor.ErrEndOfDataset
 		}
 
 		// Get next IMU data
@@ -216,30 +217,30 @@ func IntegrationTimedIMUSensor(
 		return resp, nil
 	}
 
-	return ts, nil
+	return injectIMU, nil
 }
 
 func createTimedLidarSensorReadingResponse(t *testing.T, i uint64, replay bool, timeTracker *TimeTracker,
-) (sensors.TimedLidarSensorReadingResponse, error) {
+) (s.TimedLidarSensorReadingResponse, error) {
 	file, err := os.Open(artifact.MustPath(mockDataPath + "/lidar/" + strconv.FormatUint(i, 10) + ".pcd"))
 	if err != nil {
 		t.Error("TEST FAILED TimedLidarSensorReading Mock failed to open pcd file")
-		return sensors.TimedLidarSensorReadingResponse{}, err
+		return s.TimedLidarSensorReadingResponse{}, err
 	}
 	readingPc, err := pointcloud.ReadPCD(file)
 	if err != nil {
 		t.Error("TEST FAILED TimedLidarSensorReading Mock failed to read pcd")
-		return sensors.TimedLidarSensorReadingResponse{}, err
+		return s.TimedLidarSensorReadingResponse{}, err
 	}
 
 	buf := new(bytes.Buffer)
 	err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
 	if err != nil {
 		t.Error("TEST FAILED TimedLidarSensorReading Mock failed to parse pcd")
-		return sensors.TimedLidarSensorReadingResponse{}, err
+		return s.TimedLidarSensorReadingResponse{}, err
 	}
 
-	resp := sensors.TimedLidarSensorReadingResponse{
+	resp := s.TimedLidarSensorReadingResponse{
 		Reading:     buf.Bytes(),
 		ReadingTime: timeTracker.LidarTime,
 		Replay:      replay,
@@ -248,7 +249,7 @@ func createTimedLidarSensorReadingResponse(t *testing.T, i uint64, replay bool, 
 }
 
 func createTimedIMUSensorReadingResponse(t *testing.T, line string, replay bool, timeTracker *TimeTracker,
-) (sensors.TimedIMUSensorReadingResponse, error) {
+) (s.TimedIMUSensorReadingResponse, error) {
 	re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
 	matches := re.FindAllString(line, -1)
 
@@ -257,7 +258,7 @@ func createTimedIMUSensorReadingResponse(t *testing.T, line string, replay bool,
 	linAccZ, err3 := strconv.ParseFloat(matches[2], 64)
 	if err1 != nil || err2 != nil || err3 != nil {
 		t.Error("TEST FAILED TimedIMUSensorReading Mock failed to parse linear acceleration")
-		return sensors.TimedIMUSensorReadingResponse{}, errors.New("error parsing linear acceleration from file")
+		return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing linear acceleration from file")
 	}
 	linAcc := r3.Vector{X: linAccX, Y: linAccY, Z: linAccZ}
 
@@ -266,11 +267,11 @@ func createTimedIMUSensorReadingResponse(t *testing.T, line string, replay bool,
 	angVelZ, err3 := strconv.ParseFloat(matches[5], 64)
 	if err1 != nil || err2 != nil || err3 != nil {
 		t.Error("TEST FAILED TimedIMUSensorReading Mock failed to parse angular velocity")
-		return sensors.TimedIMUSensorReadingResponse{}, errors.New("error parsing angular velocity from file")
+		return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing angular velocity from file")
 	}
 	angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
 
-	resp := sensors.TimedIMUSensorReadingResponse{
+	resp := s.TimedIMUSensorReadingResponse{
 		LinearAcceleration: linAcc,
 		AngularVelocity:    angVel,
 		ReadingTime:        timeTracker.ImuTime,

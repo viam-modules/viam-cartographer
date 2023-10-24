@@ -300,14 +300,6 @@ func getIMUWithErroringFunctions() *inject.MovementSensor {
 	return imu
 }
 
-func getMovementSensorNotIMUAndNotOdometer() *inject.MovementSensor {
-	movementSensor := &inject.MovementSensor{}
-	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
-		return &movementsensor.Properties{}, nil
-	}
-	return movementSensor
-}
-
 func getIMUWithInvalidProperties() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
@@ -357,6 +349,14 @@ func getGoodOdometer() *inject.MovementSensor {
 		}, nil
 	}
 	return odometer
+}
+
+func getMovementSensorNotIMUAndNotOdometer() *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{}, nil
+	}
+	return movementSensor
 }
 
 func getMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
