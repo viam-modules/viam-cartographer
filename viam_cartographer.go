@@ -465,7 +465,11 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
 		cartoAlgoConfig.UseIMUData = true
 	} else {
-		cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
+		if cartoSvc.movementSensorName == "" {
+			cartoSvc.logger.Debug("No IMU configured, setting use_imu_data to false")
+		} else {
+			cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
+		}
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
