@@ -35,7 +35,7 @@ type TimedIMUSensor interface {
 }
 
 // TimedIMUSensorReadingResponse represents an IMU sensor reading with a time & allows the caller to know if the reading is
-// from a replay movement sensor. Currently replay movement sensor are not yet supported.
+// from a replay movement sensor.
 type TimedIMUSensorReadingResponse struct {
 	LinearAcceleration r3.Vector
 	AngularVelocity    spatialmath.AngularVelocity
@@ -61,7 +61,6 @@ func (imu IMU) DataFrequencyHz() int {
 }
 
 // TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.
-// IMU Sensors currently do not support replay capabilities.
 func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error) {
 	replay := false
 
