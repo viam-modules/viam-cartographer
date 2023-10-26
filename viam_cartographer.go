@@ -461,14 +461,14 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		ExistingMap:        cartoSvc.existingMap,
 	}
 
-	if cartoSvc.imu != nil {
-		cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
-		cartoAlgoConfig.UseIMUData = true
+	if cartoSvc.movementSensorName == "" {
+		cartoSvc.logger.Debug("No movement sensor provided, setting use_imu_data to false")
 	} else {
-		if cartoSvc.movementSensorName == "" {
-			cartoSvc.logger.Debug("No IMU configured, setting use_imu_data to false")
+		if cartoSvc.imu != nil {
+			cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
+			cartoAlgoConfig.UseIMUData = true
 		} else {
-			cartoSvc.logger.Warn("No IMU configured, setting use_imu_data to false")
+			cartoSvc.logger.Warn("Movement sensor was provided but does not support IMU data, setting use_imu_data to false")
 		}
 	}
 
