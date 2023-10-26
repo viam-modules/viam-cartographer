@@ -131,24 +131,24 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 func NewIMU(
 	ctx context.Context,
 	deps resource.Dependencies,
-	imuName string,
+	movementSensorName string,
 	dataFrequencyHz int,
 	logger golog.Logger,
 ) (TimedIMUSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewIMU")
 	defer span.End()
-	if imuName == "" {
+	if movementSensorName == "" {
 		return IMU{}, nil
 	}
-	movementSensor, err := movementsensor.FromDependencies(deps, imuName)
+	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
 	if err != nil {
-		return IMU{}, errors.Wrapf(err, "error getting IMU movement sensor %v for slam service", imuName)
+		return IMU{}, errors.Wrapf(err, "error getting movement sensor \"%v\" for slam service", movementSensorName)
 	}
 
 	// A movement_sensor used as an IMU must support LinearAcceleration and AngularVelocity.
 	properties, err := movementSensor.Properties(ctx, make(map[string]interface{}))
 	if err != nil {
-		return IMU{}, errors.Wrapf(err, "error getting movement sensor properties %v for slam service", imuName)
+		return IMU{}, errors.Wrapf(err, "error getting movement sensor properties from \"%v\" for slam service", movementSensorName)
 	}
 	if !(properties.LinearAccelerationSupported && properties.AngularVelocitySupported) {
 		return IMU{}, errors.New("configuring IMU movement sensor error: " +
@@ -156,7 +156,7 @@ func NewIMU(
 	}
 
 	return IMU{
-		name:            imuName,
+		name:            movementSensorName,
 		dataFrequencyHz: dataFrequencyHz,
 		IMU:             movementSensor,
 	}, nil

@@ -362,14 +362,15 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg := GetTestConfig("mylidar", "myIMU", "", true)
+		cfg := GetTestConfig("mylidar", "", "", true)
 
 		// test invalid IMU enabling configuration
-		algoCfg := GetTestAlgoConfig(false)
+		algoCfg := GetTestAlgoConfig(true)
 		vc, err := NewCarto(cfg, algoCfg, &pvcl)
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
+		cfg = GetTestConfig("mylidar", "myIMU", "", true)
 		algoCfg = GetTestAlgoConfig(true)
 		vc, err = NewCarto(cfg, algoCfg, &pvcl)
 

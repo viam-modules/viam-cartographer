@@ -11,7 +11,7 @@ import (
 	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // StartIMU polls the IMU to get the next sensor reading and adds it to the cartofacade.
@@ -32,7 +32,7 @@ func (config *Config) StartIMU(ctx context.Context) bool {
 // addIMUReading adds an IMU reading to the cartofacade, using the lidar's data rate to determine whether to run in
 // offline or online mode.
 func (config *Config) addIMUReading(ctx context.Context) bool {
-	if config.LidarDataFrequencyHz != 0 {
+	if config.Lidar.DataFrequencyHz() != 0 {
 		return config.addIMUReadingInOnline(ctx)
 	}
 	return config.addIMUReadingInOffline(ctx)
@@ -115,7 +115,7 @@ func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading 
 		case <-ctx.Done():
 			return
 		default:
-			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
+			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading, readingTime)
 			if err == nil {
 				config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())
 				return
@@ -131,7 +131,7 @@ func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading 
 // tryAddIMUReading adds a reading to the carto facade and does not retry (online).
 func (config *Config) tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time) int {
 	startTime := time.Now().UTC()
-	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMUName, reading, readingTime)
+	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading, readingTime)
 	if err != nil {
 		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
@@ -142,17 +142,17 @@ func (config *Config) tryAddIMUReading(ctx context.Context, reading cartofacade.
 	}
 	config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
-	return int(math.Max(0, float64(1000/config.IMUDataFrequencyHz-timeElapsedMs)))
+	return int(math.Max(0, float64(1000/config.IMU.DataFrequencyHz()-timeElapsedMs)))
 }
 
 // getTimedIMUSensorReading returns the next IMU reading if available along with a status denoting if the
 // end of dataset has been reached.
-func getTimedIMUSensorReading(ctx context.Context, config *Config) (sensors.TimedIMUSensorReadingResponse, bool, error) {
+func getTimedIMUSensorReading(ctx context.Context, config *Config) (s.TimedIMUSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
-		if config.LidarDataFrequencyHz == 0 {
+		if config.Lidar.DataFrequencyHz() == 0 {
 			return tsr, strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error()), err
 		}
 		return tsr, false, err

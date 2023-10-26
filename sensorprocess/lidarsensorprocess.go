@@ -11,7 +11,7 @@ import (
 	"go.viam.com/rdk/components/camera/replaypcd"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // StartLidar polls the lidar to get the next sensor reading and adds it to the cartofacade.
@@ -37,7 +37,7 @@ func (config *Config) StartLidar(ctx context.Context) bool {
 // addLidarReading adds a lidar reading to the cartofacade, using the lidar's data rate to determine whether to run in
 // offline or online mode.
 func (config *Config) addLidarReading(ctx context.Context) bool {
-	if config.LidarDataFrequencyHz != 0 {
+	if config.Lidar.DataFrequencyHz() != 0 {
 		return config.addLidarReadingsInOnline(ctx)
 	}
 	return config.addLidarReadingsInOffline(ctx)
@@ -72,7 +72,7 @@ func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 	config.Mutex.Unlock()
 
 	// If an IMU exists, skip adding measurement until the current lidar time is after the current IMU timestamp
-	if config.IMUName != "" && config.currentLidarData.time.Sub(currentIMUTime).Milliseconds() > 0 {
+	if config.IMU != nil && config.currentLidarData.time.Sub(currentIMUTime).Milliseconds() > 0 {
 		time.Sleep(10 * time.Millisecond)
 		return false
 	}
@@ -109,7 +109,7 @@ func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, readin
 		case <-ctx.Done():
 			return
 		default:
-			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
+			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.Lidar.Name(), reading, readingTime)
 			if err == nil {
 				config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())
 				return
@@ -126,7 +126,7 @@ func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, readin
 func (config *Config) tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Time) int {
 	startTime := time.Now().UTC()
 
-	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.LidarName, reading, readingTime)
+	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.Lidar.Name(), reading, readingTime)
 	if err != nil {
 		config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
@@ -137,17 +137,17 @@ func (config *Config) tryAddLidarReading(ctx context.Context, reading []byte, re
 	}
 	config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
-	return int(math.Max(0, float64(1000/config.LidarDataFrequencyHz-timeElapsedMs)))
+	return int(math.Max(0, float64(1000/config.Lidar.DataFrequencyHz()-timeElapsedMs)))
 }
 
 // getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the
 // end of dataset has been reached.
-func getTimedLidarSensorReading(ctx context.Context, config *Config) (sensors.TimedLidarSensorReadingResponse, bool, error) {
+func getTimedLidarSensorReading(ctx context.Context, config *Config) (s.TimedLidarSensorReadingResponse, bool, error) {
 	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
-		if config.LidarDataFrequencyHz == 0 {
+		if config.Lidar.DataFrequencyHz() == 0 {
 			return tsr, strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()), err
 		}
 		return tsr, false, err
