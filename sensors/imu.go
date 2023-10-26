@@ -27,15 +27,16 @@ const (
 
 var defaultTime = time.Time{}
 
-// TimedIMUSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
+// TimedIMUSensor describes a sensor that reports the time the reading is from & whether or not it is
+// from a replay sensor.
 type TimedIMUSensor interface {
 	Name() string
 	DataFrequencyHz() int
 	TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error)
 }
 
-// TimedIMUSensorReadingResponse represents an IMU sensor reading with a time & allows the caller to know if the reading is
-// from a replay movement sensor.
+// TimedIMUSensorReadingResponse represents an IMU sensor reading with a time & allows the caller
+// to know if the reading is from a replay movement sensor.
 type TimedIMUSensorReadingResponse struct {
 	LinearAcceleration r3.Vector
 	AngularVelocity    spatialmath.AngularVelocity
