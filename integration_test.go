@@ -32,9 +32,9 @@ import (
 )
 
 const (
-	defaultLidarTimeInterval = 200
-	defaultIMUTimeInterval   = 50
-	testTimeout              = 20 * time.Second
+	defaultLidarTimeInterval          = 200
+	defaultMovementSensorTimeInterval = 50
+	testTimeout                       = 20 * time.Second
 )
 
 // Test final position and orientation are at approximately the expected values.
@@ -144,6 +144,7 @@ func testHelperCartographer(
 	replaySensor bool,
 	online bool,
 	useIMU bool,
+	useOdometer bool,
 	enableMapping bool,
 	expectedMode cartofacade.SlamMode,
 ) []byte {
@@ -179,9 +180,10 @@ func testHelperCartographer(
 		}
 	}
 
+	movementSensorReadingInterval := time.Millisecond * defaultMovementSensorTimeInterval
+
 	// Add imu component to config (optional)
 	imuDone := make(chan struct{})
-	imuReadingInterval := time.Millisecond * defaultIMUTimeInterval
 	if useIMU {
 		if !online {
 			attrCfg.MovementSensor = map[string]string{

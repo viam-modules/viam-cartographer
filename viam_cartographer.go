@@ -85,6 +85,7 @@ func init() {
 				defaultCartoFacadeInternalTimeout,
 				nil,
 				nil,
+				nil,
 			)
 		},
 	})
@@ -217,6 +218,9 @@ func New(
 	if testTimedMovementSensorOverride != nil {
 		timedMovementSensor = testTimedMovementSensorOverride
 	}
+	if testTimedOdometerSensorOverride != nil {
+		timedOdometer = testTimedOdometerSensorOverride
+	}
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
@@ -252,6 +256,17 @@ func New(
 			useCloudSlam: true,
 			logger:       logger,
 		}, nil
+	}
+	if cartoSvc.odometer != nil {
+		if err = s.ValidateGetOdometerData(
+			cancelSensorProcessCtx,
+			timedOdometer,
+			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
+			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+			cartoSvc.logger); err != nil {
+			err = errors.Wrap(err, "failed to get data from odometer")
+			return nil, err
+		}
 	}
 
 	if err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc); err != nil {
