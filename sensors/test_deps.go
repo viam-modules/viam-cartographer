@@ -81,6 +81,8 @@ const (
 	// OdometerWithErroringFunctions is an Odometer whose functions return errors.
 	OdometerWithErroringFunctions TestSensor = "odometer_with_erroring_functions"
 
+	// NoMovementSensor is a movement sensor that represents that no movement sensor is set up or added.
+	NoMovementSensor TestSensor = ""
 	// MovementSensorNotIMUNotOdometer is a movement sensor that does neither support an IMU nor an odometer.
 	MovementSensorNotIMUNotOdometer TestSensor = "movement_sensor_not_imu_not_odometer"
 	// MovementSensorBothIMUAndOdometer is a movement sensor that dsupports both an IMU nor an odometer.
@@ -218,7 +220,7 @@ func getReplayLidar(testTime string) *inject.Camera {
 		return pointcloud.New(), nil
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
+		return nil, errors.New(InvalidSensorTestErrMsg)
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
