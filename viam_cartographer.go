@@ -56,7 +56,6 @@ var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
 	MaxRange:             25.0,
 	MinRange:             0.2,
 	UseIMUData:           false,
-	UseOdometerData:      false,
 	MaxSubmapsToKeep:     3,
 	FreshSubmapsCount:    3,
 	MinCoveredArea:       1.0,
@@ -89,6 +88,7 @@ func init() {
 				defaultSensorValidationIntervalSec,
 				defaultCartoFacadeTimeout,
 				defaultCartoFacadeInternalTimeout,
+				nil,
 				nil,
 				nil,
 			)
@@ -161,6 +161,7 @@ func New(
 	cartoFacadeInternalTimeout time.Duration,
 	testTimedLidarSensorOverride s.TimedLidarSensor,
 	testTimedIMUSensorOverride s.TimedIMUSensor,
+	testTimedOdometerSensorOverride s.TimedOdometerSensor,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -223,9 +224,12 @@ func New(
 	}
 
 	// Get the odometer if it is supported
+	var timedOdometer s.TimedOdometerSensor
 	if odometerSupported {
-		// TODO[kat]: Add when working on https://viam.atlassian.net/browse/RSDK-4860
-		logger.Info("odometer is not yet supported")
+		timedOdometer, err = s.NewOdometer(ctx, deps, movementSensorName, optionalConfigParams.MovementSensorDataFrequencyHz, logger)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Need to be able to shut down the sensor process before the cartoFacade
@@ -239,12 +243,16 @@ func New(
 	if testTimedIMUSensorOverride != nil {
 		timedIMU = testTimedIMUSensorOverride
 	}
+	if testTimedOdometerSensorOverride != nil {
+		timedOdometer = testTimedOdometerSensorOverride
+	}
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
 		Named:                         c.ResourceName().AsNamed(),
 		lidar:                         timedLidar,
 		imu:                           timedIMU,
+		odometer:                      timedOdometer,
 		movementSensorName:            movementSensorName,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
@@ -285,6 +293,17 @@ func New(
 			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
 			cartoSvc.logger); err != nil {
 			err = errors.Wrap(err, "failed to get data from IMU")
+			return nil, err
+		}
+	}
+	if cartoSvc.odometer != nil {
+		if err = s.ValidateGetOdometerData(
+			cancelSensorProcessCtx,
+			timedOdometer,
+			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
+			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+			cartoSvc.logger); err != nil {
+			err = errors.Wrap(err, "failed to get data from odometer")
 			return nil, err
 		}
 	}
@@ -525,6 +544,7 @@ type CartographerService struct {
 	closed             bool
 	lidar              s.TimedLidarSensor
 	imu                s.TimedIMUSensor
+	odometer           s.TimedOdometerSensor
 	movementSensorName string
 	subAlgo            SubAlgo
 

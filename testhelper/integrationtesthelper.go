@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/golang/geo/r3"
+	geo "github.com/kellydunn/golang-geo"
 	"github.com/pkg/errors"
 	replaylidar "go.viam.com/rdk/components/camera/replaypcd"
 	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
@@ -150,17 +151,16 @@ func IntegrationTimedLidarSensor(
 // replay sensor.
 // It is important to provide deterministic time information to cartographer to
 // ensure test outputs of cartographer are deterministic.
-// Note that IMU replay sensors are not yet fully supported.
 func IntegrationTimedIMUSensor(
 	t *testing.T,
-	imuName string,
+	movementSensorName string,
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *TimeTracker,
 ) (s.TimedIMUSensor, error) {
 	// Return nil if IMU is not requested
-	if imuName == "" {
+	if movementSensorName == "" {
 		return nil, nil
 	}
 
@@ -173,7 +173,7 @@ func IntegrationTimedIMUSensor(
 	var i uint64
 	closed := false
 	injectIMU := &inject.TimedIMUSensor{}
-	injectIMU.NameFunc = func() string { return imuName }
+	injectIMU.NameFunc = func() string { return movementSensorName }
 	injectIMU.TimedIMUSensorReadingFunc = func(ctx context.Context) (s.TimedIMUSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*
@@ -218,6 +218,88 @@ func IntegrationTimedIMUSensor(
 	}
 
 	return injectIMU, nil
+}
+
+// TODO[kat]: Continue working on this function
+// IntegrationTimedOdometerSensor returns a mock timed odometer sensor.
+// When the mock is called, it returns the next mock odometer readings, with the
+// ReadingTime incremented by the sensorReadingInterval.
+// The Replay sensor field of the mock readings will match the replay parameter.
+// When the end of the mock odometer readings is reached, the done channel
+// is written to once so the caller can detect when all odometer readings have been emitted
+// from the mock. This is intended to match the same "end of dataset" behavior of a
+// replay sensor.
+// It is important to provide deterministic time information to cartographer to
+// ensure test outputs of cartographer are deterministic.
+func IntegrationTimedOdometerSensor(
+	t *testing.T,
+	movementSensorName string,
+	replay bool,
+	sensorReadingInterval time.Duration,
+	done chan struct{},
+	timeTracker *TimeTracker,
+) (s.TimedOdometerSensor, error) {
+	// Return nil if IMU is not requested
+	if movementSensorName == "" {
+		return nil, nil
+	}
+
+	// Check that the required amount of IMU data is present and create a mock dataset from provided mock data artifact file.
+	// TODO[kat]: Look into this & fix it
+	mockDataset, err := mockIMUReadingsValid(t)
+	if err != nil {
+		return nil, err
+	}
+
+	var i uint64
+	closed := false
+	injectOdometer := &inject.TimedOdometerSensor{}
+	injectOdometer.NameFunc = func() string { return movementSensorName }
+	injectOdometer.TimedOdometerSensorReadingFunc = func(ctx context.Context) (s.TimedOdometerSensorReadingResponse, error) {
+		defer timeTracker.Mu.Unlock()
+		// TODO[kat]: Look into this & fix it
+		/*
+			Holds the process until for all necessary lidar data has been sent to cartographer. Is always
+			true in the first iteration. This and the manual definition of timestamps allow for consistent
+			results.
+		*/
+		for {
+			timeTracker.Mu.Lock()
+			if i == 0 || timeTracker.ImuTime.Sub(timeTracker.NextLidarTime) < 0 {
+				time.Sleep(sensorDataIngestionWaitTime)
+				break
+			}
+			timeTracker.Mu.Unlock()
+		}
+
+		// Communicate that all desired IMU readings have been sent or to cartographer or if the last lidar reading
+		// has been sent by, checks if LastLidarTime has been defined. If so, simulate endOfDataSet error.
+		t.Logf("TimedIMUSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.ImuTime.String())
+		if int(i) >= len(mockDataset) || timeTracker.LastLidarTime != defaultTime {
+			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
+			if !closed {
+				done <- struct{}{}
+				closed = true
+				timeTracker.LastImuTime = timeTracker.ImuTime
+			}
+			return s.TimedOdometerSensorReadingResponse{}, replaymovementsensor.ErrEndOfDataset
+		}
+
+		// Get next IMU data
+		resp, err := createTimedOdometerSensorReadingResponse(t, mockDataset[i], replay, timeTracker)
+		if err != nil {
+			return resp, err
+		}
+
+		// Advance the data index and update time tracker (manual timestamps occurs here)
+		i++
+		timeTracker.ImuTime = timeTracker.ImuTime.Add(sensorReadingInterval)
+		timeTracker.NextImuTime = timeTracker.ImuTime.Add(sensorReadingInterval)
+
+		return resp, nil
+	}
+
+	return injectOdometer, nil
 }
 
 func createTimedLidarSensorReadingResponse(t *testing.T, i uint64, replay bool, timeTracker *TimeTracker,
@@ -276,6 +358,42 @@ func createTimedIMUSensorReadingResponse(t *testing.T, line string, replay bool,
 		AngularVelocity:    angVel,
 		ReadingTime:        timeTracker.ImuTime,
 		Replay:             replay,
+	}
+	return resp, nil
+}
+
+// TODO[kat]: Continue working on this function
+func createTimedOdometerSensorReadingResponse(t *testing.T, line string, replay bool, timeTracker *TimeTracker,
+) (s.TimedOdometerSensorReadingResponse, error) {
+	// re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
+	// matches := re.FindAllString(line, -1)
+
+	// linAccX, err1 := strconv.ParseFloat(matches[0], 64)
+	// linAccY, err2 := strconv.ParseFloat(matches[1], 64)
+	// linAccZ, err3 := strconv.ParseFloat(matches[2], 64)
+	// if err1 != nil || err2 != nil || err3 != nil {
+	// 	t.Error("TEST FAILED TimedIMUSensorReading Mock failed to parse linear acceleration")
+	// 	return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing linear acceleration from file")
+	// }
+	// TODO[kat]: Just threw this in there, has to be thoughtful
+	position := geo.NewPoint(1, 2)
+	orientation := spatialmath.NewZeroOrientation()
+	// linAcc := r3.Vector{X: linAccX, Y: linAccY, Z: linAccZ}
+
+	// angVelX, err1 := strconv.ParseFloat(matches[3], 64)
+	// angVelY, err2 := strconv.ParseFloat(matches[4], 64)
+	// angVelZ, err3 := strconv.ParseFloat(matches[5], 64)
+	// if err1 != nil || err2 != nil || err3 != nil {
+	// 	t.Error("TEST FAILED TimedIMUSensorReading Mock failed to parse angular velocity")
+	// 	return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing angular velocity from file")
+	// }
+	// angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
+
+	resp := s.TimedOdometerSensorReadingResponse{
+		Position:    position,
+		Orientation: orientation,
+		ReadingTime: timeTracker.ImuTime,
+		Replay:      replay,
 	}
 	return resp, nil
 }

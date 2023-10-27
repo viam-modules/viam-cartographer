@@ -43,24 +43,29 @@ const (
 	CartoFacadeTimeoutForTest = 5 * time.Second
 	// CartoFacadeInternalTimeoutForTest is the timeout used for internal capi requests for tests.
 	CartoFacadeInternalTimeoutForTest = 15 * time.Minute
+
+	// StubLidar is a lidar whose functions return errors.
+	StubLidar s.TestSensor = "stub_lidar"
+	// StubIMU is an IMU whose functions return errors.
+	StubIMU s.TestSensor = "stub_imu"
 )
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(cameraName, movementSensorName string, t *testing.T) resource.Dependencies {
+func SetupStubDeps(cameraName, movementSensorName s.TestSensor, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
 	switch cameraName {
-	case "stub_lidar":
-		deps[camera.Named(cameraName)] = getStubLidar(t)
+	case StubLidar:
+		deps[camera.Named(string(cameraName))] = getStubLidar(t)
 	default:
-		t.Errorf("SetupStubDeps called with unhandled camera: %s", cameraName)
+		t.Errorf("SetupStubDeps called with unhandled camera: %s", string(cameraName))
 	}
 	switch movementSensorName {
-	case "stub_imu":
-		deps[movementsensor.Named(movementSensorName)] = getStubIMU(t)
-	case "":
+	case StubIMU:
+		deps[movementsensor.Named(string(movementSensorName))] = getStubIMU(t)
+	case s.NoMovementSensor:
 	default:
-		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", movementSensorName)
+		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", string(movementSensorName))
 	}
 
 	return deps
@@ -122,6 +127,7 @@ func CreateIntegrationSLAMService(
 	cfg *vcConfig.Config,
 	timedLidar s.TimedLidarSensor,
 	timedIMU s.TimedIMUSensor,
+	timedOdometer s.TimedOdometerSensor,
 	logger logging.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
@@ -132,13 +138,13 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	if timedIMU == nil {
+	if timedIMU == nil && timedOdometer == nil {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
 	} else {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"], cfg.MovementSensor["name"]})
 	}
 
-	deps := SetupStubDeps(cfg.Camera["name"], cfg.MovementSensor["name"], t)
+	deps := SetupStubDeps(s.TestSensor(cfg.Camera["name"]), s.TestSensor(cfg.MovementSensor["name"]), t)
 
 	svc, err := viamcartographer.New(
 		ctx,
@@ -151,6 +157,7 @@ func CreateIntegrationSLAMService(
 		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
 		timedIMU,
+		timedOdometer,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
@@ -198,6 +205,7 @@ func CreateSLAMService(
 		SensorValidationIntervalSecForTest,
 		CartoFacadeTimeoutForTest,
 		CartoFacadeInternalTimeoutForTest,
+		nil,
 		nil,
 		nil,
 	)

@@ -69,8 +69,7 @@ func (odom Odometer) TimedOdometerSensorReading(ctx context.Context) (TimedOdome
 			if readingTimePosition == defaultTime || readingTimePosition.Sub(readingTimeOrientation).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 				if position, _, err = odom.Odometer.Position(ctxWithMetadata, make(map[string]interface{})); err != nil {
-					msg := "Position error"
-					return TimedOdometerSensorReadingResponse{}, errors.Wrap(err, msg)
+					return TimedOdometerSensorReadingResponse{}, errors.Wrap(err, "Position error")
 				}
 
 				readingTimePosition = time.Now().UTC()
@@ -85,8 +84,7 @@ func (odom Odometer) TimedOdometerSensorReading(ctx context.Context) (TimedOdome
 			if readingTimeOrientation == defaultTime || readingTimeOrientation.Sub(readingTimePosition).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 				if orientation, err = odom.Odometer.Orientation(ctxWithMetadata, make(map[string]interface{})); err != nil {
-					msg := "Orientation error"
-					return TimedOdometerSensorReadingResponse{}, errors.Wrap(err, msg)
+					return TimedOdometerSensorReadingResponse{}, errors.Wrap(err, "Orientation error")
 				}
 
 				readingTimeOrientation = time.Now().UTC()
