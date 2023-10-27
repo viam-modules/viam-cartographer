@@ -58,15 +58,13 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSenso
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata)
 	if err != nil {
-		msg := "NextPointCloud error"
-		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
+		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, "NextPointCloud error")
 	}
 	readingTime := time.Now().UTC()
 
 	buf := new(bytes.Buffer)
 	if err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary); err != nil {
-		msg := "ToPCD error"
-		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
+		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, "ToPCD error")
 	}
 
 	if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {

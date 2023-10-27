@@ -511,7 +511,7 @@ func onlineModeLidarTestHelper(
 	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 5
 
-	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoIMU), string(testLidar), dataFrequencyHz, logger)
+	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoMovementSensor), string(testLidar), dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addLidarReadingArgs
@@ -662,7 +662,7 @@ func invalidLidarTestHelper(
 	lidarDataFrequencyHz int,
 ) {
 	logger := logging.NewTestLogger(t)
-	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoIMU), string(testLidar), lidarDataFrequencyHz, logger)
+	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoMovementSensor), string(testLidar), lidarDataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addLidarReadingArgs
@@ -775,7 +775,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("replay sensor adds sensor data until success in offline mode", func(t *testing.T) {
-		lidar, imu := s.ReplayLidar, s.NoIMU
+		lidar, imu := s.ReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -829,7 +829,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function succeeds", func(t *testing.T) {
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -846,7 +846,7 @@ func TestAddLidarReading(t *testing.T) {
 		}
 		config.RunFinalOptimizationFunc = runFinalOptimizationFunc
 
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -991,7 +991,7 @@ func TestStartLidar(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -1003,7 +1003,7 @@ func TestStartLidar(t *testing.T) {
 	})
 
 	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)

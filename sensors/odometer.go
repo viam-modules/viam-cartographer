@@ -133,7 +133,7 @@ func NewOdometer(
 		return Odometer{}, errors.Wrapf(err, "error getting movement sensor properties from \"%v\" for slam service", movementSensorName)
 	}
 	if !(properties.PositionSupported && properties.OrientationSupported) {
-		return Odometer{}, errors.New("configuring Odometer movement sensor error: " +
+		return Odometer{}, errors.New("configuring odometer movement sensor error: " +
 			"'movement_sensor' must support both Position and Orientation")
 	}
 

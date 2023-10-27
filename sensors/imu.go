@@ -78,8 +78,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 			if readingTimeLinearAcc == defaultTime || readingTimeLinearAcc.Sub(readingTimeAngularVel).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 				if linAcc, err = imu.IMU.LinearAcceleration(ctxWithMetadata, make(map[string]interface{})); err != nil {
-					msg := "LinearAcceleration error"
-					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, "LinearAcceleration error")
 				}
 
 				readingTimeLinearAcc = time.Now().UTC()
@@ -94,8 +93,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 			if readingTimeAngularVel == defaultTime || readingTimeAngularVel.Sub(readingTimeLinearAcc).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 				if angVel, err = imu.IMU.AngularVelocity(ctxWithMetadata, make(map[string]interface{})); err != nil {
-					msg := "AngularVelocity error"
-					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
+					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, "AngularVelocity error")
 				}
 
 				readingTimeAngularVel = time.Now().UTC()

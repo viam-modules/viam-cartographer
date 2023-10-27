@@ -22,19 +22,18 @@ const (
 func TestNewIMU(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 
-	t.Run("No IMU provided", func(t *testing.T) {
-		lidar, imu := s.GoodLidar, s.NoIMU
-		deps := s.SetupDeps(lidar, imu)
-		_, err := s.NewIMU(context.Background(), deps, string(imu), testDataFrequencyHz, logger)
+	t.Run("No movement sensor provided", func(t *testing.T) {
+		lidar, imu := s.GoodLidar, s.NoMovementSensor
+		_, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run("Failed IMU creation with non-existing movement sensor", func(t *testing.T) {
 		lidar, imu := s.GoodLidar, s.GibberishMovementSensor
-		errMessage := "error getting movement sensor \"" + string(imu) + "\" for slam service: \"" +
-			"rdk:component:movement_sensor/" + string(imu) + "\" missing from dependencies"
 		actualIMU, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
-		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
+		test.That(t, err, test.ShouldBeError,
+			errors.New("error getting movement sensor \""+string(imu)+"\" for slam service: \""+
+				"rdk:component:movement_sensor/"+string(imu)+"\" missing from dependencies"))
 		test.That(t, actualIMU, test.ShouldResemble, s.IMU{})
 	})
 
@@ -44,8 +43,7 @@ func TestNewIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeError,
 			errors.New("configuring IMU movement sensor error: "+
 				"'movement_sensor' must support both LinearAcceleration and AngularVelocity"))
-		expectedIMU := s.IMU{}
-		test.That(t, actualIMU, test.ShouldResemble, expectedIMU)
+		test.That(t, actualIMU, test.ShouldResemble, s.IMU{})
 	})
 
 	t.Run("Successful IMU creation", func(t *testing.T) {
@@ -70,27 +68,26 @@ func TestTimedIMUSensorReading(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
-	lidar, imu := s.GoodLidar, s.IMUWithErroringFunctions
-	imuWithErroringFunctions, err := s.NewIMU(ctx, s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
-	test.That(t, err, test.ShouldBeNil)
+	t.Run("when the IMU's functions return an error, TimedIMUSensorReading wraps that error", func(t *testing.T) {
+		lidar, imu := s.GoodLidar, s.IMUWithErroringFunctions
+		actualIMU, err := s.NewIMU(ctx, s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
+		test.That(t, err, test.ShouldBeNil)
 
-	imu = s.GoodIMU
-	goodIMU, err := s.NewIMU(ctx, s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	t.Run("when the IMU returns an error, returns that error", func(t *testing.T) {
-		tsr, err := imuWithErroringFunctions.TimedIMUSensorReading(ctx)
-		msg := "invalid sensor"
+		tsr, err := actualIMU.TimedIMUSensorReading(ctx)
 		test.That(t, err, test.ShouldBeError)
-		test.That(t, err.Error(), test.ShouldContainSubstring, msg)
+		test.That(t, err.Error(), test.ShouldContainSubstring, s.InvalidSensorTestErrMsg)
 		test.That(t, tsr, test.ShouldResemble, s.TimedIMUSensorReadingResponse{})
 	})
 
 	t.Run("when a live IMU succeeds, returns current time in UTC and the reading", func(t *testing.T) {
+		lidar, imu := s.GoodLidar, s.GoodIMU
+		actualIMU, err := s.NewIMU(ctx, s.SetupDeps(lidar, imu), string(imu), testDataFrequencyHz, logger)
+		test.That(t, err, test.ShouldBeNil)
+
 		beforeReading := time.Now().UTC()
 		time.Sleep(time.Millisecond)
 
-		tsr, err := goodIMU.TimedIMUSensorReading(ctx)
+		tsr, err := actualIMU.TimedIMUSensorReading(ctx)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, tsr.LinearAcceleration, test.ShouldResemble, s.LinAcc)
 		test.That(t, tsr.AngularVelocity, test.ShouldResemble,

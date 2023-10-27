@@ -30,16 +30,19 @@ var (
 	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
 	// AngVel is the successful mock angular velocity result used for testing.
 	AngVel = spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
-	// Orientation is the successful mock orientation result used for testing.
-	Orientation = spatialmath.NewZeroOrientation()
 	// Position is the successful mock position result used for testing.
 	Position = geo.NewPoint(1, 2)
+	// Orientation is the successful mock orientation result used for testing.
+	Orientation = spatialmath.NewZeroOrientation()
 )
 
 // TestSensor represents sensors used for testing.
 type TestSensor string
 
 const (
+	// InvalidSensorTestErrMsg represents an error message that indicates that the sensor is invalid.
+	InvalidSensorTestErrMsg = "invalid test sensor"
+
 	// GoodLidar is a lidar that works as expected and returns a pointcloud.
 	GoodLidar TestSensor = "good_lidar"
 	// WarmingUpLidar is a lidar whose NextPointCloud function returns a "warming up" error.
@@ -66,8 +69,6 @@ const (
 	IMUWithErroringFunctions TestSensor = "imu_with_erroring_functions"
 	// IMUWithInvalidProperties is an IMU whose properties are invalid.
 	IMUWithInvalidProperties TestSensor = "imu_with_invalid_properties"
-	// NoIMU is an IMU that represents that no IMU is set up or added.
-	NoIMU TestSensor = ""
 
 	// ReplayIMU is an IMU that works as expected and returns linear acceleration and angular velocity values.
 	ReplayIMU TestSensor = "replay_imu"
@@ -79,10 +80,15 @@ const (
 
 	// GoodOdometer is an odometer that works as expected and returns position and orientation values.
 	GoodOdometer TestSensor = "good_odometer"
+	// OdometerWithErroringFunctions is an Odometer whose functions return errors.
+	OdometerWithErroringFunctions TestSensor = "odometer_with_erroring_functions"
+	// OdometerWithInvalidProperties is an odometer whose properties are invalid.
+	OdometerWithInvalidProperties TestSensor = "odometer_with_invalid_properties"
 
+	// NoMovementSensor is a movement sensor that represents that no movement sensor is set up or added.
+	NoMovementSensor TestSensor = ""
 	// MovementSensorNotIMUNotOdometer is a movement sensor that does neither support an IMU nor an odometer.
 	MovementSensorNotIMUNotOdometer TestSensor = "movement_sensor_not_imu_not_odometer"
-
 	// MovementSensorBothIMUAndOdometer is a movement sensor that dsupports both an IMU nor an odometer.
 	MovementSensorBothIMUAndOdometer TestSensor = "movement_sensor_imu_and_odometer"
 	// GibberishMovementSensor is a movement sensor that can't be found in the dependencies.
@@ -110,6 +116,8 @@ var (
 		InvalidReplayIMU:                         func() *inject.MovementSensor { return getReplayIMU(BadTime) },
 		FinishedReplayIMU:                        func() *inject.MovementSensor { return getFinishedReplayIMU() },
 		GoodOdometer:                             getGoodOdometer,
+		OdometerWithErroringFunctions:            getOdometerWithErroringFunctions,
+		OdometerWithInvalidProperties:            getOdometerWithInvalidProperties,
 		MovementSensorNotIMUNotOdometer:          getMovementSensorNotIMUAndNotOdometer,
 		MovementSensorBothIMUAndOdometer:         getMovementSensorBothIMUAndOdometer,
 		MovementSensorWithErroringPropertiesFunc: getMovementSensorWithErroringPropertiesFunc,
@@ -210,10 +218,10 @@ func getLidarWithInvalidProperties() *inject.Camera {
 func getLidarWithErroringFunctions() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, errors.New("invalid sensor")
+		return nil, errors.New(InvalidSensorTestErrMsg)
 	}
 	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("invalid sensor")
+		return nil, errors.New(InvalidSensorTestErrMsg)
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
@@ -286,10 +294,10 @@ func getReplayIMU(testTime string) *inject.MovementSensor {
 func getIMUWithErroringFunctions() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return r3.Vector{}, errors.New("invalid sensor")
+		return r3.Vector{}, errors.New(InvalidSensorTestErrMsg)
 	}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
+		return spatialmath.AngularVelocity{}, errors.New(InvalidSensorTestErrMsg)
 	}
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -341,6 +349,40 @@ func getGoodOdometer() *inject.MovementSensor {
 	}
 	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
 		return Orientation, nil
+	}
+	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			PositionSupported:    true,
+			OrientationSupported: true,
+		}, nil
+	}
+	return odometer
+}
+
+func getOdometerWithInvalidProperties() *inject.MovementSensor {
+	odometer := &inject.MovementSensor{}
+	odometer.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
+		return Position, 0.1, nil
+	}
+	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
+		return Orientation, nil
+	}
+	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			PositionSupported:    false,
+			OrientationSupported: true,
+		}, nil
+	}
+	return odometer
+}
+
+func getOdometerWithErroringFunctions() *inject.MovementSensor {
+	odometer := &inject.MovementSensor{}
+	odometer.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
+		return &geo.Point{}, 0.0, errors.New(InvalidSensorTestErrMsg)
+	}
+	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
+		return &spatialmath.Quaternion{}, errors.New(InvalidSensorTestErrMsg)
 	}
 	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{

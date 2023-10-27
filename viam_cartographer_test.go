@@ -161,7 +161,7 @@ func TestNew(t *testing.T) {
 
 		_, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("failed to get data from lidar: ValidateGetLidarData timeout: NextPointCloud error: invalid sensor"))
+			errors.New("failed to get data from lidar: ValidateGetLidarData timeout: NextPointCloud error: "+s.InvalidSensorTestErrMsg))
 	})
 
 	t.Run("Successful creation of cartographer slam service in localization mode", func(t *testing.T) {
