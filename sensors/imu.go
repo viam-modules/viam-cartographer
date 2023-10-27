@@ -61,11 +61,12 @@ func (imu IMU) DataFrequencyHz() int {
 	return imu.dataFrequencyHz
 }
 
-// TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from.
+// TimedIMUSensorReading returns data from the IMU movement sensor and the time the reading is from & whether
+// it was a replay sensor or not.
 func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReadingResponse, error) {
 	replay := false
 
-	var timeLinearAcc, timeAngularVel time.Time
+	var readingTimeLinearAcc, readingTimeAngularVel time.Time
 	var linAcc r3.Vector
 	var angVel spatialmath.AngularVelocity
 	var err error
@@ -74,44 +75,38 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 		case <-ctx.Done():
 			return TimedIMUSensorReadingResponse{}, nil
 		default:
-			if timeLinearAcc == defaultTime || timeLinearAcc.Sub(timeAngularVel).Milliseconds() < 0 {
+			if readingTimeLinearAcc == defaultTime || readingTimeLinearAcc.Sub(readingTimeAngularVel).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-				linAcc, err = imu.IMU.LinearAcceleration(ctxWithMetadata, make(map[string]interface{}))
-				if err != nil {
+				if linAcc, err = imu.IMU.LinearAcceleration(ctxWithMetadata, make(map[string]interface{})); err != nil {
 					msg := "LinearAcceleration error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 				}
-				timeLinearAcc = time.Now().UTC()
 
-				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-				if ok {
+				readingTimeLinearAcc = time.Now().UTC()
+				if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
 					replay = true
-					timeLinearAcc, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-					if err != nil {
+					if readingTimeLinearAcc, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 					}
 				}
 			}
 
-			if timeAngularVel == defaultTime || timeAngularVel.Sub(timeLinearAcc).Milliseconds() < 0 {
+			if readingTimeAngularVel == defaultTime || readingTimeAngularVel.Sub(readingTimeLinearAcc).Milliseconds() < 0 {
 				ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-				angVel, err = imu.IMU.AngularVelocity(ctxWithMetadata, make(map[string]interface{}))
-				if err != nil {
+				if angVel, err = imu.IMU.AngularVelocity(ctxWithMetadata, make(map[string]interface{})); err != nil {
 					msg := "AngularVelocity error"
 					return TimedIMUSensorReadingResponse{}, errors.Wrap(err, msg)
 				}
-				timeAngularVel = time.Now().UTC()
 
-				timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-				if ok {
+				readingTimeAngularVel = time.Now().UTC()
+				if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
 					replay = true
-					timeAngularVel, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-					if err != nil {
+					if readingTimeAngularVel, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 						return TimedIMUSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 					}
 				}
 			}
-			if math.Abs(float64(timeAngularVel.Sub(timeLinearAcc).Milliseconds())) < replayTimeToleranceMsec {
+			if math.Abs(float64(readingTimeAngularVel.Sub(readingTimeLinearAcc).Milliseconds())) < replayTimeToleranceMsec {
 				return TimedIMUSensorReadingResponse{
 					LinearAcceleration: linAcc,
 					AngularVelocity: spatialmath.AngularVelocity{
@@ -119,7 +114,7 @@ func (imu IMU) TimedIMUSensorReading(ctx context.Context) (TimedIMUSensorReading
 						Y: rdkutils.DegToRad(angVel.Y),
 						Z: rdkutils.DegToRad(angVel.Z),
 					},
-					ReadingTime: timeLinearAcc.Add(timeLinearAcc.Sub(timeAngularVel) / 2),
+					ReadingTime: readingTimeLinearAcc.Add(readingTimeLinearAcc.Sub(readingTimeAngularVel) / 2),
 					Replay:      replay,
 				}, nil
 			}
@@ -165,7 +160,7 @@ func NewIMU(
 // ValidateGetIMUData checks every sensorValidationIntervalSec if the provided IMU
 // returned valid timed readings every sensorValidationIntervalSec
 // until either success or sensorValidationMaxTimeoutSec has elapsed.
-// returns an error if at least one invalid reading was returned.
+// Returns an error if at least one invalid reading was returned.
 func ValidateGetIMUData(
 	ctx context.Context,
 	imu TimedIMUSensor,

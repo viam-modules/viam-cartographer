@@ -17,15 +17,16 @@ import (
 	goutils "go.viam.com/utils"
 )
 
-// TimedLidarSensor describes a sensor that reports the time the reading is from & whether or not it is from a replay sensor.
+// TimedLidarSensor describes a sensor that reports the time the reading is from & whether or not it is
+// rom a replay sensor.
 type TimedLidarSensor interface {
 	Name() string
 	DataFrequencyHz() int
 	TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error)
 }
 
-// TimedLidarSensorReadingResponse represents a lidar sensor reading with a time &
-// allows the caller to know if the reading is from a replay camera sensor.
+// TimedLidarSensorReadingResponse represents a lidar sensor reading with a time & allows the caller
+// to know if the reading is from a replay camera sensor.
 type TimedLidarSensorReadingResponse struct {
 	Reading     []byte
 	ReadingTime time.Time
@@ -52,7 +53,8 @@ func (lidar Lidar) DataFrequencyHz() int {
 // TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether
 // it was a replay sensor or not.
 func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error) {
-	live := true
+	replay := false
+
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata)
 	if err != nil {
@@ -62,21 +64,18 @@ func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSenso
 	readingTime := time.Now().UTC()
 
 	buf := new(bytes.Buffer)
-	err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
-	if err != nil {
+	if err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary); err != nil {
 		msg := "ToPCD error"
 		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, msg)
 	}
 
-	timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]
-	if ok {
-		live = false
-		readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0])
-		if err != nil {
+	if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
+		replay = true
+		if readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 		}
 	}
-	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: !live}, nil
+	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
 }
 
 // NewLidar returns a new Lidar.
@@ -115,7 +114,7 @@ func NewLidar(
 // ValidateGetLidarData checks every sensorValidationIntervalSec if the provided lidar
 // returned a valid timed readings every sensorValidationIntervalSec
 // until either success or sensorValidationMaxTimeoutSec has elapsed.
-// returns an error no valid reading was returned.
+// Returns an error no valid reading was returned.
 func ValidateGetLidarData(
 	ctx context.Context,
 	lidar TimedLidarSensor,
