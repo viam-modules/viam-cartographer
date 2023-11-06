@@ -169,9 +169,15 @@ func testHelperCartographer(
 	lidarReadingInterval := time.Millisecond * defaultLidarTimeInterval
 	timeTracker.LidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	if !online {
-		attrCfg.Camera = map[string]string{"name": string(testhelper.LidarWithErroringFunctions), "data_frequency_hz": "0"}
+		attrCfg.Camera = map[string]string{
+			"name":              string(testhelper.LidarWithErroringFunctions),
+			"data_frequency_hz": "0",
+		}
 	} else {
-		attrCfg.Camera = map[string]string{"name": string(testhelper.LidarWithErroringFunctions), "data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval)}
+		attrCfg.Camera = map[string]string{
+			"name":              string(testhelper.LidarWithErroringFunctions),
+			"data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval),
+		}
 	}
 
 	// Add imu component to config (optional)
@@ -179,9 +185,15 @@ func testHelperCartographer(
 	imuReadingInterval := time.Millisecond * defaultIMUTimeInterval
 	if useIMU {
 		if !online {
-			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": "0"}
+			attrCfg.MovementSensor = map[string]string{
+				"name":              string(testhelper.IMUWithErroringFunctions),
+				"data_frequency_hz": "0",
+			}
 		} else {
-			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": strconv.Itoa(defaultIMUTimeInterval)}
+			attrCfg.MovementSensor = map[string]string{
+				"name":              string(testhelper.IMUWithErroringFunctions),
+				"data_frequency_hz": strconv.Itoa(defaultIMUTimeInterval),
+			}
 		}
 		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	}

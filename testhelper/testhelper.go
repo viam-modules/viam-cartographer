@@ -48,23 +48,36 @@ const (
 	LidarWithErroringFunctions s.TestSensor = "stub_lidar"
 	// IMUWithErroringFunctions is an IMU whose functions return errors.
 	IMUWithErroringFunctions s.TestSensor = "stub_imu"
+	// NoMovementSensor is a movement sensor that represents that no movement sensor is set up or added.
+	NoMovementSensor s.TestSensor = ""
+)
+
+var (
+	testLidars = map[s.TestSensor]func(*testing.T) *inject.Camera{
+		LidarWithErroringFunctions: getLidarWithErroringFunctions,
+	}
+
+	testMovementSensors = map[s.TestSensor]func(*testing.T) *inject.MovementSensor{
+		IMUWithErroringFunctions: getIMUWithErroringFunctions,
+		NoMovementSensor:         nil,
+	}
 )
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(cameraName, movementSensorName s.TestSensor, t *testing.T) resource.Dependencies {
+func SetupStubDeps(lidarName, movementSensorName s.TestSensor, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
-	switch cameraName {
-	case LidarWithErroringFunctions:
-		deps[camera.Named(string(cameraName))] = getLidarWithErroringFunctions(t)
-	default:
-		t.Errorf("SetupStubDeps called with unhandled camera: %s", string(cameraName))
+	if getLidarFunc, ok := testLidars[lidarName]; ok {
+		deps[camera.Named(string(lidarName))] = getLidarFunc(t)
+	} else {
+		t.Errorf("SetupStubDeps called with unhandled camera: %s", string(lidarName))
 	}
-	switch movementSensorName {
-	case IMUWithErroringFunctions:
-		deps[movementsensor.Named(string(movementSensorName))] = getIMUWithErroringFunctions(t)
-	case s.NoMovementSensor:
-	default:
+
+	if getMovementSensorFunc, ok := testMovementSensors[movementSensorName]; ok {
+		if getMovementSensorFunc != nil {
+			deps[movementsensor.Named(string(movementSensorName))] = getMovementSensorFunc(t)
+		}
+	} else {
 		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", string(movementSensorName))
 	}
 
