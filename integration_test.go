@@ -145,7 +145,6 @@ func testHelperCartographer(
 	replaySensor bool,
 	online bool,
 	useIMU bool,
-	useOdometer bool,
 	enableMapping bool,
 	expectedMode cartofacade.SlamMode,
 ) []byte {
@@ -170,9 +169,9 @@ func testHelperCartographer(
 	lidarReadingInterval := time.Millisecond * defaultLidarTimeInterval
 	timeTracker.LidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	if !online {
-		attrCfg.Camera = map[string]string{"name": string(testhelper.StubLidar), "data_frequency_hz": "0"}
+		attrCfg.Camera = map[string]string{"name": string(testhelper.LidarWithErroringFunctions), "data_frequency_hz": "0"}
 	} else {
-		attrCfg.Camera = map[string]string{"name": string(testhelper.StubLidar), "data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval)}
+		attrCfg.Camera = map[string]string{"name": string(testhelper.LidarWithErroringFunctions), "data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval)}
 	}
 
 	movementSensorReadingInterval := time.Millisecond * defaultMovementSensorTimeInterval
@@ -181,33 +180,19 @@ func testHelperCartographer(
 	imuDone := make(chan struct{})
 	if useIMU {
 		if !online {
-			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.StubIMU), "data_frequency_hz": "0"}
+			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": "0"}
 		} else {
-			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.StubIMU), "data_frequency_hz": strconv.Itoa(defaultMovementSensorTimeInterval)}
+			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": strconv.Itoa(defaultMovementSensorTimeInterval)}
 		}
 		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	}
 
-	// Add odometer component to config (optional)
-	// TODO[kat]: Continue on this
-	odometerDone := make(chan struct{})
-	if useOdometer {
-		if !online {
-			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.StubIMU), "data_frequency_hz": "0"}
-		} else {
-			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.StubIMU), "data_frequency_hz": strconv.Itoa(defaultMovementSensorTimeInterval)}
-		}
-		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
-	}
 	// Start Sensors
 	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"],
 		replaySensor, lidarReadingInterval, lidarDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
 	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"],
 		replaySensor, movementSensorReadingInterval, imuDone, &timeTracker)
-	test.That(t, err, test.ShouldBeNil)
-	timedOdometer, err := testhelper.IntegrationTimedOdometerSensor(t, attrCfg.MovementSensor["name"],
-		replaySensor, movementSensorReadingInterval, odometerDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
 
 	if !useIMU {

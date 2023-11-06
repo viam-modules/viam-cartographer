@@ -44,10 +44,10 @@ const (
 	// CartoFacadeInternalTimeoutForTest is the timeout used for internal capi requests for tests.
 	CartoFacadeInternalTimeoutForTest = 15 * time.Minute
 
-	// StubLidar is a lidar whose functions return errors.
-	StubLidar s.TestSensor = "stub_lidar"
-	// StubIMU is an IMU whose functions return errors.
-	StubIMU s.TestSensor = "stub_imu"
+	// LidarWithErroringFunctions is a lidar whose functions return errors.
+	LidarWithErroringFunctions s.TestSensor = "stub_lidar"
+	// IMUWithErroringFunctions is an IMU whose functions return errors.
+	IMUWithErroringFunctions s.TestSensor = "stub_imu"
 )
 
 // SetupStubDeps returns stubbed dependencies based on the camera
@@ -55,14 +55,14 @@ const (
 func SetupStubDeps(cameraName, movementSensorName s.TestSensor, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
 	switch cameraName {
-	case StubLidar:
-		deps[camera.Named(string(cameraName))] = getStubLidar(t)
+	case LidarWithErroringFunctions:
+		deps[camera.Named(string(cameraName))] = getLidarWithErroringFunctions(t)
 	default:
 		t.Errorf("SetupStubDeps called with unhandled camera: %s", string(cameraName))
 	}
 	switch movementSensorName {
-	case StubIMU:
-		deps[movementsensor.Named(string(movementSensorName))] = getStubIMU(t)
+	case IMUWithErroringFunctions:
+		deps[movementsensor.Named(string(movementSensorName))] = getIMUWithErroringFunctions(t)
 	case s.NoMovementSensor:
 	default:
 		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", string(movementSensorName))
@@ -71,7 +71,7 @@ func SetupStubDeps(cameraName, movementSensorName s.TestSensor, t *testing.T) re
 	return deps
 }
 
-func getStubLidar(t *testing.T) *inject.Camera {
+func getLidarWithErroringFunctions(t *testing.T) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		t.Error("TEST FAILED stub lidar NextPointCloud called")
@@ -93,7 +93,7 @@ func getStubLidar(t *testing.T) *inject.Camera {
 	return cam
 }
 
-func getStubIMU(t *testing.T) *inject.MovementSensor {
+func getIMUWithErroringFunctions(t *testing.T) *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
 		t.Error("TEST FAILED stub IMU LinearAcceleration called")
@@ -127,7 +127,6 @@ func CreateIntegrationSLAMService(
 	cfg *vcConfig.Config,
 	timedLidar s.TimedLidarSensor,
 	timedIMU s.TimedIMUSensor,
-	timedOdometer s.TimedOdometerSensor,
 	logger logging.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
@@ -138,7 +137,7 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	if timedIMU == nil && timedOdometer == nil {
+	if timedIMU == nil {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
 	} else {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"], cfg.MovementSensor["name"]})
@@ -157,7 +156,7 @@ func CreateIntegrationSLAMService(
 		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
 		timedIMU,
-		timedOdometer,
+		nil,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
