@@ -176,7 +176,7 @@ func testHelperCartographer(
 
 	// Add imu component to config (optional)
 	imuDone := make(chan struct{})
-	movementSensorReadingInterval := time.Millisecond * defaultIMUTimeInterval
+	imuReadingInterval := time.Millisecond * defaultIMUTimeInterval
 	if useIMU {
 		if !online {
 			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": "0"}
@@ -191,7 +191,7 @@ func testHelperCartographer(
 		replaySensor, lidarReadingInterval, lidarDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
 	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"],
-		replaySensor, movementSensorReadingInterval, imuDone, &timeTracker)
+		replaySensor, imuReadingInterval, imuDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
 
 	if !useIMU {
