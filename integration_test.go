@@ -144,7 +144,6 @@ func testHelperCartographer(
 	replaySensor bool,
 	online bool,
 	useIMU bool,
-	useOdometer bool,
 	enableMapping bool,
 	expectedMode cartofacade.SlamMode,
 ) []byte {
