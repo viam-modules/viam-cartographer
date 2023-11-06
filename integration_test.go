@@ -174,10 +174,9 @@ func testHelperCartographer(
 		attrCfg.Camera = map[string]string{"name": string(testhelper.LidarWithErroringFunctions), "data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval)}
 	}
 
-	movementSensorReadingInterval := time.Millisecond * defaultMovementSensorTimeInterval
-
 	// Add imu component to config (optional)
 	imuDone := make(chan struct{})
+	movementSensorReadingInterval := time.Millisecond * defaultMovementSensorTimeInterval
 	if useIMU {
 		if !online {
 			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": "0"}
