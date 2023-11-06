@@ -32,9 +32,9 @@ import (
 )
 
 const (
-	defaultLidarTimeInterval          = 200
-	defaultMovementSensorTimeInterval = 50
-	testTimeout                       = 20 * time.Second
+	defaultLidarTimeInterval = 200
+	defaultIMUTimeInterval   = 50
+	testTimeout              = 20 * time.Second
 )
 
 // Test final position and orientation are at approximately the expected values.
@@ -176,12 +176,12 @@ func testHelperCartographer(
 
 	// Add imu component to config (optional)
 	imuDone := make(chan struct{})
-	movementSensorReadingInterval := time.Millisecond * defaultMovementSensorTimeInterval
+	movementSensorReadingInterval := time.Millisecond * defaultIMUTimeInterval
 	if useIMU {
 		if !online {
 			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": "0"}
 		} else {
-			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": strconv.Itoa(defaultMovementSensorTimeInterval)}
+			attrCfg.MovementSensor = map[string]string{"name": string(testhelper.IMUWithErroringFunctions), "data_frequency_hz": strconv.Itoa(defaultIMUTimeInterval)}
 		}
 		timeTracker.ImuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 	}
