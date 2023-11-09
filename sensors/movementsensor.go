@@ -165,7 +165,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 					Y: rdkutils.DegToRad(angVel.Y),
 					Z: rdkutils.DegToRad(angVel.Z),
 				},
-				ReadingTime: readingTimeLinearAcc.Add(readingTimeLinearAcc.Sub(*readingTimeAngularVel) / 2),
+				ReadingTime: readingTimeLinearAcc.Add((readingTimeLinearAcc.Sub(*readingTimeAngularVel)).Abs() / 2),
 			}, true
 		}
 		return TimedIMUReadingResponse{}, false
@@ -224,7 +224,7 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 			return TimedOdometerReadingResponse{
 				Position:    position,
 				Orientation: *orientation,
-				ReadingTime: readingTimePosition.Add(readingTimePosition.Sub(*readingTimeOrientation) / 2),
+				ReadingTime: readingTimePosition.Add((readingTimePosition.Sub(*readingTimeOrientation) / 2).Abs()),
 			}, true
 		}
 		return TimedOdometerReadingResponse{}, false
