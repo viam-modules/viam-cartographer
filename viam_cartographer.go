@@ -232,22 +232,20 @@ func New(
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
-		Named:                         c.ResourceName().AsNamed(),
-		lidar:                         timedLidar,
-		movementSensor:                timedMovementSensor,
-		movementSensorName:            movementSensorName,
-		subAlgo:                       subAlgo,
-		configParams:                  svcConfig.ConfigParams,
-		cancelSensorProcessFunc:       cancelSensorProcessFunc,
-		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
-		logger:                        logger,
-		sensorValidationMaxTimeoutSec: sensorValidationMaxTimeoutSec,
-		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
-		cartoFacadeTimeout:            cartoFacadeTimeout,
-		cartoFacadeInternalTimeout:    cartoFacadeInternalTimeout,
-		mapTimestamp:                  time.Now().UTC(),
-		enableMapping:                 optionalConfigParams.EnableMapping,
-		existingMap:                   optionalConfigParams.ExistingMap,
+		Named:                      c.ResourceName().AsNamed(),
+		lidar:                      timedLidar,
+		movementSensor:             timedMovementSensor,
+		movementSensorName:         movementSensorName,
+		subAlgo:                    subAlgo,
+		configParams:               svcConfig.ConfigParams,
+		cancelSensorProcessFunc:    cancelSensorProcessFunc,
+		cancelCartoFacadeFunc:      cancelCartoFacadeFunc,
+		logger:                     logger,
+		cartoFacadeTimeout:         cartoFacadeTimeout,
+		cartoFacadeInternalTimeout: cartoFacadeInternalTimeout,
+		mapTimestamp:               time.Now().UTC(),
+		enableMapping:              optionalConfigParams.EnableMapping,
+		existingMap:                optionalConfigParams.ExistingMap,
 	}
 
 	defer func() {
@@ -262,7 +260,7 @@ func New(
 		cancelSensorProcessCtx,
 		timedLidar,
 		time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-		time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+		time.Duration(sensorValidationIntervalSec)*time.Second,
 		cartoSvc.logger); err != nil {
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
@@ -272,7 +270,7 @@ func New(
 			cancelSensorProcessCtx,
 			timedMovementSensor,
 			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
+			time.Duration(sensorValidationIntervalSec)*time.Second,
 			cartoSvc.logger); err != nil {
 			err = errors.Wrap(err, "failed to get data from movement sensor")
 			return nil, err
@@ -534,10 +532,8 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp                  time.Time
-	sensorValidationMaxTimeoutSec int
-	sensorValidationIntervalSec   int
-	jobDone                       atomic.Bool
+	mapTimestamp time.Time
+	jobDone      atomic.Bool
 
 	useCloudSlam  bool
 	enableMapping bool
