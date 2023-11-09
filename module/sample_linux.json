@@ -26,12 +26,12 @@
       ],
       "type": "movement_sensor",
       "attributes": {
-        "serial_path": "/dev/serial/by-id/usb-1a86_USB_Serial-if00-port0"
+        "serial_path": "/dev/serial/by-id/<device_ID>"
       }
     },
     {
       "attributes": {
-        "device_path": "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0"
+        "device_path": "/dev/serial/by-id/device_ID>"
       },
       "service_configs": [
         {
