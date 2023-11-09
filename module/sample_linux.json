@@ -1,9 +1,4 @@
 {
-  "network": {
-    "sessions": {
-      "heartbeat_window": "59s"
-    }
-  },
   "components": [
     {
       "depends_on": [],
