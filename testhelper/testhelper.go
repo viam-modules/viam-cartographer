@@ -206,7 +206,6 @@ func CreateSLAMService(
 		CartoFacadeInternalTimeoutForTest,
 		nil,
 		nil,
-		nil,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)

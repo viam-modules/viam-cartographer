@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/golang/geo/r3"
-	geo "github.com/kellydunn/golang-geo"
 	"github.com/pkg/errors"
 	replaylidar "go.viam.com/rdk/components/camera/replaypcd"
 	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
@@ -283,42 +282,6 @@ func createTimedMovementSensorReadingResponse(t *testing.T, line string, replay 
 			ReadingTime:        timeTracker.ImuTime,
 		},
 		IsReplaySensor: replay,
-	}
-	return resp, nil
-}
-
-// TODO[kat]: Continue working on this function
-func createTimedOdometerSensorReadingResponse(t *testing.T, line string, replay bool, timeTracker *TimeTracker,
-) (s.TimedOdometerSensorReadingResponse, error) {
-	// re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
-	// matches := re.FindAllString(line, -1)
-
-	// linAccX, err1 := strconv.ParseFloat(matches[0], 64)
-	// linAccY, err2 := strconv.ParseFloat(matches[1], 64)
-	// linAccZ, err3 := strconv.ParseFloat(matches[2], 64)
-	// if err1 != nil || err2 != nil || err3 != nil {
-	// 	t.Error("TEST FAILED TimedIMUSensorReading Mock failed to parse linear acceleration")
-	// 	return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing linear acceleration from file")
-	// }
-	// TODO[kat]: Just threw this in there, has to be thoughtful
-	position := geo.NewPoint(1, 2)
-	orientation := spatialmath.NewZeroOrientation()
-	// linAcc := r3.Vector{X: linAccX, Y: linAccY, Z: linAccZ}
-
-	// angVelX, err1 := strconv.ParseFloat(matches[3], 64)
-	// angVelY, err2 := strconv.ParseFloat(matches[4], 64)
-	// angVelZ, err3 := strconv.ParseFloat(matches[5], 64)
-	// if err1 != nil || err2 != nil || err3 != nil {
-	// 	t.Error("TEST FAILED TimedIMUSensorReading Mock failed to parse angular velocity")
-	// 	return s.TimedIMUSensorReadingResponse{}, errors.New("error parsing angular velocity from file")
-	// }
-	// angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
-
-	resp := s.TimedOdometerSensorReadingResponse{
-		Position:    position,
-		Orientation: orientation,
-		ReadingTime: timeTracker.ImuTime,
-		Replay:      replay,
 	}
 	return resp, nil
 }
