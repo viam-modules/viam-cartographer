@@ -186,12 +186,12 @@ func testHelperCartographer(
 	if useIMU {
 		if !online {
 			attrCfg.MovementSensor = map[string]string{
-				"name":              string(testhelper.IMUWithErroringFunctions),
+				"name":              string(testhelper.MovementSensorWithErroringFunctions),
 				"data_frequency_hz": "0",
 			}
 		} else {
 			attrCfg.MovementSensor = map[string]string{
-				"name":              string(testhelper.IMUWithErroringFunctions),
+				"name":              string(testhelper.MovementSensorWithErroringFunctions),
 				"data_frequency_hz": strconv.Itoa(defaultIMUTimeInterval),
 			}
 		}
@@ -199,10 +199,10 @@ func testHelperCartographer(
 	}
 
 	// Start Sensors
-	timedLidar, err := testhelper.IntegrationTimedLidarSensor(t, attrCfg.Camera["name"],
+	timedLidar, err := testhelper.IntegrationTimedLidar(t, attrCfg.Camera["name"],
 		replaySensor, lidarReadingInterval, lidarDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
-	timedIMU, err := testhelper.IntegrationTimedIMUSensor(t, attrCfg.MovementSensor["name"],
+	timedIMU, err := testhelper.IntegrationTimedIMU(t, attrCfg.MovementSensor["name"],
 		replaySensor, imuReadingInterval, imuDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
 

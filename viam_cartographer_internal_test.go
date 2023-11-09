@@ -95,7 +95,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("empty component reference success", func(t *testing.T) {
 		lidarName := ""
-		injectLidar := inject.TimedLidarSensor{}
+		injectLidar := inject.TimedLidar{}
 		injectLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &injectLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
@@ -106,7 +106,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("origin pose success", func(t *testing.T) {
 		lidarName := "primarySensor1"
-		injectLidar := inject.TimedLidarSensor{}
+		injectLidar := inject.TimedLidar{}
 		injectLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &injectLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
@@ -117,7 +117,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("non origin pose success", func(t *testing.T) {
 		lidarName := "primarySensor2"
-		injectLidar := inject.TimedLidarSensor{}
+		injectLidar := inject.TimedLidar{}
 		injectLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &injectLidar
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
@@ -128,7 +128,7 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("error case", func(t *testing.T) {
 		lidarName := "primarySensor3"
-		injectLidar := inject.TimedLidarSensor{}
+		injectLidar := inject.TimedLidar{}
 		injectLidar.NameFunc = func() string { return lidarName }
 		svc.lidar = &injectLidar
 
@@ -495,59 +495,29 @@ func TestCheckIfIMUAndOdometerSupported(t *testing.T) {
 	ctx := context.Background()
 	t.Run("neither IMU nor Odometer supported", func(t *testing.T) {
 		lidar, movementSensor := s.NoLidar, s.MovementSensorNotIMUNotOdometer
-		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+		err := checkIfIMUAndOdometerSupported(ctx,
 			s.SetupDeps(lidar, movementSensor), string(movementSensor))
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, imuSupported, test.ShouldBeFalse)
-		test.That(t, odometerSupported, test.ShouldBeFalse)
-	})
-
-	t.Run("only IMU supported", func(t *testing.T) {
-		lidar, movementSensor := s.NoLidar, s.GoodIMU
-		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
-			s.SetupDeps(lidar, movementSensor), string(movementSensor))
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, imuSupported, test.ShouldBeTrue)
-		test.That(t, odometerSupported, test.ShouldBeFalse)
-	})
-	t.Run("only Odometer supported", func(t *testing.T) {
-		lidar, movementSensor := s.NoLidar, s.GoodOdometer
-		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
-			s.SetupDeps(lidar, movementSensor), string(movementSensor))
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, imuSupported, test.ShouldBeFalse)
-		test.That(t, odometerSupported, test.ShouldBeTrue)
-	})
-	t.Run("both IMU and Odometer supported", func(t *testing.T) {
-		lidar, movementSensor := s.NoLidar, s.MovementSensorBothIMUAndOdometer
-		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
-			s.SetupDeps(lidar, movementSensor), string(movementSensor))
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, imuSupported, test.ShouldBeTrue)
-		test.That(t, odometerSupported, test.ShouldBeTrue)
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldBeError, s.ERRMovementSensorNeitherIMUNorOdometer)
 	})
 
 	t.Run("failure to get movement sensor from dependencies", func(t *testing.T) {
 		lidar, movementSensor := s.NoLidar, s.GibberishMovementSensor
 		errMessage := "error getting movement sensor \"" + string(movementSensor) + "\" for slam service: \"" +
 			"rdk:component:movement_sensor/" + string(movementSensor) + "\" missing from dependencies"
-		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+		err := checkIfIMUAndOdometerSupported(ctx,
 			s.SetupDeps(lidar, movementSensor), string(movementSensor))
 		test.That(t, err, test.ShouldNotBeNil)
 		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
-		test.That(t, imuSupported, test.ShouldBeFalse)
-		test.That(t, odometerSupported, test.ShouldBeFalse)
 	})
 
 	t.Run("failure to get movement sensor properties", func(t *testing.T) {
 		lidar, movementSensor := s.NoLidar, s.MovementSensorWithErroringPropertiesFunc
 		errMessage := "error getting movement sensor properties from movement sensor \"" + string(movementSensor) +
 			"\" for slam service: error getting properties"
-		imuSupported, odometerSupported, err := checkIfIMUAndOdometerSupported(ctx,
+		err := checkIfIMUAndOdometerSupported(ctx,
 			s.SetupDeps(lidar, movementSensor), string(movementSensor))
 		test.That(t, err, test.ShouldNotBeNil)
 		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
-		test.That(t, imuSupported, test.ShouldBeFalse)
-		test.That(t, odometerSupported, test.ShouldBeFalse)
 	})
 }

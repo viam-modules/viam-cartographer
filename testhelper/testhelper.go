@@ -46,8 +46,8 @@ const (
 
 	// LidarWithErroringFunctions is a lidar whose functions return errors.
 	LidarWithErroringFunctions s.TestSensor = "stub_lidar"
-	// IMUWithErroringFunctions is an IMU whose functions return errors.
-	IMUWithErroringFunctions s.TestSensor = "stub_imu"
+	// MovementSensorWithErroringFunctions is a movement sensor whose functions return errors.
+	MovementSensorWithErroringFunctions s.TestSensor = "stub_movement_sensor"
 	// NoMovementSensor is a movement sensor that represents that no movement sensor is set up or added.
 	NoMovementSensor s.TestSensor = ""
 )
@@ -58,8 +58,8 @@ var (
 	}
 
 	testMovementSensors = map[s.TestSensor]func(*testing.T) *inject.MovementSensor{
-		IMUWithErroringFunctions: getIMUWithErroringFunctions,
-		NoMovementSensor:         nil,
+		MovementSensorWithErroringFunctions: getMovementSensorWithErroringFunctions,
+		NoMovementSensor:                    nil,
 	}
 )
 
@@ -106,23 +106,23 @@ func getLidarWithErroringFunctions(t *testing.T) *inject.Camera {
 	return cam
 }
 
-func getIMUWithErroringFunctions(t *testing.T) *inject.MovementSensor {
-	imu := &inject.MovementSensor{}
-	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		t.Error("TEST FAILED stub IMU LinearAcceleration called")
+func getMovementSensorWithErroringFunctions(t *testing.T) *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		t.Error("TEST FAILED stub movement sensor LinearAcceleration called")
 		return r3.Vector{}, errors.New("invalid sensor")
 	}
-	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		t.Error("TEST FAILED stub IMU AngularVelocity called")
+	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		t.Error("TEST FAILED stub movement sensor AngularVelocity called")
 		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
 	}
-	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    true,
 			LinearAccelerationSupported: true,
 		}, nil
 	}
-	return imu
+	return movementSensor
 }
 
 // ClearDirectory deletes the contents in the path directory
@@ -138,8 +138,8 @@ func ClearDirectory(t *testing.T, path string) {
 func CreateIntegrationSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	timedLidar s.TimedLidarSensor,
-	timedIMU s.TimedIMUSensor,
+	timedLidar s.TimedLidar,
+	timedMovementSensor s.TimedMovementSensor,
 	logger logging.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
@@ -150,7 +150,7 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	if timedIMU == nil {
+	if timedMovementSensor == nil {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
 	} else {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"], cfg.MovementSensor["name"]})
@@ -168,8 +168,7 @@ func CreateIntegrationSLAMService(
 		CartoFacadeTimeoutForTest,
 		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
-		timedIMU,
-		nil,
+		timedMovementSensor,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
@@ -217,7 +216,6 @@ func CreateSLAMService(
 		SensorValidationIntervalSecForTest,
 		CartoFacadeTimeoutForTest,
 		CartoFacadeInternalTimeoutForTest,
-		nil,
 		nil,
 		nil,
 	)

@@ -17,20 +17,20 @@ import (
 	goutils "go.viam.com/utils"
 )
 
-// TimedLidarSensor describes a sensor that reports the time the reading is from & whether or not it is
+// TimedLidar describes a sensor that reports the time the reading is from & whether or not it is
 // rom a replay sensor.
-type TimedLidarSensor interface {
+type TimedLidar interface {
 	Name() string
 	DataFrequencyHz() int
-	TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error)
+	TimedLidarReading(ctx context.Context) (TimedLidarReadingResponse, error)
 }
 
-// TimedLidarSensorReadingResponse represents a lidar sensor reading with a time & allows the caller
-// to know if the reading is from a replay camera sensor.
-type TimedLidarSensorReadingResponse struct {
-	Reading     []byte
-	ReadingTime time.Time
-	Replay      bool
+// TimedLidarReadingResponse represents a lidar reading with a time & allows the caller
+// to know if the reading is from a replay camera.
+type TimedLidarReadingResponse struct {
+	Reading        []byte
+	ReadingTime    time.Time
+	IsReplaySensor bool
 }
 
 // Lidar represents a LIDAR sensor.
@@ -50,30 +50,30 @@ func (lidar Lidar) DataFrequencyHz() int {
 	return lidar.dataFrequencyHz
 }
 
-// TimedLidarSensorReading returns data from the lidar sensor and the time the reading is from & whether
+// TimedLidarReading returns data from the lidar and the time the reading is from & whether
 // it was a replay sensor or not.
-func (lidar Lidar) TimedLidarSensorReading(ctx context.Context) (TimedLidarSensorReadingResponse, error) {
+func (lidar Lidar) TimedLidarReading(ctx context.Context) (TimedLidarReadingResponse, error) {
 	replay := false
 
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata)
 	if err != nil {
-		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, "NextPointCloud error")
+		return TimedLidarReadingResponse{}, errors.Wrap(err, "NextPointCloud error")
 	}
 	readingTime := time.Now().UTC()
 
 	buf := new(bytes.Buffer)
 	if err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary); err != nil {
-		return TimedLidarSensorReadingResponse{}, errors.Wrap(err, "ToPCD error")
+		return TimedLidarReadingResponse{}, errors.Wrap(err, "ToPCD error")
 	}
 
 	if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
 		replay = true
 		if readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
-			return TimedLidarSensorReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
+			return TimedLidarReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 		}
 	}
-	return TimedLidarSensorReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, Replay: replay}, nil
+	return TimedLidarReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, IsReplaySensor: replay}, nil
 }
 
 // NewLidar returns a new Lidar.
@@ -83,7 +83,7 @@ func NewLidar(
 	cameraName string,
 	dataFrequencyHz int,
 	logger logging.Logger,
-) (TimedLidarSensor, error) {
+) (TimedLidar, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
 	lidar, err := camera.FromDependencies(deps, cameraName)
@@ -115,7 +115,7 @@ func NewLidar(
 // Returns an error no valid reading was returned.
 func ValidateGetLidarData(
 	ctx context.Context,
-	lidar TimedLidarSensor,
+	lidar TimedLidar,
 	sensorValidationMaxTimeout time.Duration,
 	sensorValidationInterval time.Duration,
 	logger logging.Logger,
@@ -126,7 +126,7 @@ func ValidateGetLidarData(
 	startTime := time.Now().UTC()
 
 	for {
-		_, err := lidar.TimedLidarSensorReading(ctx)
+		_, err := lidar.TimedLidarReading(ctx)
 		if err == nil {
 			break
 		}

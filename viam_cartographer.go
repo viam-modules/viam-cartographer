@@ -90,7 +90,6 @@ func init() {
 				defaultCartoFacadeInternalTimeout,
 				nil,
 				nil,
-				nil,
 			)
 		},
 	})
@@ -123,7 +122,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 	spConfig := sensorprocess.Config{
 		CartoFacade:              cartoSvc.cartofacade,
 		Lidar:                    cartoSvc.lidar,
-		IMU:                      cartoSvc.imu,
+		IMU:                      cartoSvc.movementSensor,
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
@@ -159,9 +158,8 @@ func New(
 	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
 	cartoFacadeInternalTimeout time.Duration,
-	testTimedLidarSensorOverride s.TimedLidarSensor,
-	testTimedIMUSensorOverride s.TimedIMUSensor,
-	testTimedOdometerSensorOverride s.TimedOdometerSensor,
+	testTimedLidarOverride s.TimedLidar,
+	testTimedMovementSensorOverride s.TimedMovementSensor,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -207,27 +205,15 @@ func New(
 	}
 
 	// Get the movement sensor if one is configured and check if it supports an IMU and/or odometer.
-	var imuSupported, odometerSupported bool
+	var timedMovementSensor s.TimedMovementSensor
 	if movementSensorName == "" {
 		logger.Info("no movement sensor configured, proceeding without IMU and without odometer")
 	} else {
-		imuSupported, odometerSupported, err = checkIfIMUAndOdometerSupported(ctx, deps, movementSensorName)
-	}
-
-	// Get the IMU if it is supported
-	var timedIMU s.TimedIMUSensor
-	if imuSupported {
-		timedIMU, err = s.NewIMU(ctx, deps, movementSensorName, optionalConfigParams.MovementSensorDataFrequencyHz, logger)
-		if err != nil {
+		if err = checkIfIMUAndOdometerSupported(ctx, deps, movementSensorName); err != nil {
 			return nil, err
 		}
-	}
-
-	// Get the odometer if it is supported
-	var timedOdometer s.TimedOdometerSensor
-	if odometerSupported {
-		timedOdometer, err = s.NewOdometer(ctx, deps, movementSensorName, optionalConfigParams.MovementSensorDataFrequencyHz, logger)
-		if err != nil {
+		if timedMovementSensor, err = s.NewMovementSensor(ctx, deps, movementSensorName,
+			optionalConfigParams.MovementSensorDataFrequencyHz, logger); err != nil {
 			return nil, err
 		}
 	}
@@ -237,22 +223,18 @@ func New(
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
 
 	// Override the sensors for testing if the override sensors are not nil
-	if testTimedLidarSensorOverride != nil {
-		timedLidar = testTimedLidarSensorOverride
+	if testTimedLidarOverride != nil {
+		timedLidar = testTimedLidarOverride
 	}
-	if testTimedIMUSensorOverride != nil {
-		timedIMU = testTimedIMUSensorOverride
-	}
-	if testTimedOdometerSensorOverride != nil {
-		timedOdometer = testTimedOdometerSensorOverride
+	if testTimedMovementSensorOverride != nil {
+		timedMovementSensor = testTimedMovementSensorOverride
 	}
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
 		Named:                         c.ResourceName().AsNamed(),
 		lidar:                         timedLidar,
-		imu:                           timedIMU,
-		odometer:                      timedOdometer,
+		movementSensor:                timedMovementSensor,
 		movementSensorName:            movementSensorName,
 		subAlgo:                       subAlgo,
 		configParams:                  svcConfig.ConfigParams,
@@ -285,25 +267,14 @@ func New(
 		err = errors.Wrap(err, "failed to get data from lidar")
 		return nil, err
 	}
-	if cartoSvc.imu != nil {
-		if err = s.ValidateGetIMUData(
+	if cartoSvc.movementSensor != nil {
+		if err = s.ValidateGetMovementSensorData(
 			cancelSensorProcessCtx,
-			timedIMU,
+			timedMovementSensor,
 			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
 			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
 			cartoSvc.logger); err != nil {
-			err = errors.Wrap(err, "failed to get data from IMU")
-			return nil, err
-		}
-	}
-	if cartoSvc.odometer != nil {
-		if err = s.ValidateGetOdometerData(
-			cancelSensorProcessCtx,
-			timedOdometer,
-			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
-			cartoSvc.logger); err != nil {
-			err = errors.Wrap(err, "failed to get data from odometer")
+			err = errors.Wrap(err, "failed to get data from movement sensor")
 			return nil, err
 		}
 	}
@@ -317,8 +288,7 @@ func New(
 		}, nil
 	}
 
-	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
-	if err != nil {
+	if err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc); err != nil {
 		return nil, err
 	}
 
@@ -327,17 +297,17 @@ func New(
 	return cartoSvc, nil
 }
 
-func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies, movementSensorName string) (bool, bool, error) {
+func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies, movementSensorName string) error {
 	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
 	if err != nil {
-		return false, false, errors.Wrapf(err, "error getting movement sensor \"%v\" for slam service", movementSensorName)
+		return errors.Wrapf(err, "error getting movement sensor \"%v\" for slam service", movementSensorName)
 	}
 
 	properties, err := movementSensor.Properties(ctx, make(map[string]interface{}))
 	if err != nil {
 		errMessage := "error getting movement sensor properties from movement sensor \"" + movementSensorName +
 			"\" for slam service"
-		return false, false, errors.Wrap(err, errMessage)
+		return errors.Wrap(err, errMessage)
 	}
 
 	// A movement sensor used as an IMU must support LinearAcceleration and AngularVelocity.
@@ -346,7 +316,11 @@ func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependenc
 	// A movement sensor used as an odometer must support Position and Orientation.
 	odometerSupported := properties.PositionSupported && properties.OrientationSupported
 
-	return imuSupported, odometerSupported, nil
+	if !imuSupported && !odometerSupported {
+		return s.ERRMovementSensorNeitherIMUNorOdometer
+	}
+
+	return nil
 }
 
 func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger) (cartofacade.CartoAlgoConfig, error) {
@@ -484,7 +458,8 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	if cartoSvc.movementSensorName == "" {
 		cartoSvc.logger.Debug("No movement sensor provided, setting use_imu_data to false")
 	} else {
-		if cartoSvc.imu != nil {
+		movementSensorProperties := cartoSvc.movementSensor.Properties()
+		if movementSensorProperties.IMUSupported {
 			cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
 			cartoAlgoConfig.UseIMUData = true
 		} else {
@@ -542,9 +517,8 @@ type CartographerService struct {
 	mu                 sync.Mutex
 	SlamMode           cartofacade.SlamMode
 	closed             bool
-	lidar              s.TimedLidarSensor
-	imu                s.TimedIMUSensor
-	odometer           s.TimedOdometerSensor
+	lidar              s.TimedLidar
+	movementSensor     s.TimedMovementSensor
 	movementSensorName string
 	subAlgo            SubAlgo
 
