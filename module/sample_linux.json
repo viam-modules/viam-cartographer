@@ -56,13 +56,13 @@
   ],
   "modules": [
     {
-      "version": "0.3.37",
+      "version": "<VERSION>",
       "module_id": "viam:cartographer",
       "name": "viam_cartographer",
       "type": "registry"
     },
     {
-      "version": "0.1.15",
+      "version": "<VERSION>",
       "type": "registry",
       "name": "viam_rplidar",
       "module_id": "viam:rplidar"

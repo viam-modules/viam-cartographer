@@ -69,7 +69,7 @@
       "type": "registry",
       "name": "viam_cartographer",
       "module_id": "viam:cartographer",
-      "version": "0.3.38"
+      "version": "<VERSION>"
     }
   ],
   "services": [
