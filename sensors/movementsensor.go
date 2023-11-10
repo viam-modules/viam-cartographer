@@ -3,7 +3,6 @@ package sensors
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/edaniels/golog"
@@ -12,12 +11,10 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/components/movementsensor"
-	"go.viam.com/rdk/components/movementsensor/replay"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/rdk/utils/contextutils"
-	goutils "go.viam.com/utils"
 )
 
 const (
@@ -324,44 +321,4 @@ func NewMovementSensor(
 		odometerSupported: odometerSupported,
 		sensor:            movementSensor,
 	}, nil
-}
-
-// ValidateGetMovementSensorData checks every sensorValidationIntervalSec if the provided movement sensor
-// returned valid timed readings every sensorValidationIntervalSec
-// until either success or sensorValidationMaxTimeoutSec has elapsed.
-// Returns an error if at least one invalid reading was returned.
-func ValidateGetMovementSensorData(
-	ctx context.Context,
-	ms TimedMovementSensor,
-	sensorValidationMaxTimeout time.Duration,
-	sensorValidationInterval time.Duration,
-	logger golog.Logger,
-) error {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::sensor::ValidateGetMovementSensorData")
-	defer span.End()
-
-	startTime := time.Now().UTC()
-
-	for {
-		_, err := ms.TimedMovementSensorReading(ctx)
-		if err == nil {
-			break
-		}
-
-		logger.Debugw("ValidateGetMovementSensorData hit error: ", "error", err)
-		// if the sensor is a replay movement sensor with no data ready, allow validation to pass
-		// offline mode will stop the mapping session if the sensor still has no data,
-		// while online mode will continue mapping once data is found by the replay sensor
-		if strings.Contains(err.Error(), replay.ErrEndOfDataset.Error()) {
-			break
-		}
-		if time.Since(startTime) >= sensorValidationMaxTimeout {
-			return errors.Wrap(err, "ValidateGetMovementSensorData timeout")
-		}
-		if !goutils.SelectContextOrWait(ctx, sensorValidationInterval) {
-			return ctx.Err()
-		}
-	}
-
-	return nil
 }

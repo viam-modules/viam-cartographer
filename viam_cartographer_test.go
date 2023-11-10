@@ -130,22 +130,6 @@ func TestNew(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
-	t.Run("Failed creation of cartographer slam service with invalid lidar sensor "+
-		"that errors during call to NextPointCloud", func(t *testing.T) {
-		termFunc := testhelper.InitTestCL(t, logger)
-		defer termFunc()
-
-		attrCfg := &vcConfig.Config{
-			Camera:        map[string]string{"name": string(s.LidarWithErroringFunctions), "data_frequency_hz": testLidarDataFreqHz},
-			ConfigParams:  map[string]string{"mode": "2d"},
-			EnableMapping: &_true,
-		}
-
-		_, err := testhelper.CreateSLAMService(t, attrCfg, logger)
-		test.That(t, err, test.ShouldBeError,
-			errors.New("failed to get data from lidar: ValidateGetLidarData timeout: NextPointCloud error: "+s.InvalidSensorTestErrMsg))
-	})
-
 	t.Run("Successful creation of cartographer slam service in localization mode", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()

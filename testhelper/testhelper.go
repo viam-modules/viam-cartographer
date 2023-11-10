@@ -31,14 +31,6 @@ import (
 const (
 	// SlamTimeFormat is the timestamp format used in the dataprocess.
 	SlamTimeFormat = "2006-01-02T15:04:05.0000Z"
-	// SensorValidationMaxTimeoutSecForTest is used in the ValidateGetAndSaveData
-	// function to ensure that the sensor in the GetAndSaveData function
-	// returns data within an acceptable time.
-	SensorValidationMaxTimeoutSecForTest = 1
-	// SensorValidationIntervalSecForTest is used in the ValidateGetAndSaveData
-	// function for the while loop that attempts to grab data from the
-	// sensor that is used in the GetAndSaveData function.
-	SensorValidationIntervalSecForTest = 1
 	// CartoFacadeTimeoutForTest is the timeout used for capi requests for tests.
 	CartoFacadeTimeoutForTest = 5 * time.Second
 	// CartoFacadeInternalTimeoutForTest is the timeout used for internal capi requests for tests.
@@ -163,8 +155,6 @@ func CreateIntegrationSLAMService(
 		deps,
 		cfgService,
 		logger,
-		SensorValidationMaxTimeoutSecForTest,
-		SensorValidationIntervalSecForTest,
 		CartoFacadeTimeoutForTest,
 		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
@@ -212,8 +202,6 @@ func CreateSLAMService(
 		deps,
 		cfgService,
 		logger,
-		SensorValidationMaxTimeoutSecForTest,
-		SensorValidationIntervalSecForTest,
 		CartoFacadeTimeoutForTest,
 		CartoFacadeInternalTimeoutForTest,
 		nil,

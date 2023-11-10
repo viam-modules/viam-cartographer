@@ -46,7 +46,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 
 	switch {
 	case runtime.GOOS == "darwin" && !useIMU:
-		expectedPos = r3.Vector{X: 3.651426324334424, Y: 1.422454179829863, Z: 0}
+		expectedPos = r3.Vector{X: 1.9166854207566584, Y: 4.0381299349907644, Z: 0}
 		expectedOri = &spatialmath.R4AA{
 			RX:    0,
 			RY:    0,
@@ -54,30 +54,29 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 			Theta: 0.0006629744894043836,
 		}
 	case runtime.GOOS == "linux" && !useIMU:
-		expectedPos = r3.Vector{X: 1.2714478890528866, Y: 3.1271067529150076, Z: 0}
+		expectedPos = r3.Vector{X: 7.507596391989648, Y: 3.193198802065579, Z: 0}
 		expectedOri = &spatialmath.R4AA{
 			RX:    0,
 			RY:    0,
-			RZ:    -1,
-			Theta: 0.0010751949934010567,
+			RZ:    1,
+			Theta: 0.001955831550003536,
 		}
 
 	case runtime.GOOS == "darwin" && useIMU:
-		// expectedPos = r3.Vector{X: 3.2858556935949954, Y: 2.707920249449911, Z: 0}
-		expectedPos = r3.Vector{X: 4.4700878707562035, Y: 3.1781587655776358, Z: 0}
+		expectedPos = r3.Vector{X: 2.0505875736777743, Y: 5.223279102160396, Z: 0}
 		expectedOri = &spatialmath.R4AA{
-			RX:    0.9861776038047263,
-			RY:    0.1637212678758259,
-			RZ:    0.025477052402116784,
-			Theta: 0.02399255141454847,
+			RX:    0.9859881081149332,
+			RY:    0.16566945009254153,
+			RZ:    0.019521371928468846,
+			Theta: 0.024957572547389457,
 		}
 	case runtime.GOOS == "linux" && useIMU:
-		expectedPos = r3.Vector{X: 3.2250269853115867, Y: 5.104006882925285, Z: 0}
+		expectedPos = r3.Vector{X: 4.034335774857501, Y: 3.4162168550846896, Z: 0}
 		expectedOri = &spatialmath.R4AA{
-			RX:    0.9864461301028694,
-			RY:    0.16360809262540335,
-			RZ:    0.012506975355798564,
-			Theta: 0.02398663944371901,
+			RX:    0.9854659908213061,
+			RY:    0.16580252152269065,
+			RZ:    0.036963560316871265,
+			Theta: 0.02496988133280465,
 		}
 	}
 

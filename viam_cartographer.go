@@ -41,8 +41,6 @@ const (
 	defaultLidarDataFrequencyHz          = 5
 	defaultMovementSensorDataFrequencyHz = 20
 	defaultDialMaxTimeoutSec             = 30
-	defaultSensorValidationMaxTimeoutSec = 30
-	defaultSensorValidationIntervalSec   = 1
 	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
@@ -84,8 +82,6 @@ func init() {
 				deps,
 				c,
 				logger,
-				defaultSensorValidationMaxTimeoutSec,
-				defaultSensorValidationIntervalSec,
 				defaultCartoFacadeTimeout,
 				defaultCartoFacadeInternalTimeout,
 				nil,
@@ -154,8 +150,6 @@ func New(
 	deps resource.Dependencies,
 	c resource.Config,
 	logger logging.Logger,
-	sensorValidationMaxTimeoutSec int,
-	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
 	cartoFacadeInternalTimeout time.Duration,
 	testTimedLidarOverride s.TimedLidar,
@@ -256,26 +250,6 @@ func New(
 			}
 		}
 	}()
-	if err = s.ValidateGetLidarData(
-		cancelSensorProcessCtx,
-		timedLidar,
-		time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-		time.Duration(sensorValidationIntervalSec)*time.Second,
-		cartoSvc.logger); err != nil {
-		err = errors.Wrap(err, "failed to get data from lidar")
-		return nil, err
-	}
-	if cartoSvc.movementSensor != nil {
-		if err = s.ValidateGetMovementSensorData(
-			cancelSensorProcessCtx,
-			timedMovementSensor,
-			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-			time.Duration(sensorValidationIntervalSec)*time.Second,
-			cartoSvc.logger); err != nil {
-			err = errors.Wrap(err, "failed to get data from movement sensor")
-			return nil, err
-		}
-	}
 
 	// do not initialize CartoFacade or Sensor Processes when using cloudslam
 	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {

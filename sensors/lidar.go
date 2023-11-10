@@ -3,18 +3,15 @@ package sensors
 import (
 	"bytes"
 	"context"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/components/camera"
-	"go.viam.com/rdk/components/camera/replaypcd"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/utils/contextutils"
-	goutils "go.viam.com/utils"
 )
 
 // TimedLidar describes a sensor that reports the time the reading is from & whether or not it is
@@ -107,44 +104,4 @@ func NewLidar(
 		dataFrequencyHz: dataFrequencyHz,
 		Lidar:           lidar,
 	}, nil
-}
-
-// ValidateGetLidarData checks every sensorValidationIntervalSec if the provided lidar
-// returned a valid timed readings every sensorValidationIntervalSec
-// until either success or sensorValidationMaxTimeoutSec has elapsed.
-// Returns an error no valid reading was returned.
-func ValidateGetLidarData(
-	ctx context.Context,
-	lidar TimedLidar,
-	sensorValidationMaxTimeout time.Duration,
-	sensorValidationInterval time.Duration,
-	logger logging.Logger,
-) error {
-	ctx, span := trace.StartSpan(ctx, "viamcartographer::sensor::ValidateGetLidarData")
-	defer span.End()
-
-	startTime := time.Now().UTC()
-
-	for {
-		_, err := lidar.TimedLidarReading(ctx)
-		if err == nil {
-			break
-		}
-
-		logger.Debugw("ValidateGetLidarData hit error: ", "error", err)
-		// if the sensor is a replay camera with no data ready, allow validation to pass
-		// offline mode will stop the mapping session if the sensor still has no data,
-		// while online mode will continue mapping once data is found by the replay sensor
-		if strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()) {
-			break
-		}
-		if time.Since(startTime) >= sensorValidationMaxTimeout {
-			return errors.Wrap(err, "ValidateGetLidarData timeout")
-		}
-		if !goutils.SelectContextOrWait(ctx, sensorValidationInterval) {
-			return ctx.Err()
-		}
-	}
-
-	return nil
 }

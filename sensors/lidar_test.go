@@ -45,48 +45,6 @@ func TestNewLidar(t *testing.T) {
 	})
 }
 
-func TestValidateGetLidarData(t *testing.T) {
-	logger := logging.NewTestLogger(t)
-	ctx := context.Background()
-
-	lidar, imu := s.GoodLidar, s.NoMovementSensor
-	goodLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar, imu), string(lidar), testDataFrequencyHz, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	lidar, imu = s.LidarWithInvalidProperties, s.NoMovementSensor
-	_, err = s.NewLidar(ctx, s.SetupDeps(lidar, imu), string(lidar), testDataFrequencyHz, logger)
-	test.That(t, err, test.ShouldBeError,
-		errors.New("configuring lidar camera error: 'camera' must support PCD"))
-
-	sensorValidationMaxTimeout := time.Duration(50) * time.Millisecond
-	sensorValidationInterval := time.Duration(10) * time.Millisecond
-
-	t.Run("returns nil if a lidar reading succeeds immediately", func(t *testing.T) {
-		err := s.ValidateGetLidarData(ctx, goodLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("returns nil if a lidar reading succeeds within the timeout", func(t *testing.T) {
-		lidar, imu = s.WarmingUpLidar, s.NoMovementSensor
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar, imu), string(lidar), testDataFrequencyHz, logger)
-		test.That(t, err, test.ShouldBeNil)
-		err = s.ValidateGetLidarData(ctx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeNil)
-	})
-
-	t.Run("returns error if no lidar reading succeeds by the time the context is cancelled", func(t *testing.T) {
-		cancelledCtx, cancelFunc := context.WithCancel(ctx)
-		cancelFunc()
-
-		lidar, imu = s.WarmingUpLidar, s.NoMovementSensor
-		warmingUpLidar, err := s.NewLidar(ctx, s.SetupDeps(lidar, imu), string(lidar), testDataFrequencyHz, logger)
-		test.That(t, err, test.ShouldBeNil)
-
-		err = s.ValidateGetLidarData(cancelledCtx, warmingUpLidar, sensorValidationMaxTimeout, sensorValidationInterval, logger)
-		test.That(t, err, test.ShouldBeError, context.Canceled)
-	})
-}
-
 func TestTimedLidarSensorReading(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
