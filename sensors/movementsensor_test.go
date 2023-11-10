@@ -197,4 +197,31 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedIMUResponse, test.ShouldBeNil)
 		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
 	})
+
+	t.Run("when a movemement sensor that supports both an odometer and an IMU succeeds,"+
+		" returns current time in UTC and the reading", func(t *testing.T) {
+		lidar, odometer := s.GoodLidar, s.MovementSensorBothIMUAndOdometer
+		deps := s.SetupDeps(lidar, odometer)
+		actualOdometer, err := s.NewMovementSensor(ctx, deps, string(odometer), testDataFrequencyHz, logger)
+		test.That(t, err, test.ShouldBeNil)
+
+		beforeReading := time.Now().UTC()
+		time.Sleep(time.Millisecond)
+
+		actualReading, err := actualOdometer.TimedMovementSensorReading(ctx)
+
+		time.Sleep(time.Millisecond)
+		afterReading := time.Now().UTC()
+
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, actualReading.TimedOdometerResponse.Position, test.ShouldResemble, s.Position)
+		test.That(t, actualReading.TimedOdometerResponse.Orientation, test.ShouldResemble, s.Orientation)
+		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.After(beforeReading), test.ShouldBeTrue)
+		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
+		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
+		test.That(t, actualReading.TimedIMUResponse.ReadingTime.After(beforeReading), test.ShouldBeTrue)
+		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
+		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
+		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
+	})
 }
