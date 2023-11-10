@@ -3,8 +3,6 @@ package sensors
 
 import (
 	"context"
-	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -30,10 +28,12 @@ const (
 
 var (
 	defaultTime = time.Time{}
-	// ErrMovementSensorNeitherIMUNorOdometer deontes that the provided movement sensor does neither support
-	// an IMU nor a movement sensor
-	ERRMovementSensorNeitherIMUNorOdometer = errors.New("'movement_sensor' must either support both LinearAcceleration and " +
+	// ErrMovementSensorNeitherIMUNorOdometer denotes that the provided movement sensor does neither support
+	// an IMU nor a movement sensor.
+	ErrMovementSensorNeitherIMUNorOdometer = errors.New("'movement_sensor' must either support both LinearAcceleration and " +
 		"AngularVelocity, or both Position and Orientation")
+	// ErrNoValidReadingObtained denotes that the attempt to obtain a valid IMU or odometer reading failed.
+	ErrNoValidReadingObtained = errors.New("could not obtain a reading that satisfies the time tolerance requirement")
 )
 
 // TimedMovementSensor describes a sensor that reports the time the reading is from & whether or not it is
@@ -118,7 +118,7 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 				return TimedMovementSensorReadingResponse{}, timeoutCtx.Err()
 			default:
 				if timedIMUReadingResponse, err = ms.timedIMUReading(timeoutCtx, &angVel, &linAcc,
-					&readingTimeAngularVel, &readingTimeLinearAcc); err != nil {
+					&readingTimeAngularVel, &readingTimeLinearAcc); err != nil && !errors.Is(err, ErrNoValidReadingObtained) {
 					return TimedMovementSensorReadingResponse{}, err
 				}
 				if timedIMUReadingResponse != nil {
@@ -135,7 +135,7 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 				return TimedMovementSensorReadingResponse{}, timeoutCtx.Err()
 			default:
 				if timedOdometerReadingResponse, err = ms.timedOdometerReading(timeoutCtx, position, &orientation,
-					&readingTimePosition, &readingTimeOrientation); err != nil {
+					&readingTimePosition, &readingTimeOrientation); err != nil && !errors.Is(err, ErrNoValidReadingObtained) {
 					return TimedMovementSensorReadingResponse{}, err
 				}
 				if timedOdometerReadingResponse != nil {
@@ -152,12 +152,14 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 }
 
 func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialmath.AngularVelocity, linAcc *r3.Vector,
-	readingTimeAngularVel, readingTimeLinearAcc *time.Time) (*TimedIMUReadingResponse, error) {
+	readingTimeAngularVel, readingTimeLinearAcc *time.Time,
+) (*TimedIMUReadingResponse, error) {
 	var err error
 
-	returnReadingIfTimestampsWithinTolerance := func(timeAngVel, timeAcc time.Time,
-		angVel *spatialmath.AngularVelocity, linAcc *r3.Vector) (TimedIMUReadingResponse, bool) {
-		if math.Abs(float64(readingTimeAngularVel.Sub(*readingTimeLinearAcc).Milliseconds())) < replayTimeToleranceMsec {
+	returnReadingIfTimestampsWithinTolerance := func(readingTimeAngularVel, readingTimeLinearAcc time.Time,
+		angVel *spatialmath.AngularVelocity, linAcc *r3.Vector,
+	) (TimedIMUReadingResponse, bool) {
+		if readingTimeAngularVel.Sub(readingTimeLinearAcc).Abs().Milliseconds() < replayTimeToleranceMsec {
 			return TimedIMUReadingResponse{
 				LinearAcceleration: *linAcc,
 				AngularVelocity: spatialmath.AngularVelocity{
@@ -165,7 +167,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 					Y: rdkutils.DegToRad(angVel.Y),
 					Z: rdkutils.DegToRad(angVel.Z),
 				},
-				ReadingTime: readingTimeLinearAcc.Add((readingTimeLinearAcc.Sub(*readingTimeAngularVel)).Abs() / 2),
+				ReadingTime: readingTimeLinearAcc.Add((readingTimeLinearAcc.Sub(readingTimeAngularVel)).Abs() / 2),
 			}, true
 		}
 		return TimedIMUReadingResponse{}, false
@@ -211,20 +213,22 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 		return &response, nil
 	}
 
-	return nil, nil
+	return nil, ErrNoValidReadingObtained
 }
 
 func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *geo.Point, orientation *spatialmath.Orientation,
-	readingTimePosition, readingTimeOrientation *time.Time) (*TimedOdometerReadingResponse, error) {
+	readingTimePosition, readingTimeOrientation *time.Time,
+) (*TimedOdometerReadingResponse, error) {
 	var err error
 
-	returnReadingIfTimestampsWithinTolerance := func(timePos, timeOrientation time.Time,
-		position *geo.Point, orientation *spatialmath.Orientation) (TimedOdometerReadingResponse, bool) {
-		if math.Abs(float64(readingTimeOrientation.Sub(*readingTimePosition).Milliseconds())) < replayTimeToleranceMsec {
+	returnReadingIfTimestampsWithinTolerance := func(readingTimePosition, readingTimeOrientation time.Time,
+		position *geo.Point, orientation *spatialmath.Orientation,
+	) (TimedOdometerReadingResponse, bool) {
+		if readingTimeOrientation.Sub(readingTimePosition).Abs().Milliseconds() < replayTimeToleranceMsec {
 			return TimedOdometerReadingResponse{
 				Position:    position,
 				Orientation: *orientation,
-				ReadingTime: readingTimePosition.Add((readingTimePosition.Sub(*readingTimeOrientation) / 2).Abs()),
+				ReadingTime: readingTimePosition.Add((readingTimePosition.Sub(readingTimeOrientation) / 2).Abs()),
 			}, true
 		}
 		return TimedOdometerReadingResponse{}, false
@@ -270,9 +274,11 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 		return &response, nil
 	}
 
-	return nil, nil
+	return nil, ErrNoValidReadingObtained
 }
 
+// Properties returns MovementSensorProperties, which holds information about whether or not an IMU
+// and/or odometer are supported.
 func (ms *MovementSensor) Properties() MovementSensorProperties {
 	return MovementSensorProperties{
 		IMUSupported:      ms.imuSupported,
@@ -308,10 +314,8 @@ func NewMovementSensor(
 
 	// A movement sensor must be support either an IMU, or an odometer, or both.
 	if !imuSupported && !odometerSupported {
-		return &MovementSensor{}, ERRMovementSensorNeitherIMUNorOdometer
+		return &MovementSensor{}, ErrMovementSensorNeitherIMUNorOdometer
 	}
-
-	fmt.Println("NewMovementSensor --> imuSupported, odometerSupported: ", imuSupported, odometerSupported)
 
 	return &MovementSensor{
 		name:              movementSensorName,

@@ -498,7 +498,7 @@ func TestCheckIfIMUAndOdometerSupported(t *testing.T) {
 		err := checkIfIMUAndOdometerSupported(ctx,
 			s.SetupDeps(lidar, movementSensor), string(movementSensor))
 		test.That(t, err, test.ShouldNotBeNil)
-		test.That(t, err, test.ShouldBeError, s.ERRMovementSensorNeitherIMUNorOdometer)
+		test.That(t, err, test.ShouldBeError, s.ErrMovementSensorNeitherIMUNorOdometer)
 	})
 
 	t.Run("failure to get movement sensor from dependencies", func(t *testing.T) {

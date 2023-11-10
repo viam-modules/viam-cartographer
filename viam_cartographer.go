@@ -315,7 +315,7 @@ func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependenc
 	odometerSupported := properties.PositionSupported && properties.OrientationSupported
 
 	if !imuSupported && !odometerSupported {
-		return s.ERRMovementSensorNeitherIMUNorOdometer
+		return s.ErrMovementSensorNeitherIMUNorOdometer
 	}
 
 	return nil

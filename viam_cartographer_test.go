@@ -265,7 +265,7 @@ func TestNew(t *testing.T) {
 
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldNotBeNil)
-		test.That(t, err, test.ShouldBeError, s.ERRMovementSensorNeitherIMUNorOdometer)
+		test.That(t, err, test.ShouldBeError, s.ErrMovementSensorNeitherIMUNorOdometer)
 		test.That(t, svc, test.ShouldBeNil)
 	})
 

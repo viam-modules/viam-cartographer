@@ -44,7 +44,7 @@ func TestNewMovementSensor(t *testing.T) {
 		lidar, movementSensor := s.GoodLidar, s.MovementSensorWithInvalidProperties
 		deps := s.SetupDeps(lidar, movementSensor)
 		actualMs, err := s.NewMovementSensor(context.Background(), deps, string(movementSensor), testDataFrequencyHz, logger)
-		test.That(t, err, test.ShouldBeError, s.ERRMovementSensorNeitherIMUNorOdometer)
+		test.That(t, err, test.ShouldBeError, s.ErrMovementSensorNeitherIMUNorOdometer)
 		test.That(t, actualMs, test.ShouldResemble, &s.MovementSensor{})
 	})
 
@@ -197,5 +197,4 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedIMUResponse, test.ShouldBeNil)
 		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
 	})
-
 }
