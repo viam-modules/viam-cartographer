@@ -52,9 +52,6 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 		return status
 	}
 
-	// update stored lidar timestamp
-	config.updateMutexProtectedLidarData(tsr.ReadingTime, tsr.Reading)
-
 	// add lidar data to cartographer and sleep remainder of time interval
 	timeToSleep := config.tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)

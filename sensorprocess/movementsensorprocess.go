@@ -52,9 +52,6 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 		AngularVelocity:    tsr.TimedIMUResponse.AngularVelocity,
 	}
 
-	// update stored IMU time
-	config.updateMutexProtectedIMUData(tsr.TimedIMUResponse.ReadingTime, sr)
-
 	// add IMU data to cartographer and sleep remainder of time interval
 	timeToSleep := config.tryAddIMUReading(ctx, sr, tsr.TimedIMUResponse.ReadingTime)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
