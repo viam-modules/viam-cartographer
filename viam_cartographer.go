@@ -116,6 +116,7 @@ func TerminateCartoLib() error {
 func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
 		CartoFacade:              cartoSvc.cartofacade,
+		Online:                   cartoSvc.lidar.DataFrequencyHz() != 0,
 		Lidar:                    cartoSvc.lidar,
 		IMU:                      cartoSvc.movementSensor,
 		Timeout:                  cartoSvc.cartoFacadeTimeout,

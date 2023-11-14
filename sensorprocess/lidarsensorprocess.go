@@ -37,7 +37,7 @@ func (config *Config) StartLidar(ctx context.Context) bool {
 // addLidarReading adds a lidar reading to the cartofacade, using the lidar's data rate to determine whether to run in
 // offline or online mode.
 func (config *Config) addLidarReading(ctx context.Context) bool {
-	if config.Lidar.DataFrequencyHz() != 0 {
+	if config.Online {
 		return config.addLidarReadingsInOnline(ctx)
 	}
 	return config.addLidarReadingsInOffline(ctx)
@@ -147,7 +147,7 @@ func getTimedLidarReading(ctx context.Context, config *Config) (s.TimedLidarRead
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
-		if config.Lidar.DataFrequencyHz() == 0 {
+		if !config.Online {
 			return tsr, strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error()), err
 		}
 		return tsr, false, err

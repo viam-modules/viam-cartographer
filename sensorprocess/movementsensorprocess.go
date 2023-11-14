@@ -32,7 +32,7 @@ func (config *Config) StartIMU(ctx context.Context) bool {
 // addIMUReading adds an IMU reading to the cartofacade, using the lidar's data rate to determine whether to run in
 // offline or online mode.
 func (config *Config) addIMUReading(ctx context.Context) bool {
-	if config.Lidar.DataFrequencyHz() != 0 {
+	if config.Online {
 		return config.addIMUReadingInOnline(ctx)
 	}
 	return config.addIMUReadingInOffline(ctx)
@@ -153,7 +153,7 @@ func getTimedIMUSensorReading(ctx context.Context, config *Config) (s.TimedMovem
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode
-		if config.Lidar.DataFrequencyHz() == 0 {
+		if !config.Online {
 			return tsr, strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error()), err
 		}
 		return tsr, false, err
