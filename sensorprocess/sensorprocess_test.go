@@ -67,6 +67,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
+		Online:                   injectLidar.DataFrequencyHzFunc() != 0,
 		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: runFinalOptimizationFunc,
@@ -173,6 +174,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
+		Online:      false,
 		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
 	}
@@ -274,6 +276,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
+		Online:                   injectLidar.DataFrequencyHzFunc() != 0,
 		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
@@ -398,6 +401,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
+		Online:      injectLidar.DataFrequencyHzFunc() != 0,
 		Lidar:       &injectLidar,
 		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
@@ -540,6 +544,7 @@ func onlineModeLidarTestHelper(
 
 	config.CartoFacade = &cf
 	config.Lidar = lidar
+	config.Online = lidar.DataFrequencyHz() != 0
 
 	jobDone := config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
@@ -614,9 +619,7 @@ func onlineModeIMUTestHelper(
 	config.IMU = imu
 
 	// set lidar data rate to signify that we are in online mode
-	injectLidar := inject.TimedLidar{}
-	injectLidar.DataFrequencyHzFunc = func() int { return 100 }
-	config.Lidar = &injectLidar
+	config.Online = true
 	config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
 	config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
