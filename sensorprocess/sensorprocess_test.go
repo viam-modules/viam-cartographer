@@ -115,6 +115,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 		config.tryAddLidarReadingUntilSuccess(cancelCtx, reading)
 	})
 
+	//nolint:dupl
 	t.Run("failure with errors being hit a few times, a retry, and then success", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
@@ -214,6 +215,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 		config.tryAddIMUReadingUntilSuccess(cancelCtx, reading)
 	})
 
+	//nolint:dupl
 	t.Run("failure with errors being hit a few times, a retry, and then success", func(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
