@@ -46,14 +46,8 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 		return status
 	}
 
-	// parse IMU reading
-	sr := cartofacade.IMUReading{
-		LinearAcceleration: tsr.TimedIMUResponse.LinearAcceleration,
-		AngularVelocity:    tsr.TimedIMUResponse.AngularVelocity,
-	}
-
 	// add IMU data to cartographer and sleep remainder of time interval
-	timeToSleep := config.tryAddIMUReading(ctx, sr, tsr.TimedIMUResponse.ReadingTime)
+	timeToSleep := config.tryAddIMUReading(ctx, tsr)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
 
@@ -68,15 +62,15 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 	sensorProcessStartTime := config.sensorProcessStartTime
 	config.Mutex.Unlock()
 
-	if sensorProcessStartTime != defaultTime && config.currentIMUData.time != defaultTime {
+	if sensorProcessStartTime != defaultTime && config.currentIMUData != nil {
 		// skip adding measurement if IMU data has been defined but occurs before first lidar data
-		if sensorProcessStartTime.Sub(config.currentIMUData.time).Milliseconds() >= 0 {
+		if sensorProcessStartTime.Sub(config.currentIMUData.ReadingTime).Milliseconds() >= 0 {
 			time.Sleep(10 * time.Millisecond)
 			return false
 		}
 
 		// add IMU data
-		config.tryAddIMUReadingUntilSuccess(ctx, config.currentIMUData.data, config.currentIMUData.time)
+		config.tryAddIMUReadingUntilSuccess(ctx, *config.currentIMUData)
 	}
 
 	// get next IMU data response
@@ -85,17 +79,11 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 		return status
 	}
 
-	// parse IMU reading
-	sr := cartofacade.IMUReading{
-		LinearAcceleration: tsr.TimedIMUResponse.LinearAcceleration,
-		AngularVelocity:    tsr.TimedIMUResponse.AngularVelocity,
-	}
-
 	// TODO: Remove dropping out of order IMU readings after DATA-1812 has been complete
 	// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
 	// update current IMU data and time
-	if config.currentIMUData.time.Sub(tsr.TimedIMUResponse.ReadingTime).Milliseconds() < 0 {
-		config.updateMutexProtectedIMUData(tsr.TimedIMUResponse.ReadingTime, sr)
+	if config.currentIMUData == nil || config.currentIMUData.ReadingTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
+		config.updateMutexProtectedIMUData(tsr)
 	} else {
 		config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n",
 			tsr.TimedIMUResponse.ReadingTime, tsr.TimedIMUResponse.ReadingTime.Unix())
@@ -107,38 +95,38 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 // tryAddIMUReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode).
 // While add sensor reading fails, keep trying to add the same reading - in offline mode we want to
 // process each reading so if we cannot acquire the lock we should try again.
-func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time) {
+func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading s.TimedIMUSensorReadingResponse) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading, readingTime)
+			err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading)
 			if err == nil {
-				config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())
+				config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())
+			config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 		}
 	}
 }
 
 // tryAddIMUReading adds a reading to the carto facade and does not retry (online).
-func (config *Config) tryAddIMUReading(ctx context.Context, reading cartofacade.IMUReading, readingTime time.Time) int {
+func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMUSensorReadingResponse) int {
 	startTime := time.Now().UTC()
-	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading, readingTime)
+	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading)
 	if err != nil {
-		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", readingTime, readingTime.Unix())
+		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)
 		} else {
 			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
 		}
 	}
-	config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", readingTime, readingTime.Unix())
+	config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(1000/config.IMU.DataFrequencyHz()-timeElapsedMs)))
 }

@@ -53,7 +53,7 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	}
 
 	// add lidar data to cartographer and sleep remainder of time interval
-	timeToSleep := config.tryAddLidarReading(ctx, tsr.Reading, tsr.ReadingTime)
+	timeToSleep := config.tryAddLidarReading(ctx, tsr)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
 
@@ -65,22 +65,25 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 	// Extract current IMU reading time for ordering data ingestion
 	config.Mutex.Lock()
-	currentIMUTime := config.currentIMUData.time
+	currentIMUTime := time.Time{}
+	if config.currentIMUData != nil {
+		currentIMUTime = config.currentIMUData.ReadingTime
+	}
 	config.Mutex.Unlock()
 
 	// If an IMU exists, skip adding measurement until the current lidar time is after the current IMU timestamp
-	if config.IMU != nil && config.currentLidarData.time.Sub(currentIMUTime).Milliseconds() > 0 {
+	if config.IMU != nil && config.currentLidarData != nil && config.currentLidarData.ReadingTime.Sub(currentIMUTime).Milliseconds() > 0 {
 		time.Sleep(10 * time.Millisecond)
 		return false
 	}
 
 	// Add current lidar data if it is non-nil
-	if config.currentLidarData.data != nil {
-		config.tryAddLidarReadingUntilSuccess(ctx, config.currentLidarData.data, config.currentLidarData.time)
+	if config.currentLidarData != nil {
+		config.tryAddLidarReadingUntilSuccess(ctx, *config.currentLidarData)
 
 		config.Mutex.Lock()
 		if config.sensorProcessStartTime == defaultTime {
-			config.sensorProcessStartTime = config.currentLidarData.time
+			config.sensorProcessStartTime = config.currentLidarData.ReadingTime
 		}
 		config.Mutex.Unlock()
 	}
@@ -92,7 +95,7 @@ func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 	}
 
 	// update stored lidar timestamp
-	config.updateMutexProtectedLidarData(tsr.ReadingTime, tsr.Reading)
+	config.updateMutexProtectedLidarData(tsr)
 
 	return false
 }
@@ -100,39 +103,39 @@ func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 // tryAddLidarReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode). While add lidar
 // reading fails, keep trying to add the same reading - in offline mode we want to process each reading so if we cannot
 // acquire the lock we should try again.
-func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, reading []byte, readingTime time.Time) {
+func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, reading s.TimedLidarSensorReadingResponse) {
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		default:
-			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.Lidar.Name(), reading, readingTime)
+			err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.Lidar.Name(), reading)
 			if err == nil {
-				config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())
+				config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 				return
 			}
 			if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 			}
-			config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())
+			config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 		}
 	}
 }
 
 // tryAddLidarReading adds a reading to the carto facade and does not retry (online).
-func (config *Config) tryAddLidarReading(ctx context.Context, reading []byte, readingTime time.Time) int {
+func (config *Config) tryAddLidarReading(ctx context.Context, reading s.TimedLidarSensorReadingResponse) int {
 	startTime := time.Now().UTC()
 
-	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.Lidar.Name(), reading, readingTime)
+	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.Lidar.Name(), reading)
 	if err != nil {
-		config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", readingTime, readingTime.Unix())
+		config.Logger.Debugf("%v \t | LIDAR | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping lidar reading due to lock contention in cartofacade", "error", err)
 		} else {
 			config.Logger.Warnw("Skipping lidar reading due to error from cartofacade", "error", err)
 		}
 	}
-	config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", readingTime, readingTime.Unix())
+	config.Logger.Debugf("%v \t | LIDAR | Success \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(1000/config.Lidar.DataFrequencyHz()-timeElapsedMs)))
 }

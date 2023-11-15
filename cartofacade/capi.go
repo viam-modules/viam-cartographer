@@ -15,11 +15,9 @@ import "C"
 
 import (
 	"errors"
-	"time"
 	"unsafe"
 
-	"github.com/golang/geo/r3"
-	"go.viam.com/rdk/spatialmath"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // CartoLib holds the c type viam_carto_lib
@@ -57,8 +55,8 @@ type CartoInterface interface {
 	start() error
 	stop() error
 	terminate() error
-	addLidarReading(string, []byte, time.Time) error
-	addIMUReading(string, IMUReading, time.Time) error
+	addLidarReading(string, s.TimedLidarSensorReadingResponse) error
+	addIMUReading(string, s.TimedIMUSensorReadingResponse) error
 	position() (Position, error)
 	pointCloudMap() ([]byte, error)
 	internalState() ([]byte, error)
@@ -77,12 +75,6 @@ type Position struct {
 	Kmag float64
 
 	ComponentReference string
-}
-
-// IMUReading holds values for linear acceleration and angular velocity to be converted into c
-type IMUReading struct {
-	LinearAcceleration r3.Vector
-	AngularVelocity    spatialmath.AngularVelocity
 }
 
 // LidarConfig represents the lidar configuration
@@ -221,8 +213,8 @@ func (vc *Carto) terminate() error {
 }
 
 // addLidarReading is a wrapper for viam_carto_add_lidar_reading
-func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.Time) error {
-	value := toLidarReading(lidar, readings, timestamp)
+func (vc *Carto) addLidarReading(lidar string, reading s.TimedLidarSensorReadingResponse) error {
+	value := toLidarReading(lidar, reading)
 
 	status := C.viam_carto_add_lidar_reading(vc.value, &value)
 
@@ -239,8 +231,8 @@ func (vc *Carto) addLidarReading(lidar string, readings []byte, timestamp time.T
 }
 
 // addIMUReading is a wrapper for viam_carto_add_imu_reading
-func (vc *Carto) addIMUReading(imu string, readings IMUReading, timestamp time.Time) error {
-	value := toIMUReading(imu, readings, timestamp)
+func (vc *Carto) addIMUReading(imu string, reading s.TimedIMUSensorReadingResponse) error {
+	value := toIMUReading(imu, reading)
 
 	status := C.viam_carto_add_imu_reading(vc.value, &value)
 
@@ -431,32 +423,32 @@ func toPositionResponse(value C.viam_carto_get_position_response) Position {
 	}
 }
 
-func toLidarReading(lidar string, readings []byte, timestamp time.Time) C.viam_carto_lidar_reading {
+func toLidarReading(lidar string, reading s.TimedLidarSensorReadingResponse) C.viam_carto_lidar_reading {
 	sr := C.viam_carto_lidar_reading{}
 	sensorCStr := C.CString(lidar)
 	defer C.free(unsafe.Pointer(sensorCStr))
 	sr.lidar = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(lidar)))
-	readingsCBytes := C.CBytes(readings)
+	readingsCBytes := C.CBytes(reading.Reading)
 	defer C.free(readingsCBytes)
-	sr.lidar_reading = C.blk2bstr(readingsCBytes, C.int(len(readings)))
-	sr.lidar_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
+	sr.lidar_reading = C.blk2bstr(readingsCBytes, C.int(len(reading.Reading)))
+	sr.lidar_reading_time_unix_milli = C.int64_t(reading.ReadingTime.UnixMilli())
 	return sr
 }
 
-func toIMUReading(imu string, readings IMUReading, timestamp time.Time) C.viam_carto_imu_reading {
+func toIMUReading(imu string, reading s.TimedIMUSensorReadingResponse) C.viam_carto_imu_reading {
 	sr := C.viam_carto_imu_reading{}
 	sensorCStr := C.CString(imu)
 	defer C.free(unsafe.Pointer(sensorCStr))
 	sr.imu = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(imu)))
 
-	sr.lin_acc_x = C.double(readings.LinearAcceleration.X)
-	sr.lin_acc_y = C.double(readings.LinearAcceleration.Y)
-	sr.lin_acc_z = C.double(readings.LinearAcceleration.Z)
-	sr.ang_vel_x = C.double(readings.AngularVelocity.X)
-	sr.ang_vel_y = C.double(readings.AngularVelocity.Y)
-	sr.ang_vel_z = C.double(readings.AngularVelocity.Z)
+	sr.lin_acc_x = C.double(reading.LinearAcceleration.X)
+	sr.lin_acc_y = C.double(reading.LinearAcceleration.Y)
+	sr.lin_acc_z = C.double(reading.LinearAcceleration.Z)
+	sr.ang_vel_x = C.double(reading.AngularVelocity.X)
+	sr.ang_vel_y = C.double(reading.AngularVelocity.Y)
+	sr.ang_vel_z = C.double(reading.AngularVelocity.Z)
 
-	sr.imu_reading_time_unix_milli = C.int64_t(timestamp.UnixMilli())
+	sr.imu_reading_time_unix_milli = C.int64_t(reading.ReadingTime.UnixMilli())
 	return sr
 }
 

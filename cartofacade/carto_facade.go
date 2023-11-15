@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"go.uber.org/multierr"
+
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
@@ -69,13 +71,11 @@ func (cf *CartoFacade) AddLidarReading(
 	ctx context.Context,
 	timeout time.Duration,
 	lidarName string,
-	currentReading []byte,
-	readingTimestamp time.Time,
+	currentReading s.TimedLidarSensorReadingResponse,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
-		sensor:    lidarName,
-		reading:   currentReading,
-		timestamp: readingTimestamp,
+		sensor:  lidarName,
+		reading: currentReading,
 	}
 
 	_, err := cf.request(ctx, addLidarReading, requestParams, timeout)
@@ -91,13 +91,11 @@ func (cf *CartoFacade) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
 	imuName string,
-	currentReading IMUReading,
-	readingTimestamp time.Time,
+	currentReading s.TimedIMUSensorReadingResponse,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
-		sensor:    imuName,
-		reading:   currentReading,
-		timestamp: readingTimestamp,
+		sensor:  imuName,
+		reading: currentReading,
 	}
 
 	_, err := cf.request(ctx, addIMUReading, requestParams, timeout)
@@ -197,8 +195,6 @@ const (
 	sensor RequestParamType = iota
 	// reading represents a sensor reading input into c funcs.
 	reading
-	// timestamp represents the timestamp input into c funcs.
-	timestamp
 )
 
 // Response defines the result of one piece of work that can be put on the result channel.
@@ -259,15 +255,13 @@ type Interface interface {
 		ctx context.Context,
 		timeout time.Duration,
 		lidarName string,
-		currentReading []byte,
-		readingTimestamp time.Time,
+		currentReading s.TimedLidarSensorReadingResponse,
 	) error
 	AddIMUReading(
 		ctx context.Context,
 		timeout time.Duration,
 		imuName string,
-		currentReading IMUReading,
-		readingTimestamp time.Time,
+		currentReading s.TimedIMUSensorReadingResponse,
 	) error
 	Position(
 		ctx context.Context,
@@ -324,34 +318,24 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted lidar name to string")
 		}
 
-		reading, ok := r.requestParams[reading].([]byte)
+		reading, ok := r.requestParams[reading].(s.TimedLidarSensorReadingResponse)
 		if !ok {
-			return nil, errors.New("could not cast inputted byte to byte slice")
+			return nil, errors.New("could not cast inputted byte to type sensors.TimedLidarSensorReadingResponse")
 		}
 
-		timestamp, ok := r.requestParams[timestamp].(time.Time)
-		if !ok {
-			return nil, errors.New("could not cast inputted timestamp to time.Time")
-		}
-
-		return nil, cf.carto.addLidarReading(lidar, reading, timestamp)
+		return nil, cf.carto.addLidarReading(lidar, reading)
 	case addIMUReading:
 		imu, ok := r.requestParams[sensor].(string)
 		if !ok {
 			return nil, errors.New("could not cast inputted IMU name to string")
 		}
 
-		reading, ok := r.requestParams[reading].(IMUReading)
+		reading, ok := r.requestParams[reading].(s.TimedIMUSensorReadingResponse)
 		if !ok {
-			return nil, errors.New("could not cast inputted reading to type IMUReading")
+			return nil, errors.New("could not cast inputted reading to type sensors.TimedIMUSensorReadingResponse")
 		}
 
-		timestamp, ok := r.requestParams[timestamp].(time.Time)
-		if !ok {
-			return nil, errors.New("could not cast inputted timestamp to time.Time")
-		}
-
-		return nil, cf.carto.addIMUReading(imu, reading, timestamp)
+		return nil, cf.carto.addIMUReading(imu, reading)
 	case position:
 		return cf.carto.position()
 	case internalState:

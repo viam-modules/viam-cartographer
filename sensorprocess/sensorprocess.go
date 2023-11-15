@@ -22,10 +22,10 @@ type Config struct {
 	Online                 bool
 
 	Lidar            s.TimedLidar
-	currentLidarData LidarData
+	currentLidarData *s.TimedLidarSensorReadingResponse
 
 	IMU            s.TimedMovementSensor
-	currentIMUData IMUData
+	currentIMUData *s.TimedIMUSensorReadingResponse
 
 	Timeout                  time.Duration
 	InternalTimeout          time.Duration
@@ -35,32 +35,16 @@ type Config struct {
 	Mutex *sync.Mutex
 }
 
-// IMUData stores the next data to be added to cartographer along with its associated timestamp so that,
-// in offline mode, data from multiple sensors can be added in order.
-type IMUData struct {
-	time time.Time
-	data cartofacade.IMUReading
-}
-
-// LidarData stores the next data to be added to cartographer along with its associated timestamp so that,
-// in offline mode, data from multiple sensors can be added in order.
-type LidarData struct {
-	time time.Time
-	data []byte
-}
-
 // Update currentIMUData under a mutex lock.
-func (config *Config) updateMutexProtectedIMUData(time time.Time, data cartofacade.IMUReading) {
+func (config *Config) updateMutexProtectedIMUData(data s.TimedIMUSensorReadingResponse) {
 	config.Mutex.Lock()
-	config.currentIMUData.time = time
-	config.currentIMUData.data = data
+	config.currentIMUData = &data
 	config.Mutex.Unlock()
 }
 
 // Update currentLidarData under a mutex lock.
-func (config *Config) updateMutexProtectedLidarData(time time.Time, data []byte) {
+func (config *Config) updateMutexProtectedLidarData(data s.TimedLidarSensorReadingResponse) {
 	config.Mutex.Lock()
-	config.currentLidarData.time = time
-	config.currentLidarData.data = data
+	config.currentLidarData = &data
 	config.Mutex.Unlock()
 }

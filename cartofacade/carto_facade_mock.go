@@ -5,6 +5,8 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // RequestMock represents a fake instance of a request.
@@ -55,15 +57,13 @@ type Mock struct {
 		ctx context.Context,
 		timeout time.Duration,
 		lidarName string,
-		currentReading []byte,
-		readingTimestamp time.Time,
+		currentReading s.TimedLidarSensorReadingResponse,
 	) error
 	AddIMUReadingFunc func(
 		ctx context.Context,
 		timeout time.Duration,
 		imuName string,
-		currentReading IMUReading,
-		readingTimestamp time.Time,
+		currentReading s.TimedIMUSensorReadingResponse,
 	) error
 	PositionFunc func(
 		ctx context.Context,
@@ -153,13 +153,12 @@ func (cf *Mock) AddLidarReading(
 	ctx context.Context,
 	timeout time.Duration,
 	lidarName string,
-	currentReading []byte,
-	readingTimestamp time.Time,
+	currentReading s.TimedLidarSensorReadingResponse,
 ) error {
 	if cf.AddLidarReadingFunc == nil {
-		return cf.CartoFacade.AddLidarReading(ctx, timeout, lidarName, currentReading, readingTimestamp)
+		return cf.CartoFacade.AddLidarReading(ctx, timeout, lidarName, currentReading)
 	}
-	return cf.AddLidarReadingFunc(ctx, timeout, lidarName, currentReading, readingTimestamp)
+	return cf.AddLidarReadingFunc(ctx, timeout, lidarName, currentReading)
 }
 
 // AddIMUReading calls the injected AddIMUReadingFunc or the real version.
@@ -167,13 +166,12 @@ func (cf *Mock) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
 	imuName string,
-	currentReading IMUReading,
-	readingTimestamp time.Time,
+	currentReading s.TimedIMUSensorReadingResponse,
 ) error {
 	if cf.AddIMUReadingFunc == nil {
-		return cf.CartoFacade.AddIMUReading(ctx, timeout, imuName, currentReading, readingTimestamp)
+		return cf.CartoFacade.AddIMUReading(ctx, timeout, imuName, currentReading)
 	}
-	return cf.AddIMUReadingFunc(ctx, timeout, imuName, currentReading, readingTimestamp)
+	return cf.AddIMUReadingFunc(ctx, timeout, imuName, currentReading)
 }
 
 // Position calls the injected PositionFunc or the real version.

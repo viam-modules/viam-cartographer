@@ -2,7 +2,7 @@
 package cartofacade
 
 import (
-	"time"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // CartoLibMock represents a fake instance of cartofacade.
@@ -25,8 +25,8 @@ type CartoMock struct {
 	StartFunc                func() error
 	StopFunc                 func() error
 	TerminateFunc            func() error
-	AddLidarReadingFunc      func(string, []byte, time.Time) error
-	AddIMUReadingFunc        func(string, IMUReading, time.Time) error
+	AddLidarReadingFunc      func(string, s.TimedLidarSensorReadingResponse) error
+	AddIMUReadingFunc        func(string, s.TimedIMUSensorReadingResponse) error
 	PositionFunc             func() (Position, error)
 	PointCloudMapFunc        func() ([]byte, error)
 	InternalStateFunc        func() ([]byte, error)
@@ -58,19 +58,19 @@ func (cf *CartoMock) terminate() error {
 }
 
 // addLidarReading calls the injected AddLidarReadingFunc or the real version.
-func (cf *CartoMock) addLidarReading(lidar string, readings []byte, time time.Time) error {
+func (cf *CartoMock) addLidarReading(lidar string, reading s.TimedLidarSensorReadingResponse) error {
 	if cf.AddLidarReadingFunc == nil {
-		return cf.Carto.addLidarReading(lidar, readings, time)
+		return cf.Carto.addLidarReading(lidar, reading)
 	}
-	return cf.AddLidarReadingFunc(lidar, readings, time)
+	return cf.AddLidarReadingFunc(lidar, reading)
 }
 
 // addIMUReading calls the injected AddIMUReadingFunc or the real version.
-func (cf *CartoMock) addIMUReading(imu string, readings IMUReading, time time.Time) error {
+func (cf *CartoMock) addIMUReading(imu string, reading s.TimedIMUSensorReadingResponse) error {
 	if cf.AddIMUReadingFunc == nil {
-		return cf.Carto.addIMUReading(imu, readings, time)
+		return cf.Carto.addIMUReading(imu, reading)
 	}
-	return cf.AddIMUReadingFunc(imu, readings, time)
+	return cf.AddIMUReadingFunc(imu, reading)
 }
 
 // position calls the injected PositionFunc or the real version.
