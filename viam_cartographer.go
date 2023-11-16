@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap/zapcore"
-	"go.viam.com/rdk/components/movementsensor"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
@@ -202,14 +201,9 @@ func New(
 	var timedMovementSensor s.TimedMovementSensor
 	if movementSensorName == "" {
 		logger.Info("no movement sensor configured, proceeding without IMU and without odometer")
-	} else {
-		if err = checkIfIMUAndOdometerSupported(ctx, deps, movementSensorName); err != nil {
-			return nil, err
-		}
-		if timedMovementSensor, err = s.NewMovementSensor(ctx, deps, movementSensorName,
-			optionalConfigParams.MovementSensorDataFrequencyHz, logger); err != nil {
-			return nil, err
-		}
+	} else if timedMovementSensor, err = s.NewMovementSensor(ctx, deps, movementSensorName,
+		optionalConfigParams.MovementSensorDataFrequencyHz, logger); err != nil {
+		return nil, err
 	}
 
 	// Need to be able to shut down the sensor process before the cartoFacade
@@ -267,32 +261,6 @@ func New(
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
-}
-
-func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies, movementSensorName string) error {
-	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
-	if err != nil {
-		return errors.Wrapf(err, "error getting movement sensor \"%v\" for slam service", movementSensorName)
-	}
-
-	properties, err := movementSensor.Properties(ctx, make(map[string]interface{}))
-	if err != nil {
-		errMessage := "error getting movement sensor properties from movement sensor \"" + movementSensorName +
-			"\" for slam service"
-		return errors.Wrap(err, errMessage)
-	}
-
-	// A movement sensor used as an IMU must support LinearAcceleration and AngularVelocity.
-	imuSupported := properties.LinearAccelerationSupported && properties.AngularVelocitySupported
-
-	// A movement sensor used as an odometer must support Position and Orientation.
-	odometerSupported := properties.PositionSupported && properties.OrientationSupported
-
-	if !imuSupported && !odometerSupported {
-		return s.ErrMovementSensorNeitherIMUNorOdometer
-	}
-
-	return nil
 }
 
 func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger) (cartofacade.CartoAlgoConfig, error) {

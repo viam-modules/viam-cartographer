@@ -18,9 +18,9 @@ import (
 )
 
 const (
-	replayTimeToleranceMsec           = 10 // Milliseconds
-	replayTimestampErrorMessage       = "replay sensor timestamp parse RFC3339Nano error"
-	timedMovementSensorReadingTimeout = 5 * time.Second
+	movementSensorReadingTimeToleranceMsec = 50 // Milliseconds
+	replayTimestampErrorMessage            = "replay sensor timestamp parse RFC3339Nano error"
+	timedMovementSensorReadingTimeout      = 5 * time.Second
 )
 
 var (
@@ -112,7 +112,7 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 		for {
 			select {
 			case <-timeoutCtx.Done():
-				return TimedMovementSensorReadingResponse{}, timeoutCtx.Err()
+				return TimedMovementSensorReadingResponse{}, errors.Wrap(timeoutCtx.Err(), "timed out getting IMU data")
 			default:
 				if timedIMUReadingResponse, err = ms.timedIMUReading(timeoutCtx, &angVel, &linAcc,
 					&readingTimeAngularVel, &readingTimeLinearAcc); err != nil && !errors.Is(err, ErrNoValidReadingObtained) {
@@ -129,7 +129,7 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 		for {
 			select {
 			case <-timeoutCtx.Done():
-				return TimedMovementSensorReadingResponse{}, timeoutCtx.Err()
+				return TimedMovementSensorReadingResponse{}, errors.Wrap(timeoutCtx.Err(), "timed out getting odometer data")
 			default:
 				if timedOdometerReadingResponse, err = ms.timedOdometerReading(timeoutCtx, position, &orientation,
 					&readingTimePosition, &readingTimeOrientation); err != nil && !errors.Is(err, ErrNoValidReadingObtained) {
@@ -156,7 +156,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 	returnReadingIfTimestampsWithinTolerance := func(readingTimeAngularVel, readingTimeLinearAcc time.Time,
 		angVel *spatialmath.AngularVelocity, linAcc *r3.Vector,
 	) (TimedIMUReadingResponse, bool) {
-		if readingTimeAngularVel.Sub(readingTimeLinearAcc).Abs().Milliseconds() < replayTimeToleranceMsec {
+		if readingTimeAngularVel.Sub(readingTimeLinearAcc).Abs().Milliseconds() < movementSensorReadingTimeToleranceMsec {
 			return TimedIMUReadingResponse{
 				LinearAcceleration: *linAcc,
 				AngularVelocity: spatialmath.AngularVelocity{
@@ -164,7 +164,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 					Y: rdkutils.DegToRad(angVel.Y),
 					Z: rdkutils.DegToRad(angVel.Z),
 				},
-				ReadingTime: readingTimeLinearAcc.Add((readingTimeLinearAcc.Sub(readingTimeAngularVel)).Abs() / 2),
+				ReadingTime: averageReadingTimes(readingTimeLinearAcc, readingTimeAngularVel),
 			}, true
 		}
 		return TimedIMUReadingResponse{}, false
@@ -173,7 +173,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 	if *readingTimeLinearAcc == defaultTime || readingTimeLinearAcc.Sub(*readingTimeAngularVel).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if *linAcc, err = ms.sensor.LinearAcceleration(ctxWithMetadata, make(map[string]interface{})); err != nil {
-			return &TimedIMUReadingResponse{}, errors.Wrap(err, "LinearAcceleration error")
+			return &TimedIMUReadingResponse{}, errors.Wrap(err, "could not obtain LinearAcceleration")
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
@@ -193,7 +193,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 	if *readingTimeAngularVel == defaultTime || readingTimeAngularVel.Sub(*readingTimeLinearAcc).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if *angVel, err = ms.sensor.AngularVelocity(ctxWithMetadata, make(map[string]interface{})); err != nil {
-			return &TimedIMUReadingResponse{}, errors.Wrap(err, "AngularVelocity error")
+			return &TimedIMUReadingResponse{}, errors.Wrap(err, "could not obtain AngularVelocity")
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
@@ -221,11 +221,11 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 	returnReadingIfTimestampsWithinTolerance := func(readingTimePosition, readingTimeOrientation time.Time,
 		position *geo.Point, orientation *spatialmath.Orientation,
 	) (TimedOdometerReadingResponse, bool) {
-		if readingTimeOrientation.Sub(readingTimePosition).Abs().Milliseconds() < replayTimeToleranceMsec {
+		if readingTimeOrientation.Sub(readingTimePosition).Abs().Milliseconds() < movementSensorReadingTimeToleranceMsec {
 			return TimedOdometerReadingResponse{
 				Position:    position,
 				Orientation: *orientation,
-				ReadingTime: readingTimePosition.Add((readingTimePosition.Sub(readingTimeOrientation) / 2).Abs()),
+				ReadingTime: averageReadingTimes(readingTimePosition, readingTimeOrientation),
 			}, true
 		}
 		return TimedOdometerReadingResponse{}, false
@@ -234,7 +234,7 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 	if *readingTimePosition == defaultTime || readingTimePosition.Sub(*readingTimeOrientation).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if position, _, err = ms.sensor.Position(ctxWithMetadata, make(map[string]interface{})); err != nil {
-			return &TimedOdometerReadingResponse{}, errors.Wrap(err, "Position error")
+			return &TimedOdometerReadingResponse{}, errors.Wrap(err, "could not obtain Position")
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
@@ -254,7 +254,7 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 	if *readingTimeOrientation == defaultTime || readingTimeOrientation.Sub(*readingTimePosition).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if *orientation, err = ms.sensor.Orientation(ctxWithMetadata, make(map[string]interface{})); err != nil {
-			return &TimedOdometerReadingResponse{}, errors.Wrap(err, "Orientation error")
+			return &TimedOdometerReadingResponse{}, errors.Wrap(err, "could not obtain Orientation")
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
@@ -321,4 +321,14 @@ func NewMovementSensor(
 		odometerSupported: odometerSupported,
 		sensor:            movementSensor,
 	}, nil
+}
+
+func averageReadingTimes(a, b time.Time) time.Time {
+	if b.Equal(a) {
+		return a
+	} else if b.After(a) {
+		return a.Add(b.Sub(a) / 2)
+	} else {
+		return b.Add(a.Sub(b) / 2)
+	}
 }

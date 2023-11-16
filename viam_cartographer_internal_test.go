@@ -18,7 +18,6 @@ import (
 	"go.viam.com/utils/artifact"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
 	"github.com/viamrobotics/viam-cartographer/sensors/inject"
 )
 
@@ -488,36 +487,5 @@ func TestBuiltinQuaternion(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error getting SLAM position: quaternion given, but invalid format detected")
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldBeEmpty)
-	})
-}
-
-func TestCheckIfIMUAndOdometerSupported(t *testing.T) {
-	ctx := context.Background()
-	t.Run("neither IMU nor Odometer supported", func(t *testing.T) {
-		lidar, movementSensor := s.NoLidar, s.MovementSensorNotIMUNotOdometer
-		err := checkIfIMUAndOdometerSupported(ctx,
-			s.SetupDeps(lidar, movementSensor), string(movementSensor))
-		test.That(t, err, test.ShouldNotBeNil)
-		test.That(t, err, test.ShouldBeError, s.ErrMovementSensorNeitherIMUNorOdometer)
-	})
-
-	t.Run("failure to get movement sensor from dependencies", func(t *testing.T) {
-		lidar, movementSensor := s.NoLidar, s.GibberishMovementSensor
-		errMessage := "error getting movement sensor \"" + string(movementSensor) + "\" for slam service: \"" +
-			"rdk:component:movement_sensor/" + string(movementSensor) + "\" missing from dependencies"
-		err := checkIfIMUAndOdometerSupported(ctx,
-			s.SetupDeps(lidar, movementSensor), string(movementSensor))
-		test.That(t, err, test.ShouldNotBeNil)
-		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
-	})
-
-	t.Run("failure to get movement sensor properties", func(t *testing.T) {
-		lidar, movementSensor := s.NoLidar, s.MovementSensorWithErroringPropertiesFunc
-		errMessage := "error getting movement sensor properties from movement sensor \"" + string(movementSensor) +
-			"\" for slam service: error getting properties"
-		err := checkIfIMUAndOdometerSupported(ctx,
-			s.SetupDeps(lidar, movementSensor), string(movementSensor))
-		test.That(t, err, test.ShouldNotBeNil)
-		test.That(t, err, test.ShouldBeError, errors.New(errMessage))
 	})
 }
