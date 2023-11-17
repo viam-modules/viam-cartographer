@@ -289,7 +289,7 @@ func New(
 		}
 	}
 
-	// do not initialize CartoFacade or Sensor Processes if using cloudslam
+	// do not initialize CartoFacade or Sensor Processes when using cloudslam
 	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
 		return &CartographerService{
 			Named:        c.ResourceName().AsNamed(),
