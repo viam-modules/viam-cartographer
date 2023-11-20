@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/components/movementsensor/replay"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
@@ -133,7 +133,7 @@ func NewIMU(
 	deps resource.Dependencies,
 	movementSensorName string,
 	dataFrequencyHz int,
-	logger golog.Logger,
+	logger logging.Logger,
 ) (TimedIMUSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewIMU")
 	defer span.End()
@@ -171,7 +171,7 @@ func ValidateGetIMUData(
 	imu TimedIMUSensor,
 	sensorValidationMaxTimeout time.Duration,
 	sensorValidationInterval time.Duration,
-	logger golog.Logger,
+	logger logging.Logger,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::sensor::ValidateGetIMUData")
 	defer span.End()

@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	commonv1 "go.viam.com/api/common/v1"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
@@ -317,7 +317,7 @@ func TestInternalStateEndpoint(t *testing.T) {
 }
 
 func TestParseCartoAlgoConfig(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("returns default when config params are empty", func(t *testing.T) {
 		defaultCartoAlgoCfg := cartofacade.CartoAlgoConfig{

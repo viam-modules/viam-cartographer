@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
 
@@ -51,7 +51,7 @@ DATA binary
 )
 
 func TestAddLidarReadingOffline(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
@@ -158,7 +158,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 }
 
 func TestAddIMUReadingOffline(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	reading := cartofacade.IMUReading{
 		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 1, Y: 1, Z: 1},
@@ -262,7 +262,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 }
 
 func TestAddLidarReadingOnline(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
@@ -380,7 +380,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 }
 
 func TestAddIMUReadingOnline(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 	reading := cartofacade.IMUReading{
 		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
@@ -508,7 +508,7 @@ func onlineModeLidarTestHelper(
 	cf cartofacade.Mock,
 	testLidar s.TestSensor,
 ) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 5
 
 	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoIMU), string(testLidar), dataFrequencyHz, logger)
@@ -581,7 +581,7 @@ func onlineModeIMUTestHelper(
 	cf cartofacade.Mock,
 	testImu s.TestSensor,
 ) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 100
 	imu, err := s.NewIMU(context.Background(), s.SetupDeps(s.NoLidar, testImu), string(testImu), dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
@@ -661,7 +661,7 @@ func invalidLidarTestHelper(
 	testLidar s.TestSensor,
 	lidarDataFrequencyHz int,
 ) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoIMU), string(testLidar), lidarDataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
@@ -698,7 +698,7 @@ func invalidIMUTestHelper(
 	testIMU s.TestSensor,
 	imuDataFrequencyHz int,
 ) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	imu, err := s.NewIMU(context.Background(), s.SetupDeps(s.NoLidar, testIMU), string(testIMU), imuDataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
@@ -732,7 +732,7 @@ func invalidIMUTestHelper(
 }
 
 func TestAddLidarReading(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
 	runFinalOptimizationFunc := func(context.Context, time.Duration) error {
@@ -859,7 +859,7 @@ func TestAddLidarReading(t *testing.T) {
 }
 
 func TestAddIMUReading(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	cf := cartofacade.Mock{}
@@ -974,7 +974,7 @@ func TestAddIMUReading(t *testing.T) {
 }
 
 func TestStartLidar(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
 	injectLidar := inject.TimedLidarSensor{}
@@ -1018,7 +1018,7 @@ func TestStartLidar(t *testing.T) {
 }
 
 func TestStartIMU(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
 	injectImu := inject.TimedIMUSensor{}

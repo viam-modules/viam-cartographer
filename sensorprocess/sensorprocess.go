@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edaniels/golog"
+	"go.viam.com/rdk/logging"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
@@ -28,7 +28,7 @@ type Config struct {
 
 	Timeout                  time.Duration
 	InternalTimeout          time.Duration
-	Logger                   golog.Logger
+	Logger                   logging.Logger
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 
 	Mutex *sync.Mutex

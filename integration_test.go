@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
@@ -141,7 +141,7 @@ func testHelperCartographer(
 	t *testing.T,
 	existingMap string,
 	subAlgo viamcartographer.SubAlgo,
-	logger golog.Logger,
+	logger logging.Logger,
 	replaySensor bool,
 	online bool,
 	useIMU bool,
@@ -240,8 +240,8 @@ func testHelperCartographer(
 
 // TestIntegrationCartographer provides end-to-end testing of viam-cartographer using a combination of live vs. replay cameras
 // and imu enabled mode.
-func TestIntegrationCartographer(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+func TestInloggingtionCartographer(t *testing.T) {
+	logger := logging.NewTestLogger(t)
 
 	cases := []struct {
 		description string

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/edaniels/golog"
-	"go.uber.org/zap"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
@@ -14,7 +13,7 @@ import (
 
 func TestValidate(t *testing.T) {
 	testCfgPath := "services.slam.attributes.fake"
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("Empty config", func(t *testing.T) {
 		model := resource.DefaultModelFamily.WithModel("test")
@@ -111,7 +110,7 @@ func makeCfgService() resource.Config {
 }
 
 func TestGetOptionalParameters(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("Pass default parameters", func(t *testing.T) {
 		cfgService := makeCfgService()
@@ -222,7 +221,7 @@ func TestGetOptionalParameters(t *testing.T) {
 
 func sensorAttributeTestHelper(
 	t *testing.T,
-	logger *zap.SugaredLogger,
+	logger logging.Logger,
 ) {
 	t.Run("Unit test return error if lidar data frequency is invalid", func(t *testing.T) {
 		cfgService := makeCfgService()
