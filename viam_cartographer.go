@@ -10,13 +10,13 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap/zapcore"
 	"go.viam.com/rdk/components/movementsensor"
 	viamgrpc "go.viam.com/rdk/grpc"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
@@ -78,7 +78,7 @@ func init() {
 			ctx context.Context,
 			deps resource.Dependencies,
 			c resource.Config,
-			logger golog.Logger,
+			logger logging.Logger,
 		) (slam.Service, error) {
 			return New(
 				ctx,
@@ -99,7 +99,7 @@ func init() {
 // InitCartoLib is run to initialize the cartographer library
 // must be called before module.AddModelFromRegistry is
 // called.
-func InitCartoLib(logger golog.Logger) error {
+func InitCartoLib(logger logging.Logger) error {
 	minloglevel := 1 // warn
 	vlog := 0        //  disabled
 	if logger.Level() == zapcore.DebugLevel {
@@ -154,7 +154,7 @@ func New(
 	ctx context.Context,
 	deps resource.Dependencies,
 	c resource.Config,
-	logger golog.Logger,
+	logger logging.Logger,
 	sensorValidationMaxTimeoutSec int,
 	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
@@ -329,7 +329,7 @@ func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependenc
 	return imuSupported, odometerSupported, nil
 }
 
-func parseCartoAlgoConfig(configParams map[string]string, logger golog.Logger) (cartofacade.CartoAlgoConfig, error) {
+func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger) (cartofacade.CartoAlgoConfig, error) {
 	cartoAlgoCfg := defaultCartoAlgoCfg
 	for k, val := range configParams {
 		switch k {
@@ -535,7 +535,7 @@ type CartographerService struct {
 
 	cancelSensorProcessFunc func()
 	cancelCartoFacadeFunc   func()
-	logger                  golog.Logger
+	logger                  logging.Logger
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 

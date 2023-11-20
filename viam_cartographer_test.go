@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	viamgrpc "go.viam.com/rdk/grpc"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
 
@@ -38,7 +38,7 @@ var (
 )
 
 func TestNew(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("Succeeds if use_cloud_slam is set to true. Causes all endpoints return errors.", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
@@ -288,7 +288,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestClose(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	t.Run("is idempotent and makes all endpoints return closed errors", func(t *testing.T) {
@@ -340,7 +340,7 @@ func TestClose(t *testing.T) {
 }
 
 func TestDoCommand(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	termFunc := testhelper.InitTestCL(t, logger)
 	defer termFunc()

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
-	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/components/movementsensor"
+	"go.viam.com/rdk/gostream"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
@@ -122,7 +122,7 @@ func CreateIntegrationSLAMService(
 	cfg *vcConfig.Config,
 	timedLidar s.TimedLidarSensor,
 	timedIMU s.TimedIMUSensor,
-	logger golog.Logger,
+	logger logging.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
@@ -166,7 +166,7 @@ func CreateIntegrationSLAMService(
 func CreateSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	logger golog.Logger,
+	logger logging.Logger,
 ) (slam.Service, error) {
 	t.Helper()
 
@@ -228,7 +228,7 @@ func ResetFolder(path string) error {
 }
 
 // InitTestCL initializes the carto library & returns a function to terminate it.
-func InitTestCL(t *testing.T, logger golog.Logger) func() {
+func InitTestCL(t *testing.T, logger logging.Logger) func() {
 	t.Helper()
 	err := viamcartographer.InitCartoLib(logger)
 	test.That(t, err, test.ShouldBeNil)

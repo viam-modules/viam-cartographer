@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/test"
@@ -20,7 +20,7 @@ const (
 )
 
 func TestNewIMU(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("No IMU provided", func(t *testing.T) {
 		lidar, imu := s.GoodLidar, s.NoIMU
@@ -67,7 +67,7 @@ func TestNewIMU(t *testing.T) {
 }
 
 func TestTimedIMUSensorReading(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	lidar, imu := s.GoodLidar, s.IMUWithErroringFunctions

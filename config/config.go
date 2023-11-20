@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/utils"
 )
 
@@ -74,7 +74,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
-func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultMovementSensorDataFrequencyHz int, logger golog.Logger,
+func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultMovementSensorDataFrequencyHz int, logger logging.Logger,
 ) (OptionalConfigParams, error) {
 	var optionalConfigParams OptionalConfigParams
 

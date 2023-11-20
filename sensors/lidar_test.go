@@ -5,15 +5,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/test"
 
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 func TestNewLidar(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("No lidar provided", func(t *testing.T) {
 		lidar, imu := s.NoLidar, s.NoIMU
@@ -45,7 +45,7 @@ func TestNewLidar(t *testing.T) {
 }
 
 func TestValidateGetLidarData(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	lidar, imu := s.GoodLidar, s.NoIMU
@@ -86,7 +86,7 @@ func TestValidateGetLidarData(t *testing.T) {
 }
 
 func TestTimedLidarSensorReading(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	lidar, imu := s.LidarWithErroringFunctions, s.NoIMU

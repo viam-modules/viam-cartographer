@@ -5,7 +5,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/edaniels/golog"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/module"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/utils"
@@ -23,7 +23,7 @@ func main() {
 	utils.ContextualMain(mainWithArgs, module.NewLoggerFromArgs("cartographerModule"))
 }
 
-func mainWithArgs(ctx context.Context, args []string, logger golog.Logger) error {
+func mainWithArgs(ctx context.Context, args []string, logger logging.Logger) error {
 	var versionFields []interface{}
 	if Version != "" {
 		versionFields = append(versionFields, "version", Version)

@@ -6,11 +6,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/components/camera/replaypcd"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/utils/contextutils"
@@ -85,7 +85,7 @@ func NewLidar(
 	deps resource.Dependencies,
 	cameraName string,
 	dataFrequencyHz int,
-	logger golog.Logger,
+	logger logging.Logger,
 ) (TimedLidarSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
@@ -121,7 +121,7 @@ func ValidateGetLidarData(
 	lidar TimedLidarSensor,
 	sensorValidationMaxTimeout time.Duration,
 	sensorValidationInterval time.Duration,
-	logger golog.Logger,
+	logger logging.Logger,
 ) error {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::sensor::ValidateGetLidarData")
 	defer span.End()
