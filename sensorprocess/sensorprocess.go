@@ -22,10 +22,10 @@ type Config struct {
 	Online                 bool
 
 	Lidar            s.TimedLidar
-	currentLidarData *s.TimedLidarSensorReadingResponse
+	currentLidarData *s.TimedLidarReadingResponse
 
 	IMU            s.TimedMovementSensor
-	currentIMUData *s.TimedIMUSensorReadingResponse
+	currentIMUData *s.TimedIMUReadingResponse
 
 	Timeout                  time.Duration
 	InternalTimeout          time.Duration
@@ -36,14 +36,14 @@ type Config struct {
 }
 
 // Update currentIMUData under a mutex lock.
-func (config *Config) updateMutexProtectedIMUData(data s.TimedIMUSensorReadingResponse) {
+func (config *Config) updateMutexProtectedIMUData(data s.TimedIMUReadingResponse) {
 	config.Mutex.Lock()
 	config.currentIMUData = &data
 	config.Mutex.Unlock()
 }
 
 // Update currentLidarData under a mutex lock.
-func (config *Config) updateMutexProtectedLidarData(data s.TimedLidarSensorReadingResponse) {
+func (config *Config) updateMutexProtectedLidarData(data s.TimedLidarReadingResponse) {
 	config.Mutex.Lock()
 	config.currentLidarData = &data
 	config.Mutex.Unlock()

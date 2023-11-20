@@ -57,13 +57,13 @@ type Mock struct {
 		ctx context.Context,
 		timeout time.Duration,
 		lidarName string,
-		currentReading s.TimedLidarSensorReadingResponse,
+		currentReading s.TimedLidarReadingResponse,
 	) error
 	AddIMUReadingFunc func(
 		ctx context.Context,
 		timeout time.Duration,
 		imuName string,
-		currentReading s.TimedIMUSensorReadingResponse,
+		currentReading s.TimedIMUReadingResponse,
 	) error
 	PositionFunc func(
 		ctx context.Context,
@@ -153,7 +153,7 @@ func (cf *Mock) AddLidarReading(
 	ctx context.Context,
 	timeout time.Duration,
 	lidarName string,
-	currentReading s.TimedLidarSensorReadingResponse,
+	currentReading s.TimedLidarReadingResponse,
 ) error {
 	if cf.AddLidarReadingFunc == nil {
 		return cf.CartoFacade.AddLidarReading(ctx, timeout, lidarName, currentReading)
@@ -166,7 +166,7 @@ func (cf *Mock) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
 	imuName string,
-	currentReading s.TimedIMUSensorReadingResponse,
+	currentReading s.TimedIMUReadingResponse,
 ) error {
 	if cf.AddIMUReadingFunc == nil {
 		return cf.CartoFacade.AddIMUReading(ctx, timeout, imuName, currentReading)

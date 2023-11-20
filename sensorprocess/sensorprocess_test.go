@@ -20,13 +20,13 @@ import (
 type addLidarReadingArgs struct {
 	timeout        time.Duration
 	sensorName     string
-	currentReading s.TimedLidarSensorReadingResponse
+	currentReading s.TimedLidarReadingResponse
 }
 
 type addIMUReadingArgs struct {
 	timeout        time.Duration
 	sensorName     string
-	currentReading s.TimedIMUSensorReadingResponse
+	currentReading s.TimedIMUReadingResponse
 }
 
 var (
@@ -41,7 +41,7 @@ VIEWPOINT 0 0 0 1 0 0 0
 POINTS 0
 DATA binary
 `)
-	expectedIMUReading = s.TimedIMUSensorReadingResponse{
+	expectedIMUReading = s.TimedIMUReadingResponse{
 		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0.017453292519943295, Y: 0.008726646259971648, Z: 0},
 	}
@@ -50,7 +50,7 @@ DATA binary
 
 func TestAddLidarReadingOffline(t *testing.T) {
 	logger := logging.NewTestLogger(t)
-	reading := s.TimedLidarSensorReadingResponse{
+	reading := s.TimedLidarReadingResponse{
 		Reading:     []byte("12345"),
 		ReadingTime: time.Now().UTC(),
 	}
@@ -78,7 +78,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			return nil
 		}
@@ -90,7 +90,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			return cartofacade.ErrUnableToAcquireLock
 		}
@@ -105,7 +105,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			return errUnknown
 		}
@@ -125,7 +125,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			args := addLidarReadingArgs{
 				timeout:        timeout,
@@ -155,7 +155,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 
 func TestAddIMUReadingOffline(t *testing.T) {
 	logger := logging.NewTestLogger(t)
-	reading := s.TimedIMUSensorReadingResponse{
+	reading := s.TimedIMUReadingResponse{
 		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 1, Y: 1, Z: 1},
 		ReadingTime:        time.Now().UTC(),
@@ -178,7 +178,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			return nil
 		}
@@ -190,7 +190,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			return cartofacade.ErrUnableToAcquireLock
 		}
@@ -205,7 +205,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			return errUnknown
 		}
@@ -225,7 +225,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			args := addIMUReadingArgs{
 				timeout:        timeout,
@@ -256,7 +256,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 func TestAddLidarReadingOnline(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
-	reading := s.TimedLidarSensorReadingResponse{
+	reading := s.TimedLidarReadingResponse{
 		Reading:     []byte("12345"),
 		ReadingTime: time.Now().UTC(),
 	}
@@ -279,7 +279,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			time.Sleep(1 * time.Second)
 			return nil
@@ -294,7 +294,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			time.Sleep(1 * time.Second)
 			return cartofacade.ErrUnableToAcquireLock
@@ -310,7 +310,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			time.Sleep(1 * time.Second)
 			return errUnknown
@@ -325,7 +325,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			return nil
 		}
@@ -341,7 +341,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			return cartofacade.ErrUnableToAcquireLock
 		}
@@ -357,7 +357,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			return errUnknown
 		}
@@ -371,7 +371,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 func TestAddIMUReadingOnline(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
-	reading := s.TimedIMUSensorReadingResponse{
+	reading := s.TimedIMUReadingResponse{
 		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 1, Y: 1, Z: 1},
 		ReadingTime:        time.Now().UTC(),
@@ -398,7 +398,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			time.Sleep(1 * time.Second)
 			return nil
@@ -413,7 +413,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			time.Sleep(1 * time.Second)
 			return cartofacade.ErrUnableToAcquireLock
@@ -428,7 +428,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			time.Sleep(1 * time.Second)
 			return errUnknown
@@ -443,7 +443,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			return nil
 		}
@@ -458,7 +458,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			return cartofacade.ErrUnableToAcquireLock
 		}
@@ -474,7 +474,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			return errUnknown
 		}
@@ -503,7 +503,7 @@ func onlineModeLidarTestHelper(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
-		currentReading s.TimedLidarSensorReadingResponse,
+		currentReading s.TimedLidarReadingResponse,
 	) error {
 		args := addLidarReadingArgs{
 			timeout:        timeout,
@@ -574,7 +574,7 @@ func onlineModeIMUTestHelper(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
-		currentReading s.TimedIMUSensorReadingResponse,
+		currentReading s.TimedIMUReadingResponse,
 	) error {
 		args := addIMUReadingArgs{
 			timeout:        timeout,
@@ -649,7 +649,7 @@ func invalidLidarTestHelper(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
-		currentReading s.TimedLidarSensorReadingResponse,
+		currentReading s.TimedLidarReadingResponse,
 	) error {
 		args := addLidarReadingArgs{
 			timeout:        timeout,
@@ -684,7 +684,7 @@ func invalidIMUTestHelper(
 		ctx context.Context,
 		timeout time.Duration,
 		sensorName string,
-		currentReading s.TimedIMUSensorReadingResponse,
+		currentReading s.TimedIMUReadingResponse,
 	) error {
 		args := addIMUReadingArgs{
 			timeout:        timeout,
@@ -763,7 +763,7 @@ func TestAddLidarReading(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedLidarSensorReadingResponse,
+			currentReading s.TimedLidarReadingResponse,
 		) error {
 			args := addLidarReadingArgs{
 				timeout:        timeout,
@@ -893,7 +893,7 @@ func TestAddIMUReading(t *testing.T) {
 			ctx context.Context,
 			timeout time.Duration,
 			sensorName string,
-			currentReading s.TimedIMUSensorReadingResponse,
+			currentReading s.TimedIMUReadingResponse,
 		) error {
 			args := addIMUReadingArgs{
 				timeout:        timeout,
@@ -911,7 +911,7 @@ func TestAddIMUReading(t *testing.T) {
 		}
 		config.IMU = replayIMU
 		config.Lidar = &injectLidar
-		config.currentLidarData = &s.TimedLidarSensorReadingResponse{
+		config.currentLidarData = &s.TimedLidarReadingResponse{
 			ReadingTime: time.Now().UTC().Add(-10 * time.Second),
 		}
 		config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
@@ -947,7 +947,7 @@ func TestAddIMUReading(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replayIMU
-		config.currentLidarData = &s.TimedLidarSensorReadingResponse{
+		config.currentLidarData = &s.TimedLidarReadingResponse{
 			ReadingTime: time.Now().UTC().Add(-10 * time.Second),
 		}
 
@@ -1027,7 +1027,7 @@ func TestStartIMU(t *testing.T) {
 
 		config.IMU = replaySensor
 		config.Lidar = &injectLidar
-		config.currentLidarData = &s.TimedLidarSensorReadingResponse{
+		config.currentLidarData = &s.TimedLidarReadingResponse{
 			ReadingTime: time.Now().UTC().Add(-10 * time.Second),
 		}
 
@@ -1042,7 +1042,7 @@ func TestStartIMU(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replaySensor
-		config.currentLidarData = &s.TimedLidarSensorReadingResponse{
+		config.currentLidarData = &s.TimedLidarReadingResponse{
 			ReadingTime: time.Now().UTC().Add(-10 * time.Second),
 		}
 

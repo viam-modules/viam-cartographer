@@ -53,7 +53,7 @@ func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.
 	err = pointcloud.ToPCD(pc, buf, pcdType)
 	test.That(t, err, test.ShouldBeNil)
 
-	reading := s.TimedLidarSensorReadingResponse{
+	reading := s.TimedLidarReadingResponse{
 		Reading:     buf.Bytes(),
 		ReadingTime: timestamp,
 	}
@@ -133,7 +133,7 @@ func TestPositionResponse(t *testing.T) {
 func TestToLidarReading(t *testing.T) {
 	t.Run("lidar reading properly converted between c and go", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		reading := s.TimedLidarSensorReadingResponse{
+		reading := s.TimedLidarReadingResponse{
 			Reading:     []byte("he0llo"),
 			ReadingTime: timestamp,
 		}
@@ -145,7 +145,7 @@ func TestToLidarReading(t *testing.T) {
 }
 
 func TestToIMUReading(t *testing.T) {
-	reading := s.TimedIMUSensorReadingResponse{
+	reading := s.TimedIMUReadingResponse{
 		LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
 	}
@@ -227,7 +227,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 
 		// test invalid addLidarReading: sensor name unknown
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		reading := s.TimedLidarSensorReadingResponse{
+		reading := s.TimedLidarReadingResponse{
 			Reading:     []byte("he0llo"),
 			ReadingTime: timestamp,
 		}
@@ -237,7 +237,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 
 		// test invalid addLidarReading: empty reading
 		timestamp = timestamp.Add(time.Second * 2)
-		reading = s.TimedLidarSensorReadingResponse{
+		reading = s.TimedLidarReadingResponse{
 			Reading:     []byte(""),
 			ReadingTime: timestamp,
 		}
@@ -247,7 +247,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 
 		// test invalid addLidarReading: invalid reading
 		timestamp = timestamp.Add(time.Second * 2)
-		reading = s.TimedLidarSensorReadingResponse{
+		reading = s.TimedLidarReadingResponse{
 			Reading:     []byte("he0llo"),
 			ReadingTime: timestamp,
 		}
@@ -376,7 +376,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 func TestCGoAPIWithIMU(t *testing.T) {
 	pvcl, err := NewLib(0, 1)
 
-	reading := s.TimedIMUSensorReadingResponse{
+	reading := s.TimedIMUReadingResponse{
 		LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
 	}
@@ -451,7 +451,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// test valid addIMUReading with same timestamp
 		t.Log("IMU reading 1")
-		testIMUReading := s.TimedIMUSensorReadingResponse{
+		testIMUReading := s.TimedIMUReadingResponse{
 			LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
 			ReadingTime:        timestamp.Add(imuReadingOffset),
@@ -466,7 +466,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// test valid addIMUReading with same timestamp
 		t.Log("IMU reading 2")
-		testIMUReading = s.TimedIMUSensorReadingResponse{
+		testIMUReading = s.TimedIMUReadingResponse{
 			LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
 			ReadingTime:        timestamp.Add(imuReadingOffset),
@@ -481,7 +481,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// test valid addIMUReading with same timestamp
 		t.Log("IMU reading 3")
-		testIMUReading = s.TimedIMUSensorReadingResponse{
+		testIMUReading = s.TimedIMUReadingResponse{
 			LinearAcceleration: r3.Vector{X: 0.2, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: -0.6, Y: 0, Z: 0},
 			ReadingTime:        timestamp.Add(imuReadingOffset),

@@ -103,7 +103,7 @@ func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 // tryAddLidarReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode). While add lidar
 // reading fails, keep trying to add the same reading - in offline mode we want to process each reading so if we cannot
 // acquire the lock we should try again.
-func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, reading s.TimedLidarSensorReadingResponse) {
+func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, reading s.TimedLidarReadingResponse) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -125,7 +125,7 @@ func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, readin
 // tryAddLidarReading adds a reading to the carto facade and does not retry (online).
 //
 //nolint:dupl
-func (config *Config) tryAddLidarReading(ctx context.Context, reading s.TimedLidarSensorReadingResponse) int {
+func (config *Config) tryAddLidarReading(ctx context.Context, reading s.TimedLidarReadingResponse) int {
 	startTime := time.Now().UTC()
 
 	err := config.CartoFacade.AddLidarReading(ctx, config.Timeout, config.Lidar.Name(), reading)

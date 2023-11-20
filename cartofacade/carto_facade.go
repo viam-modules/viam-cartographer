@@ -71,7 +71,7 @@ func (cf *CartoFacade) AddLidarReading(
 	ctx context.Context,
 	timeout time.Duration,
 	lidarName string,
-	currentReading s.TimedLidarSensorReadingResponse,
+	currentReading s.TimedLidarReadingResponse,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
 		sensor:  lidarName,
@@ -91,7 +91,7 @@ func (cf *CartoFacade) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
 	imuName string,
-	currentReading s.TimedIMUSensorReadingResponse,
+	currentReading s.TimedIMUReadingResponse,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
 		sensor:  imuName,
@@ -255,13 +255,13 @@ type Interface interface {
 		ctx context.Context,
 		timeout time.Duration,
 		lidarName string,
-		currentReading s.TimedLidarSensorReadingResponse,
+		currentReading s.TimedLidarReadingResponse,
 	) error
 	AddIMUReading(
 		ctx context.Context,
 		timeout time.Duration,
 		imuName string,
-		currentReading s.TimedIMUSensorReadingResponse,
+		currentReading s.TimedIMUReadingResponse,
 	) error
 	Position(
 		ctx context.Context,
@@ -318,7 +318,7 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted lidar name to string")
 		}
 
-		reading, ok := r.requestParams[reading].(s.TimedLidarSensorReadingResponse)
+		reading, ok := r.requestParams[reading].(s.TimedLidarReadingResponse)
 		if !ok {
 			return nil, errors.New("could not cast inputted byte to type sensors.TimedLidarSensorReadingResponse")
 		}
@@ -330,7 +330,7 @@ func (r *Request) doWork(
 			return nil, errors.New("could not cast inputted IMU name to string")
 		}
 
-		reading, ok := r.requestParams[reading].(s.TimedIMUSensorReadingResponse)
+		reading, ok := r.requestParams[reading].(s.TimedIMUReadingResponse)
 		if !ok {
 			return nil, errors.New("could not cast inputted reading to type sensors.TimedIMUSensorReadingResponse")
 		}

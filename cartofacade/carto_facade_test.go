@@ -320,13 +320,13 @@ func TestAddLidarReading(t *testing.T) {
 	err = pointcloud.ToPCD(pc, buf, 0)
 	test.That(t, err, test.ShouldBeNil)
 
-	reading := s.TimedLidarSensorReadingResponse{
+	reading := s.TimedLidarReadingResponse{
 		Reading:     buf.Bytes(),
 		ReadingTime: time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC),
 	}
 
 	t.Run("success", func(t *testing.T) {
-		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarSensorReadingResponse) error {
+		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarReadingResponse) error {
 			return nil
 		}
 		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "mysensor", reading)
@@ -335,7 +335,7 @@ func TestAddLidarReading(t *testing.T) {
 
 	t.Run("failure", func(t *testing.T) {
 		expectedErr := errors.New("AddLidarReading failed")
-		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarSensorReadingResponse) error {
+		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarReadingResponse) error {
 			return expectedErr
 		}
 		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "mysensor", reading)
@@ -344,7 +344,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("failure due to time out", func(t *testing.T) {
-		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarSensorReadingResponse) error {
+		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarReadingResponse) error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
@@ -372,14 +372,14 @@ func TestAddIMUReading(t *testing.T) {
 	cartoFacade.carto = &carto
 	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
 
-	testIMUReading := s.TimedIMUSensorReadingResponse{
+	testIMUReading := s.TimedIMUReadingResponse{
 		LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
 		ReadingTime:        time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC),
 	}
 
 	t.Run("success", func(t *testing.T) {
-		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUSensorReadingResponse) error {
+		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUReadingResponse) error {
 			return nil
 		}
 		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading)
@@ -388,7 +388,7 @@ func TestAddIMUReading(t *testing.T) {
 
 	t.Run("failure", func(t *testing.T) {
 		expectedErr := errors.New("AddIMUReading failed")
-		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUSensorReadingResponse) error {
+		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUReadingResponse) error {
 			return expectedErr
 		}
 		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading)
@@ -397,7 +397,7 @@ func TestAddIMUReading(t *testing.T) {
 	})
 
 	t.Run("failure due to time out", func(t *testing.T) {
-		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUSensorReadingResponse) error {
+		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUReadingResponse) error {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}

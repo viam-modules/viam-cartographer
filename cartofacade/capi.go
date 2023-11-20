@@ -55,8 +55,8 @@ type CartoInterface interface {
 	start() error
 	stop() error
 	terminate() error
-	addLidarReading(string, s.TimedLidarSensorReadingResponse) error
-	addIMUReading(string, s.TimedIMUSensorReadingResponse) error
+	addLidarReading(string, s.TimedLidarReadingResponse) error
+	addIMUReading(string, s.TimedIMUReadingResponse) error
 	position() (Position, error)
 	pointCloudMap() ([]byte, error)
 	internalState() ([]byte, error)
@@ -213,7 +213,7 @@ func (vc *Carto) terminate() error {
 }
 
 // addLidarReading is a wrapper for viam_carto_add_lidar_reading
-func (vc *Carto) addLidarReading(lidar string, reading s.TimedLidarSensorReadingResponse) error {
+func (vc *Carto) addLidarReading(lidar string, reading s.TimedLidarReadingResponse) error {
 	value := toLidarReading(lidar, reading)
 
 	status := C.viam_carto_add_lidar_reading(vc.value, &value)
@@ -231,7 +231,7 @@ func (vc *Carto) addLidarReading(lidar string, reading s.TimedLidarSensorReading
 }
 
 // addIMUReading is a wrapper for viam_carto_add_imu_reading
-func (vc *Carto) addIMUReading(imu string, reading s.TimedIMUSensorReadingResponse) error {
+func (vc *Carto) addIMUReading(imu string, reading s.TimedIMUReadingResponse) error {
 	value := toIMUReading(imu, reading)
 
 	status := C.viam_carto_add_imu_reading(vc.value, &value)
@@ -423,7 +423,7 @@ func toPositionResponse(value C.viam_carto_get_position_response) Position {
 	}
 }
 
-func toLidarReading(lidar string, reading s.TimedLidarSensorReadingResponse) C.viam_carto_lidar_reading {
+func toLidarReading(lidar string, reading s.TimedLidarReadingResponse) C.viam_carto_lidar_reading {
 	sr := C.viam_carto_lidar_reading{}
 	sensorCStr := C.CString(lidar)
 	defer C.free(unsafe.Pointer(sensorCStr))
@@ -435,7 +435,7 @@ func toLidarReading(lidar string, reading s.TimedLidarSensorReadingResponse) C.v
 	return sr
 }
 
-func toIMUReading(imu string, reading s.TimedIMUSensorReadingResponse) C.viam_carto_imu_reading {
+func toIMUReading(imu string, reading s.TimedIMUReadingResponse) C.viam_carto_imu_reading {
 	sr := C.viam_carto_imu_reading{}
 	sensorCStr := C.CString(imu)
 	defer C.free(unsafe.Pointer(sensorCStr))

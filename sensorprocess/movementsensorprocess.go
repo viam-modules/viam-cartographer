@@ -47,7 +47,7 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 	}
 
 	// add IMU data to cartographer and sleep remainder of time interval
-	timeToSleep := config.tryAddIMUReading(ctx, tsr)
+	timeToSleep := config.tryAddIMUReading(ctx, *tsr.TimedIMUResponse)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
 
@@ -82,8 +82,8 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 	// TODO: Remove dropping out of order IMU readings after DATA-1812 has been complete
 	// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
 	// update current IMU data and time
-	if config.currentIMUData == nil || config.currentIMUData.ReadingTime.Sub(tsr.ReadingTime).Milliseconds() < 0 {
-		config.updateMutexProtectedIMUData(tsr)
+	if config.currentIMUData == nil || config.currentIMUData.ReadingTime.Sub(tsr.TimedIMUResponse.ReadingTime).Milliseconds() < 0 {
+		config.updateMutexProtectedIMUData(*tsr.TimedIMUResponse)
 	} else {
 		config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n",
 			tsr.TimedIMUResponse.ReadingTime, tsr.TimedIMUResponse.ReadingTime.Unix())
@@ -95,7 +95,7 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 // tryAddIMUReadingUntilSuccess adds a reading to the cartofacade and retries on error (offline mode).
 // While add sensor reading fails, keep trying to add the same reading - in offline mode we want to
 // process each reading so if we cannot acquire the lock we should try again.
-func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading s.TimedIMUSensorReadingResponse) {
+func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading s.TimedIMUReadingResponse) {
 	for {
 		select {
 		case <-ctx.Done():
@@ -117,7 +117,7 @@ func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading 
 // tryAddIMUReading adds a reading to the carto facade and does not retry (online).
 //
 //nolint:dupl
-func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMUSensorReadingResponse) int {
+func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMUReadingResponse) int {
 	startTime := time.Now().UTC()
 	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading)
 	if err != nil {
