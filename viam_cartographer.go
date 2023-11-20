@@ -170,14 +170,6 @@ func New(
 		return nil, err
 	}
 
-	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
-		return &CartographerService{
-			Named:        c.ResourceName().AsNamed(),
-			useCloudSlam: true,
-			logger:       logger,
-		}, nil
-	}
-
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
 	if subAlgo != Dim2d {
 		return nil, errors.Errorf("%v does not have a 'mode: %v'",
@@ -295,6 +287,15 @@ func New(
 			err = errors.Wrap(err, "failed to get data from IMU")
 			return nil, err
 		}
+	}
+
+	// do not initialize CartoFacade or Sensor Processes when using cloudslam
+	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
+		return &CartographerService{
+			Named:        c.ResourceName().AsNamed(),
+			useCloudSlam: true,
+			logger:       logger,
+		}, nil
 	}
 
 	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
