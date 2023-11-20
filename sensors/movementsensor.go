@@ -5,12 +5,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	geo "github.com/kellydunn/golang-geo"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.viam.com/rdk/components/movementsensor"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
@@ -289,7 +289,7 @@ func NewMovementSensor(
 	deps resource.Dependencies,
 	movementSensorName string,
 	dataFrequencyHz int,
-	logger golog.Logger,
+	logger logging.Logger,
 ) (TimedMovementSensor, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewMovementSensor")
 	defer span.End()

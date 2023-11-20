@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/spatialmath"
 	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/test"
@@ -20,7 +20,7 @@ const (
 )
 
 func TestNewMovementSensor(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("No movement sensor provided", func(t *testing.T) {
 		lidar, movementSensor := s.GoodLidar, s.NoMovementSensor
@@ -83,7 +83,7 @@ func TestNewMovementSensor(t *testing.T) {
 }
 
 func TestProperties(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	t.Run("only IMU supported", func(t *testing.T) {
@@ -118,7 +118,7 @@ func TestProperties(t *testing.T) {
 }
 
 func TestTimedMovementSensorReading(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
 	t.Run("when the movement sensor's IMU functions return an error, timedIMUReading wraps that error", func(t *testing.T) {
