@@ -172,7 +172,7 @@ func IntegrationTimedIMU(
 	var i uint64
 	closed := false
 	injectIMU := &inject.TimedMovementSensor{}
-	injectIMU.NameFunc = func() string { return imuName }
+	injectIMU.NameFunc = func() string { return movementSensorName }
 	injectIMU.TimedMovementSensorReadingFunc = func(ctx context.Context) (s.TimedMovementSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*
