@@ -60,7 +60,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 		return nil
 	}
 
-	injectLidar := inject.TimedLidarSensor{}
+	injectLidar := inject.TimedLidar{}
 	injectLidar.NameFunc = func() string { return "good_lidar" }
 	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
@@ -166,7 +166,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 	readingTimestamp := time.Now().UTC()
 	cf := cartofacade.Mock{}
 
-	injectImu := inject.TimedIMUSensor{}
+	injectImu := inject.TimedMovementSensor{}
 	injectImu.NameFunc = func() string { return "good_imu" }
 	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
@@ -267,7 +267,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 	reading := []byte("12345")
 	readingTimestamp := time.Now().UTC()
 
-	injectLidar := inject.TimedLidarSensor{}
+	injectLidar := inject.TimedLidar{}
 	injectLidar.NameFunc = func() string { return "good_lidar" }
 	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
@@ -388,10 +388,10 @@ func TestAddIMUReadingOnline(t *testing.T) {
 	}
 	readingTimestamp := time.Now().UTC()
 
-	injectLidar := inject.TimedLidarSensor{}
+	injectLidar := inject.TimedLidar{}
 	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
-	injectImu := inject.TimedIMUSensor{}
+	injectImu := inject.TimedMovementSensor{}
 	injectImu.NameFunc = func() string { return "good_imu" }
 	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
@@ -511,7 +511,7 @@ func onlineModeLidarTestHelper(
 	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 5
 
-	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoIMU), string(testLidar), dataFrequencyHz, logger)
+	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoMovementSensor), string(testLidar), dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addLidarReadingArgs
@@ -583,7 +583,7 @@ func onlineModeIMUTestHelper(
 ) {
 	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 100
-	imu, err := s.NewIMU(context.Background(), s.SetupDeps(s.NoLidar, testImu), string(testImu), dataFrequencyHz, logger)
+	imu, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testImu), string(testImu), dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addIMUReadingArgs
@@ -614,7 +614,7 @@ func onlineModeIMUTestHelper(
 	config.IMU = imu
 
 	// set lidar data rate to signify that we are in online mode
-	injectLidar := inject.TimedLidarSensor{}
+	injectLidar := inject.TimedLidar{}
 	injectLidar.DataFrequencyHzFunc = func() int { return 100 }
 	config.Lidar = &injectLidar
 	config.currentLidarData.time = time.Now().UTC().Add(-10 * time.Second)
@@ -662,7 +662,7 @@ func invalidLidarTestHelper(
 	lidarDataFrequencyHz int,
 ) {
 	logger := logging.NewTestLogger(t)
-	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoIMU), string(testLidar), lidarDataFrequencyHz, logger)
+	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoMovementSensor), string(testLidar), lidarDataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addLidarReadingArgs
@@ -699,7 +699,7 @@ func invalidIMUTestHelper(
 	imuDataFrequencyHz int,
 ) {
 	logger := logging.NewTestLogger(t)
-	imu, err := s.NewIMU(context.Background(), s.SetupDeps(s.NoLidar, testIMU), string(testIMU), imuDataFrequencyHz, logger)
+	imu, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testIMU), string(testIMU), imuDataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var calls []addIMUReadingArgs
@@ -720,7 +720,7 @@ func invalidIMUTestHelper(
 		return nil
 	}
 
-	injectLidar := inject.TimedLidarSensor{}
+	injectLidar := inject.TimedLidar{}
 	injectLidar.DataFrequencyHzFunc = func() int { return lidarDataFrequencyHz }
 	config.Lidar = &injectLidar
 
@@ -739,7 +739,7 @@ func TestAddLidarReading(t *testing.T) {
 		return nil
 	}
 
-	injectLidar := inject.TimedLidarSensor{}
+	injectLidar := inject.TimedLidar{}
 	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
 	config := Config{
@@ -775,7 +775,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("replay sensor adds sensor data until success in offline mode", func(t *testing.T) {
-		lidar, imu := s.ReplayLidar, s.NoIMU
+		lidar, imu := s.ReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -829,7 +829,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function succeeds", func(t *testing.T) {
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -846,7 +846,7 @@ func TestAddLidarReading(t *testing.T) {
 		}
 		config.RunFinalOptimizationFunc = runFinalOptimizationFunc
 
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -864,7 +864,7 @@ func TestAddIMUReading(t *testing.T) {
 
 	cf := cartofacade.Mock{}
 
-	injectImu := inject.TimedIMUSensor{}
+	injectImu := inject.TimedMovementSensor{}
 	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
@@ -902,10 +902,10 @@ func TestAddIMUReading(t *testing.T) {
 	t.Run("replay sensor adds IMU data until success in offline mode", func(t *testing.T) {
 		lidar, imu := s.NoLidar, s.ReplayIMU
 		dataFrequencyHz := 0
-		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
+		replayIMU, err := s.NewMovementSensor(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 
-		injectLidar := inject.TimedLidarSensor{}
+		injectLidar := inject.TimedLidar{}
 		injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 
 		var calls []addIMUReadingArgs
@@ -962,7 +962,7 @@ func TestAddIMUReading(t *testing.T) {
 	t.Run("returns true when IMU returns an error that it reached end of dataset", func(t *testing.T) {
 		lidar, imu := s.NoLidar, s.FinishedReplayIMU
 		dataFrequencyHz := 0
-		replayIMU, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
+		replayIMU, err := s.NewMovementSensor(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replayIMU
@@ -977,7 +977,7 @@ func TestStartLidar(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	injectLidar := inject.TimedLidarSensor{}
+	injectLidar := inject.TimedLidar{}
 	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
 	config := Config{
@@ -991,7 +991,7 @@ func TestStartLidar(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -1003,7 +1003,7 @@ func TestStartLidar(t *testing.T) {
 	})
 
 	t.Run("returns false when lidar returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
-		lidar, imu := s.FinishedReplayLidar, s.NoIMU
+		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -1021,7 +1021,7 @@ func TestStartIMU(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	injectImu := inject.TimedIMUSensor{}
+	injectImu := inject.TimedMovementSensor{}
 	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
@@ -1036,10 +1036,10 @@ func TestStartIMU(t *testing.T) {
 	t.Run("returns true when IMU returns an error that it reached end of dataset but the context is valid", func(t *testing.T) {
 		lidar, imu := s.NoLidar, s.FinishedReplayIMU
 		dataFrequencyHz := 0
-		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
+		replaySensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 
-		injectLidar := inject.TimedLidarSensor{}
+		injectLidar := inject.TimedLidar{}
 		injectLidar.DataFrequencyHzFunc = func() int { return 0 }
 
 		config.IMU = replaySensor
@@ -1053,7 +1053,7 @@ func TestStartIMU(t *testing.T) {
 	t.Run("returns false when IMU returns an error that it reached end of dataset but the context was cancelled", func(t *testing.T) {
 		lidar, imu := s.NoLidar, s.FinishedReplayIMU
 		dataFrequencyHz := 0
-		replaySensor, err := s.NewIMU(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
+		replaySensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.IMU = replaySensor

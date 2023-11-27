@@ -47,7 +47,7 @@ func (config *Config) addLidarReading(ctx context.Context) bool {
 // by cartographer.
 func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	// get next lidar data response
-	tsr, status, err := getTimedLidarSensorReading(ctx, config)
+	tsr, status, err := getTimedLidarReading(ctx, config)
 	if err != nil {
 		return status
 	}
@@ -89,7 +89,7 @@ func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
 	}
 
 	// get next lidar data response
-	tsr, status, err := getTimedLidarSensorReading(ctx, config)
+	tsr, status, err := getTimedLidarReading(ctx, config)
 	if err != nil {
 		return status
 	}
@@ -140,10 +140,10 @@ func (config *Config) tryAddLidarReading(ctx context.Context, reading []byte, re
 	return int(math.Max(0, float64(1000/config.Lidar.DataFrequencyHz()-timeElapsedMs)))
 }
 
-// getTimedLidarSensorReading returns the next lidar reading if available along with a status denoting if the
+// getTimedLidarReading returns the next lidar reading if available along with a status denoting if the
 // end of dataset has been reached.
-func getTimedLidarSensorReading(ctx context.Context, config *Config) (s.TimedLidarSensorReadingResponse, bool, error) {
-	tsr, err := config.Lidar.TimedLidarSensorReading(ctx)
+func getTimedLidarReading(ctx context.Context, config *Config) (s.TimedLidarReadingResponse, bool, error) {
+	tsr, err := config.Lidar.TimedLidarReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode

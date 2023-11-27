@@ -48,15 +48,15 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 
 	// parse IMU reading
 	sr := cartofacade.IMUReading{
-		LinearAcceleration: tsr.LinearAcceleration,
-		AngularVelocity:    tsr.AngularVelocity,
+		LinearAcceleration: tsr.TimedIMUResponse.LinearAcceleration,
+		AngularVelocity:    tsr.TimedIMUResponse.AngularVelocity,
 	}
 
 	// update stored IMU time
-	config.updateMutexProtectedIMUData(tsr.ReadingTime, sr)
+	config.updateMutexProtectedIMUData(tsr.TimedIMUResponse.ReadingTime, sr)
 
 	// add IMU data to cartographer and sleep remainder of time interval
-	timeToSleep := config.tryAddIMUReading(ctx, sr, tsr.ReadingTime)
+	timeToSleep := config.tryAddIMUReading(ctx, sr, tsr.TimedIMUResponse.ReadingTime)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
 
@@ -90,17 +90,18 @@ func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
 
 	// parse IMU reading
 	sr := cartofacade.IMUReading{
-		LinearAcceleration: tsr.LinearAcceleration,
-		AngularVelocity:    tsr.AngularVelocity,
+		LinearAcceleration: tsr.TimedIMUResponse.LinearAcceleration,
+		AngularVelocity:    tsr.TimedIMUResponse.AngularVelocity,
 	}
 
 	// TODO: Remove dropping out of order IMU readings after DATA-1812 has been complete
 	// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
 	// update current IMU data and time
-	if config.currentIMUData.time.Sub(tsr.ReadingTime).Milliseconds() < 0 {
-		config.updateMutexProtectedIMUData(tsr.ReadingTime, sr)
+	if config.currentIMUData.time.Sub(tsr.TimedIMUResponse.ReadingTime).Milliseconds() < 0 {
+		config.updateMutexProtectedIMUData(tsr.TimedIMUResponse.ReadingTime, sr)
 	} else {
-		config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n", tsr.ReadingTime, tsr.ReadingTime.Unix())
+		config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n",
+			tsr.TimedIMUResponse.ReadingTime, tsr.TimedIMUResponse.ReadingTime.Unix())
 	}
 
 	return false
@@ -147,8 +148,8 @@ func (config *Config) tryAddIMUReading(ctx context.Context, reading cartofacade.
 
 // getTimedIMUSensorReading returns the next IMU reading if available along with a status denoting if the
 // end of dataset has been reached.
-func getTimedIMUSensorReading(ctx context.Context, config *Config) (s.TimedIMUSensorReadingResponse, bool, error) {
-	tsr, err := config.IMU.TimedIMUSensorReading(ctx)
+func getTimedIMUSensorReading(ctx context.Context, config *Config) (s.TimedMovementSensorReadingResponse, bool, error) {
+	tsr, err := config.IMU.TimedMovementSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
 		// only end the sensor process if we are in offline mode

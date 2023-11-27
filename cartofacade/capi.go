@@ -118,7 +118,6 @@ type CartoAlgoConfig struct {
 	MaxRange             float32
 	MinRange             float32
 	UseIMUData           bool
-	UseOdometerData      bool
 	MaxSubmapsToKeep     int
 	FreshSubmapsCount    int
 	MinCoveredArea       float64

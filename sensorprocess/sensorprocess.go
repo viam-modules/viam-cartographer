@@ -20,10 +20,10 @@ type Config struct {
 	CartoFacade            cartofacade.Interface
 	sensorProcessStartTime time.Time
 
-	Lidar            s.TimedLidarSensor
+	Lidar            s.TimedLidar
 	currentLidarData LidarData
 
-	IMU            s.TimedIMUSensor
+	IMU            s.TimedMovementSensor
 	currentIMUData IMUData
 
 	Timeout                  time.Duration

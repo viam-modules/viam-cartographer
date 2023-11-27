@@ -14,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
 	"go.uber.org/zap/zapcore"
-	"go.viam.com/rdk/components/movementsensor"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
@@ -41,8 +40,6 @@ const (
 	defaultLidarDataFrequencyHz          = 5
 	defaultMovementSensorDataFrequencyHz = 20
 	defaultDialMaxTimeoutSec             = 30
-	defaultSensorValidationMaxTimeoutSec = 30
-	defaultSensorValidationIntervalSec   = 1
 	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
@@ -56,7 +53,6 @@ var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
 	MaxRange:             25.0,
 	MinRange:             0.2,
 	UseIMUData:           false,
-	UseOdometerData:      false,
 	MaxSubmapsToKeep:     3,
 	FreshSubmapsCount:    3,
 	MinCoveredArea:       1.0,
@@ -85,8 +81,6 @@ func init() {
 				deps,
 				c,
 				logger,
-				defaultSensorValidationMaxTimeoutSec,
-				defaultSensorValidationIntervalSec,
 				defaultCartoFacadeTimeout,
 				defaultCartoFacadeInternalTimeout,
 				nil,
@@ -123,7 +117,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 	spConfig := sensorprocess.Config{
 		CartoFacade:              cartoSvc.cartofacade,
 		Lidar:                    cartoSvc.lidar,
-		IMU:                      cartoSvc.imu,
+		IMU:                      cartoSvc.movementSensor,
 		Timeout:                  cartoSvc.cartoFacadeTimeout,
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
@@ -155,12 +149,10 @@ func New(
 	deps resource.Dependencies,
 	c resource.Config,
 	logger logging.Logger,
-	sensorValidationMaxTimeoutSec int,
-	sensorValidationIntervalSec int,
 	cartoFacadeTimeout time.Duration,
 	cartoFacadeInternalTimeout time.Duration,
-	testTimedLidarSensorOverride s.TimedLidarSensor,
-	testTimedIMUSensorOverride s.TimedIMUSensor,
+	testTimedLidarOverride s.TimedLidar,
+	testTimedMovementSensorOverride s.TimedMovementSensor,
 ) (slam.Service, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::slamService::New")
 	defer span.End()
@@ -206,26 +198,12 @@ func New(
 	}
 
 	// Get the movement sensor if one is configured and check if it supports an IMU and/or odometer.
-	var imuSupported, odometerSupported bool
+	var timedMovementSensor s.TimedMovementSensor
 	if movementSensorName == "" {
 		logger.Info("no movement sensor configured, proceeding without IMU and without odometer")
-	} else {
-		imuSupported, odometerSupported, err = checkIfIMUAndOdometerSupported(ctx, deps, movementSensorName)
-	}
-
-	// Get the IMU if it is supported
-	var timedIMU s.TimedIMUSensor
-	if imuSupported {
-		timedIMU, err = s.NewIMU(ctx, deps, movementSensorName, optionalConfigParams.MovementSensorDataFrequencyHz, logger)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// Get the odometer if it is supported
-	if odometerSupported {
-		// TODO[kat]: Add when working on https://viam.atlassian.net/browse/RSDK-4860
-		logger.Info("odometer is not yet supported")
+	} else if timedMovementSensor, err = s.NewMovementSensor(ctx, deps, movementSensorName,
+		optionalConfigParams.MovementSensorDataFrequencyHz, logger); err != nil {
+		return nil, err
 	}
 
 	// Need to be able to shut down the sensor process before the cartoFacade
@@ -233,31 +211,29 @@ func New(
 	cancelCartoFacadeCtx, cancelCartoFacadeFunc := context.WithCancel(context.Background())
 
 	// Override the sensors for testing if the override sensors are not nil
-	if testTimedLidarSensorOverride != nil {
-		timedLidar = testTimedLidarSensorOverride
+	if testTimedLidarOverride != nil {
+		timedLidar = testTimedLidarOverride
 	}
-	if testTimedIMUSensorOverride != nil {
-		timedIMU = testTimedIMUSensorOverride
+	if testTimedMovementSensorOverride != nil {
+		timedMovementSensor = testTimedMovementSensorOverride
 	}
 
 	// Cartographer SLAM Service Object
 	cartoSvc := &CartographerService{
-		Named:                         c.ResourceName().AsNamed(),
-		lidar:                         timedLidar,
-		imu:                           timedIMU,
-		movementSensorName:            movementSensorName,
-		subAlgo:                       subAlgo,
-		configParams:                  svcConfig.ConfigParams,
-		cancelSensorProcessFunc:       cancelSensorProcessFunc,
-		cancelCartoFacadeFunc:         cancelCartoFacadeFunc,
-		logger:                        logger,
-		sensorValidationMaxTimeoutSec: sensorValidationMaxTimeoutSec,
-		sensorValidationIntervalSec:   sensorValidationMaxTimeoutSec,
-		cartoFacadeTimeout:            cartoFacadeTimeout,
-		cartoFacadeInternalTimeout:    cartoFacadeInternalTimeout,
-		mapTimestamp:                  time.Now().UTC(),
-		enableMapping:                 optionalConfigParams.EnableMapping,
-		existingMap:                   optionalConfigParams.ExistingMap,
+		Named:                      c.ResourceName().AsNamed(),
+		lidar:                      timedLidar,
+		movementSensor:             timedMovementSensor,
+		movementSensorName:         movementSensorName,
+		subAlgo:                    subAlgo,
+		configParams:               svcConfig.ConfigParams,
+		cancelSensorProcessFunc:    cancelSensorProcessFunc,
+		cancelCartoFacadeFunc:      cancelCartoFacadeFunc,
+		logger:                     logger,
+		cartoFacadeTimeout:         cartoFacadeTimeout,
+		cartoFacadeInternalTimeout: cartoFacadeInternalTimeout,
+		mapTimestamp:               time.Now().UTC(),
+		enableMapping:              optionalConfigParams.EnableMapping,
+		existingMap:                optionalConfigParams.ExistingMap,
 	}
 
 	defer func() {
@@ -268,26 +244,6 @@ func New(
 			}
 		}
 	}()
-	if err = s.ValidateGetLidarData(
-		cancelSensorProcessCtx,
-		timedLidar,
-		time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-		time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
-		cartoSvc.logger); err != nil {
-		err = errors.Wrap(err, "failed to get data from lidar")
-		return nil, err
-	}
-	if cartoSvc.imu != nil {
-		if err = s.ValidateGetIMUData(
-			cancelSensorProcessCtx,
-			timedIMU,
-			time.Duration(sensorValidationMaxTimeoutSec)*time.Second,
-			time.Duration(cartoSvc.sensorValidationIntervalSec)*time.Second,
-			cartoSvc.logger); err != nil {
-			err = errors.Wrap(err, "failed to get data from IMU")
-			return nil, err
-		}
-	}
 
 	// do not initialize CartoFacade or Sensor Processes when using cloudslam
 	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
@@ -298,36 +254,13 @@ func New(
 		}, nil
 	}
 
-	err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc)
-	if err != nil {
+	if err = initCartoFacade(cancelCartoFacadeCtx, cartoSvc); err != nil {
 		return nil, err
 	}
 
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
 
 	return cartoSvc, nil
-}
-
-func checkIfIMUAndOdometerSupported(ctx context.Context, deps resource.Dependencies, movementSensorName string) (bool, bool, error) {
-	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
-	if err != nil {
-		return false, false, errors.Wrapf(err, "error getting movement sensor \"%v\" for slam service", movementSensorName)
-	}
-
-	properties, err := movementSensor.Properties(ctx, make(map[string]interface{}))
-	if err != nil {
-		errMessage := "error getting movement sensor properties from movement sensor \"" + movementSensorName +
-			"\" for slam service"
-		return false, false, errors.Wrap(err, errMessage)
-	}
-
-	// A movement sensor used as an IMU must support LinearAcceleration and AngularVelocity.
-	imuSupported := properties.LinearAccelerationSupported && properties.AngularVelocitySupported
-
-	// A movement sensor used as an odometer must support Position and Orientation.
-	odometerSupported := properties.PositionSupported && properties.OrientationSupported
-
-	return imuSupported, odometerSupported, nil
 }
 
 func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger) (cartofacade.CartoAlgoConfig, error) {
@@ -465,7 +398,8 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	if cartoSvc.movementSensorName == "" {
 		cartoSvc.logger.Debug("No movement sensor provided, setting use_imu_data to false")
 	} else {
-		if cartoSvc.imu != nil {
+		movementSensorProperties := cartoSvc.movementSensor.Properties()
+		if movementSensorProperties.IMUSupported {
 			cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
 			cartoAlgoConfig.UseIMUData = true
 		} else {
@@ -523,8 +457,8 @@ type CartographerService struct {
 	mu                 sync.Mutex
 	SlamMode           cartofacade.SlamMode
 	closed             bool
-	lidar              s.TimedLidarSensor
-	imu                s.TimedIMUSensor
+	lidar              s.TimedLidar
+	movementSensor     s.TimedMovementSensor
 	movementSensorName string
 	subAlgo            SubAlgo
 
@@ -540,10 +474,8 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp                  time.Time
-	sensorValidationMaxTimeoutSec int
-	sensorValidationIntervalSec   int
-	jobDone                       atomic.Bool
+	mapTimestamp time.Time
+	jobDone      atomic.Bool
 
 	useCloudSlam  bool
 	enableMapping bool

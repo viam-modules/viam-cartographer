@@ -7,16 +7,16 @@ import (
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
-// TimedLidarSensor is an injected TimedLidarSensor.
-type TimedLidarSensor struct {
+// TimedLidar is an injected TimedLidar.
+type TimedLidar struct {
 	s.Lidar
-	NameFunc                    func() string
-	DataFrequencyHzFunc         func() int
-	TimedLidarSensorReadingFunc func(ctx context.Context) (s.TimedLidarSensorReadingResponse, error)
+	NameFunc              func() string
+	DataFrequencyHzFunc   func() int
+	TimedLidarReadingFunc func(ctx context.Context) (s.TimedLidarReadingResponse, error)
 }
 
 // Name calls the injected Name or the real version.
-func (tls *TimedLidarSensor) Name() string {
+func (tls *TimedLidar) Name() string {
 	if tls.NameFunc == nil {
 		return tls.Lidar.Name()
 	}
@@ -24,17 +24,17 @@ func (tls *TimedLidarSensor) Name() string {
 }
 
 // DataFrequencyHz calls the injected DataFrequencyHz or the real version.
-func (tls *TimedLidarSensor) DataFrequencyHz() int {
+func (tls *TimedLidar) DataFrequencyHz() int {
 	if tls.DataFrequencyHzFunc == nil {
 		return tls.Lidar.DataFrequencyHz()
 	}
 	return tls.DataFrequencyHzFunc()
 }
 
-// TimedLidarSensorReading calls the injected TimedLidarSensorReading or the real version.
-func (tls *TimedLidarSensor) TimedLidarSensorReading(ctx context.Context) (s.TimedLidarSensorReadingResponse, error) {
-	if tls.TimedLidarSensorReadingFunc == nil {
-		return tls.Lidar.TimedLidarSensorReading(ctx)
+// TimedLidarReading calls the injected TimedLidarReading or the real version.
+func (tls *TimedLidar) TimedLidarReading(ctx context.Context) (s.TimedLidarReadingResponse, error) {
+	if tls.TimedLidarReadingFunc == nil {
+		return tls.Lidar.TimedLidarReading(ctx)
 	}
-	return tls.TimedLidarSensorReadingFunc(ctx)
+	return tls.TimedLidarReadingFunc(ctx)
 }
