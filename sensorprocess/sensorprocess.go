@@ -19,7 +19,7 @@ var defaultTime = time.Time{}
 type Config struct {
 	CartoFacade            cartofacade.Interface
 	sensorProcessStartTime time.Time
-	Online                 bool
+	IsOnline               bool
 
 	Lidar            s.TimedLidar
 	currentLidarData *s.TimedLidarReadingResponse

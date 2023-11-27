@@ -320,7 +320,7 @@ func (r *Request) doWork(
 
 		reading, ok := r.requestParams[reading].(s.TimedLidarReadingResponse)
 		if !ok {
-			return nil, errors.New("could not cast inputted byte to type sensors.TimedLidarSensorReadingResponse")
+			return nil, errors.New("could not cast inputted reading to type sensors.TimedLidarSensorReadingResponse")
 		}
 
 		return nil, cf.carto.addLidarReading(lidar, reading)

@@ -67,7 +67,7 @@ func TestAddLidarReadingOffline(t *testing.T) {
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		Online:                   injectLidar.DataFrequencyHzFunc() != 0,
+		IsOnline:                 injectLidar.DataFrequencyHzFunc() != 0,
 		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: runFinalOptimizationFunc,
@@ -169,7 +169,7 @@ func TestAddIMUReadingOffline(t *testing.T) {
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		Online:      false,
+		IsOnline:    false,
 		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
 	}
@@ -268,7 +268,7 @@ func TestAddLidarReadingOnline(t *testing.T) {
 	config := Config{
 		Logger:                   logger,
 		CartoFacade:              &cf,
-		Online:                   injectLidar.DataFrequencyHzFunc() != 0,
+		IsOnline:                 injectLidar.DataFrequencyHzFunc() != 0,
 		Lidar:                    &injectLidar,
 		Timeout:                  10 * time.Second,
 		RunFinalOptimizationFunc: cf.RunFinalOptimization,
@@ -387,7 +387,7 @@ func TestAddIMUReadingOnline(t *testing.T) {
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		Online:      injectLidar.DataFrequencyHzFunc() != 0,
+		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
 		Lidar:       &injectLidar,
 		IMU:         &injectImu,
 		Timeout:     10 * time.Second,
@@ -522,7 +522,7 @@ func onlineModeLidarTestHelper(
 
 	config.CartoFacade = &cf
 	config.Lidar = lidar
-	config.Online = lidar.DataFrequencyHz() != 0
+	config.IsOnline = lidar.DataFrequencyHz() != 0
 
 	jobDone := config.addLidarReading(ctx)
 	test.That(t, len(calls), test.ShouldEqual, 1)
@@ -594,8 +594,7 @@ func onlineModeIMUTestHelper(
 	config.CartoFacade = &cf
 	config.IMU = imu
 
-	config.Online = true
-	// config.currentLidarData.ReadingTime = time.Now().UTC().Add(-10 * time.Second)
+	config.IsOnline = true
 	config.sensorProcessStartTime = time.Time{}.Add(time.Millisecond)
 
 	jobDone := config.addIMUReading(ctx)
@@ -728,7 +727,7 @@ func TestAddLidarReading(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("returns error in online mode when lidar GetData returns error, doesn't try to add lidar data", func(t *testing.T) {
-		config.Online = true
+		config.IsOnline = true
 		invalidLidarTestHelper(
 			ctx,
 			t,
@@ -740,7 +739,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("returns error in online mode when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-		config.Online = true
+		config.IsOnline = true
 		invalidLidarTestHelper(
 			ctx,
 			t,
@@ -752,7 +751,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("replay sensor adds sensor data until success in offline mode", func(t *testing.T) {
-		config.Online = false
+		config.IsOnline = false
 		lidar, imu := s.ReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
@@ -797,17 +796,17 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("online replay lidar adds sensor reading once and ignores errors", func(t *testing.T) {
-		config.Online = true
+		config.IsOnline = true
 		onlineModeLidarTestHelper(ctx, t, config, cf, s.ReplayLidar)
 	})
 
 	t.Run("online lidar adds sensor reading once and ignores errors", func(t *testing.T) {
-		config.Online = true
+		config.IsOnline = true
 		onlineModeLidarTestHelper(ctx, t, config, cf, s.GoodLidar)
 	})
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function succeeds", func(t *testing.T) {
-		config.Online = false
+		config.IsOnline = false
 		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
 		dataFrequencyHz := 0
 		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
@@ -820,7 +819,7 @@ func TestAddLidarReading(t *testing.T) {
 	})
 
 	t.Run("returns true when lidar returns an error that it reached end of dataset and optimization function fails", func(t *testing.T) {
-		config.Online = false
+		config.IsOnline = false
 		runFinalOptimizationFunc = func(context.Context, time.Duration) error {
 			return errors.New("test error")
 		}
