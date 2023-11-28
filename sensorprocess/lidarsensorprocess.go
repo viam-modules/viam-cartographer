@@ -22,7 +22,7 @@ func (config *Config) StartLidar(ctx context.Context) bool {
 		case <-ctx.Done():
 			return false
 		default:
-			if jobDone := config.addLidarReading(ctx); jobDone {
+			if jobDone := config.addLidarReadingInOnline(ctx); jobDone {
 				config.Logger.Info("Beginning final optimization")
 				err := config.RunFinalOptimizationFunc(ctx, config.InternalTimeout)
 				if err != nil {
@@ -34,18 +34,9 @@ func (config *Config) StartLidar(ctx context.Context) bool {
 	}
 }
 
-// addLidarReading adds a lidar reading to the cartofacade, using the lidar's data rate to determine whether to run in
-// offline or online mode.
-func (config *Config) addLidarReading(ctx context.Context) bool {
-	if config.IsOnline {
-		return config.addLidarReadingsInOnline(ctx)
-	}
-	return config.addLidarReadingsInOffline(ctx)
-}
-
 // addLidarReadingsInOnline ensures the most recent lidar scan, after any corresponding IMU scans, gets processed
 // by cartographer.
-func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
+func (config *Config) addLidarReadingInOnline(ctx context.Context) bool {
 	// get next lidar data response
 	tsr, status, err := getTimedLidarReading(ctx, config)
 	if err != nil {
@@ -56,46 +47,6 @@ func (config *Config) addLidarReadingsInOnline(ctx context.Context) bool {
 	timeToSleep := config.tryAddLidarReading(ctx, tsr)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
-
-	return false
-}
-
-// addLidarReadingsInOffline ensures lidar scans get added in a time ordered series with any desired
-// IMU scans without skipping any.
-func (config *Config) addLidarReadingsInOffline(ctx context.Context) bool {
-	// Extract current IMU reading time for ordering data ingestion
-	config.Mutex.Lock()
-	currentIMUTime := time.Time{}
-	if config.currentIMUData != nil {
-		currentIMUTime = config.currentIMUData.ReadingTime
-	}
-	config.Mutex.Unlock()
-
-	// If an IMU exists, skip adding measurement until the current lidar time is after the current IMU timestamp
-	if config.IMU != nil && config.currentLidarData != nil && config.currentLidarData.ReadingTime.Sub(currentIMUTime).Milliseconds() > 0 {
-		time.Sleep(10 * time.Millisecond)
-		return false
-	}
-
-	// Add current lidar data if it is non-nil
-	if config.currentLidarData != nil {
-		config.tryAddLidarReadingUntilSuccess(ctx, *config.currentLidarData)
-
-		config.Mutex.Lock()
-		if config.sensorProcessStartTime == defaultTime {
-			config.sensorProcessStartTime = config.currentLidarData.ReadingTime
-		}
-		config.Mutex.Unlock()
-	}
-
-	// get next lidar data response
-	tsr, status, err := getTimedLidarReading(ctx, config)
-	if err != nil {
-		return status
-	}
-
-	// update stored lidar timestamp
-	config.updateMutexProtectedLidarData(tsr)
 
 	return false
 }

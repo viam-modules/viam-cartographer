@@ -126,20 +126,31 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		Mutex:                    &sync.Mutex{},
 	}
 
-	cartoSvc.sensorProcessWorkers.Add(1)
-	go func() {
-		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
-			cartoSvc.jobDone.Store(true)
-			cartoSvc.cancelSensorProcessFunc()
-		}
-	}()
-
-	if spConfig.IMU != nil {
+	if spConfig.Online {
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
-			_ = spConfig.StartIMU(cancelCtx)
+			if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
+				cartoSvc.jobDone.Store(true)
+				cartoSvc.cancelSensorProcessFunc()
+			}
+		}()
+
+		if spConfig.IMU != nil {
+			cartoSvc.sensorProcessWorkers.Add(1)
+			go func() {
+				defer cartoSvc.sensorProcessWorkers.Done()
+				_ = spConfig.StartIMU(cancelCtx)
+			}()
+		}
+	} else {
+		cartoSvc.sensorProcessWorkers.Add(1)
+		go func() {
+			defer cartoSvc.sensorProcessWorkers.Done()
+			if jobDone := spConfig.StartOfflineSensorProcess(cancelCtx); jobDone {
+				cartoSvc.jobDone.Store(true)
+				cartoSvc.cancelSensorProcessFunc()
+			}
 		}()
 	}
 }

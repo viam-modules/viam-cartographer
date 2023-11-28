@@ -22,26 +22,17 @@ func (config *Config) StartIMU(ctx context.Context) bool {
 		case <-ctx.Done():
 			return false
 		default:
-			if jobDone := config.addIMUReading(ctx); jobDone {
+			if jobDone := config.addIMUReadingInOnline(ctx); jobDone {
 				return true
 			}
 		}
 	}
 }
 
-// addIMUReading adds an IMU reading to the cartofacade, using the lidar's data rate to determine whether to run in
-// offline or online mode.
-func (config *Config) addIMUReading(ctx context.Context) bool {
-	if config.IsOnline {
-		return config.addIMUReadingInOnline(ctx)
-	}
-	return config.addIMUReadingInOffline(ctx)
-}
-
 // addIMUReadingInOnline ensures the most recent IMU scan, after corresponding lidar scans, gets processed by cartographer.
 func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 	// get next IMU data response
-	tsr, status, err := getTimedIMUSensorReading(ctx, config)
+	tsr, status, err := getTimedMovementSensorReading(ctx, config)
 	if err != nil {
 		return status
 	}
@@ -50,44 +41,6 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) bool {
 	timeToSleep := config.tryAddIMUReading(ctx, *tsr.TimedIMUResponse)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
-
-	return false
-}
-
-// addIMUReadingInOffline ensures IMU scans get added in a time ordered series with any desired
-// lidar scans without skipping any.
-func (config *Config) addIMUReadingInOffline(ctx context.Context) bool {
-	// extract current lidar reading time for ordering data ingestion
-	config.Mutex.Lock()
-	sensorProcessStartTime := config.sensorProcessStartTime
-	config.Mutex.Unlock()
-
-	if sensorProcessStartTime != defaultTime && config.currentIMUData != nil {
-		// skip adding measurement if IMU data has been defined but occurs before first lidar data
-		if sensorProcessStartTime.Sub(config.currentIMUData.ReadingTime).Milliseconds() >= 0 {
-			time.Sleep(10 * time.Millisecond)
-			return false
-		}
-
-		// add IMU data
-		config.tryAddIMUReadingUntilSuccess(ctx, *config.currentIMUData)
-	}
-
-	// get next IMU data response
-	tsr, status, err := getTimedIMUSensorReading(ctx, config)
-	if err != nil {
-		return status
-	}
-
-	// TODO: Remove dropping out of order IMU readings after DATA-1812 has been complete
-	// JIRA Ticket: https://viam.atlassian.net/browse/DATA-1812
-	// update current IMU data and time
-	if config.currentIMUData == nil || config.currentIMUData.ReadingTime.Sub(tsr.TimedIMUResponse.ReadingTime).Milliseconds() < 0 {
-		config.updateMutexProtectedIMUData(*tsr.TimedIMUResponse)
-	} else {
-		config.Logger.Debugf("%v \t | IMU | Dropping data \t \t | %v \n",
-			tsr.TimedIMUResponse.ReadingTime, tsr.TimedIMUResponse.ReadingTime.Unix())
-	}
 
 	return false
 }
@@ -119,8 +72,7 @@ func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading 
 //nolint:dupl
 func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMUReadingResponse) int {
 	startTime := time.Now().UTC()
-	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading)
-	if err != nil {
+	if err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading); err != nil {
 		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)
@@ -133,9 +85,9 @@ func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMURe
 	return int(math.Max(0, float64(1000/config.IMU.DataFrequencyHz()-timeElapsedMs)))
 }
 
-// getTimedIMUSensorReading returns the next IMU reading if available along with a status denoting if the
-// end of dataset has been reached.
-func getTimedIMUSensorReading(ctx context.Context, config *Config) (s.TimedMovementSensorReadingResponse, bool, error) {
+// getTimedMovementSensorReading returns the next movement sensor reading if available along with a status
+// denoting if the end of dataset has been reached.
+func getTimedMovementSensorReading(ctx context.Context, config *Config) (s.TimedMovementSensorReadingResponse, bool, error) {
 	tsr, err := config.IMU.TimedMovementSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)

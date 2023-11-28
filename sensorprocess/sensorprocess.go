@@ -17,15 +17,11 @@ var defaultTime = time.Time{}
 
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
-	CartoFacade            cartofacade.Interface
-	sensorProcessStartTime time.Time
-	IsOnline               bool
+	CartoFacade cartofacade.Interface
+	IsOnline    bool
 
-	Lidar            s.TimedLidar
-	currentLidarData *s.TimedLidarReadingResponse
-
-	IMU            s.TimedMovementSensor
-	currentIMUData *s.TimedIMUReadingResponse
+	Lidar s.TimedLidar
+	IMU   s.TimedMovementSensor
 
 	Timeout                  time.Duration
 	InternalTimeout          time.Duration
@@ -35,16 +31,47 @@ type Config struct {
 	Mutex *sync.Mutex
 }
 
-// Update currentIMUData under a mutex lock.
-func (config *Config) updateMutexProtectedIMUData(data s.TimedIMUReadingResponse) {
-	config.Mutex.Lock()
-	config.currentIMUData = &data
-	config.Mutex.Unlock()
-}
+func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
+	// get the initial lidar reading
+	lidarReading, lidarEndOfDataSetReached, err := getTimedLidarReading(ctx, config)
+	if err != nil || lidarEndOfDataSetReached {
+		return lidarEndOfDataSetReached
+	}
 
-// Update currentLidarData under a mutex lock.
-func (config *Config) updateMutexProtectedLidarData(data s.TimedLidarReadingResponse) {
-	config.Mutex.Lock()
-	config.currentLidarData = &data
-	config.Mutex.Unlock()
+	// get the initial IMU reading; discard all IMU readings that were recorded before the first lidar reading
+	var imuReading s.TimedIMUReadingResponse
+	for {
+		msReading, msEndOfDataSetReached, err := getTimedMovementSensorReading(ctx, config)
+		if err != nil || msEndOfDataSetReached {
+			return msEndOfDataSetReached
+		}
+		imuReading = *msReading.TimedIMUResponse
+		if imuReading.ReadingTime.After(lidarReading.ReadingTime) {
+			break
+		}
+	}
+
+	// loop over all the data until one of the datasets has reached its end
+	for {
+		select {
+		case <-ctx.Done():
+			return false
+		default:
+			// insert the reading with the earliest time stamp
+			if lidarReading.ReadingTime.Before(imuReading.ReadingTime) || lidarReading.ReadingTime.Equal(imuReading.ReadingTime) {
+				config.tryAddLidarReadingUntilSuccess(ctx, lidarReading)
+				lidarReading, lidarEndOfDataSetReached, err = getTimedLidarReading(ctx, config)
+				if err != nil || lidarEndOfDataSetReached {
+					return lidarEndOfDataSetReached
+				}
+			} else {
+				config.tryAddIMUReadingUntilSuccess(ctx, imuReading)
+				msReading, msEndOfDataSetReached, err := getTimedMovementSensorReading(ctx, config)
+				if err != nil || msEndOfDataSetReached {
+					return msEndOfDataSetReached
+				}
+				imuReading = *msReading.TimedIMUResponse
+			}
+		}
+	}
 }
