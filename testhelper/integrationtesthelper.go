@@ -152,14 +152,14 @@ func IntegrationTimedLidar(
 // ensure test outputs of cartographer are deterministic.
 func IntegrationTimedIMU(
 	t *testing.T,
-	imuName string,
+	movementSensorName string,
 	replay bool,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *TimeTracker,
 ) (s.TimedMovementSensor, error) {
 	// Return nil if IMU is not requested
-	if imuName == "" {
+	if movementSensorName == "" {
 		return nil, nil
 	}
 
@@ -172,7 +172,7 @@ func IntegrationTimedIMU(
 	var i uint64
 	closed := false
 	injectIMU := &inject.TimedMovementSensor{}
-	injectIMU.NameFunc = func() string { return imuName }
+	injectIMU.NameFunc = func() string { return movementSensorName }
 	injectIMU.TimedMovementSensorReadingFunc = func(ctx context.Context) (s.TimedMovementSensorReadingResponse, error) {
 		defer timeTracker.Mu.Unlock()
 		/*
