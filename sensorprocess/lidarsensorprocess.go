@@ -23,11 +23,7 @@ func (config *Config) StartLidar(ctx context.Context) bool {
 			return false
 		default:
 			if jobDone := config.addLidarReadingInOnline(ctx); jobDone {
-				config.Logger.Info("Beginning final optimization")
-				err := config.RunFinalOptimizationFunc(ctx, config.InternalTimeout)
-				if err != nil {
-					config.Logger.Error("Failed to finish processing all sensor readings: ", err)
-				}
+				config.runFinalOptimization(ctx)
 				return true
 			}
 		}

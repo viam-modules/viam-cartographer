@@ -62,16 +62,29 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 				config.tryAddLidarReadingUntilSuccess(ctx, lidarReading)
 				lidarReading, lidarEndOfDataSetReached, err = getTimedLidarReading(ctx, config)
 				if err != nil || lidarEndOfDataSetReached {
+					if lidarEndOfDataSetReached {
+						config.runFinalOptimization(ctx)
+					}
 					return lidarEndOfDataSetReached
 				}
 			} else {
 				config.tryAddIMUReadingUntilSuccess(ctx, imuReading)
 				msReading, msEndOfDataSetReached, err := getTimedMovementSensorReading(ctx, config)
 				if err != nil || msEndOfDataSetReached {
+					if msEndOfDataSetReached {
+						config.runFinalOptimization(ctx)
+					}
 					return msEndOfDataSetReached
 				}
 				imuReading = *msReading.TimedIMUResponse
 			}
 		}
+	}
+}
+
+func (config *Config) runFinalOptimization(ctx context.Context) {
+	config.Logger.Info("Beginning final optimization")
+	if err := config.RunFinalOptimizationFunc(ctx, config.InternalTimeout); err != nil {
+		config.Logger.Error("Failed to finish processing all sensor readings: ", err)
 	}
 }
