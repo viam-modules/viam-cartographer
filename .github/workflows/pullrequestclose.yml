@@ -25,4 +25,6 @@ jobs:
 
     - name: Delete Files
       run: |
-        gsutil rm "gs://packages.viam.com/apps/slam-server/carto_grpc_server-pr-${{ github.event.pull_request.number }}-*" || true
+        gsutil rm 
+"gs://packages.viam.com/apps/slam-server/cartographer-module-${{ 
+github.event.pull_request.number }}-*" || true
