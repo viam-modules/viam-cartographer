@@ -126,7 +126,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		Mutex:                    &sync.Mutex{},
 	}
 
-	if spConfig.Online {
+	if spConfig.IsOnline {
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
