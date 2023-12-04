@@ -25,6 +25,7 @@ type Config struct {
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
+// StartOfflineSensorProcess TODO[kat].
 func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 	// get the initial lidar reading
 	lidarReading, lidarEndOfDataSetReached, err := getTimedLidarReading(ctx, config)
@@ -57,7 +58,6 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 			if config.IMU == nil ||
 				lidarReading.ReadingTime.Before(imuReading.ReadingTime) ||
 				lidarReading.ReadingTime.Equal(imuReading.ReadingTime) {
-
 				config.tryAddLidarReadingUntilSuccess(ctx, lidarReading)
 				lidarReading, lidarEndOfDataSetReached, err = getTimedLidarReading(ctx, config)
 				if err != nil || lidarEndOfDataSetReached {

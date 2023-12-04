@@ -374,7 +374,6 @@ func TestAddIMUReadingOnline(t *testing.T) {
 	t.Run("online IMU adds sensor reading once and ignores errors", func(t *testing.T) {
 		onlineModeIMUTestHelper(context.Background(), t, config, cf, s.GoodIMU)
 	})
-
 }
 
 func onlineModeLidarTestHelper(

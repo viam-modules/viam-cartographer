@@ -130,7 +130,8 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
 	}
 
-	pointcloud, _ := pointcloud.ReadPCD(bytes.NewReader(pcd))
+	pointcloud, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
+	test.That(t, err, test.ShouldBeNil)
 	t.Logf("Pointcloud points: %v", pointcloud.Size())
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
 }

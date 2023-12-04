@@ -69,7 +69,7 @@ func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading 
 
 // tryAddIMUReading adds a reading to the carto facade and does not retry (online).
 //
-//nolint:dupl
+
 func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMUReadingResponse) int {
 	startTime := time.Now().UTC()
 	if err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading); err != nil {
