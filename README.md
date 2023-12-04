@@ -107,6 +107,7 @@ make lint
 ### Testing
 
 ```bash
+make build
 make test
 ```
 ### Working with submodules

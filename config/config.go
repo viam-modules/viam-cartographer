@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/edaniels/golog"
 	"github.com/pkg/errors"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/utils"
 )
 
@@ -28,12 +28,12 @@ type Config struct {
 
 // OptionalConfigParams holds the optional config parameters of SLAM.
 type OptionalConfigParams struct {
-	LidarDataFrequencyHz int
-	ImuName              string
-	ImuDataFrequencyHz   int
-	MapRateSec           int
-	EnableMapping        bool
-	ExistingMap          string
+	LidarDataFrequencyHz          int
+	MovementSensorName            string
+	MovementSensorDataFrequencyHz int
+	MapRateSec                    int
+	EnableMapping                 bool
+	ExistingMap                   string
 }
 
 var (
@@ -60,9 +60,9 @@ func (config *Config) Validate(path string) ([]string, error) {
 	}
 	deps = append(deps, cameraName)
 
-	imuName, imuExists := config.MovementSensor["name"]
-	if imuExists && imuName != "" {
-		deps = append(deps, imuName)
+	movementSensorName, movementSensorExists := config.MovementSensor["name"]
+	if movementSensorExists && movementSensorName != "" {
+		deps = append(deps, movementSensorName)
 	}
 
 	if config.ConfigParams["mode"] == "" {
@@ -74,7 +74,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,
 // and returns them.
-func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultIMUDataFrequencyHz int, logger golog.Logger,
+func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultMovementSensorDataFrequencyHz int, logger logging.Logger,
 ) (OptionalConfigParams, error) {
 	var optionalConfigParams OptionalConfigParams
 
@@ -93,25 +93,25 @@ func GetOptionalParameters(config *Config, defaultLidarDataFrequencyHz, defaultI
 	}
 
 	// Validate movement sensor info and set defaults
-	if imuName, exists := config.MovementSensor["name"]; exists && imuName != "" {
-		optionalConfigParams.ImuName = imuName
+	if movementSensorName, exists := config.MovementSensor["name"]; exists && movementSensorName != "" {
+		optionalConfigParams.MovementSensorName = movementSensorName
 		if strMovementSensorDataFreqHz, ok := config.MovementSensor["data_frequency_hz"]; !ok {
 			if optionalConfigParams.LidarDataFrequencyHz == 0 {
-				optionalConfigParams.ImuDataFrequencyHz = 0
+				optionalConfigParams.MovementSensorDataFrequencyHz = 0
 				logger.Warn("camera[data_frequency_hz] is set to 0, " +
 					"setting movement_sensor[data_frequency_hz] to 0")
 			} else {
-				optionalConfigParams.ImuDataFrequencyHz = defaultIMUDataFrequencyHz
+				optionalConfigParams.MovementSensorDataFrequencyHz = defaultMovementSensorDataFrequencyHz
 				logger.Warnf("config did not provide movement_sensor[data_frequency_hz], "+
-					"setting to default value of %d", defaultIMUDataFrequencyHz)
+					"setting to default value of %d", defaultMovementSensorDataFrequencyHz)
 			}
 		} else {
-			imuDataFreqHz, err := strconv.Atoi(strMovementSensorDataFreqHz)
+			movementSensorDataFreqHz, err := strconv.Atoi(strMovementSensorDataFreqHz)
 			if err != nil {
 				return OptionalConfigParams{}, newError("movement_sensor[data_frequency_hz] must only contain digits")
 			}
-			if imuDataFreqHz != 0 {
-				optionalConfigParams.ImuDataFrequencyHz = imuDataFreqHz
+			if movementSensorDataFreqHz != 0 {
+				optionalConfigParams.MovementSensorDataFrequencyHz = movementSensorDataFreqHz
 			}
 		}
 	}

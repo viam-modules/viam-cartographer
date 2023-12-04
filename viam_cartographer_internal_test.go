@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	commonv1 "go.viam.com/api/common/v1"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
@@ -18,7 +18,7 @@ import (
 	"go.viam.com/utils/artifact"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	"github.com/viamrobotics/viam-cartographer/sensors/inject"
 )
 
 func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orientation {
@@ -94,9 +94,9 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("empty component reference success", func(t *testing.T) {
 		lidarName := ""
-		mockLidar := sensors.TimedLidarSensorMock{}
-		mockLidar.NameFunc = func() string { return lidarName }
-		svc.lidar = &mockLidar
+		injectLidar := inject.TimedLidar{}
+		injectLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &injectLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
@@ -105,9 +105,9 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("origin pose success", func(t *testing.T) {
 		lidarName := "primarySensor1"
-		mockLidar := sensors.TimedLidarSensorMock{}
-		mockLidar.NameFunc = func() string { return lidarName }
-		svc.lidar = &mockLidar
+		injectLidar := inject.TimedLidar{}
+		injectLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &injectLidar
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
@@ -116,9 +116,9 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("non origin pose success", func(t *testing.T) {
 		lidarName := "primarySensor2"
-		mockLidar := sensors.TimedLidarSensorMock{}
-		mockLidar.NameFunc = func() string { return lidarName }
-		svc.lidar = &mockLidar
+		injectLidar := inject.TimedLidar{}
+		injectLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &injectLidar
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
 
@@ -127,9 +127,9 @@ func TestPositionEndpoint(t *testing.T) {
 
 	t.Run("error case", func(t *testing.T) {
 		lidarName := "primarySensor3"
-		mockLidar := sensors.TimedLidarSensorMock{}
-		mockLidar.NameFunc = func() string { return lidarName }
-		svc.lidar = &mockLidar
+		injectLidar := inject.TimedLidar{}
+		injectLidar.NameFunc = func() string { return lidarName }
+		svc.lidar = &injectLidar
 
 		mockCartoFacade.PositionFunc = func(
 			ctx context.Context,
@@ -316,7 +316,7 @@ func TestInternalStateEndpoint(t *testing.T) {
 }
 
 func TestParseCartoAlgoConfig(t *testing.T) {
-	logger := golog.NewTestLogger(t)
+	logger := logging.NewTestLogger(t)
 
 	t.Run("returns default when config params are empty", func(t *testing.T) {
 		defaultCartoAlgoCfg := cartofacade.CartoAlgoConfig{

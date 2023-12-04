@@ -1,47 +1,110 @@
 {
   "components": [
     {
-      "model": "viam:lidar:rplidar",
-      "attributes": {
-        "device_path": "/dev/tty.SLAB_USBtoUART"
-      },
-      "name": "rplidar",
       "namespace": "rdk",
       "type": "camera",
-      "depends_on": []
-    }
-  ],
-  "services": [
-    {
-      "name": "slam-test",
-      "model": "viam:slam:cartographer",
-      "type": "slam",
+      "model": "viam:lidar:rplidar",
       "attributes": {
-        "port": "localhost:8083",
-        "data_dir": "/Users/USERNAME/test-delete-me",
-        "delete_processed_data": true,
-        "use_live_data": true,
-        "map_rate_sec": 30,
-        "sensors": [
-          "rplidar"
-        ],
-        "config_params": {
-          "optimize_on_start": "true",
-          "num_range_data": "100",
-          "mode": "2d",
-          "max_submaps_to_keep": "2"
+        "device_path": "/dev/tty.usbserial-0001"
+      },
+      "name": "rplidar_test",
+      "depends_on": [],
+      "service_configs": [
+        {
+          "type": "data_manager",
+          "attributes": {
+            "capture_methods": [
+              {
+                "disabled": false,
+                "method": "NextPointCloud",
+                "capture_frequency_hz": 5
+              }
+            ]
+          }
         }
-      }
+      ]
+    },
+    {
+      "name": "imu",
+      "model": "imu-wit",
+      "type": "movement_sensor",
+      "namespace": "rdk",
+      "attributes": {
+        "serial_path": "/dev/tty.usbserial-0001"
+      },
+      "depends_on": [],
+      "service_configs": [
+        {
+          "type": "data_manager",
+          "attributes": {
+            "capture_methods": [
+              {
+                "method": "AngularVelocity",
+                "capture_frequency_hz": 20,
+                "disabled": false
+              },
+              {
+                "method": "LinearAcceleration",
+                "capture_frequency_hz": 20,
+                "disabled": false
+              }
+            ]
+          }
+        }
+      ]
     }
   ],
   "modules": [
     {
-      "executable_path": "/usr/local/bin/rplidar-module",
-      "name": "rplidar_module"
+      "name": "cartographer-module",
+      "executable_path": "/usr/local/bin/cartographer-module",
+      "type": "local"
     },
     {
-      "executable_path": "/usr/local/bin/cartographer-module",
-      "name": "cartographer-module"
+      "executable_path": "/opt/homebrew/bin/rplidar-module",
+      "type": "local",
+      "name": "rplidar-module"
+    },
+    {
+      "type": "registry",
+      "name": "viam_cartographer",
+      "module_id": "viam:cartographer",
+      "version": "<VERSION>"
+    }
+  ],
+  "services": [
+    {
+      "name": "slam",
+      "type": "slam",
+      "namespace": "rdk",
+      "model": "viam:slam:cartographer",
+      "attributes": {
+        "config_params": {
+          "mode": "2d",
+          "min_range_meters": "0.2",
+          "max_range_meters": "25"
+        },
+        "camera": {
+          "name": "rplidar_test",
+          "data_frequency_hz": "5"
+        },
+        "movement_sensor": {
+          "name": "imu",
+          "data_frequency_hz": "20"
+        },
+        "enable_mapping": true,
+        "use_cloud_slam": true
+      }
+    },
+    {
+      "name": "Data-Management-Service",
+      "type": "data_manager",
+      "attributes": {
+        "sync_interval_mins": 0.1,
+        "capture_dir": "",
+        "tags": [],
+        "additional_sync_paths": []
+      }
     }
   ]
 }

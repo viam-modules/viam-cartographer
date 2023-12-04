@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/edaniels/golog"
+	"go.viam.com/rdk/logging"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
 // defaultTime is used to check if timestamps have not been set yet.
@@ -19,51 +19,32 @@ var defaultTime = time.Time{}
 type Config struct {
 	CartoFacade            cartofacade.Interface
 	sensorProcessStartTime time.Time
+	IsOnline               bool
 
-	Lidar                sensors.TimedLidarSensor
-	LidarName            string
-	LidarDataFrequencyHz int
-	currentLidarData     LidarData
+	Lidar            s.TimedLidar
+	currentLidarData *s.TimedLidarReadingResponse
 
-	IMU                sensors.TimedIMUSensor
-	IMUName            string
-	IMUDataFrequencyHz int
-	currentIMUData     IMUData
+	IMU            s.TimedMovementSensor
+	currentIMUData *s.TimedIMUReadingResponse
 
 	Timeout                  time.Duration
 	InternalTimeout          time.Duration
-	Logger                   golog.Logger
+	Logger                   logging.Logger
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 
 	Mutex *sync.Mutex
 }
 
-// IMUData stores the next data to be added to cartographer along with its associated timestamp so that,
-// in offline mode, data from multiple sensors can be added in order.
-type IMUData struct {
-	time time.Time
-	data cartofacade.IMUReading
-}
-
-// LidarData stores the next data to be added to cartographer along with its associated timestamp so that,
-// in offline mode, data from multiple sensors can be added in order.
-type LidarData struct {
-	time time.Time
-	data []byte
-}
-
 // Update currentIMUData under a mutex lock.
-func (config *Config) updateMutexProtectedIMUData(time time.Time, data cartofacade.IMUReading) {
+func (config *Config) updateMutexProtectedIMUData(data s.TimedIMUReadingResponse) {
 	config.Mutex.Lock()
-	config.currentIMUData.time = time
-	config.currentIMUData.data = data
+	config.currentIMUData = &data
 	config.Mutex.Unlock()
 }
 
 // Update currentLidarData under a mutex lock.
-func (config *Config) updateMutexProtectedLidarData(time time.Time, data []byte) {
+func (config *Config) updateMutexProtectedLidarData(data s.TimedLidarReadingResponse) {
 	config.Mutex.Lock()
-	config.currentLidarData.time = time
-	config.currentLidarData.data = data
+	config.currentLidarData = &data
 	config.Mutex.Unlock()
 }

@@ -8,12 +8,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
-	"github.com/viamrobotics/gostream"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/components/movementsensor"
+	"go.viam.com/rdk/gostream"
+	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
@@ -31,42 +31,52 @@ import (
 const (
 	// SlamTimeFormat is the timestamp format used in the dataprocess.
 	SlamTimeFormat = "2006-01-02T15:04:05.0000Z"
-	// SensorValidationMaxTimeoutSecForTest is used in the ValidateGetAndSaveData
-	// function to ensure that the sensor in the GetAndSaveData function
-	// returns data within an acceptable time.
-	SensorValidationMaxTimeoutSecForTest = 1
-	// SensorValidationIntervalSecForTest is used in the ValidateGetAndSaveData
-	// function for the while loop that attempts to grab data from the
-	// sensor that is used in the GetAndSaveData function.
-	SensorValidationIntervalSecForTest = 1
 	// CartoFacadeTimeoutForTest is the timeout used for capi requests for tests.
 	CartoFacadeTimeoutForTest = 5 * time.Second
 	// CartoFacadeInternalTimeoutForTest is the timeout used for internal capi requests for tests.
 	CartoFacadeInternalTimeoutForTest = 15 * time.Minute
+
+	// LidarWithErroringFunctions is a lidar whose functions return errors.
+	LidarWithErroringFunctions s.TestSensor = "stub_lidar"
+	// MovementSensorWithErroringFunctions is a movement sensor whose functions return errors.
+	MovementSensorWithErroringFunctions s.TestSensor = "stub_movement_sensor"
+	// NoMovementSensor is a movement sensor that represents that no movement sensor is set up or added.
+	NoMovementSensor s.TestSensor = ""
+)
+
+var (
+	testLidars = map[s.TestSensor]func(*testing.T) *inject.Camera{
+		LidarWithErroringFunctions: getLidarWithErroringFunctions,
+	}
+
+	testMovementSensors = map[s.TestSensor]func(*testing.T) *inject.MovementSensor{
+		MovementSensorWithErroringFunctions: getMovementSensorWithErroringFunctions,
+		NoMovementSensor:                    nil,
+	}
 )
 
 // SetupStubDeps returns stubbed dependencies based on the camera
 // the stubs fail tests if called.
-func SetupStubDeps(cameraName, movementSensorName string, t *testing.T) resource.Dependencies {
+func SetupStubDeps(lidarName, movementSensorName s.TestSensor, t *testing.T) resource.Dependencies {
 	deps := make(resource.Dependencies)
-	switch cameraName {
-	case "stub_lidar":
-		deps[camera.Named(cameraName)] = getStubLidar(t)
-	default:
-		t.Errorf("SetupStubDeps called with unhandled camera: %s", cameraName)
+	if getLidarFunc, ok := testLidars[lidarName]; ok {
+		deps[camera.Named(string(lidarName))] = getLidarFunc(t)
+	} else {
+		t.Errorf("SetupStubDeps called with unhandled camera: %s", string(lidarName))
 	}
-	switch movementSensorName {
-	case "stub_imu":
-		deps[movementsensor.Named(movementSensorName)] = getStubIMU(t)
-	case "":
-	default:
-		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", movementSensorName)
+
+	if getMovementSensorFunc, ok := testMovementSensors[movementSensorName]; ok {
+		if getMovementSensorFunc != nil {
+			deps[movementsensor.Named(string(movementSensorName))] = getMovementSensorFunc(t)
+		}
+	} else {
+		t.Errorf("SetupStubDeps called with unhandled movement sensor: %s", string(movementSensorName))
 	}
 
 	return deps
 }
 
-func getStubLidar(t *testing.T) *inject.Camera {
+func getLidarWithErroringFunctions(t *testing.T) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		t.Error("TEST FAILED stub lidar NextPointCloud called")
@@ -88,23 +98,23 @@ func getStubLidar(t *testing.T) *inject.Camera {
 	return cam
 }
 
-func getStubIMU(t *testing.T) *inject.MovementSensor {
-	imu := &inject.MovementSensor{}
-	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		t.Error("TEST FAILED stub IMU LinearAcceleration called")
+func getMovementSensorWithErroringFunctions(t *testing.T) *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		t.Error("TEST FAILED stub movement sensor LinearAcceleration called")
 		return r3.Vector{}, errors.New("invalid sensor")
 	}
-	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		t.Error("TEST FAILED stub IMU AngularVelocity called")
+	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		t.Error("TEST FAILED stub movement sensor AngularVelocity called")
 		return spatialmath.AngularVelocity{}, errors.New("invalid sensor")
 	}
-	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
 			AngularVelocitySupported:    true,
 			LinearAccelerationSupported: true,
 		}, nil
 	}
-	return imu
+	return movementSensor
 }
 
 // ClearDirectory deletes the contents in the path directory
@@ -120,9 +130,9 @@ func ClearDirectory(t *testing.T, path string) {
 func CreateIntegrationSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	timedLidar s.TimedLidarSensor,
-	timedIMU s.TimedIMUSensor,
-	logger golog.Logger,
+	timedLidar s.TimedLidar,
+	timedMovementSensor s.TimedMovementSensor,
+	logger logging.Logger,
 ) (slam.Service, error) {
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
@@ -132,25 +142,23 @@ func CreateIntegrationSLAMService(
 	if err != nil {
 		return nil, err
 	}
-	if timedIMU == nil {
+	if timedMovementSensor == nil {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"]})
 	} else {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cfg.Camera["name"], cfg.MovementSensor["name"]})
 	}
 
-	deps := SetupStubDeps(cfg.Camera["name"], cfg.MovementSensor["name"], t)
+	deps := SetupStubDeps(s.TestSensor(cfg.Camera["name"]), s.TestSensor(cfg.MovementSensor["name"]), t)
 
 	svc, err := viamcartographer.New(
 		ctx,
 		deps,
 		cfgService,
 		logger,
-		SensorValidationMaxTimeoutSecForTest,
-		SensorValidationIntervalSecForTest,
 		CartoFacadeTimeoutForTest,
 		CartoFacadeInternalTimeoutForTest,
 		timedLidar,
-		timedIMU,
+		timedMovementSensor,
 	)
 	if err != nil {
 		test.That(t, svc, test.ShouldBeNil)
@@ -166,7 +174,7 @@ func CreateIntegrationSLAMService(
 func CreateSLAMService(
 	t *testing.T,
 	cfg *vcConfig.Config,
-	logger golog.Logger,
+	logger logging.Logger,
 ) (slam.Service, error) {
 	t.Helper()
 
@@ -179,23 +187,21 @@ func CreateSLAMService(
 	}
 
 	cameraName := cfg.Camera["name"]
-	imuName := cfg.MovementSensor["name"]
+	movementSensorName := cfg.MovementSensor["name"]
 
-	if imuName == "" {
+	if movementSensorName == "" {
 		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName})
 	} else {
-		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName, imuName})
+		test.That(t, sensorDeps, test.ShouldResemble, []string{cameraName, movementSensorName})
 	}
 
-	deps := s.SetupDeps(cameraName, imuName)
+	deps := s.SetupDeps(s.TestSensor(cameraName), s.TestSensor(movementSensorName))
 
 	svc, err := viamcartographer.New(
 		ctx,
 		deps,
 		cfgService,
 		logger,
-		SensorValidationMaxTimeoutSecForTest,
-		SensorValidationIntervalSecForTest,
 		CartoFacadeTimeoutForTest,
 		CartoFacadeInternalTimeoutForTest,
 		nil,
@@ -228,7 +234,7 @@ func ResetFolder(path string) error {
 }
 
 // InitTestCL initializes the carto library & returns a function to terminate it.
-func InitTestCL(t *testing.T, logger golog.Logger) func() {
+func InitTestCL(t *testing.T, logger logging.Logger) func() {
 	t.Helper()
 	err := viamcartographer.InitCartoLib(logger)
 	test.That(t, err, test.ShouldBeNil)
