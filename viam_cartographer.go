@@ -123,7 +123,6 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
 		Logger:                   cartoSvc.logger,
 		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
-		Mutex:                    &sync.Mutex{},
 	}
 
 	if spConfig.IsOnline {
