@@ -70,8 +70,6 @@ func (config *Config) tryAddLidarReadingUntilSuccess(ctx context.Context, readin
 }
 
 // tryAddLidarReading adds a reading to the carto facade and does not retry (online).
-//
-
 func (config *Config) tryAddLidarReading(ctx context.Context, reading s.TimedLidarReadingResponse) int {
 	startTime := time.Now().UTC()
 

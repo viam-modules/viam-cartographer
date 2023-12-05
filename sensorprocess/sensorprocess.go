@@ -25,7 +25,8 @@ type Config struct {
 	RunFinalOptimizationFunc func(context.Context, time.Duration) error
 }
 
-// StartOfflineSensorProcess TODO[kat].
+// StartOfflineSensorProcess starts the process of adding lidar and movement sensor data
+// in a deterministically defined order to cartographer.
 func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 	// get the initial lidar reading
 	lidarReading, lidarEndOfDataSetReached, err := getTimedLidarReading(ctx, config)
