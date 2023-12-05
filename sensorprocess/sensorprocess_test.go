@@ -97,15 +97,17 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 
 		countAddedLidarData := 0
 		cf.AddLidarReadingFunc = func(ctx context.Context, timeout time.Duration,
-			lidarName string, currentReading s.TimedLidarReadingResponse) error {
-			countAddedLidarData += 1
+			lidarName string, currentReading s.TimedLidarReadingResponse,
+		) error {
+			countAddedLidarData++
 			return nil
 		}
 
 		countAddedIMUData := 0
 		cf.AddIMUReadingFunc = func(ctx context.Context, timeout time.Duration,
-			imuName string, currentReading s.TimedIMUReadingResponse) error {
-			countAddedIMUData += 1
+			imuName string, currentReading s.TimedIMUReadingResponse,
+		) error {
+			countAddedIMUData++
 			return nil
 		}
 
@@ -166,39 +168,39 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 			injectLidar.TimedLidarReadingFunc = func(ctx context.Context) (s.TimedLidarReadingResponse, error) {
 				if numLidarData < len(tt.lidarReadingTimeAddedMs) {
 					lidarReading.ReadingTime = now.Add(time.Duration(tt.lidarReadingTimeAddedMs[numLidarData]) * time.Millisecond)
-					numLidarData += 1
+					numLidarData++
 					return lidarReading, nil
-				} else {
-					return s.TimedLidarReadingResponse{}, replaypcd.ErrEndOfDataset
 				}
+				return s.TimedLidarReadingResponse{}, replaypcd.ErrEndOfDataset
 			}
 
 			numIMUData := 0
 			injectMovementSensor.TimedMovementSensorReadingFunc = func(ctx context.Context) (s.TimedMovementSensorReadingResponse, error) {
 				if numIMUData < len(tt.msReadingTimeAddedMs) {
 					movementSensorReading.TimedIMUResponse.ReadingTime = now.Add(time.Duration(tt.msReadingTimeAddedMs[numIMUData]) * time.Millisecond)
-					numIMUData += 1
+					numIMUData++
 					return movementSensorReading, nil
-				} else {
-					return s.TimedMovementSensorReadingResponse{}, replay.ErrEndOfDataset
 				}
+				return s.TimedMovementSensorReadingResponse{}, replay.ErrEndOfDataset
 			}
 
 			actualDataInsertions := []string{}
 
 			countAddedLidarData := 0
 			cf.AddLidarReadingFunc = func(ctx context.Context, timeout time.Duration,
-				lidarName string, currentReading s.TimedLidarReadingResponse) error {
+				lidarName string, currentReading s.TimedLidarReadingResponse,
+			) error {
 				actualDataInsertions = append(actualDataInsertions, "lidar: "+fmt.Sprint(tt.lidarReadingTimeAddedMs[numLidarData-1]))
-				countAddedLidarData += 1
+				countAddedLidarData++
 				return nil
 			}
 
 			countAddedIMUData := 0
 			cf.AddIMUReadingFunc = func(ctx context.Context, timeout time.Duration,
-				imuName string, currentReading s.TimedIMUReadingResponse) error {
+				imuName string, currentReading s.TimedIMUReadingResponse,
+			) error {
 				actualDataInsertions = append(actualDataInsertions, "imu: "+fmt.Sprint(tt.msReadingTimeAddedMs[numIMUData-1]))
-				countAddedIMUData += 1
+				countAddedIMUData++
 				return nil
 			}
 
@@ -206,7 +208,7 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 				counter := 0
 				for _, item := range list {
 					if strings.Contains(item, keyword) {
-						counter += 1
+						counter++
 					}
 				}
 				return counter
@@ -216,8 +218,6 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 			expectedCountAddedIMUData := countItemsInList(tt.expectedDataInsertions, "imu")
 
 			endOfDataSetReached := config.StartOfflineSensorProcess(context.Background())
-			fmt.Println(tt.description, tt.expectedDataInsertions, actualDataInsertions)
-			fmt.Println(tt.description, countAddedLidarData, countAddedIMUData)
 			test.That(t, endOfDataSetReached, test.ShouldBeTrue)
 			test.That(t, countAddedLidarData, test.ShouldEqual, expectedCountAddedLidarData)
 			test.That(t, countAddedIMUData, test.ShouldEqual, expectedCountAddedIMUData)
@@ -840,7 +840,6 @@ func TestTryAddLidarReading(t *testing.T) {
 			test.That(t, call.currentReading.ReadingTime, test.ShouldEqual, firstTimestamp)
 		}
 	})
-
 }
 
 func TestTryAddIMUReading(t *testing.T) {
