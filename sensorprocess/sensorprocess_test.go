@@ -523,9 +523,9 @@ func TestAddIMUReadingInOnline(t *testing.T) {
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		// IsOnline:    true,
-		IMU:     &injectImu,
-		Timeout: 10 * time.Second,
+		IsOnline:    true,
+		IMU:         &injectImu,
+		Timeout:     10 * time.Second,
 	}
 
 	t.Run("returns error when IMU GetData returns error, doesn't try to add IMU data", func(t *testing.T) {
