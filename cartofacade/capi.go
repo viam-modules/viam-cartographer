@@ -17,7 +17,9 @@ import (
 	"errors"
 	"unsafe"
 
+	geo "github.com/kellydunn/golang-geo"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
+	"go.viam.com/rdk/spatialmath"
 )
 
 // CartoLib holds the c type viam_carto_lib
@@ -57,6 +59,7 @@ type CartoInterface interface {
 	terminate() error
 	addLidarReading(string, s.TimedLidarReadingResponse) error
 	addIMUReading(string, s.TimedIMUReadingResponse) error
+	addOdometerReading(string, s.TimedOdometerReadingResponse) error
 	position() (Position, error)
 	pointCloudMap() ([]byte, error)
 	internalState() ([]byte, error)
@@ -241,6 +244,24 @@ func (vc *Carto) addIMUReading(imu string, reading s.TimedIMUReadingResponse) er
 	}
 
 	status = C.viam_carto_add_imu_reading_destroy(&value)
+	if err := toError(status); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// addOdometerReading is a wrapper for viam_carto_add_odometer_reading
+func (vc *Carto) addOdometerReading(odometer string, reading s.TimedOdometerReadingResponse) error {
+	value := toOdometerReading(odometer, reading)
+
+	status := C.viam_carto_add_odometer_reading(vc.value, &value)
+
+	if err := toError(status); err != nil {
+		return err
+	}
+
+	status = C.viam_carto_add_odometer_reading_destroy(&value)
 	if err := toError(status); err != nil {
 		return err
 	}
@@ -452,6 +473,27 @@ func toIMUReading(imu string, reading s.TimedIMUReadingResponse) C.viam_carto_im
 	return sr
 }
 
+func toOdometerReading(odometer string, reading s.TimedOdometerReadingResponse) C.viam_carto_odometer_reading {
+	sr := C.viam_carto_odometer_reading{}
+	sensorCStr := C.CString(odometer)
+	defer C.free(unsafe.Pointer(sensorCStr))
+	sr.odometer = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(odometer)))
+
+	translation := spatialmath.GeoPointToPose(reading.Position, geo.NewPoint(0, 0)).Point()
+	rotation := reading.Orientation.Quaternion()
+
+	sr.translation_x = C.double(translation.X)
+	sr.translation_y = C.double(translation.Y)
+	sr.translation_z = C.double(translation.Z)
+	sr.rotation_x = C.double(rotation.Imag)
+	sr.rotation_y = C.double(rotation.Jmag)
+	sr.rotation_z = C.double(rotation.Kmag)
+	sr.rotation_w = C.double(rotation.Real)
+
+	sr.odometer_reading_time_unix_milli = C.int64_t(reading.ReadingTime.UnixMilli())
+	return sr
+}
+
 func bstringToByteSlice(bstr C.bstring) []byte {
 	return C.GoBytes(unsafe.Pointer(bstr.data), bstr.slen)
 }
@@ -526,6 +568,8 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH")
 	case C.VIAM_CARTO_IMU_READING_INVALID:
 		return errors.New("VIAM_CARTO_IMU_READING_INVALID")
+	case C.VIAM_CARTO_ODOMETER_READING_INVALID:
+		return errors.New("VIAM_CARTO_ODOMETER_READING_INVALID")
 	default:
 		return errors.New("status code unclassified")
 	}

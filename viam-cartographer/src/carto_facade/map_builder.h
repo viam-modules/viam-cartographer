@@ -24,6 +24,7 @@ using SensorId = cartographer::mapping::TrajectoryBuilderInterface::SensorId;
 
 const SensorId kRangeSensorId{SensorId::SensorType::RANGE, "range"};
 const SensorId kIMUSensorId{SensorId::SensorType::IMU, "imu"};
+const SensorId kOdometerSensorId{SensorId::SensorType::ODOMETRY, "odometry"};
 
 class MapBuilder {
    public:
@@ -70,12 +71,14 @@ class MapBuilder {
     // GetGlobalPose returns the local pose based on the provided a local pose.
     cartographer::transform::Rigid3d GetGlobalPose();
 
-    // AddSensorData adds sensor data to cartographer's internal state
-    // throws if adding sensor data fails.
+    // AddSensorData adds sensor data to cartographer's internal state.
+    // Throws if adding sensor data fails.
     void AddSensorData(const std::string &sensor_id,
                        cartographer::sensor::TimedPointCloudData measurement);
     void AddSensorData(const std::string &sensor_id,
                        cartographer::sensor::ImuData measurement);
+    void AddSensorData(const std::string &sensor_id,
+                       cartographer::sensor::OdometryData measurement);
 
     // GetLocalSlamResultCallback saves the local pose in the
     // local_slam_result_poses array.

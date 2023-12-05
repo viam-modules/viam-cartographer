@@ -89,6 +89,18 @@ typedef struct viam_carto_imu_reading {
     int64_t imu_reading_time_unix_milli;
 } viam_carto_imu_reading;
 
+typedef struct viam_carto_odometer_reading {
+    bstring odometer;
+    double translation_x;
+    double translation_y;
+    double translation_z;
+    double rotation_x;
+    double rotation_y;
+    double rotation_z;
+    double rotation_w;
+    int64_t odometer_reading_time_unix_milli;
+} viam_carto_odometer_reading;
+
 // return codes
 #define VIAM_CARTO_SUCCESS 0
 #define VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK 1
@@ -126,6 +138,7 @@ typedef struct viam_carto_imu_reading {
 #define VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH 34
 #define VIAM_CARTO_IMU_READING_EMPTY 35
 #define VIAM_CARTO_IMU_READING_INVALID 36
+#define VIAM_CARTO_ODOMETER_READING_INVALID 37
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -246,6 +259,26 @@ extern int viam_carto_add_imu_reading(viam_carto *vc,                   //
 //
 // On success: Returns 0, frees the viam_carto_imu_reading.
 extern int viam_carto_add_imu_reading_destroy(viam_carto_imu_reading *sr  //
+);
+
+// viam_carto_add_odometer_reading/3 takes a viam_carto pointer, a
+// viam_carto_odometer_reading
+//
+// On error: Returns a non 0 error code
+//
+// An expected error is VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK(1)
+//
+// On success: Returns 0, adds odometer reading to cartographer's data model
+extern int viam_carto_add_odometer_reading(viam_carto *vc,                   //
+                                      const viam_carto_odometer_reading *sr  //
+);
+
+// viam_carto_add_odometer_reading_destroy/2 takes a viam_carto pointer
+//
+// On error: Returns a non 0 error code
+//
+// On success: Returns 0, frees the viam_carto_odometer_reading.
+extern int viam_carto_add_odometer_reading_destroy(viam_carto_odometer_reading *sr  //
 );
 
 // viam_carto_get_position/3 takes a viam_carto pointer, a
@@ -401,6 +434,8 @@ class CartoFacade {
     void AddLidarReading(const viam_carto_lidar_reading *sr);
 
     void AddIMUReading(const viam_carto_imu_reading *sr);
+
+    void AddOdometerReading(const viam_carto_odometer_reading *sr);
 
     void Start();
 

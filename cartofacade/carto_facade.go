@@ -15,7 +15,8 @@ import (
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
 
-// ErrUnableToAcquireLock is the error returned from AddLidarReading and/or AddIMUReading when lock can't be acquired.
+// ErrUnableToAcquireLock is the error returned from AddLidarReading and/or AddIMUReading
+// and/or AdddOdometerReading when lock can't be acquired.
 var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 
 // Initialize calls into the cartofacade C code.
@@ -106,6 +107,26 @@ func (cf *CartoFacade) AddIMUReading(
 	return nil
 }
 
+// AddOdometerReading calls into the cartofacade C code.
+func (cf *CartoFacade) AddOdometerReading(
+	ctx context.Context,
+	timeout time.Duration,
+	odometerName string,
+	currentReading s.TimedOdometerReadingResponse,
+) error {
+	requestParams := map[RequestParamType]interface{}{
+		sensor:  odometerName,
+		reading: currentReading,
+	}
+
+	_, err := cf.request(ctx, addOdometerReading, requestParams, timeout)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Position calls into the cartofacade C code.
 func (cf *CartoFacade) Position(ctx context.Context, timeout time.Duration) (Position, error) {
 	untyped, err := cf.request(ctx, position, emptyRequestParams, timeout)
@@ -177,6 +198,8 @@ const (
 	addLidarReading
 	// addIMUReading represents the viam_carto_add_imu_reading in c.
 	addIMUReading
+	// addOdometerReading represents the viam_carto_add_odometer_reading in c.
+	addOdometerReading
 	// position represents the viam_carto_get_position call in c.
 	position
 	// internalState represents the viam_carto_get_internal_state call in c.
@@ -263,6 +286,12 @@ type Interface interface {
 		imuName string,
 		currentReading s.TimedIMUReadingResponse,
 	) error
+	AddOdometerReading(
+		ctx context.Context,
+		timeout time.Duration,
+		odometerName string,
+		currentReading s.TimedOdometerReadingResponse,
+	) error
 	Position(
 		ctx context.Context,
 		timeout time.Duration,
@@ -320,7 +349,7 @@ func (r *Request) doWork(
 
 		reading, ok := r.requestParams[reading].(s.TimedLidarReadingResponse)
 		if !ok {
-			return nil, errors.New("could not cast inputted reading to type sensors.TimedLidarSensorReadingResponse")
+			return nil, errors.New("could not cast inputted reading to type sensors.TimedLidarReadingResponse")
 		}
 
 		return nil, cf.carto.addLidarReading(lidar, reading)
@@ -332,10 +361,22 @@ func (r *Request) doWork(
 
 		reading, ok := r.requestParams[reading].(s.TimedIMUReadingResponse)
 		if !ok {
-			return nil, errors.New("could not cast inputted reading to type sensors.TimedIMUSensorReadingResponse")
+			return nil, errors.New("could not cast inputted reading to type sensors.TimedIMUReadingResponse")
 		}
 
 		return nil, cf.carto.addIMUReading(imu, reading)
+	case addOdometerReading:
+		odometer, ok := r.requestParams[sensor].(string)
+		if !ok {
+			return nil, errors.New("could not cast inputted odometer name to string")
+		}
+
+		reading, ok := r.requestParams[reading].(s.TimedOdometerReadingResponse)
+		if !ok {
+			return nil, errors.New("could not cast inputted reading to type sensors.TimedOdometerReadingResponse")
+		}
+
+		return nil, cf.carto.addOdometerReading(odometer, reading)
 	case position:
 		return cf.carto.position()
 	case internalState:
