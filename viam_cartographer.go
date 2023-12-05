@@ -129,17 +129,14 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
-			if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
-				cartoSvc.jobDone.Store(true)
-				cartoSvc.cancelSensorProcessFunc()
-			}
+			spConfig.StartLidar(cancelCtx)
 		}()
 
 		if spConfig.IMU != nil {
 			cartoSvc.sensorProcessWorkers.Add(1)
 			go func() {
 				defer cartoSvc.sensorProcessWorkers.Done()
-				_ = spConfig.StartIMU(cancelCtx)
+				spConfig.StartIMU(cancelCtx)
 			}()
 		}
 	} else {

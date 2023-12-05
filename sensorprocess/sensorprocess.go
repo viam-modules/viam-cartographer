@@ -60,7 +60,9 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 			if config.IMU == nil ||
 				lidarReading.ReadingTime.Before(imuReading.ReadingTime) ||
 				lidarReading.ReadingTime.Equal(imuReading.ReadingTime) {
-				config.tryAddLidarReadingUntilSuccess(ctx, lidarReading)
+				if err := config.tryAddLidarReadingUntilSuccess(ctx, lidarReading); err != nil {
+					return false
+				}
 				lidarReading, lidarEndOfDataSetReached, err = getTimedLidarReading(ctx, config)
 				if err != nil || lidarEndOfDataSetReached {
 					if lidarEndOfDataSetReached {
@@ -69,7 +71,9 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 					return lidarEndOfDataSetReached
 				}
 			} else {
-				config.tryAddIMUReadingUntilSuccess(ctx, imuReading)
+				if err := config.tryAddIMUReadingUntilSuccess(ctx, imuReading); err != nil {
+					return false
+				}
 				msReading, msEndOfDataSetReached, err := getTimedMovementSensorReading(ctx, config)
 				if err != nil || msEndOfDataSetReached {
 					if msEndOfDataSetReached {
