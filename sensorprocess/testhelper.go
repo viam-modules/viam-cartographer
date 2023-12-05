@@ -7,32 +7,13 @@ import (
 	"time"
 
 	"github.com/golang/geo/r3"
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
-	"github.com/viamrobotics/viam-cartographer/sensors/inject"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
-)
 
-var (
-	expectedPCD = []byte(`VERSION .7
-FIELDS x y z
-SIZE 4 4 4
-TYPE F F F
-COUNT 1 1 1
-WIDTH 0
-HEIGHT 1
-VIEWPOINT 0 0 0 1 0 0 0
-POINTS 0
-DATA binary
-`)
-
-	expectedIMUReading = s.TimedIMUReadingResponse{
-		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
-		AngularVelocity:    spatialmath.AngularVelocity{X: 0.017453292519943295, Y: 0.008726646259971648, Z: 0},
-	}
-	errUnknown = errors.New("unknown error")
+	"github.com/viamrobotics/viam-cartographer/cartofacade"
+	s "github.com/viamrobotics/viam-cartographer/sensors"
+	"github.com/viamrobotics/viam-cartographer/sensors/inject"
 )
 
 type addLidarReadingArgs struct {
@@ -46,6 +27,26 @@ type addIMUReadingArgs struct {
 	sensorName     string
 	currentReading s.TimedIMUReadingResponse
 }
+
+var (
+	//nolint:dupword
+	expectedPCD = []byte(`VERSION .7
+FIELDS x y z
+SIZE 4 4 4
+TYPE F F F
+COUNT 1 1 1
+WIDTH 0
+HEIGHT 1
+VIEWPOINT 0 0 0 1 0 0 0
+POINTS 0
+DATA binary
+`)
+	expectedIMUReading = s.TimedIMUReadingResponse{
+		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
+		AngularVelocity:    spatialmath.AngularVelocity{X: 0.017453292519943295, Y: 0.008726646259971648, Z: 0},
+	}
+	errUnknown = errors.New("unknown error")
+)
 
 func onlineModeLidarTestHelper(
 	ctx context.Context,
@@ -219,6 +220,7 @@ func invalidOnlineModeLidarTestHelper(
 		return nil
 	}
 	config.Lidar = lidar
+	config.CartoFacade = &cartoFacadeMock
 
 	err = config.addLidarReadingInOnline(ctx)
 	test.That(t, err, test.ShouldNotBeNil)
@@ -253,6 +255,7 @@ func invalidOnlineModeIMUTestHelper(
 		calls = append(calls, args)
 		return nil
 	}
+	config.CartoFacade = &cartoFacadeMock
 
 	injectLidar := inject.TimedLidar{}
 	injectLidar.DataFrequencyHzFunc = func() int { return lidarDataFrequencyHz }
