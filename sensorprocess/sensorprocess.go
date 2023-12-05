@@ -42,7 +42,8 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 				return msEndOfDataSetReached
 			}
 			imuReading = *msReading.TimedIMUResponse
-			if imuReading.ReadingTime.After(lidarReading.ReadingTime) {
+			if imuReading.ReadingTime.Equal(lidarReading.ReadingTime) ||
+				imuReading.ReadingTime.After(lidarReading.ReadingTime) {
 				break
 			}
 		}
