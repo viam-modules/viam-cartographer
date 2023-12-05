@@ -3,10 +3,14 @@ package sensorprocess
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/golang/geo/r3"
+	"go.viam.com/rdk/components/camera/replaypcd"
+	"go.viam.com/rdk/components/movementsensor/replay"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
@@ -46,6 +50,181 @@ DATA binary
 	}
 	errUnknown = errors.New("unknown error")
 )
+
+func TestStartOfflineSensorProcess(t *testing.T) {
+	logger := logging.NewTestLogger(t)
+
+	lidarReading := s.TimedLidarReadingResponse{
+		Reading:     []byte("12345"),
+		ReadingTime: time.Now().UTC(),
+	}
+
+	movementSensorReading := s.TimedMovementSensorReadingResponse{
+		TimedIMUResponse: &s.TimedIMUReadingResponse{
+			LinearAcceleration: r3.Vector{X: 1, Y: 2, Z: 3},
+			AngularVelocity:    spatialmath.AngularVelocity{X: 4, Y: 5, Z: 6},
+			ReadingTime:        time.Now().UTC(),
+		},
+	}
+
+	cf := cartofacade.Mock{}
+
+	runFinalOptimizationFunc := func(context.Context, time.Duration) error {
+		return nil
+	}
+
+	injectLidar := inject.TimedLidar{}
+	injectLidar.NameFunc = func() string { return "good_lidar" }
+	injectLidar.DataFrequencyHzFunc = func() int { return 0 }
+
+	injectMovementSensor := inject.TimedMovementSensor{}
+	injectMovementSensor.NameFunc = func() string { return "good_movement_sensor" }
+	injectMovementSensor.DataFrequencyHzFunc = func() int { return 0 }
+
+	config := Config{
+		Logger:                   logger,
+		CartoFacade:              &cf,
+		IsOnline:                 injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:                    &injectLidar,
+		Timeout:                  10 * time.Second,
+		RunFinalOptimizationFunc: runFinalOptimizationFunc,
+	}
+
+	t.Run("no data is added if lidar reached end of data set at the start", func(t *testing.T) {
+		injectLidar.TimedLidarReadingFunc = func(ctx context.Context) (s.TimedLidarReadingResponse, error) {
+			return s.TimedLidarReadingResponse{}, replaypcd.ErrEndOfDataset
+		}
+
+		countAddedLidarData := 0
+		cf.AddLidarReadingFunc = func(ctx context.Context, timeout time.Duration,
+			lidarName string, currentReading s.TimedLidarReadingResponse) error {
+			countAddedLidarData += 1
+			return nil
+		}
+
+		countAddedIMUData := 0
+		cf.AddIMUReadingFunc = func(ctx context.Context, timeout time.Duration,
+			imuName string, currentReading s.TimedIMUReadingResponse) error {
+			countAddedIMUData += 1
+			return nil
+		}
+
+		endOfDataSetReached := config.StartOfflineSensorProcess(context.Background())
+		test.That(t, endOfDataSetReached, test.ShouldBeTrue)
+		test.That(t, countAddedLidarData, test.ShouldEqual, 0)
+		test.That(t, countAddedIMUData, test.ShouldEqual, 0)
+	})
+
+	cases := []struct {
+		description             string
+		imuEnabled              bool
+		lidarReadingTimeAddedMs []int
+		msReadingTimeAddedMs    []int
+		expectedDataInsertions  []string
+	}{
+		{
+			description:             "no imu data is added if imu is not enabled",
+			imuEnabled:              false,
+			lidarReadingTimeAddedMs: []int{0, 2, 4, 6, 8},
+			msReadingTimeAddedMs:    []int{1, 3, 5},
+			expectedDataInsertions:  []string{"lidar: 0", "lidar: 2", "lidar: 4", "lidar: 6", "lidar: 8"},
+		},
+		{
+			description:             "skip imu data until first lidar data is inserted",
+			imuEnabled:              true,
+			lidarReadingTimeAddedMs: []int{5, 7},
+			msReadingTimeAddedMs:    []int{1, 2, 3, 4, 5, 6, 7, 8},
+			expectedDataInsertions:  []string{"lidar: 5", "imu: 5", "imu: 6", "lidar: 7"},
+		},
+		{
+			description:             "if imu data ends before lidar data ends, stop adding data once end of imu dataset is reached",
+			imuEnabled:              true,
+			lidarReadingTimeAddedMs: []int{2, 4, 6, 8, 10, 12},
+			msReadingTimeAddedMs:    []int{1, 3, 5},
+			expectedDataInsertions:  []string{"lidar: 2", "imu: 3", "lidar: 4", "imu: 5"},
+		},
+		{
+			description:             "if lidar data ends before imu data ends, stop adding data once end of lidar dataset is reached",
+			imuEnabled:              true,
+			lidarReadingTimeAddedMs: []int{1, 3, 5},
+			msReadingTimeAddedMs:    []int{2, 3, 4, 6, 8, 10, 12},
+			expectedDataInsertions:  []string{"lidar: 1", "imu: 2", "lidar: 3", "imu: 3", "imu: 4", "lidar: 5"},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.description, func(t *testing.T) {
+			now := time.Now().UTC()
+
+			if tt.imuEnabled {
+				config.IMU = &injectMovementSensor
+			} else {
+				config.IMU = nil
+			}
+
+			numLidarData := 0
+			injectLidar.TimedLidarReadingFunc = func(ctx context.Context) (s.TimedLidarReadingResponse, error) {
+				if numLidarData < len(tt.lidarReadingTimeAddedMs) {
+					lidarReading.ReadingTime = now.Add(time.Duration(tt.lidarReadingTimeAddedMs[numLidarData]) * time.Millisecond)
+					numLidarData += 1
+					return lidarReading, nil
+				} else {
+					return s.TimedLidarReadingResponse{}, replaypcd.ErrEndOfDataset
+				}
+			}
+
+			numIMUData := 0
+			injectMovementSensor.TimedMovementSensorReadingFunc = func(ctx context.Context) (s.TimedMovementSensorReadingResponse, error) {
+				if numIMUData < len(tt.msReadingTimeAddedMs) {
+					movementSensorReading.TimedIMUResponse.ReadingTime = now.Add(time.Duration(tt.msReadingTimeAddedMs[numIMUData]) * time.Millisecond)
+					numIMUData += 1
+					return movementSensorReading, nil
+				} else {
+					return s.TimedMovementSensorReadingResponse{}, replay.ErrEndOfDataset
+				}
+			}
+
+			actualDataInsertions := []string{}
+
+			countAddedLidarData := 0
+			cf.AddLidarReadingFunc = func(ctx context.Context, timeout time.Duration,
+				lidarName string, currentReading s.TimedLidarReadingResponse) error {
+				actualDataInsertions = append(actualDataInsertions, "lidar: "+fmt.Sprint(tt.lidarReadingTimeAddedMs[numLidarData-1]))
+				countAddedLidarData += 1
+				return nil
+			}
+
+			countAddedIMUData := 0
+			cf.AddIMUReadingFunc = func(ctx context.Context, timeout time.Duration,
+				imuName string, currentReading s.TimedIMUReadingResponse) error {
+				actualDataInsertions = append(actualDataInsertions, "imu: "+fmt.Sprint(tt.msReadingTimeAddedMs[numIMUData-1]))
+				countAddedIMUData += 1
+				return nil
+			}
+
+			countItemsInList := func(list []string, keyword string) int {
+				counter := 0
+				for _, item := range list {
+					if strings.Contains(item, keyword) {
+						counter += 1
+					}
+				}
+				return counter
+			}
+
+			expectedCountAddedLidarData := countItemsInList(tt.expectedDataInsertions, "lidar")
+			expectedCountAddedIMUData := countItemsInList(tt.expectedDataInsertions, "imu")
+
+			endOfDataSetReached := config.StartOfflineSensorProcess(context.Background())
+			fmt.Println(tt.description, tt.expectedDataInsertions, actualDataInsertions)
+			fmt.Println(tt.description, countAddedLidarData, countAddedIMUData)
+			test.That(t, endOfDataSetReached, test.ShouldBeTrue)
+			test.That(t, countAddedLidarData, test.ShouldEqual, expectedCountAddedLidarData)
+			test.That(t, countAddedIMUData, test.ShouldEqual, expectedCountAddedIMUData)
+			test.That(t, actualDataInsertions, test.ShouldResemble, tt.expectedDataInsertions)
+		})
+	}
+}
 
 func TestAddLidarReadingOnline(t *testing.T) {
 	logger := logging.NewTestLogger(t)
