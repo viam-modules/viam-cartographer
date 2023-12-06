@@ -837,7 +837,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
     {
         BOOST_TEST(viam_carto_add_lidar_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
-        // TODO[kat]: Do I need to call this here?
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
                 VIAM_CARTO_LIDAR_READING_INVALID);
     }
@@ -1376,7 +1375,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     {
         BOOST_TEST(viam_carto_add_lidar_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
-        // TODO[kat]: Do I need to call this here?
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
                 VIAM_CARTO_LIDAR_READING_INVALID);
     }
@@ -1453,7 +1451,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     {
         BOOST_TEST(viam_carto_add_imu_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
-        // TODO[kat]: Do I need to call this here?
         BOOST_TEST(viam_carto_add_imu_reading_destroy(nullptr) ==
                 VIAM_CARTO_IMU_READING_INVALID);
     }
@@ -1547,7 +1544,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     // second sensor readings
     {
         add_lidar_reading_successfully(vc, 2,
-            ".artifact/data/viam-cartographer/mock_lidar/1.pcd", 1629037853000100);
+            ".artifact/data/viam-cartographer/mock_lidar/1.pcd", 1629037853000000);
 
         double imu_reading[6] = {0.1, 0, 9.8, 0, -0.2, 0};
         add_imu_reading_successfully(vc, 2, imu_reading, 1629037853000100);
@@ -1556,26 +1553,24 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     // third sensor readings
     {
         add_lidar_reading_successfully(vc, 3,
-            ".artifact/data/viam-cartographer/mock_lidar/2.pcd", 1629037855000200);
+            ".artifact/data/viam-cartographer/mock_lidar/2.pcd", 1629037855000000);
 
         double imu_reading[6] = {0.2, 0, 9.8, -0.6, 0, 0};
         add_imu_reading_successfully(vc, 3, imu_reading, 1629037855000200);
     }
 
-    // TODO[kat]: There must be a mistake, since the below shows that nothing
-    // has changed.
     // GetPosition changed from 3 successful AddLidarReading and AddIMUReading
     // requests
     {
         viam_carto_get_position_response pr;
         BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x == 0);
-        BOOST_TEST(pr.y == 0);
+        BOOST_TEST(pr.x != 0);
+        BOOST_TEST(pr.y != 0);
         BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.imag == 0);
-        BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.real == 1);
+        BOOST_TEST(pr.imag != 0);
+        BOOST_TEST(pr.jmag != 0);
+        BOOST_TEST(pr.kmag != 0);
+        BOOST_TEST(pr.real != 1);
         BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
