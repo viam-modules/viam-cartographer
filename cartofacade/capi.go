@@ -457,11 +457,11 @@ func toLidarReading(lidar string, reading s.TimedLidarReadingResponse) C.viam_ca
 	return sr
 }
 
-func toIMUReading(movement_sensor string, reading s.TimedIMUReadingResponse) C.viam_carto_imu_reading {
+func toIMUReading(movementSensor string, reading s.TimedIMUReadingResponse) C.viam_carto_imu_reading {
 	sr := C.viam_carto_imu_reading{}
-	sensorCStr := C.CString(movement_sensor)
+	sensorCStr := C.CString(movementSensor)
 	defer C.free(unsafe.Pointer(sensorCStr))
-	sr.imu = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(movement_sensor)))
+	sr.imu = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(movementSensor)))
 
 	sr.lin_acc_x = C.double(reading.LinearAcceleration.X)
 	sr.lin_acc_y = C.double(reading.LinearAcceleration.Y)
