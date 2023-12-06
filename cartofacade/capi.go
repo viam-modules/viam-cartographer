@@ -474,11 +474,11 @@ func toIMUReading(movementSensor string, reading s.TimedIMUReadingResponse) C.vi
 	return sr
 }
 
-func toOdometerReading(odometer string, reading s.TimedOdometerReadingResponse) C.viam_carto_odometer_reading {
+func toOdometerReading(movementSensor string, reading s.TimedOdometerReadingResponse) C.viam_carto_odometer_reading {
 	sr := C.viam_carto_odometer_reading{}
-	sensorCStr := C.CString(odometer)
+	sensorCStr := C.CString(movementSensor)
 	defer C.free(unsafe.Pointer(sensorCStr))
-	sr.odometer = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(odometer)))
+	sr.odometer = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(movementSensor)))
 
 	translation := spatialmath.GeoPointToPose(reading.Position, geo.NewPoint(0, 0)).Point()
 	rotation := reading.Orientation.Quaternion()
