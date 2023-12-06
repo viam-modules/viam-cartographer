@@ -903,20 +903,23 @@ void CartoFacade::AddOdometerReading(const viam_carto_odometer_reading *sr) {
     bdestroy(movement_sensor);
 
     if (!known_sensor) {
-        VLOG(1) << "expected sensor: " << to_std_string(sr->odometer) << " to be "
-                << config.movement_sensor;
+        VLOG(1) << "expected sensor: " << to_std_string(sr->odometer)
+                << " to be " << config.movement_sensor;
         throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
     }
 
-    int64_t odometer_reading_time_unix_milli = sr->odometer_reading_time_unix_milli;
+    int64_t odometer_reading_time_unix_milli =
+        sr->odometer_reading_time_unix_milli;
 
     cartographer::sensor::OdometryData measurement;
-    measurement.time =
-        cartographer::common::FromUniversal(0) +
-        cartographer::common::FromMilliseconds(odometer_reading_time_unix_milli);
+    measurement.time = cartographer::common::FromUniversal(0) +
+                       cartographer::common::FromMilliseconds(
+                           odometer_reading_time_unix_milli);
     measurement.pose = cartographer::transform::Rigid3d(
-        cartographer::transform::Rigid3d::Vector(sr->translation_x, sr->translation_y, sr->translation_z),
-        cartographer::transform::Rigid3d::Quaternion(sr->rotation_w, sr->rotation_x, sr->rotation_y, sr->rotation_z));
+        cartographer::transform::Rigid3d::Vector(
+            sr->translation_x, sr->translation_y, sr->translation_z),
+        cartographer::transform::Rigid3d::Quaternion(
+            sr->rotation_w, sr->rotation_x, sr->rotation_y, sr->rotation_z));
 
     cartographer::transform::Rigid3d tmp_global_pose;
 
@@ -1254,8 +1257,8 @@ extern int viam_carto_add_imu_reading_destroy(viam_carto_imu_reading *sr) {
     return return_code;
 };
 
-extern int viam_carto_add_odometer_reading(viam_carto *vc,
-                                      const viam_carto_odometer_reading *sr) {
+extern int viam_carto_add_odometer_reading(
+    viam_carto *vc, const viam_carto_odometer_reading *sr) {
     if (vc == nullptr) {
         return VIAM_CARTO_VC_INVALID;
     }
@@ -1277,7 +1280,8 @@ extern int viam_carto_add_odometer_reading(viam_carto *vc,
     return VIAM_CARTO_SUCCESS;
 };
 
-extern int viam_carto_add_odometer_reading_destroy(viam_carto_odometer_reading *sr) {
+extern int viam_carto_add_odometer_reading_destroy(
+    viam_carto_odometer_reading *sr) {
     if (sr == nullptr) {
         return VIAM_CARTO_ODOMETER_READING_INVALID;
     }

@@ -61,16 +61,17 @@ viam_carto_lidar_reading new_test_lidar_reading(
     sr.lidar_reading_time_unix_milli = lidar_reading_time_unix_milli;
     return sr;
 }
-void add_lidar_reading_successfully(viam_carto *vc, int number_reading, std::string pcd_path,
-                            int64_t timestamp) {
+void add_lidar_reading_successfully(viam_carto *vc, int number_reading,
+                                    std::string pcd_path, int64_t timestamp) {
     VLOG(1) << "viam_carto_add_lidar_reading " << number_reading;
-    viam_carto_lidar_reading sr = new_test_lidar_reading("lidar", pcd_path, timestamp);
+    viam_carto_lidar_reading sr =
+        new_test_lidar_reading("lidar", pcd_path, timestamp);
     BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) == VIAM_CARTO_SUCCESS);
 }
 
-viam_carto_imu_reading new_test_imu_reading(std::string imu, double reading[6],
-                                          int64_t imu_reading_time_unix_milli) {
+viam_carto_imu_reading new_test_imu_reading(
+    std::string imu, double reading[6], int64_t imu_reading_time_unix_milli) {
     viam_carto_imu_reading sr;
     sr.imu = bfromcstr(imu.c_str());
     sr.lin_acc_x = reading[0];
@@ -83,16 +84,18 @@ viam_carto_imu_reading new_test_imu_reading(std::string imu, double reading[6],
     return sr;
 }
 
-void add_imu_reading_successfully(viam_carto *vc, int number_reading, double readings[6],
-                            int64_t timestamp) {
+void add_imu_reading_successfully(viam_carto *vc, int number_reading,
+                                  double readings[6], int64_t timestamp) {
     VLOG(1) << "viam_carto_add_imu_reading " << number_reading;
-    viam_carto_imu_reading sr = new_test_imu_reading("movement_sensor", readings, timestamp);
+    viam_carto_imu_reading sr =
+        new_test_imu_reading("movement_sensor", readings, timestamp);
     BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) == VIAM_CARTO_SUCCESS);
 }
 
-viam_carto_odometer_reading new_test_odometer_reading(std::string odometer, double reading[7],
-                                          int64_t odometer_reading_time_unix_milli) {
+viam_carto_odometer_reading new_test_odometer_reading(
+    std::string odometer, double reading[7],
+    int64_t odometer_reading_time_unix_milli) {
     viam_carto_odometer_reading sr;
     sr.odometer = bfromcstr(odometer.c_str());
     sr.translation_x = reading[0];
@@ -106,12 +109,14 @@ viam_carto_odometer_reading new_test_odometer_reading(std::string odometer, doub
     return sr;
 }
 
-void add_odometer_reading_successfully(viam_carto *vc, int number_reading, double readings[7],
-                            int64_t timestamp) {
+void add_odometer_reading_successfully(viam_carto *vc, int number_reading,
+                                       double readings[7], int64_t timestamp) {
     VLOG(1) << "viam_carto_add_odometer_reading " << number_reading;
-    viam_carto_odometer_reading sr = new_test_odometer_reading("movement_sensor", readings, timestamp);
+    viam_carto_odometer_reading sr =
+        new_test_odometer_reading("movement_sensor", readings, timestamp);
     BOOST_TEST(viam_carto_add_odometer_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(viam_carto_add_odometer_reading_destroy(&sr) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_add_odometer_reading_destroy(&sr) ==
+               VIAM_CARTO_SUCCESS);
 }
 
 viam_carto_algo_config viam_carto_algo_config_setup(bool use_imu_data) {
@@ -215,8 +220,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
                                 no_movement_sensor, false, false, "");
 
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_movement_sensor_config, ac) ==
-               VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH);
+    BOOST_TEST(
+        viam_carto_init(&vc, lib, vcc_invalid_movement_sensor_config, ac) ==
+        VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH);
 
     //  Test config validation with deprecated config structure
     fs::path deprecated_path = tmp_dir / fs::path(bfs::unique_path().string());
@@ -244,12 +250,12 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
                                 movement_sensor, false, false, "");
 
-    BOOST_TEST(viam_carto_init(nullptr, lib, vcc_with_movement_sensor_succ, ac) ==
-               VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_init(nullptr, nullptr, vcc_with_movement_sensor_succ, ac) ==
-               VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_init(&vc, nullptr, vcc_with_movement_sensor_succ, ac) ==
-               VIAM_CARTO_LIB_INVALID);
+    BOOST_TEST(viam_carto_init(nullptr, lib, vcc_with_movement_sensor_succ,
+                               ac) == VIAM_CARTO_VC_INVALID);
+    BOOST_TEST(viam_carto_init(nullptr, nullptr, vcc_with_movement_sensor_succ,
+                               ac) == VIAM_CARTO_VC_INVALID);
+    BOOST_TEST(viam_carto_init(&vc, nullptr, vcc_with_movement_sensor_succ,
+                               ac) == VIAM_CARTO_LIB_INVALID);
 
     // Invalid terminate
     BOOST_TEST(viam_carto_terminate(nullptr) == VIAM_CARTO_VC_INVALID);
@@ -271,8 +277,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
                                 no_movement_sensor, false, false, "");
 
-    BOOST_TEST(viam_carto_init(&vc2, lib, vcc_without_movement_sensor_succ, ac) ==
-               VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_init(&vc2, lib, vcc_without_movement_sensor_succ,
+                               ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(vc2->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
 
     BOOST_TEST(viam_carto_terminate(&vc2) == VIAM_CARTO_SUCCESS);
@@ -834,7 +840,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
         BOOST_TEST(viam_carto_add_lidar_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
-                VIAM_CARTO_LIDAR_READING_INVALID);
+                   VIAM_CARTO_LIDAR_READING_INVALID);
     }
 
     // viam_carto_lidar_reading nullptr
@@ -842,7 +848,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
         BOOST_TEST(viam_carto_add_lidar_reading(vc, nullptr) ==
                    VIAM_CARTO_LIDAR_READING_INVALID);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
-                VIAM_CARTO_LIDAR_READING_INVALID);
+                   VIAM_CARTO_LIDAR_READING_INVALID);
     }
 
     // lidar is not equal to component reference
@@ -961,8 +967,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
 
     // first sensor reading
     {
-        add_lidar_reading_successfully(vc, 1,
-            ".artifact/data/viam-cartographer/mock_lidar/0.pcd", 1629037851000000);
+        add_lidar_reading_successfully(
+            vc, 1, ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1629037851000000);
     }
 
     // GetPosition not initialized after only one successful reading
@@ -995,8 +1002,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
 
     // second sensor reading
     {
-        add_lidar_reading_successfully(vc, 2,
-            ".artifact/data/viam-cartographer/mock_lidar/1.pcd", 1629037853000000);
+        add_lidar_reading_successfully(
+            vc, 2, ".artifact/data/viam-cartographer/mock_lidar/1.pcd",
+            1629037853000000);
     }
 
     // GetPosition returning origin position from 2 successful AddLidarReading
@@ -1051,8 +1059,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
 
     // third sensor reading
     {
-        add_lidar_reading_successfully(vc, 3,
-            ".artifact/data/viam-cartographer/mock_lidar/2.pcd", 1629037855000000);
+        add_lidar_reading_successfully(
+            vc, 3, ".artifact/data/viam-cartographer/mock_lidar/2.pcd",
+            1629037855000000);
     }
 
     // GetPosition changed from 3 successful AddLidarReading requests
@@ -1332,8 +1341,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     // AddOdometerReading
     {
         double reading[7] = {1, 2, 3, 4, 5, 6, 7};
-        viam_carto_odometer_reading sr =
-            new_test_odometer_reading("movement_sensor", reading, 1687900053773475);
+        viam_carto_odometer_reading sr = new_test_odometer_reading(
+            "movement_sensor", reading, 1687900053773475);
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         BOOST_TEST(viam_carto_add_odometer_reading(vc, &sr) ==
@@ -1373,7 +1382,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(viam_carto_add_lidar_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
-                VIAM_CARTO_LIDAR_READING_INVALID);
+                   VIAM_CARTO_LIDAR_READING_INVALID);
     }
 
     // viam_carto_lidar_reading nullptr
@@ -1381,7 +1390,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(viam_carto_add_lidar_reading(vc, nullptr) ==
                    VIAM_CARTO_LIDAR_READING_INVALID);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
-                VIAM_CARTO_LIDAR_READING_INVALID);
+                   VIAM_CARTO_LIDAR_READING_INVALID);
     }
 
     // lidar name is not equal to the configured component reference
@@ -1454,7 +1463,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(viam_carto_add_imu_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
         BOOST_TEST(viam_carto_add_imu_reading_destroy(nullptr) ==
-                VIAM_CARTO_IMU_READING_INVALID);
+                   VIAM_CARTO_IMU_READING_INVALID);
     }
 
     // viam_carto_imu_reading nullptr
@@ -1462,7 +1471,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(viam_carto_add_imu_reading(vc, nullptr) ==
                    VIAM_CARTO_IMU_READING_INVALID);
         BOOST_TEST(viam_carto_add_imu_reading_destroy(nullptr) ==
-                VIAM_CARTO_IMU_READING_INVALID);
+                   VIAM_CARTO_IMU_READING_INVALID);
     }
 
     // reading IMU name is not equal to the configured movement sensor name
@@ -1503,7 +1512,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(viam_carto_add_odometer_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
         BOOST_TEST(viam_carto_add_odometer_reading_destroy(nullptr) ==
-                VIAM_CARTO_ODOMETER_READING_INVALID);
+                   VIAM_CARTO_ODOMETER_READING_INVALID);
     }
 
     // viam_carto_odometer_reading nullptr
@@ -1511,7 +1520,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(viam_carto_add_odometer_reading(vc, nullptr) ==
                    VIAM_CARTO_ODOMETER_READING_INVALID);
         BOOST_TEST(viam_carto_add_odometer_reading_destroy(nullptr) ==
-                VIAM_CARTO_ODOMETER_READING_INVALID);
+                   VIAM_CARTO_ODOMETER_READING_INVALID);
     }
 
     // reading odometer name is not equal to the configured movement sensor name
@@ -1535,8 +1544,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     // unable to acquire lock on odometer
     {
         double reading[6] = {1, 1, 1, 1, 1, 1};
-        viam_carto_odometer_reading sr =
-            new_test_odometer_reading("movement_sensor", reading, 1687900053773475);
+        viam_carto_odometer_reading sr = new_test_odometer_reading(
+            "movement_sensor", reading, 1687900053773475);
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         std::lock_guard<std::mutex> lk(cf->map_builder_mutex);
@@ -1587,8 +1596,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
 
     // first sensor readings
     {
-        add_lidar_reading_successfully(vc, 1,
-            ".artifact/data/viam-cartographer/mock_lidar/0.pcd", 1629037851000000);
+        add_lidar_reading_successfully(
+            vc, 1, ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1629037851000000);
 
         double imu_reading[6] = {0, 0, 9.8, 0, 0, 0};
         add_imu_reading_successfully(vc, 1, imu_reading, 1629037851000000);
@@ -1596,8 +1606,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
 
     // second sensor readings
     {
-        add_lidar_reading_successfully(vc, 2,
-            ".artifact/data/viam-cartographer/mock_lidar/1.pcd", 1629037853000000);
+        add_lidar_reading_successfully(
+            vc, 2, ".artifact/data/viam-cartographer/mock_lidar/1.pcd",
+            1629037853000000);
 
         double imu_reading[6] = {0.1, 0, 9.8, 0, -0.2, 0};
         add_imu_reading_successfully(vc, 2, imu_reading, 1629037853000100);
@@ -1605,8 +1616,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
 
     // third sensor readings
     {
-        add_lidar_reading_successfully(vc, 3,
-            ".artifact/data/viam-cartographer/mock_lidar/2.pcd", 1629037855000000);
+        add_lidar_reading_successfully(
+            vc, 3, ".artifact/data/viam-cartographer/mock_lidar/2.pcd",
+            1629037855000000);
 
         double imu_reading[6] = {0.2, 0, 9.8, -0.6, 0, 0};
         add_imu_reading_successfully(vc, 3, imu_reading, 1629037855000200);
@@ -1721,7 +1733,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     // add fifth sensor reading: only odometer
     {
         double odometer_reading[7] = {0.5, 0.2, 9.8, 0.6, 0.1, 0, 0.8};
-        add_odometer_reading_successfully(vc, 3, odometer_reading, 1629037857000200);
+        add_odometer_reading_successfully(vc, 3, odometer_reading,
+                                          1629037857000200);
     }
 
     // GetPosition changed from 3 successful AddLidarReading, 4 successful
@@ -1814,8 +1827,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     // AddOdometerReading
     {
         double reading[7] = {1, 2, 3, 4, 5, 6, 7};
-        viam_carto_odometer_reading sr =
-            new_test_odometer_reading("movement_sensor", reading, 1687900053773475);
+        viam_carto_odometer_reading sr = new_test_odometer_reading(
+            "movement_sensor", reading, 1687900053773475);
         viam::carto_facade::CartoFacade *cf =
             static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
         BOOST_TEST(viam_carto_add_odometer_reading(vc, &sr) ==
