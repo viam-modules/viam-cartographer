@@ -91,11 +91,11 @@ func (cf *CartoFacade) AddLidarReading(
 func (cf *CartoFacade) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
-	imuName string,
+	movementSensorName string,
 	currentReading s.TimedIMUReadingResponse,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
-		sensor:  imuName,
+		sensor:  movementSensorName,
 		reading: currentReading,
 	}
 
@@ -111,11 +111,11 @@ func (cf *CartoFacade) AddIMUReading(
 func (cf *CartoFacade) AddOdometerReading(
 	ctx context.Context,
 	timeout time.Duration,
-	odometerName string,
+	movementSensorName string,
 	currentReading s.TimedOdometerReadingResponse,
 ) error {
 	requestParams := map[RequestParamType]interface{}{
-		sensor:  odometerName,
+		sensor:  movementSensorName,
 		reading: currentReading,
 	}
 
@@ -283,13 +283,13 @@ type Interface interface {
 	AddIMUReading(
 		ctx context.Context,
 		timeout time.Duration,
-		imuName string,
+		movementSensorName string,
 		currentReading s.TimedIMUReadingResponse,
 	) error
 	AddOdometerReading(
 		ctx context.Context,
 		timeout time.Duration,
-		odometerName string,
+		movementSensorName string,
 		currentReading s.TimedOdometerReadingResponse,
 	) error
 	Position(
