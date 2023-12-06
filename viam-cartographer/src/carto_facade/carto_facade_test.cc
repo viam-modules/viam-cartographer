@@ -61,27 +61,57 @@ viam_carto_lidar_reading new_test_lidar_reading(
     sr.lidar_reading_time_unix_milli = lidar_reading_time_unix_milli;
     return sr;
 }
+void add_lidar_reading_successfully(viam_carto *vc, int number_reading, std::string pcd_path,
+                            int64_t timestamp) {
+    VLOG(1) << "viam_carto_add_lidar_reading " << number_reading;
+    viam_carto_lidar_reading sr = new_test_lidar_reading("lidar", pcd_path, timestamp);
+    BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) == VIAM_CARTO_SUCCESS);
+}
 
-viam_carto_imu_reading new_testIMUReading(std::string imu, double readings[6],
+viam_carto_imu_reading new_test_imu_reading(std::string imu, double reading[6],
                                           int64_t imu_reading_time_unix_milli) {
     viam_carto_imu_reading sr;
     sr.imu = bfromcstr(imu.c_str());
-    sr.lin_acc_x = readings[0];
-    sr.lin_acc_y = readings[1];
-    sr.lin_acc_z = readings[2];
-    sr.ang_vel_x = readings[3];
-    sr.ang_vel_y = readings[4];
-    sr.ang_vel_z = readings[5];
+    sr.lin_acc_x = reading[0];
+    sr.lin_acc_y = reading[1];
+    sr.lin_acc_z = reading[2];
+    sr.ang_vel_x = reading[3];
+    sr.ang_vel_y = reading[4];
+    sr.ang_vel_z = reading[5];
     sr.imu_reading_time_unix_milli = imu_reading_time_unix_milli;
     return sr;
 }
 
-void add_new_testIMUReading(viam_carto *vc, double readings[6],
+void add_imu_reading_successfully(viam_carto *vc, int number_reading, double readings[6],
                             int64_t timestamp) {
-    VLOG(1) << "viam_carto_add_new_testIMUReading";
-    viam_carto_imu_reading sr = new_testIMUReading("imu", readings, timestamp);
+    VLOG(1) << "viam_carto_add_imu_reading " << number_reading;
+    viam_carto_imu_reading sr = new_test_imu_reading("movement_sensor", readings, timestamp);
     BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) == VIAM_CARTO_SUCCESS);
+}
+
+viam_carto_odometer_reading new_test_odometer_reading(std::string odometer, double reading[7],
+                                          int64_t odometer_reading_time_unix_milli) {
+    viam_carto_odometer_reading sr;
+    sr.odometer = bfromcstr(odometer.c_str());
+    sr.translation_x = reading[0];
+    sr.translation_y = reading[1];
+    sr.translation_z = reading[2];
+    sr.rotation_x = reading[3];
+    sr.rotation_y = reading[4];
+    sr.rotation_z = reading[5];
+    sr.rotation_w = reading[5];
+    sr.odometer_reading_time_unix_milli = odometer_reading_time_unix_milli;
+    return sr;
+}
+
+void add_odometer_reading_successfully(viam_carto *vc, int number_reading, double readings[7],
+                            int64_t timestamp) {
+    VLOG(1) << "viam_carto_add_odometer_reading " << number_reading;
+    viam_carto_odometer_reading sr = new_test_odometer_reading("odometer", readings, timestamp);
+    BOOST_TEST(viam_carto_add_odometer_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(viam_carto_add_odometer_reading_destroy(&sr) == VIAM_CARTO_SUCCESS);
 }
 
 viam_carto_algo_config viam_carto_algo_config_setup(bool use_imu_data) {
@@ -141,7 +171,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
         fs::temp_directory_path() / fs::path(bfs::unique_path().string());
 
     std::string camera = "lidar";
-    std::string movement_sensor = "imu";
+    std::string movement_sensor = "movement_sensor";
     std::string no_camera = "";
     std::string no_movement_sensor = "";
 
@@ -179,13 +209,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_lidar_config, ac) ==
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
 
-    // Test config validation with invalid imu config
+    // Test config validation with invalid movement sensor config
     ac = viam_carto_algo_config_setup(true);
-    struct viam_carto_config vcc_invalid_imu_config =
+    struct viam_carto_config vcc_invalid_movement_sensor_config =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
                                 no_movement_sensor, false, false, "");
 
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_imu_config, ac) ==
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_movement_sensor_config, ac) ==
                VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH);
 
     //  Test config validation with deprecated config structure
@@ -209,24 +239,24 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_path, ac) ==
                VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR);
 
-    // Test config validation with imu (success)
-    struct viam_carto_config vcc_with_imu_succ =
+    // Test config validation with movement sensor (success)
+    struct viam_carto_config vcc_with_movement_sensor_succ =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
                                 movement_sensor, false, false, "");
 
-    BOOST_TEST(viam_carto_init(nullptr, lib, vcc_with_imu_succ, ac) ==
+    BOOST_TEST(viam_carto_init(nullptr, lib, vcc_with_movement_sensor_succ, ac) ==
                VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_init(nullptr, nullptr, vcc_with_imu_succ, ac) ==
+    BOOST_TEST(viam_carto_init(nullptr, nullptr, vcc_with_movement_sensor_succ, ac) ==
                VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_init(&vc, nullptr, vcc_with_imu_succ, ac) ==
+    BOOST_TEST(viam_carto_init(&vc, nullptr, vcc_with_movement_sensor_succ, ac) ==
                VIAM_CARTO_LIB_INVALID);
 
-    // invalid invalid terminate
+    // Invalid terminate
     BOOST_TEST(viam_carto_terminate(nullptr) == VIAM_CARTO_VC_INVALID);
     viam_carto *invalidvc = nullptr;
     BOOST_TEST(viam_carto_terminate(&invalidvc) == VIAM_CARTO_VC_INVALID);
 
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_with_imu_succ, ac) ==
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc_with_movement_sensor_succ, ac) ==
                VIAM_CARTO_SUCCESS);
     BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
 
@@ -234,14 +264,14 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_terminate(&vc) ==
                VIAM_CARTO_VC_INVALID);  // can't terminate same instance again
 
-    // Test config validation without imu (success)
+    // Test config validation without movement sensor (success)
     viam_carto *vc2;
     ac = viam_carto_algo_config_setup(false);
-    struct viam_carto_config vcc_without_imu_succ =
+    struct viam_carto_config vcc_without_movement_sensor_succ =
         viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
                                 no_movement_sensor, false, false, "");
 
-    BOOST_TEST(viam_carto_init(&vc2, lib, vcc_without_imu_succ, ac) ==
+    BOOST_TEST(viam_carto_init(&vc2, lib, vcc_without_movement_sensor_succ, ac) ==
                VIAM_CARTO_SUCCESS);
     BOOST_TEST(vc2->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
 
@@ -254,11 +284,11 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     viam_carto_config_teardown(vcc_empty_component_ref);
     viam_carto_config_teardown(vcc_invalid_map_rate_sec);
     viam_carto_config_teardown(vcc_invalid_lidar_config);
-    viam_carto_config_teardown(vcc_invalid_imu_config);
+    viam_carto_config_teardown(vcc_invalid_movement_sensor_config);
     viam_carto_config_teardown(vcc_deprecated_path);
     viam_carto_config_teardown(vcc_invalid_path);
-    viam_carto_config_teardown(vcc_with_imu_succ);
-    viam_carto_config_teardown(vcc_without_imu_succ);
+    viam_carto_config_teardown(vcc_with_movement_sensor_succ);
+    viam_carto_config_teardown(vcc_without_movement_sensor_succ);
     // TODO: Move all suite level setup & teardown to boost test hook
     fs::remove_all(tmp_dir);
 
@@ -272,7 +302,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
     std::string camera = "lidar";
-    std::string movement_sensor = "imu";
+    std::string movement_sensor = "movement_sensor";
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
 
     {
@@ -471,7 +501,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode) {
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
     std::string camera = "lidar";
-    std::string movement_sensor = "imu";
+    std::string movement_sensor = "movement_sensor";
     fs::path tmp_dir =
         fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
@@ -666,7 +696,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode) {
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_without_imu) {
+BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_without_movement_sensor) {
     // library init
     viam_carto_lib *lib;
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
@@ -717,7 +747,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_without_imu) {
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
+BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
     // library init
     viam_carto_lib *lib;
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
@@ -774,6 +804,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
 
     // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
+
     // start not allowed if already started
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE);
 
@@ -796,27 +827,32 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
+    // AddLidarReading
     std::vector<std::vector<double>> points = {
         {-0.001000, 0.002000, 0.005000, 16711938},
         {0.582000, 0.012000, 0.000000, 16711938},
         {0.007000, 0.006000, 0.001000, 16711938}};
+
     // vc nullptr
     {
         BOOST_TEST(viam_carto_add_lidar_reading(nullptr, nullptr) ==
                    VIAM_CARTO_VC_INVALID);
+        // TODO[kat]: Do I need to call this here?
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
+                VIAM_CARTO_LIDAR_READING_INVALID);
     }
 
     // viam_carto_lidar_reading nullptr
     {
         BOOST_TEST(viam_carto_add_lidar_reading(vc, nullptr) ==
                    VIAM_CARTO_LIDAR_READING_INVALID);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
+                VIAM_CARTO_LIDAR_READING_INVALID);
     }
-    BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
-               VIAM_CARTO_LIDAR_READING_INVALID);
 
+    // lidar is not equal to component reference
     {
         viam_carto_lidar_reading sr;
-        // must be they first sensor in the sensor list
         sr.lidar = bfromcstr("never heard of it sensor");
         std::string pcd = help::binary_pcd(points);
         sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
@@ -828,26 +864,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // PATRICIA TODO: #242
-    // non first sensor
-    {
-        viam_carto_lidar_reading sr;
-        // must be they first sensor in the sensor list
-        sr.lidar = bfromcstr("sensor_2");
-        std::string pcd = help::binary_pcd(points);
-        sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
-        BOOST_TEST(sr.lidar_reading != nullptr);
-        sr.lidar_reading_time_unix_milli = 1687900014152474;
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
     // empty lidar reading
     {
         viam_carto_lidar_reading sr;
-        // must be they first sensor in the sensor list
         sr.lidar = bfromcstr("lidar");
         std::string pcd = "empty lidar reading";
         // passing 0 as the second parameter makes the string empty
@@ -860,10 +879,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // invalid reading
+    // invalid lidar reading
     {
         viam_carto_lidar_reading sr;
-        // must be they first sensor in the sensor list
         sr.lidar = bfromcstr("lidar");
         std::string pcd = "invalid lidar reading";
         sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
@@ -875,7 +893,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // unable to aquire lock
+    // unable to aquire lock on lidar
     {
         viam_carto_lidar_reading sr = new_test_lidar_reading(
             "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
@@ -932,9 +950,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
-    // GetPosition is unchanged from first AddLidarReading request
+    // GetPosition is unchanged from the first three AddLidarReading requests,
     // as cartographer needs at least 3 lidar readings to compute a
-    // position and the first position computed is zero.
+    // position.Until then, the initially set position equals is zero.
     // As a result it takes a minimum of 3 lidar readings before
     // cartographer produces a non zeroed position.
     // For more info see:
@@ -943,27 +961,25 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
 
     // first sensor reading
     {
-        VLOG(1) << "viam_carto_add_lidar_reading 1";
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
-            1629037851000000);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
+        add_lidar_reading_successfully(vc, 1,
+            ".artifact/data/viam-cartographer/mock_lidar/0.pcd", 1629037851000000);
     }
 
+    // GetPosition not initialized after only one successful reading
     {
         viam_carto_get_position_response pr;
         BOOST_TEST(viam_carto_get_position(vc, &pr) ==
                    VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
     }
 
+    // GetPointCloudMap is empty after only one reading
     {
         viam_carto_get_point_cloud_map_response mr;
         BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
                    VIAM_CARTO_POINTCLOUD_MAP_EMPTY);
     }
 
+    // GetInternalState is not changed after only one reading
     {
         viam_carto_get_internal_state_response isr;
         BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
@@ -979,13 +995,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
 
     // second sensor reading
     {
-        VLOG(1) << "viam_carto_add_lidar_reading 2";
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/1.pcd",
-            1629037853000000);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
+        add_lidar_reading_successfully(vc, 2,
+            ".artifact/data/viam-cartographer/mock_lidar/1.pcd", 1629037853000000);
     }
 
     // GetPosition returning origin position from 2 successful AddLidarReading
@@ -1006,7 +1017,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_SUCCESS);
     }
 
-    // GetPointCloudMap after successful sensor readings
+    // GetPointCloudMap after 2 successful sensor readings
     {
         viam_carto_get_point_cloud_map_response mr;
         BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
@@ -1023,10 +1034,14 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_SUCCESS);
     }
 
+    // GetInternalState after 2 successful sensor readings
     {
         viam_carto_get_internal_state_response isr;
         BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
                    VIAM_CARTO_SUCCESS);
+        // on arm64 linux this is strictly greater than;
+        // on arm64 mac for some reason it is equal to;
+        // https://viam.atlassian.net/browse/RSDK-3866
         BOOST_TEST(blength(isr.internal_state) >
                    last_internal_state_response_size);
         last_internal_state_response_size = blength(isr.internal_state);
@@ -1036,13 +1051,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
 
     // third sensor reading
     {
-        VLOG(1) << "viam_carto_add_lidar_reading 3";
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/2.pcd",
-            1629037855000000);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
+        add_lidar_reading_successfully(vc, 3,
+            ".artifact/data/viam-cartographer/mock_lidar/2.pcd", 1629037855000000);
     }
 
     // GetPosition changed from 3 successful AddLidarReading requests
@@ -1062,6 +1072,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
                    VIAM_CARTO_SUCCESS);
     }
 
+    // GetInternalState after 3 successful sensor readings
     {
         viam_carto_get_internal_state_response isr;
         BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
@@ -1085,462 +1096,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_imu) {
     // run_final_optimization not allowed if not started
     BOOST_TEST(viam_carto_run_final_optimization(vc) ==
                VIAM_CARTO_NOT_IN_STARTED_STATE);
-
-    // behavior of methods after stop
-    // AddLidarReading
-    {
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
-            1687900053773475);
-        viam::carto_facade::CartoFacade *cf =
-            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_NOT_IN_STARTED_STATE);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    {
-        // GetPosition
-        viam_carto_get_position_response pr;
-        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
-                   VIAM_CARTO_NOT_IN_STARTED_STATE);
-    }
-
-    //  GetPointCloudMap
-    {
-        viam_carto_get_point_cloud_map_response mr;
-        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
-                   VIAM_CARTO_NOT_IN_STARTED_STATE);
-    }
-
-    // GetInternalState
-    {
-        viam_carto_get_internal_state_response isr;
-        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
-                   VIAM_CARTO_NOT_IN_STARTED_STATE);
-    }
-
-    // Terminate
-    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
-    viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
-
-    // library terminate
-    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
-}
-
-BOOST_AUTO_TEST_CASE(CartoFacade_config_without_imu) {
-    // library init
-    viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
-
-    std::string camera = "lidar";
-    std::string movement_sensor = "";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
-
-                                camera, movement_sensor, true, true, "");
-
-    struct config c = viam::carto_facade::from_viam_carto_config(vcc);
-
-    BOOST_TEST(to_std_string(c.component_reference) == "lidar");
-    BOOST_TEST(c.data_dir == tmp_dir.string());
-    BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
-    BOOST_TEST(c.map_rate_sec.count() == 1);
-    BOOST_TEST(c.camera == "lidar");
-    BOOST_TEST(c.movement_sensor == "");
-    BOOST_TEST(c.cloud_story_enabled == true);
-    BOOST_TEST(c.enable_mapping == true);
-
-    viam_carto_config_teardown(vcc);
-    BOOST_TEST(bdestroy(c.component_reference) == BSTR_OK);
-
-    fs::remove_all(tmp_dir);
-    // library terminate
-    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
-}
-
-BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_without_imu) {
-    //  validate invalid pointer
-    BOOST_TEST(viam_carto_start(nullptr) == VIAM_CARTO_VC_INVALID);
-    BOOST_TEST(viam_carto_stop(nullptr) == VIAM_CARTO_VC_INVALID);
-
-    // library init
-    viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
-
-    // Setup
-    viam_carto *vc;
-    std::string camera = "lidar";
-    std::string movement_sensor = "";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
-
-                                camera, movement_sensor, false, false, "");
-    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(false);
-
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
-
-    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
-    BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
-
-    // Start
-    BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(((cf->state) == CartoFacadeState::STARTED));
-
-    // Confirm at least one map is persisted within the map_rate_sec
-    VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
-    // TODO: This should busy wait until this condition happens & the tests
-    // passes or or 2 seconds goes by & the test fails.
-    std::this_thread::sleep_for(cf->config.map_rate_sec +
-                                std::chrono::seconds(1));
-    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
-    BOOST_TEST(!fs::is_empty(cf->path_to_internal_state));
-
-    // Stop
-    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
-
-    // Terminate
-    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
-    viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
-
-    // library terminate
-    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
-}
-
-BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_with_imu) {
-    // library init
-    viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
-
-    viam_carto *vc;
-    std::string camera = "lidar";
-    std::string movement_sensor = "imu";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false, "");
-    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
-    viam::carto_facade::CartoFacade *cf =
-        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-    BOOST_TEST((cf->lib) == lib);
-    BOOST_TEST((cf->algo_config.optimize_on_start) == false);
-    BOOST_TEST((cf->algo_config.optimize_every_n_nodes) == 3);
-    BOOST_TEST((cf->algo_config.num_range_data) == 100);
-    BOOST_TEST((cf->algo_config.missing_data_ray_length) == 25, tol);
-    BOOST_TEST((cf->algo_config.max_range) == 25, tol);
-    BOOST_TEST((cf->algo_config.min_range) == 0.2, tol);
-    BOOST_TEST((cf->algo_config.use_imu_data) == true);
-    BOOST_TEST((cf->algo_config.max_submaps_to_keep) == 3);
-    BOOST_TEST((cf->algo_config.fresh_submaps_count) == 3);
-    BOOST_TEST((cf->algo_config.min_covered_area) == 1, tol);
-    BOOST_TEST((cf->algo_config.min_added_submaps_count) == 1);
-    BOOST_TEST((cf->algo_config.occupied_space_weight) == 20, tol);
-    BOOST_TEST((cf->algo_config.translation_weight) == 10, tol);
-    BOOST_TEST((cf->algo_config.rotation_weight) == 1, tol);
-    auto path_to_internal_state = tmp_dir / fs::path("internal_state");
-
-    BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
-    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
-    BOOST_TEST((cf->config.camera) == camera);
-    BOOST_TEST((cf->config.movement_sensor) == movement_sensor);
-    BOOST_TEST((cf->config.map_rate_sec).count() == 1);
-    BOOST_TEST((cf->config.data_dir) == tmp_dir.string());
-    BOOST_TEST(to_std_string(cf->config.component_reference) == "lidar");
-    BOOST_TEST((cf->config.lidar_config) == VIAM_CARTO_THREE_D);
-
-    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
-    viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
-
-    // library terminate
-    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
-}
-
-BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_imu) {
-    // library init
-    viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
-
-    // Setup
-    viam_carto *vc;
-    std::string camera = "lidar";
-    std::string movement_sensor = "imu";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(60, VIAM_CARTO_THREE_D, tmp_dir.string(),
-
-                                camera, movement_sensor, false, false, "");
-    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
-
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
-    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
-
-    // Start
-    BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
-    std::vector<std::vector<double>> points = {
-        {-0.001000, 0.002000, 0.005000, 16711938},
-        {0.582000, 0.012000, 0.000000, 16711938},
-        {0.007000, 0.006000, 0.001000, 16711938}};
-
-    // vc nullptr for lidar reading
-    {
-        BOOST_TEST(viam_carto_add_lidar_reading(nullptr, nullptr) ==
-                   VIAM_CARTO_VC_INVALID);
-    }
-
-    // viam_carto_lidar_reading nullptr
-    {
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, nullptr) ==
-                   VIAM_CARTO_LIDAR_READING_INVALID);
-    }
-
-    BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
-               VIAM_CARTO_LIDAR_READING_INVALID);
-
-    {
-        viam_carto_lidar_reading sr;
-        // must be the first sensor in the sensor list
-        sr.lidar = bfromcstr("never heard of it sensor");
-        std::string pcd = help::binary_pcd(points);
-        sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
-        BOOST_TEST(sr.lidar_reading != nullptr);
-
-        sr.lidar_reading_time_unix_milli = 1687899990420347;
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // empty lidar reading
-    {
-        viam_carto_lidar_reading sr;
-        // must be the first sensor in the sensor list
-        sr.lidar = bfromcstr("lidar");
-        std::string pcd = "empty lidar reading";
-        // passing 0 as the second parameter makes the string empty
-        sr.lidar_reading = blk2bstr(pcd.c_str(), 0);
-        BOOST_TEST(sr.lidar_reading != nullptr);
-
-        sr.lidar_reading_time_unix_milli = 1687900021820215;
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_LIDAR_READING_EMPTY);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // invalid reading
-    {
-        viam_carto_lidar_reading sr;
-        // must be the sensor configured
-        sr.lidar = bfromcstr("lidar");
-        std::string pcd = "invalid lidar reading";
-        sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
-        BOOST_TEST(sr.lidar_reading != nullptr);
-
-        sr.lidar_reading_time_unix_milli = 1687900029557335;
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_LIDAR_READING_INVALID);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // unable to acquire lock on lidar
-    {
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
-            1687900053773475);
-        viam::carto_facade::CartoFacade *cf =
-            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-        std::lock_guard<std::mutex> lk(cf->map_builder_mutex);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // vc nullptr for imu reading
-    {
-        BOOST_TEST(viam_carto_add_imu_reading(nullptr, nullptr) ==
-                   VIAM_CARTO_VC_INVALID);
-    }
-
-    // viam_carto_imu_reading nullptr
-    {
-        BOOST_TEST(viam_carto_add_imu_reading(vc, nullptr) ==
-                   VIAM_CARTO_IMU_READING_INVALID);
-    }
-
-    BOOST_TEST(viam_carto_add_imu_reading_destroy(nullptr) ==
-               VIAM_CARTO_IMU_READING_INVALID);
-
-    {
-        viam_carto_imu_reading sr;
-        // must be the sensor configured
-        sr.imu = bfromcstr("never heard of it sensor");
-        sr.lin_acc_x = 1;
-        sr.lin_acc_y = 1;
-        sr.lin_acc_z = 1;
-        sr.ang_vel_x = 1;
-        sr.ang_vel_y = 1;
-        sr.ang_vel_z = 1;
-        sr.imu_reading_time_unix_milli = 1687899990420347;
-        BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) ==
-                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
-        BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // unable to acquire lock on IMU
-    {
-        double reading[6] = {1, 1, 1, 1, 1, 1};
-        viam_carto_imu_reading sr =
-            new_testIMUReading("imu", reading, 1687900053773475);
-        viam::carto_facade::CartoFacade *cf =
-            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
-        std::lock_guard<std::mutex> lk(cf->map_builder_mutex);
-        BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) ==
-                   VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK);
-        BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    int last_internal_state_response_size = 0;
-    {
-        BOOST_TEST(viam_carto_get_internal_state_response_destroy(nullptr) ==
-                   VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID);
-        BOOST_TEST(viam_carto_get_internal_state(nullptr, nullptr) ==
-                   VIAM_CARTO_VC_INVALID);
-        BOOST_TEST(viam_carto_get_internal_state(vc, nullptr) ==
-                   VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID);
-
-        viam_carto_get_internal_state_response isr;
-        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
-                   VIAM_CARTO_SUCCESS);
-        BOOST_TEST(blength(isr.internal_state) >
-                   last_internal_state_response_size);
-        last_internal_state_response_size = blength(isr.internal_state);
-        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // GetPosition is unchanged from first AddLidarReading
-    // request as cartographer needs at least 3 lidar readings to compute a
-    // position and the first position computed is zero.
-    // As a result it takes a minimum of 3 lidar readings before
-    // cartographer produces a non zeroed position.
-    // For more info see:
-    // https://github.com/cartographer-project/cartographer/blob/ef00de2317dcf7895b09f18cc4d87f8b533a019b/cartographer/mapping/internal/global_trajectory_builder.cc#L65
-    // https://github.com/cartographer-project/cartographer/blob/ef00de2317dcf7895b09f18cc4d87f8b533a019b/cartographer/mapping/internal/2d/local_trajectory_builder_2d.cc#L136
-
-    // first sensor reading
-    {
-        VLOG(1) << "viam_carto_add_lidar_reading 1";
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
-            1629037851000000);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-        double readings[6] = {0, 0, 9.8, 0, 0, 0};
-        add_new_testIMUReading(vc, readings, 1629037851000000);
-    }
-
-    // second sensor reading
-    {
-        VLOG(1) << "viam_carto_add_lidar_reading 2";
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/1.pcd",
-            1629037853000100);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-
-        double readings[6] = {0.1, 0, 9.8, 0, -0.2, 0};
-        add_new_testIMUReading(vc, readings, 1629037853000100);
-    }
-
-    // third sensor readings
-    {
-        VLOG(1) << "viam_carto_add_lidar_reading 3";
-        viam_carto_lidar_reading sr = new_test_lidar_reading(
-            "lidar", ".artifact/data/viam-cartographer/mock_lidar/2.pcd",
-            1629037855000200);
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-        double readings[6] = {0.2, 0, 9.8, -0.6, 0, 0};
-        add_new_testIMUReading(vc, readings, 1629037855000200);
-    }
-
-    // GetPosition changed from 3 successful AddLidarReading requests
-    {
-        viam_carto_get_position_response pr;
-        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(pr.x == 0);
-        BOOST_TEST(pr.y == 0);
-        BOOST_TEST(pr.z == 0);
-        BOOST_TEST(pr.imag == 0);
-        BOOST_TEST(pr.jmag == 0);
-        BOOST_TEST(pr.kmag == 0);
-        BOOST_TEST(pr.real == 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
-
-        BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // GetPointCloudMap after successful sensor readings
-    {
-        viam_carto_get_point_cloud_map_response mr;
-        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
-                   VIAM_CARTO_SUCCESS);
-        pcl::PCLPointCloud2 blob;
-        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
-            new pcl::PointCloud<pcl::PointXYZRGB>);
-        auto s = to_std_string(mr.point_cloud_pcd);
-        BOOST_TEST(viam::carto_facade::util::read_pcd(s, blob) == 0);
-        pcl::fromPCLPointCloud2(blob, *cloud);
-        BOOST_TEST(cloud != nullptr);
-        BOOST_TEST(cloud->points.size() != 0);
-        BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    {
-        viam_carto_get_internal_state_response isr;
-        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
-                   VIAM_CARTO_SUCCESS);
-        // on arm64 linux this is strictly greater than
-        // on arm64 mac for some reason it is equal to
-        // https://viam.atlassian.net/browse/RSDK-3866
-        BOOST_TEST(blength(isr.internal_state) >=
-                   last_internal_state_response_size);
-        last_internal_state_response_size = blength(isr.internal_state);
-        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
-    // Stop
-    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
-    // stop not allowed if not started
-    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_NOT_IN_STARTED_STATE);
 
     // behavior of methods after stop
     // AddLidarReading
@@ -1586,18 +1141,20 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_imu) {
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_config_with_imu) {
+BOOST_AUTO_TEST_CASE(CartoFacade_config_without_movement_sensor) {
     // library init
     viam_carto_lib *lib;
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
     std::string camera = "lidar";
-    std::string movement_sensor = "imu";
+    std::string movement_sensor = "";
     fs::path tmp_dir =
         fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, true, true, "");
+        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
+
+                                camera, movement_sensor, true, true, "");
+
     struct config c = viam::carto_facade::from_viam_carto_config(vcc);
 
     BOOST_TEST(to_std_string(c.component_reference) == "lidar");
@@ -1605,7 +1162,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config_with_imu) {
     BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
     BOOST_TEST(c.map_rate_sec.count() == 1);
     BOOST_TEST(c.camera == "lidar");
-    BOOST_TEST(c.movement_sensor == "imu");
+    BOOST_TEST(c.movement_sensor == "");
     BOOST_TEST(c.cloud_story_enabled == true);
     BOOST_TEST(c.enable_mapping == true);
 
@@ -1617,7 +1174,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config_with_imu) {
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_imu) {
+BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_without_movement_sensor) {
     //  validate invalid pointer
     BOOST_TEST(viam_carto_start(nullptr) == VIAM_CARTO_VC_INVALID);
     BOOST_TEST(viam_carto_stop(nullptr) == VIAM_CARTO_VC_INVALID);
@@ -1629,7 +1186,546 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_imu) {
     // Setup
     viam_carto *vc;
     std::string camera = "lidar";
-    std::string movement_sensor = "imu";
+    std::string movement_sensor = "";
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
+    struct viam_carto_config vcc =
+        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
+
+                                camera, movement_sensor, false, false, "");
+    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(false);
+
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
+    viam::carto_facade::CartoFacade *cf =
+        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
+
+    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
+    BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
+
+    // Start
+    BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(((cf->state) == CartoFacadeState::STARTED));
+
+    // Confirm at least one map is persisted within the map_rate_sec
+    VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
+    // TODO: This should busy wait until this condition happens & the tests
+    // passes or 2 seconds goes by & the test fails.
+    std::this_thread::sleep_for(cf->config.map_rate_sec +
+                                std::chrono::seconds(1));
+    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
+    BOOST_TEST(!fs::is_empty(cf->path_to_internal_state));
+
+    // Stop
+    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
+
+    // Terminate
+    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
+    viam_carto_config_teardown(vcc);
+    fs::remove_all(tmp_dir);
+
+    // library terminate
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
+}
+
+BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_with_movement_sensor) {
+    // library init
+    viam_carto_lib *lib;
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
+
+    viam_carto *vc;
+    std::string camera = "lidar";
+    std::string movement_sensor = "movement_sensor";
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
+    struct viam_carto_config vcc =
+        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
+                                movement_sensor, false, false, "");
+    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
+    viam::carto_facade::CartoFacade *cf =
+        static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+    BOOST_TEST((cf->lib) == lib);
+    BOOST_TEST((cf->algo_config.optimize_on_start) == false);
+    BOOST_TEST((cf->algo_config.optimize_every_n_nodes) == 3);
+    BOOST_TEST((cf->algo_config.num_range_data) == 100);
+    BOOST_TEST((cf->algo_config.missing_data_ray_length) == 25, tol);
+    BOOST_TEST((cf->algo_config.max_range) == 25, tol);
+    BOOST_TEST((cf->algo_config.min_range) == 0.2, tol);
+    BOOST_TEST((cf->algo_config.use_imu_data) == true);
+    BOOST_TEST((cf->algo_config.max_submaps_to_keep) == 3);
+    BOOST_TEST((cf->algo_config.fresh_submaps_count) == 3);
+    BOOST_TEST((cf->algo_config.min_covered_area) == 1, tol);
+    BOOST_TEST((cf->algo_config.min_added_submaps_count) == 1);
+    BOOST_TEST((cf->algo_config.occupied_space_weight) == 20, tol);
+    BOOST_TEST((cf->algo_config.translation_weight) == 10, tol);
+    BOOST_TEST((cf->algo_config.rotation_weight) == 1, tol);
+    auto path_to_internal_state = tmp_dir / fs::path("internal_state");
+
+    BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
+    BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
+    BOOST_TEST((cf->config.camera) == camera);
+    BOOST_TEST((cf->config.movement_sensor) == movement_sensor);
+    BOOST_TEST((cf->config.map_rate_sec).count() == 1);
+    BOOST_TEST((cf->config.data_dir) == tmp_dir.string());
+    BOOST_TEST(to_std_string(cf->config.component_reference) == "lidar");
+    BOOST_TEST((cf->config.lidar_config) == VIAM_CARTO_THREE_D);
+
+    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
+    viam_carto_config_teardown(vcc);
+    fs::remove_all(tmp_dir);
+
+    // library terminate
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
+}
+
+BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
+    // library init
+    viam_carto_lib *lib;
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
+
+    // Setup
+    viam_carto *vc;
+    std::string camera = "lidar";
+    std::string movement_sensor = "movement_sensor";
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
+    struct viam_carto_config vcc =
+        viam_carto_config_setup(60, VIAM_CARTO_THREE_D, tmp_dir.string(),
+
+                                camera, movement_sensor, false, false, "");
+    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
+
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
+    BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
+
+    // behavior of methods before start
+    // AddLidarReading
+    {
+        viam_carto_lidar_reading sr = new_test_lidar_reading(
+            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // AddIMUReading
+    {
+        double reading[6] = {1, 2, 3, 4, 5, 6};
+        viam_carto_imu_reading sr =
+            new_test_imu_reading("movement_sensor", reading, 1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // AddOdometerReading
+    {
+        double reading[7] = {1, 2, 3, 4, 5, 6, 7};
+        viam_carto_odometer_reading sr =
+            new_test_odometer_reading("movement_sensor", reading, 1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        BOOST_TEST(viam_carto_add_odometer_reading(vc, &sr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_odometer_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    {
+        // GetPosition
+        viam_carto_get_position_response pr;
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    //  GetPointCloudMap
+    {
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    // GetInternalState
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    // Start
+    BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
+
+    // AddLidarReading
+    std::vector<std::vector<double>> points = {
+        {-0.001000, 0.002000, 0.005000, 16711938},
+        {0.582000, 0.012000, 0.000000, 16711938},
+        {0.007000, 0.006000, 0.001000, 16711938}};
+
+    // vc nullptr
+    {
+        BOOST_TEST(viam_carto_add_lidar_reading(nullptr, nullptr) ==
+                   VIAM_CARTO_VC_INVALID);
+        // TODO[kat]: Do I need to call this here?
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
+                VIAM_CARTO_LIDAR_READING_INVALID);
+    }
+
+    // viam_carto_lidar_reading nullptr
+    {
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, nullptr) ==
+                   VIAM_CARTO_LIDAR_READING_INVALID);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
+                VIAM_CARTO_LIDAR_READING_INVALID);
+    }
+
+    // lidar is not equal to component reference
+    {
+        viam_carto_lidar_reading sr;
+        sr.lidar = bfromcstr("never heard of it sensor");
+        std::string pcd = help::binary_pcd(points);
+        sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.lidar_reading != nullptr);
+        sr.lidar_reading_time_unix_milli = 1687899990420347;
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
+                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // empty lidar reading
+    {
+        viam_carto_lidar_reading sr;
+        sr.lidar = bfromcstr("lidar");
+        std::string pcd = "empty lidar reading";
+        // passing 0 as the second parameter makes the string empty
+        sr.lidar_reading = blk2bstr(pcd.c_str(), 0);
+        BOOST_TEST(sr.lidar_reading != nullptr);
+        sr.lidar_reading_time_unix_milli = 1687900021820215;
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
+                   VIAM_CARTO_LIDAR_READING_EMPTY);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // invalid lidar reading
+    {
+        viam_carto_lidar_reading sr;
+        sr.lidar = bfromcstr("lidar");
+        std::string pcd = "invalid lidar reading";
+        sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
+        BOOST_TEST(sr.lidar_reading != nullptr);
+
+        sr.lidar_reading_time_unix_milli = 1687900029557335;
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
+                   VIAM_CARTO_LIDAR_READING_INVALID);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // unable to acquire lock on lidar
+    {
+        viam_carto_lidar_reading sr = new_test_lidar_reading(
+            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        std::lock_guard<std::mutex> lk(cf->map_builder_mutex);
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
+                   VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // AddIMUReading
+
+    // vc nullptr
+    {
+        BOOST_TEST(viam_carto_add_imu_reading(nullptr, nullptr) ==
+                   VIAM_CARTO_VC_INVALID);
+        // TODO[kat]: Do I need to call this here?
+        BOOST_TEST(viam_carto_add_imu_reading_destroy(nullptr) ==
+                VIAM_CARTO_IMU_READING_INVALID);
+    }
+
+    // viam_carto_imu_reading nullptr
+    {
+        BOOST_TEST(viam_carto_add_imu_reading(vc, nullptr) ==
+                   VIAM_CARTO_IMU_READING_INVALID);
+        BOOST_TEST(viam_carto_add_imu_reading_destroy(nullptr) ==
+                VIAM_CARTO_IMU_READING_INVALID);
+    }
+
+    // reading IMU name must equal to the configured sensor name
+    {
+        viam_carto_imu_reading sr;
+        sr.imu = bfromcstr("never heard of it sensor");
+        sr.lin_acc_x = 1;
+        sr.lin_acc_y = 2;
+        sr.lin_acc_z = 3;
+        sr.ang_vel_x = 4;
+        sr.ang_vel_y = 5;
+        sr.ang_vel_z = 6;
+        sr.imu_reading_time_unix_milli = 1687899990420347;
+        BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) ==
+                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
+        BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // unable to acquire lock on IMU
+    {
+        double reading[6] = {1, 1, 1, 1, 1, 1};
+        viam_carto_imu_reading sr =
+            new_test_imu_reading("movement_sensor", reading, 1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        std::lock_guard<std::mutex> lk(cf->map_builder_mutex);
+        BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) ==
+                   VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK);
+        BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // GetInternalState
+    int last_internal_state_response_size = 0;
+    {
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(nullptr) ==
+                   VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID);
+        BOOST_TEST(viam_carto_get_internal_state(nullptr, nullptr) ==
+                   VIAM_CARTO_VC_INVALID);
+        BOOST_TEST(viam_carto_get_internal_state(vc, nullptr) ==
+                   VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID);
+
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_SUCCESS);
+        BOOST_TEST(blength(isr.internal_state) >
+                   last_internal_state_response_size);
+        last_internal_state_response_size = blength(isr.internal_state);
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // GetPosition unchanged from failed AddIMUReading requests
+    {
+        viam_carto_get_position_response pr;
+        // Test get position before any data is provided
+        // it should return an error
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_GET_POSITION_NOT_INITIALIZED);
+    }
+
+    // GetPosition is unchanged from the first three AddLidarReading requests,
+    // as cartographer needs at least 3 lidar readings to compute a
+    // position.Until then, the initially set position equals is zero.
+    // As a result it takes a minimum of 3 lidar readings before
+    // cartographer produces a non zeroed position.
+    // For more info see:
+    // https://github.com/cartographer-project/cartographer/blob/ef00de2317dcf7895b09f18cc4d87f8b533a019b/cartographer/mapping/internal/global_trajectory_builder.cc#L65
+    // https://github.com/cartographer-project/cartographer/blob/ef00de2317dcf7895b09f18cc4d87f8b533a019b/cartographer/mapping/internal/2d/local_trajectory_builder_2d.cc#L136
+
+    // first sensor readings
+    {
+        add_lidar_reading_successfully(vc, 1,
+            ".artifact/data/viam-cartographer/mock_lidar/0.pcd", 1629037851000000);
+
+        double imu_reading[6] = {0, 0, 9.8, 0, 0, 0};
+        add_imu_reading_successfully(vc, 1, imu_reading, 1629037851000000);
+    }
+
+    // second sensor readings
+    {
+        add_lidar_reading_successfully(vc, 2,
+            ".artifact/data/viam-cartographer/mock_lidar/1.pcd", 1629037853000100);
+
+        double imu_reading[6] = {0.1, 0, 9.8, 0, -0.2, 0};
+        add_imu_reading_successfully(vc, 2, imu_reading, 1629037853000100);
+    }
+
+    // third sensor readings
+    {
+        add_lidar_reading_successfully(vc, 3,
+            ".artifact/data/viam-cartographer/mock_lidar/2.pcd", 1629037855000200);
+
+        double imu_reading[6] = {0.2, 0, 9.8, -0.6, 0, 0};
+        add_imu_reading_successfully(vc, 3, imu_reading, 1629037855000200);
+    }
+
+    // TODO[kat]: There must be a mistake, since the below shows that nothing
+    // has changed.
+    // GetPosition changed from 3 successful AddLidarReading and AddIMUReading
+    // requests
+    {
+        viam_carto_get_position_response pr;
+        BOOST_TEST(viam_carto_get_position(vc, &pr) == VIAM_CARTO_SUCCESS);
+        BOOST_TEST(pr.x == 0);
+        BOOST_TEST(pr.y == 0);
+        BOOST_TEST(pr.z == 0);
+        BOOST_TEST(pr.imag == 0);
+        BOOST_TEST(pr.jmag == 0);
+        BOOST_TEST(pr.kmag == 0);
+        BOOST_TEST(pr.real == 1);
+        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
+
+        BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // GetPointCloudMap after 3 successful sensor readings
+    {
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_SUCCESS);
+        pcl::PCLPointCloud2 blob;
+        pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
+            new pcl::PointCloud<pcl::PointXYZRGB>);
+        auto s = to_std_string(mr.point_cloud_pcd);
+        BOOST_TEST(viam::carto_facade::util::read_pcd(s, blob) == 0);
+        pcl::fromPCLPointCloud2(blob, *cloud);
+        BOOST_TEST(cloud != nullptr);
+        BOOST_TEST(cloud->points.size() != 0);
+        BOOST_TEST(viam_carto_get_point_cloud_map_response_destroy(&mr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // GetInternalState after 3 successful sensor readings
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_SUCCESS);
+        // on arm64 linux this is strictly greater than;
+        // on arm64 mac for some reason it is equal to;
+        // https://viam.atlassian.net/browse/RSDK-3866
+        BOOST_TEST(blength(isr.internal_state) >=
+                   last_internal_state_response_size);
+        last_internal_state_response_size = blength(isr.internal_state);
+        BOOST_TEST(viam_carto_get_internal_state_response_destroy(&isr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    BOOST_TEST(viam_carto_run_final_optimization(vc) == VIAM_CARTO_SUCCESS);
+
+    // Stop
+    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
+    // stop not allowed if not started
+    BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_NOT_IN_STARTED_STATE);
+    // run_final_optimization not allowed if not started
+    BOOST_TEST(viam_carto_run_final_optimization(vc) ==
+               VIAM_CARTO_NOT_IN_STARTED_STATE);
+
+    // behavior of methods after stop
+    // AddLidarReading
+    {
+        viam_carto_lidar_reading sr = new_test_lidar_reading(
+            "lidar", ".artifact/data/viam-cartographer/mock_lidar/0.pcd",
+            1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // AddIMUReading
+    {
+        double reading[6] = {1, 2, 3, 4, 5, 6};
+        viam_carto_imu_reading sr =
+            new_test_imu_reading("movement_sensor", reading, 1687900053773475);
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        BOOST_TEST(viam_carto_add_imu_reading(vc, &sr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+        BOOST_TEST(viam_carto_add_imu_reading_destroy(&sr) ==
+                   VIAM_CARTO_SUCCESS);
+    }
+
+    // GetPosition
+    {
+        viam_carto_get_position_response pr;
+        BOOST_TEST(viam_carto_get_position(vc, &pr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    //  GetPointCloudMap
+    {
+        viam_carto_get_point_cloud_map_response mr;
+        BOOST_TEST(viam_carto_get_point_cloud_map(vc, &mr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    // GetInternalState
+    {
+        viam_carto_get_internal_state_response isr;
+        BOOST_TEST(viam_carto_get_internal_state(vc, &isr) ==
+                   VIAM_CARTO_NOT_IN_STARTED_STATE);
+    }
+
+    // Terminate
+    BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
+    viam_carto_config_teardown(vcc);
+    fs::remove_all(tmp_dir);
+
+    // library terminate
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
+}
+
+BOOST_AUTO_TEST_CASE(CartoFacade_config_with_movement_sensor) {
+    // library init
+    viam_carto_lib *lib;
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
+
+    std::string camera = "lidar";
+    std::string movement_sensor = "movement_sensor";
+    fs::path tmp_dir =
+        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
+    struct viam_carto_config vcc =
+        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
+                                movement_sensor, true, true, "");
+
+    struct config c = viam::carto_facade::from_viam_carto_config(vcc);
+
+    BOOST_TEST(to_std_string(c.component_reference) == "lidar");
+    BOOST_TEST(c.data_dir == tmp_dir.string());
+    BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
+    BOOST_TEST(c.map_rate_sec.count() == 1);
+    BOOST_TEST(c.camera == "lidar");
+    BOOST_TEST(c.movement_sensor == "movement_sensor");
+    BOOST_TEST(c.cloud_story_enabled == true);
+    BOOST_TEST(c.enable_mapping == true);
+
+    viam_carto_config_teardown(vcc);
+    BOOST_TEST(bdestroy(c.component_reference) == BSTR_OK);
+
+    fs::remove_all(tmp_dir);
+    // library terminate
+    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
+}
+
+BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_movement_sensor) {
+    //  validate invalid pointer
+    BOOST_TEST(viam_carto_start(nullptr) == VIAM_CARTO_VC_INVALID);
+    BOOST_TEST(viam_carto_stop(nullptr) == VIAM_CARTO_VC_INVALID);
+
+    // library init
+    viam_carto_lib *lib;
+    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
+
+    // Setup
+    viam_carto *vc;
+    std::string camera = "lidar";
+    std::string movement_sensor = "movement_sensor";
     fs::path tmp_dir =
         fs::temp_directory_path() / fs::path(bfs::unique_path().string());
     struct viam_carto_config vcc =
@@ -1646,14 +1742,14 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_imu) {
     BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
     BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
 
-    // // Start
+    // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(((cf->state) == CartoFacadeState::STARTED));
 
     // Confirm at least one map is persisted within the map_rate_sec
     VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
     // TODO: This should busy wait until this condition happens & the tests
-    // passes or or 2 seconds goes by & the test fails.
+    // passes or 2 seconds goes by & the test fails.
     std::this_thread::sleep_for(cf->config.map_rate_sec +
                                 std::chrono::seconds(1));
     BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
