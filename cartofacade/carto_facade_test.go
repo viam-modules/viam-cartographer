@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/golang/geo/r3"
+	geo "github.com/kellydunn/golang-geo"
 	"go.uber.org/multierr"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/spatialmath"
@@ -32,7 +33,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		cfg := GetTestConfig("mysensor", "", "", true)
+		cfg := GetTestConfig("my-sensor", "", "", true)
 		algoCfg := GetTestAlgoConfig(false)
 
 		carto := CartoMock{}
@@ -56,7 +57,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		cfg := GetTestConfig("mysensor", "", "", true)
+		cfg := GetTestConfig("my-sensor", "", "", true)
 		algoCfg := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
@@ -79,7 +80,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		cfg := GetTestConfig("mysensor", "", "", true)
+		cfg := GetTestConfig("my-sensor", "", "", true)
 		algoCfg := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
@@ -104,7 +105,7 @@ func TestRequest(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 		activeBackgroundWorkers := sync.WaitGroup{}
 
-		cfg := GetTestConfig("mysensor", "", "", true)
+		cfg := GetTestConfig("my-sensor", "", "", true)
 		algoCfg := GetTestAlgoConfig(false)
 		carto := CartoMock{}
 
@@ -137,7 +138,7 @@ func TestInitialize(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -162,7 +163,7 @@ func TestStart(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -209,7 +210,7 @@ func TestStop(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -256,7 +257,7 @@ func TestTerminate(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -303,7 +304,7 @@ func TestAddLidarReading(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -329,7 +330,7 @@ func TestAddLidarReading(t *testing.T) {
 		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarReadingResponse) error {
 			return nil
 		}
-		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "mysensor", reading)
+		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "my-sensor", reading)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -338,7 +339,7 @@ func TestAddLidarReading(t *testing.T) {
 		carto.AddLidarReadingFunc = func(name string, reading s.TimedLidarReadingResponse) error {
 			return expectedErr
 		}
-		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "mysensor", reading)
+		err = cartoFacade.AddLidarReading(cancelCtx, 5*time.Second, "my-sensor", reading)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -348,7 +349,7 @@ func TestAddLidarReading(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		err = cartoFacade.AddLidarReading(cancelCtx, 1*time.Millisecond, "mysensor", reading)
+		err = cartoFacade.AddLidarReading(cancelCtx, 1*time.Millisecond, "my-sensor", reading)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -364,7 +365,7 @@ func TestAddIMUReading(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mylidar", "myIMU", "", true)
+	cfg := GetTestConfig("my-lidar", "my-movement-sensor", "", true)
 	algoCfg := GetTestAlgoConfig(true)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -382,7 +383,7 @@ func TestAddIMUReading(t *testing.T) {
 		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUReadingResponse) error {
 			return nil
 		}
-		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading)
+		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "my-movement-sensor", testIMUReading)
 		test.That(t, err, test.ShouldBeNil)
 	})
 
@@ -391,7 +392,7 @@ func TestAddIMUReading(t *testing.T) {
 		carto.AddIMUReadingFunc = func(name string, reading s.TimedIMUReadingResponse) error {
 			return expectedErr
 		}
-		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "myIMU", testIMUReading)
+		err := cartoFacade.AddIMUReading(cancelCtx, 5*time.Second, "my-movement-sensor", testIMUReading)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err, test.ShouldResemble, expectedErr)
 	})
@@ -401,7 +402,61 @@ func TestAddIMUReading(t *testing.T) {
 			time.Sleep(50 * time.Millisecond)
 			return nil
 		}
-		err := cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "myIMU", testIMUReading)
+		err := cartoFacade.AddIMUReading(cancelCtx, 1*time.Millisecond, "my-movement-sensor", testIMUReading)
+		test.That(t, err, test.ShouldBeError)
+		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
+		test.That(t, err, test.ShouldResemble, expectedErr)
+	})
+
+	cancelFunc()
+	activeBackgroundWorkers.Wait()
+}
+
+func TestAddOdometerReading(t *testing.T) {
+	lib := CartoLibMock{}
+
+	cancelCtx, cancelFunc := context.WithCancel(context.Background())
+	activeBackgroundWorkers := sync.WaitGroup{}
+
+	cfg := GetTestConfig("my-lidar", "my-movement-sensor", "", true)
+	algoCfg := GetTestAlgoConfig(true)
+
+	cartoFacade := New(&lib, cfg, algoCfg)
+	carto := CartoMock{}
+	cartoFacade.carto = &carto
+	cartoFacade.startCGoroutine(cancelCtx, &activeBackgroundWorkers)
+
+	timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+	testOdometerReading := s.TimedOdometerReadingResponse{
+		Position:    geo.NewPoint(4, 5),
+		Orientation: &spatialmath.Quaternion{Real: 0.8, Imag: -0.2, Jmag: 5.6, Kmag: -0.7},
+		ReadingTime: timestamp,
+	}
+
+	t.Run("success", func(t *testing.T) {
+		carto.AddOdometerReadingFunc = func(name string, reading s.TimedOdometerReadingResponse) error {
+			return nil
+		}
+		err := cartoFacade.AddOdometerReading(cancelCtx, 5*time.Second, "my-movement-sensor", testOdometerReading)
+		test.That(t, err, test.ShouldBeNil)
+	})
+
+	t.Run("failure", func(t *testing.T) {
+		expectedErr := errors.New("AddOdometerReading failed")
+		carto.AddOdometerReadingFunc = func(name string, reading s.TimedOdometerReadingResponse) error {
+			return expectedErr
+		}
+		err := cartoFacade.AddOdometerReading(cancelCtx, 5*time.Second, "my-movement-sensor", testOdometerReading)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err, test.ShouldResemble, expectedErr)
+	})
+
+	t.Run("failure due to time out", func(t *testing.T) {
+		carto.AddOdometerReadingFunc = func(name string, reading s.TimedOdometerReadingResponse) error {
+			time.Sleep(50 * time.Millisecond)
+			return nil
+		}
+		err := cartoFacade.AddOdometerReading(cancelCtx, 1*time.Millisecond, "my-movement-sensor", testOdometerReading)
 		test.That(t, err, test.ShouldBeError)
 		expectedErr := multierr.Combine(errors.New(timeoutErrMessage), context.DeadlineExceeded)
 		test.That(t, err, test.ShouldResemble, expectedErr)
@@ -417,7 +472,7 @@ func TestPosition(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -468,7 +523,7 @@ func TestInternalState(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -517,7 +572,7 @@ func TestPointCloudMap(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)
@@ -566,7 +621,7 @@ func TestRunFinalOptimization(t *testing.T) {
 	cancelCtx, cancelFunc := context.WithCancel(context.Background())
 	activeBackgroundWorkers := sync.WaitGroup{}
 
-	cfg := GetTestConfig("mysensor", "", "", true)
+	cfg := GetTestConfig("my-sensor", "", "", true)
 	algoCfg := GetTestAlgoConfig(false)
 
 	cartoFacade := New(&lib, cfg, algoCfg)

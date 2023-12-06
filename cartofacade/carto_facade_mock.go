@@ -62,8 +62,14 @@ type Mock struct {
 	AddIMUReadingFunc func(
 		ctx context.Context,
 		timeout time.Duration,
-		imuName string,
+		movementSensorName string,
 		currentReading s.TimedIMUReadingResponse,
+	) error
+	AddOdometerReadingFunc func(
+		ctx context.Context,
+		timeout time.Duration,
+		movementSensorName string,
+		currentReading s.TimedOdometerReadingResponse,
 	) error
 	PositionFunc func(
 		ctx context.Context,
@@ -165,13 +171,26 @@ func (cf *Mock) AddLidarReading(
 func (cf *Mock) AddIMUReading(
 	ctx context.Context,
 	timeout time.Duration,
-	imuName string,
+	movementSensorName string,
 	currentReading s.TimedIMUReadingResponse,
 ) error {
 	if cf.AddIMUReadingFunc == nil {
-		return cf.CartoFacade.AddIMUReading(ctx, timeout, imuName, currentReading)
+		return cf.CartoFacade.AddIMUReading(ctx, timeout, movementSensorName, currentReading)
 	}
-	return cf.AddIMUReadingFunc(ctx, timeout, imuName, currentReading)
+	return cf.AddIMUReadingFunc(ctx, timeout, movementSensorName, currentReading)
+}
+
+// AddOdometerReading calls the injected AddOdometerReadingFunc or the real version.
+func (cf *Mock) AddOdometerReading(
+	ctx context.Context,
+	timeout time.Duration,
+	movementSensorName string,
+	currentReading s.TimedOdometerReadingResponse,
+) error {
+	if cf.AddOdometerReadingFunc == nil {
+		return cf.CartoFacade.AddOdometerReading(ctx, timeout, movementSensorName, currentReading)
+	}
+	return cf.AddOdometerReadingFunc(ctx, timeout, movementSensorName, currentReading)
 }
 
 // Position calls the injected PositionFunc or the real version.
