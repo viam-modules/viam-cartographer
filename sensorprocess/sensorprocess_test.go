@@ -244,7 +244,7 @@ func TestTryAddLidarReading(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := config.tryAddLidarReading(context.Background(), reading)
+		timeToSleep := config.tryAddLidarReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -259,7 +259,7 @@ func TestTryAddLidarReading(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := config.tryAddLidarReading(context.Background(), reading)
+		timeToSleep := config.tryAddLidarReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -275,7 +275,7 @@ func TestTryAddLidarReading(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := config.tryAddLidarReading(context.Background(), reading)
+		timeToSleep := config.tryAddLidarReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -289,7 +289,7 @@ func TestTryAddLidarReading(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := config.tryAddLidarReading(context.Background(), reading)
+		timeToSleep := config.tryAddLidarReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.Lidar.DataFrequencyHz())
 	})
@@ -305,7 +305,7 @@ func TestTryAddLidarReading(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := config.tryAddLidarReading(context.Background(), reading)
+		timeToSleep := config.tryAddLidarReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.Lidar.DataFrequencyHz())
 	})
@@ -321,7 +321,7 @@ func TestTryAddLidarReading(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := config.tryAddLidarReading(context.Background(), reading)
+		timeToSleep := config.tryAddLidarReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.Lidar.DataFrequencyHz())
 	})
@@ -425,7 +425,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := config.tryAddIMUReading(context.Background(), reading)
+		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -440,7 +440,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := config.tryAddIMUReading(context.Background(), reading)
+		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -455,7 +455,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := config.tryAddIMUReading(context.Background(), reading)
+		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -469,7 +469,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := config.tryAddIMUReading(context.Background(), reading)
+		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMU.DataFrequencyHz())
 	})
@@ -484,7 +484,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := config.tryAddIMUReading(context.Background(), reading)
+		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMU.DataFrequencyHz())
 	})
@@ -500,7 +500,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := config.tryAddIMUReading(context.Background(), reading)
+		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMU.DataFrequencyHz())
 	})

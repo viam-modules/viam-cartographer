@@ -3,8 +3,11 @@ package sensorprocess
 
 import (
 	"context"
+	"strings"
 	"time"
 
+	"go.viam.com/rdk/components/camera/replaypcd"
+	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 	"go.viam.com/rdk/logging"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
@@ -28,20 +31,23 @@ type Config struct {
 // in a deterministically defined order to cartographer.
 func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 	// get the initial lidar reading
-	lidarReading, lidarEndOfDataSetReached, err := getTimedLidarReading(ctx, config)
-	if err != nil || lidarEndOfDataSetReached {
-		return lidarEndOfDataSetReached
+	lidarReading, err := config.Lidar.TimedLidarReading(ctx)
+	if err != nil {
+		config.Logger.Warn(err)
+		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 	}
 
 	var imuReading s.TimedIMUReadingResponse
 	if config.IMU != nil {
 		// get the initial IMU reading; discard all IMU readings that were recorded before the first lidar reading
 		for {
-			msReading, msEndOfDataSetReached, err := getTimedMovementSensorReading(ctx, config)
-			if err != nil || msEndOfDataSetReached {
-				return msEndOfDataSetReached
+			movementSensorReading, err := config.IMU.TimedMovementSensorReading(ctx)
+			if err != nil {
+				config.Logger.Warn(err)
+				return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
 			}
-			imuReading = *msReading.TimedIMUResponse
+
+			imuReading = *movementSensorReading.TimedIMUResponse
 			if imuReading.ReadingTime.Equal(lidarReading.ReadingTime) ||
 				imuReading.ReadingTime.After(lidarReading.ReadingTime) {
 				break
@@ -62,25 +68,31 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 				if err := config.tryAddLidarReadingUntilSuccess(ctx, lidarReading); err != nil {
 					return false
 				}
-				lidarReading, lidarEndOfDataSetReached, err = getTimedLidarReading(ctx, config)
-				if err != nil || lidarEndOfDataSetReached {
+
+				lidarReading, err = config.Lidar.TimedLidarReading(ctx)
+				if err != nil {
+					config.Logger.Warn(err)
+					lidarEndOfDataSetReached := strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 					if lidarEndOfDataSetReached {
 						config.runFinalOptimization(ctx)
 					}
 					return lidarEndOfDataSetReached
 				}
+
 			} else {
 				if err := config.tryAddIMUReadingUntilSuccess(ctx, imuReading); err != nil {
 					return false
 				}
-				msReading, msEndOfDataSetReached, err := getTimedMovementSensorReading(ctx, config)
-				if err != nil || msEndOfDataSetReached {
+				movementSensorReading, err := config.IMU.TimedMovementSensorReading(ctx)
+				if err != nil {
+					config.Logger.Warn(err)
+					msEndOfDataSetReached := strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
 					if msEndOfDataSetReached {
 						config.runFinalOptimization(ctx)
 					}
 					return msEndOfDataSetReached
 				}
-				imuReading = *msReading.TimedIMUResponse
+				imuReading = *movementSensorReading.TimedIMUResponse
 			}
 		}
 	}

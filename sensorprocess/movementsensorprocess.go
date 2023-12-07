@@ -5,10 +5,7 @@ import (
 	"context"
 	"errors"
 	"math"
-	"strings"
 	"time"
-
-	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
@@ -32,13 +29,14 @@ func (config *Config) StartIMU(ctx context.Context) {
 // addIMUReadingInOnline ensures the most recent IMU scan, after corresponding lidar scans, gets processed by cartographer.
 func (config *Config) addIMUReadingInOnline(ctx context.Context) error {
 	// get next IMU data response; ignoring status since it is always false
-	tsr, _, err := getTimedMovementSensorReading(ctx, config)
+	imuReading, err := config.IMU.TimedMovementSensorReading(ctx)
 	if err != nil {
+		config.Logger.Warn(err)
 		return err
 	}
 
 	// add IMU data to cartographer and sleep remainder of time interval
-	timeToSleep := config.tryAddIMUReading(ctx, *tsr.TimedIMUResponse)
+	timeToSleep := config.tryAddIMUReadingOnce(ctx, *imuReading.TimedIMUResponse)
 	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
 	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
 	return nil
@@ -53,45 +51,38 @@ func (config *Config) tryAddIMUReadingUntilSuccess(ctx context.Context, reading 
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			if err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading); err != nil {
-				config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
+			if err := config.tryAddIMUReading(ctx, reading); err != nil {
 				if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 					config.Logger.Warnw("Retrying sensor reading due to error from cartofacade", "error", err)
 				}
 			} else {
-				config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 				return nil
 			}
 		}
 	}
 }
 
-// tryAddIMUReading adds a reading to the carto facade and does not retry (online).
-func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMUReadingResponse) int {
+// tryAddIMUReadingOnce adds a reading to the carto facade and does not retry. Returns remainder of time interval.
+func (config *Config) tryAddIMUReadingOnce(ctx context.Context, reading s.TimedIMUReadingResponse) int {
 	startTime := time.Now().UTC()
-	if err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading); err != nil {
-		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
+	if err := config.tryAddIMUReading(ctx, reading); err != nil {
 		if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 			config.Logger.Debugw("Skipping sensor reading due to lock contention in cartofacade", "error", err)
 		} else {
 			config.Logger.Warnw("Skipping sensor reading due to error from cartofacade", "error", err)
 		}
 	}
-	config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 	timeElapsedMs := int(time.Since(startTime).Milliseconds())
 	return int(math.Max(0, float64(1000/config.IMU.DataFrequencyHz()-timeElapsedMs)))
 }
 
-// getTimedMovementSensorReading returns the next movement sensor reading if available along with a status
-// denoting if the end of dataset has been reached.
-func getTimedMovementSensorReading(ctx context.Context, config *Config) (s.TimedMovementSensorReadingResponse, bool, error) {
-	tsr, err := config.IMU.TimedMovementSensorReading(ctx)
+// tryAddIMUReading tries to add a reading to the carto facade.
+func (config *Config) tryAddIMUReading(ctx context.Context, reading s.TimedIMUReadingResponse) error {
+	err := config.CartoFacade.AddIMUReading(ctx, config.Timeout, config.IMU.Name(), reading)
 	if err != nil {
-		config.Logger.Warn(err)
-		// only end the sensor process if we are in offline mode
-		if !config.IsOnline {
-			return tsr, strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error()), err
-		}
+		config.Logger.Debugf("%v \t |  IMU  | Failure \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
+	} else {
+		config.Logger.Debugf("%v \t |  IMU  | Success \t \t | %v \n", reading.ReadingTime, reading.ReadingTime.Unix())
 	}
-	return tsr, false, err
+	return err
 }
