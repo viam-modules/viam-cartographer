@@ -126,6 +126,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 	}
 
 	if spConfig.IsOnline {
+		// online mode is parallelized
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
@@ -140,6 +141,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 			}()
 		}
 	} else {
+		// offline mode is sequential
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
