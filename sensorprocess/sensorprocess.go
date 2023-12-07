@@ -76,7 +76,6 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 					}
 					return lidarEndOfDataSetReached
 				}
-
 			} else {
 				if err := config.tryAddIMUReadingUntilSuccess(ctx, imuReading); err != nil {
 					return false
