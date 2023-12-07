@@ -53,7 +53,7 @@ type MovementSensorProperties struct {
 type TimedMovementSensorReadingResponse struct {
 	TimedIMUResponse      *TimedIMUReadingResponse
 	TimedOdometerResponse *TimedOdometerReadingResponse
-	IsReplaySensor        bool
+	TestIsReplaySensor    bool
 }
 
 // TimedIMUReadingResponse represents an IMU sensor reading with a time.
@@ -72,12 +72,12 @@ type TimedOdometerReadingResponse struct {
 
 // MovementSensor represents a movement sensor.
 type MovementSensor struct {
-	name              string
-	dataFrequencyHz   int
-	imuSupported      bool
-	odometerSupported bool
-	replay            bool
-	sensor            movementsensor.MovementSensor
+	name               string
+	dataFrequencyHz    int
+	imuSupported       bool
+	odometerSupported  bool
+	sensor             movementsensor.MovementSensor
+	testIsReplaySensor bool
 }
 
 // Name returns the name of the movement sensor.
@@ -144,7 +144,7 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 	return TimedMovementSensorReadingResponse{
 		TimedIMUResponse:      timedIMUReadingResponse,
 		TimedOdometerResponse: timedOdometerReadingResponse,
-		IsReplaySensor:        ms.replay,
+		TestIsReplaySensor:    ms.testIsReplaySensor,
 	}, nil
 }
 
@@ -177,7 +177,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
-			ms.replay = true
+			ms.testIsReplaySensor = true
 			if *readingTimeLinearAcc, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 				return &TimedIMUReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 			}
@@ -197,7 +197,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
-			ms.replay = true
+			ms.testIsReplaySensor = true
 			if *readingTimeAngularVel, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 				return &TimedIMUReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 			}
@@ -238,7 +238,7 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
-			ms.replay = true
+			ms.testIsReplaySensor = true
 			if *readingTimePosition, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 				return &TimedOdometerReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 			}
@@ -258,7 +258,7 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 		}
 
 		if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
-			ms.replay = true
+			ms.testIsReplaySensor = true
 			if *readingTimeOrientation, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 				return &TimedOdometerReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 			}

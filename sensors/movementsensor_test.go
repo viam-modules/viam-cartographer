@@ -171,7 +171,7 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
 		test.That(t, actualReading.TimedOdometerResponse, test.ShouldBeNil)
-		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
+		test.That(t, actualReading.TestIsReplaySensor, test.ShouldBeFalse)
 	})
 
 	t.Run("when a live odometer succeeds, returns current time in UTC and the reading", func(t *testing.T) {
@@ -195,7 +195,7 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
 		test.That(t, actualReading.TimedIMUResponse, test.ShouldBeNil)
-		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
+		test.That(t, actualReading.TestIsReplaySensor, test.ShouldBeFalse)
 	})
 
 	t.Run("when a movemement sensor that supports both an odometer and an IMU succeeds,"+
@@ -222,6 +222,6 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.After(beforeReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
-		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
+		test.That(t, actualReading.TestIsReplaySensor, test.ShouldBeFalse)
 	})
 }

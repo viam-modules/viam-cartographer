@@ -77,6 +77,10 @@ type Mock struct {
 		ctx context.Context,
 		timeout time.Duration,
 	) ([]byte, error)
+	RunFinalOptimizationFunc func(
+		ctx context.Context,
+		timeout time.Duration,
+	) error
 }
 
 // request calls the injected requestFunc or the real version.
@@ -205,4 +209,15 @@ func (cf *Mock) PointCloudMap(
 		return cf.CartoFacade.PointCloudMap(ctx, timeout)
 	}
 	return cf.PointCloudMapFunc(ctx, timeout)
+}
+
+// RunFinalOptimization calls the injected RunFinalOptimizationFunc or the real version.
+func (cf *Mock) RunFinalOptimization(
+	ctx context.Context,
+	timeout time.Duration,
+) error {
+	if cf.RunFinalOptimizationFunc == nil {
+		return cf.CartoFacade.RunFinalOptimization(ctx, timeout)
+	}
+	return cf.RunFinalOptimizationFunc(ctx, timeout)
 }
