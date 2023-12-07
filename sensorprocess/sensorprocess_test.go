@@ -38,10 +38,6 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 
 	cf := cartofacade.Mock{}
 
-	runFinalOptimizationFunc := func(context.Context, time.Duration) error {
-		return nil
-	}
-
 	injectLidar := inject.TimedLidar{}
 	injectLidar.NameFunc = func() string { return "good_lidar" }
 	injectLidar.DataFrequencyHzFunc = func() int { return 0 }
@@ -51,12 +47,11 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 	injectMovementSensor.DataFrequencyHzFunc = func() int { return 0 }
 
 	config := Config{
-		Logger:                   logger,
-		CartoFacade:              &cf,
-		IsOnline:                 injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:                    &injectLidar,
-		Timeout:                  10 * time.Second,
-		RunFinalOptimizationFunc: runFinalOptimizationFunc,
+		Logger:      logger,
+		CartoFacade: &cf,
+		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:       &injectLidar,
+		Timeout:     10 * time.Second,
 	}
 
 	t.Run("no data is added if lidar reached end of data set at the start", func(t *testing.T) {
@@ -87,7 +82,7 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 	})
 
 	t.Run("returns true when lidar reaches the end of the dataset and the optimization function fails", func(t *testing.T) {
-		config.RunFinalOptimizationFunc = func(context.Context, time.Duration) error {
+		cf.RunFinalOptimizationFunc = func(context.Context, time.Duration) error {
 			return errors.New("test error")
 		}
 
@@ -104,7 +99,9 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 
 	t.Run("successful data insertion", func(t *testing.T) {
 		config.Lidar = &injectLidar
-		config.RunFinalOptimizationFunc = runFinalOptimizationFunc
+		cf.RunFinalOptimizationFunc = func(context.Context, time.Duration) error {
+			return nil
+		}
 
 		cases := []struct {
 			description             string
@@ -230,12 +227,11 @@ func TestTryAddLidarReading(t *testing.T) {
 	injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 
 	config := Config{
-		Logger:                   logger,
-		CartoFacade:              &cf,
-		IsOnline:                 injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:                    &injectLidar,
-		Timeout:                  10 * time.Second,
-		RunFinalOptimizationFunc: cf.RunFinalOptimization,
+		Logger:      logger,
+		CartoFacade: &cf,
+		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:       &injectLidar,
+		Timeout:     10 * time.Second,
 	}
 	t.Run("when AddLidarReading blocks for more than the data rate and succeeds, time to sleep is 0", func(t *testing.T) {
 		cf.AddLidarReadingFunc = func(
@@ -341,12 +337,11 @@ func TestAddLidarReadingInOnline(t *testing.T) {
 	injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 
 	config := Config{
-		Logger:                   logger,
-		CartoFacade:              &cf,
-		IsOnline:                 injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:                    &injectLidar,
-		Timeout:                  10 * time.Second,
-		RunFinalOptimizationFunc: cf.RunFinalOptimization,
+		Logger:      logger,
+		CartoFacade: &cf,
+		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:       &injectLidar,
+		Timeout:     10 * time.Second,
 	}
 
 	t.Run("returns error when lidar GetData returns error, doesn't try to add lidar data", func(t *testing.T) {
@@ -372,12 +367,11 @@ func TestStartLidar(t *testing.T) {
 	injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 
 	config := Config{
-		Logger:                   logger,
-		CartoFacade:              &cf,
-		IsOnline:                 injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:                    &injectLidar,
-		Timeout:                  10 * time.Second,
-		RunFinalOptimizationFunc: cf.RunFinalOptimization,
+		Logger:      logger,
+		CartoFacade: &cf,
+		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:       &injectLidar,
+		Timeout:     10 * time.Second,
 	}
 
 	t.Run("exits loop when the context was cancelled", func(t *testing.T) {
@@ -583,11 +577,11 @@ func TestStartIMU(t *testing.T) {
 func TestTryAddLidarReadingUntilSuccess(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
-
-	dataFrequencyHz := 0
-	runFinalOptimizationFunc := func(context.Context, time.Duration) error {
+	cf.RunFinalOptimizationFunc = func(context.Context, time.Duration) error {
 		return nil
 	}
+
+	dataFrequencyHz := 0
 
 	lidarReading := s.TimedLidarReadingResponse{
 		Reading:     []byte("12345"),
@@ -598,12 +592,11 @@ func TestTryAddLidarReadingUntilSuccess(t *testing.T) {
 	injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 
 	config := Config{
-		Logger:                   logger,
-		CartoFacade:              &cf,
-		IsOnline:                 false,
-		Lidar:                    &injectLidar,
-		Timeout:                  10 * time.Second,
-		RunFinalOptimizationFunc: runFinalOptimizationFunc,
+		Logger:      logger,
+		CartoFacade: &cf,
+		IsOnline:    false,
+		Lidar:       &injectLidar,
+		Timeout:     10 * time.Second,
 	}
 
 	t.Run("replay lidar adds sensor data until success", func(t *testing.T) {

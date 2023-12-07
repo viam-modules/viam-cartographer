@@ -19,10 +19,9 @@ type Config struct {
 	Lidar s.TimedLidar
 	IMU   s.TimedMovementSensor
 
-	Timeout                  time.Duration
-	InternalTimeout          time.Duration
-	Logger                   logging.Logger
-	RunFinalOptimizationFunc func(context.Context, time.Duration) error
+	Timeout         time.Duration
+	InternalTimeout time.Duration
+	Logger          logging.Logger
 }
 
 // StartOfflineSensorProcess starts the process of adding lidar and movement sensor data
@@ -89,7 +88,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 
 func (config *Config) runFinalOptimization(ctx context.Context) {
 	config.Logger.Info("Beginning final optimization")
-	if err := config.RunFinalOptimizationFunc(ctx, config.InternalTimeout); err != nil {
+	if err := config.CartoFacade.RunFinalOptimization(ctx, config.InternalTimeout); err != nil {
 		config.Logger.Error("Failed to finish processing all sensor readings: ", err)
 	}
 }
