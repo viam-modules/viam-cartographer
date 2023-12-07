@@ -146,8 +146,8 @@ type timeTracker struct {
 	imuTime     time.Time
 	nextImuTime time.Time
 
-	finalLidarTime time.Time
-	finalImuTime   time.Time
+	lidarDone bool
+	imuDone   bool
 
 	mu *sync.Mutex
 }
@@ -184,7 +184,6 @@ func integrationTimedLidar(
 		return nil, err
 	}
 
-	closed := false
 	injectLidar := &inject.TimedLidar{}
 	injectLidar.NameFunc = func() string { return lidar["name"] }
 	injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
@@ -202,7 +201,7 @@ func integrationTimedLidar(
 				break
 			}
 
-			if i <= 1 || timeTracker.lidarTime.Sub(timeTracker.imuTime) <= 0 {
+			if i <= 1 || !timeTracker.lidarTime.After(timeTracker.imuTime) {
 				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
@@ -211,13 +210,13 @@ func integrationTimedLidar(
 
 		// Communicate that all lidar readings have been sent to cartographer or if the last IMU reading has been sent,
 		// checks if LastLidarTime has been defined. If so, simulate endOfDataSet error.
-		t.Logf("TimedLidarReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.lidarTime.String())
-		if i >= NumPointClouds || timeTracker.finalImuTime != undefinedTime {
+		t.Logf("TimedLidarReading Mock i: %d, closed: %v, readingTime: %s\n", i, timeTracker.lidarDone,
+			timeTracker.lidarTime.String())
+		if i >= NumPointClouds || timeTracker.imuDone {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
-			if !closed {
+			if !timeTracker.lidarDone {
 				done <- struct{}{}
-				closed = true
-				timeTracker.finalLidarTime = timeTracker.lidarTime
+				timeTracker.lidarDone = true
 			}
 
 			return s.TimedLidarReadingResponse{}, replaylidar.ErrEndOfDataset
@@ -391,7 +390,6 @@ func integrationTimedIMU(
 	}
 
 	var i uint64
-	closed := false
 	injectIMU := &inject.TimedMovementSensor{}
 	injectIMU.NameFunc = func() string { return movementSensor["name"] }
 	injectIMU.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
@@ -404,7 +402,7 @@ func integrationTimedIMU(
 		*/
 		for {
 			timeTracker.mu.Lock()
-			if i == 0 || timeTracker.imuTime.Sub(timeTracker.nextLidarTime) < 0 {
+			if i == 0 || timeTracker.imuTime.Before(timeTracker.nextLidarTime) {
 				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
@@ -413,13 +411,13 @@ func integrationTimedIMU(
 
 		// Communicate that all desired IMU readings have been sent or to cartographer or if the last lidar reading
 		// has been sent by, checks if lastLidarTime has been defined. If so, simulate endOfDataSet error.
-		t.Logf("TimedMovementSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, closed, timeTracker.imuTime.String())
-		if int(i) >= len(mockDataset) || timeTracker.finalLidarTime != undefinedTime {
+		t.Logf("TimedMovementSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, timeTracker.imuDone,
+			timeTracker.imuTime.String())
+		if int(i) >= len(mockDataset) || timeTracker.lidarDone {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
-			if !closed {
+			if !timeTracker.imuDone {
 				done <- struct{}{}
-				closed = true
-				timeTracker.finalImuTime = timeTracker.imuTime
+				timeTracker.imuDone = true
 			}
 			return s.TimedMovementSensorReadingResponse{}, replaymovementsensor.ErrEndOfDataset
 		}
