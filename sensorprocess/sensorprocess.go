@@ -48,8 +48,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 			}
 
 			imuReading = *movementSensorReading.TimedIMUResponse
-			if imuReading.ReadingTime.Equal(lidarReading.ReadingTime) ||
-				imuReading.ReadingTime.After(lidarReading.ReadingTime) {
+			if !imuReading.ReadingTime.Before(lidarReading.ReadingTime) {
 				break
 			}
 		}
@@ -63,8 +62,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 		default:
 			// insert the reading with the earliest time stamp
 			if config.IMU == nil ||
-				lidarReading.ReadingTime.Before(imuReading.ReadingTime) ||
-				lidarReading.ReadingTime.Equal(imuReading.ReadingTime) {
+				!lidarReading.ReadingTime.After(imuReading.ReadingTime) {
 				if err := config.tryAddLidarReadingUntilSuccess(ctx, lidarReading); err != nil {
 					return false
 				}
