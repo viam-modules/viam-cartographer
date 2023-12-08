@@ -15,7 +15,7 @@ import (
 
 var emptyRequestParams = map[RequestParamType]interface{}{}
 
-// ErrUnableToAcquireLock is the error returned from AddLidarReading and/or AddIMUReading
+// ErrUnableToAcquireLock is the error returned from AddLidarReading, AddIMUReading,
 // and/or AddOdometerReading when lock can't be acquired.
 var ErrUnableToAcquireLock = errors.New("VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK")
 

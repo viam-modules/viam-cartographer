@@ -155,12 +155,12 @@ func TestToIMUReading(t *testing.T) {
 		}
 		sr := toIMUReading("my-movement-sensor", reading)
 		test.That(t, bstringToGoString(sr.imu), test.ShouldResemble, "my-movement-sensor")
-		test.That(t, sr.lin_acc_x, test.ShouldEqual, 0.1)
-		test.That(t, sr.lin_acc_y, test.ShouldEqual, 0)
-		test.That(t, sr.lin_acc_z, test.ShouldEqual, 9.8)
-		test.That(t, sr.ang_vel_x, test.ShouldEqual, 0)
-		test.That(t, sr.ang_vel_y, test.ShouldEqual, -0.2)
-		test.That(t, sr.ang_vel_z, test.ShouldEqual, 0)
+		test.That(t, sr.lin_acc_x, test.ShouldEqual, reading.LinearAcceleration.X)
+		test.That(t, sr.lin_acc_y, test.ShouldEqual, reading.LinearAcceleration.Y)
+		test.That(t, sr.lin_acc_z, test.ShouldEqual, reading.LinearAcceleration.Z)
+		test.That(t, sr.ang_vel_x, test.ShouldEqual, reading.AngularVelocity.X)
+		test.That(t, sr.ang_vel_y, test.ShouldEqual, reading.AngularVelocity.Y)
+		test.That(t, sr.ang_vel_z, test.ShouldEqual, reading.AngularVelocity.Z)
 		test.That(t, sr.imu_reading_time_unix_milli, test.ShouldEqual, timestamp.UnixMilli())
 	})
 }
@@ -173,16 +173,17 @@ func TestToOdometerReading(t *testing.T) {
 			Orientation: &spatialmath.Quaternion{Real: 0.8, Imag: -0.2, Jmag: 5.6, Kmag: -0.7},
 			ReadingTime: timestamp,
 		}
-		translation := spatialmath.GeoPointToPose(reading.Position, geo.NewPoint(0, 0)).Point()
+		origin := geo.NewPoint(0, 0)
+		translation := spatialmath.GeoPointToPose(reading.Position, origin).Point()
 		sr := toOdometerReading("my-movement-sensor", reading)
 		test.That(t, bstringToGoString(sr.odometer), test.ShouldResemble, "my-movement-sensor")
 		test.That(t, sr.translation_x, test.ShouldEqual, translation.X)
 		test.That(t, sr.translation_y, test.ShouldEqual, translation.Y)
 		test.That(t, sr.translation_z, test.ShouldEqual, translation.Z)
-		test.That(t, sr.rotation_x, test.ShouldEqual, -0.2)
-		test.That(t, sr.rotation_y, test.ShouldEqual, 5.6)
-		test.That(t, sr.rotation_z, test.ShouldEqual, -0.7)
-		test.That(t, sr.rotation_w, test.ShouldEqual, 0.8)
+		test.That(t, sr.rotation_x, test.ShouldEqual, reading.Orientation.Quaternion().Imag)
+		test.That(t, sr.rotation_y, test.ShouldEqual, reading.Orientation.Quaternion().Jmag)
+		test.That(t, sr.rotation_z, test.ShouldEqual, reading.Orientation.Quaternion().Kmag)
+		test.That(t, sr.rotation_w, test.ShouldEqual, reading.Orientation.Quaternion().Real)
 		test.That(t, sr.odometer_reading_time_unix_milli, test.ShouldEqual, timestamp.UnixMilli())
 	})
 }
