@@ -480,7 +480,7 @@ func toOdometerReading(movementSensor string, reading s.TimedOdometerReadingResp
 	defer C.free(unsafe.Pointer(sensorCStr))
 	sr.odometer = C.blk2bstr(unsafe.Pointer(sensorCStr), C.int(len(movementSensor)))
 
-	translation := spatialmath.GeoPointToPose(reading.Position, geo.NewPoint(0, 0)).Point()
+	translation := spatialmath.GeoPointToPoint(reading.Position, geo.NewPoint(0, 0))
 	rotation := reading.Orientation.Quaternion()
 
 	sr.translation_x = C.double(translation.X)

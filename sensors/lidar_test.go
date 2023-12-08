@@ -20,7 +20,7 @@ func TestNewLidar(t *testing.T) {
 		actualLidar, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("error getting lidar camera "+
-				" for slam service: \"rdk:component:camera/\" missing from dependencies"))
+				" for slam service: Resource missing from dependencies. Resource: rdk:component:camera/"))
 		test.That(t, actualLidar, test.ShouldResemble, s.Lidar{})
 	})
 
@@ -29,7 +29,7 @@ func TestNewLidar(t *testing.T) {
 		actualLidar, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
 			errors.New("error getting lidar camera "+
-				"gibberish_lidar for slam service: \"rdk:component:camera/gibberish_lidar\" missing from dependencies"))
+				"gibberish_lidar for slam service: Resource missing from dependencies. Resource: rdk:component:camera/gibberish_lidar"))
 		test.That(t, actualLidar, test.ShouldResemble, s.Lidar{})
 	})
 

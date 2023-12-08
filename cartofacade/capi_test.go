@@ -174,7 +174,7 @@ func TestToOdometerReading(t *testing.T) {
 			ReadingTime: timestamp,
 		}
 		origin := geo.NewPoint(0, 0)
-		translation := spatialmath.GeoPointToPose(reading.Position, origin).Point()
+		translation := spatialmath.GeoPointToPoint(reading.Position, origin)
 		sr := toOdometerReading("my-movement-sensor", reading)
 		test.That(t, bstringToGoString(sr.odometer), test.ShouldResemble, "my-movement-sensor")
 		test.That(t, sr.translation_x, test.ShouldEqual, translation.X)
