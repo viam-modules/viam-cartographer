@@ -890,6 +890,57 @@ void CartoFacade::AddIMUReading(const viam_carto_imu_reading *sr) {
     }
 };
 
+void CartoFacade::AddOdometerReading(const viam_carto_odometer_reading *sr) {
+    if (state != CartoFacadeState::STARTED) {
+        LOG(ERROR) << "carto facade is in state: " << state
+                   << " expected it to be in state: "
+                   << CartoFacadeState::STARTED;
+        throw VIAM_CARTO_NOT_IN_STARTED_STATE;
+    }
+    bstring movement_sensor = to_bstring(config.movement_sensor);
+
+    bool known_sensor = biseq(movement_sensor, sr->odometer);
+    bdestroy(movement_sensor);
+
+    if (!known_sensor) {
+        VLOG(1) << "expected sensor: " << to_std_string(sr->odometer)
+                << " to be " << config.movement_sensor;
+        throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
+    }
+
+    int64_t odometer_reading_time_unix_milli =
+        sr->odometer_reading_time_unix_milli;
+
+    cartographer::sensor::OdometryData measurement;
+    measurement.time = cartographer::common::FromUniversal(0) +
+                       cartographer::common::FromMilliseconds(
+                           odometer_reading_time_unix_milli);
+    measurement.pose = cartographer::transform::Rigid3d(
+        cartographer::transform::Rigid3d::Vector(
+            sr->translation_x, sr->translation_y, sr->translation_z),
+        cartographer::transform::Rigid3d::Quaternion(
+            sr->rotation_w, sr->rotation_x, sr->rotation_y, sr->rotation_z));
+
+    cartographer::transform::Rigid3d tmp_global_pose;
+
+    if (map_builder_mutex.try_lock()) {
+        VLOG(1) << "AddSensorData timestamp: " << measurement.time
+                << " Sensor type: Odometer ";
+        map_builder.AddSensorData(kOdometerSensorId.id, measurement);
+        VLOG(1) << "Data added is: " << measurement.pose.DebugString();
+        LOG(INFO) << "Added odometer data to Cartographer";
+        tmp_global_pose = map_builder.GetGlobalPose();
+        map_builder_mutex.unlock();
+        {
+            std::lock_guard<std::mutex> lk(viam_response_mutex);
+            latest_global_pose = tmp_global_pose;
+        }
+        return;
+    } else {
+        throw VIAM_CARTO_UNABLE_TO_ACQUIRE_LOCK;
+    }
+};
+
 viam::carto_facade::SlamMode determine_slam_mode(
     std::string path_to_internal_state, std::chrono::seconds map_rate_sec) {
     // Check if there is an apriori map (internal state) in the
@@ -1202,6 +1253,47 @@ extern int viam_carto_add_imu_reading_destroy(viam_carto_imu_reading *sr) {
         return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
     }
     sr->imu = nullptr;
+
+    return return_code;
+};
+
+extern int viam_carto_add_odometer_reading(
+    viam_carto *vc, const viam_carto_odometer_reading *sr) {
+    if (vc == nullptr) {
+        return VIAM_CARTO_VC_INVALID;
+    }
+
+    if (sr == nullptr) {
+        return VIAM_CARTO_ODOMETER_READING_INVALID;
+    }
+
+    try {
+        viam::carto_facade::CartoFacade *cf =
+            static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
+        cf->AddOdometerReading(sr);
+    } catch (int err) {
+        return err;
+    } catch (std::exception &e) {
+        LOG(ERROR) << e.what();
+        return VIAM_CARTO_UNKNOWN_ERROR;
+    }
+    return VIAM_CARTO_SUCCESS;
+};
+
+extern int viam_carto_add_odometer_reading_destroy(
+    viam_carto_odometer_reading *sr) {
+    if (sr == nullptr) {
+        return VIAM_CARTO_ODOMETER_READING_INVALID;
+    }
+    int return_code = VIAM_CARTO_SUCCESS;
+    int rc = BSTR_OK;
+
+    // destroy sensor
+    rc = bdestroy(sr->odometer);
+    if (rc != BSTR_OK) {
+        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
+    }
+    sr->odometer = nullptr;
 
     return return_code;
 };

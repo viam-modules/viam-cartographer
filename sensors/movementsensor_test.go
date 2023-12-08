@@ -35,8 +35,8 @@ func TestNewMovementSensor(t *testing.T) {
 		deps := s.SetupDeps(lidar, movementSensor)
 		actualMs, err := s.NewMovementSensor(context.Background(), deps, string(movementSensor), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("error getting movement sensor \""+string(movementSensor)+"\" for slam service: \""+
-				"rdk:component:movement_sensor/"+string(movementSensor)+"\" missing from dependencies"))
+			errors.New("error getting movement sensor \""+string(movementSensor)+"\" for slam service: "+
+				"Resource missing from dependencies. Resource: rdk:component:movement_sensor/"+string(movementSensor)))
 		test.That(t, actualMs, test.ShouldResemble, &s.MovementSensor{})
 	})
 
