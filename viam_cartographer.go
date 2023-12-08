@@ -30,8 +30,8 @@ import (
 var (
 	Model    = resource.NewModel("viam", "slam", "cartographer")
 	cartoLib cartofacade.CartoLib
-	// ErrClosed denotes that the slam service method was called on a closed slam resource.
-	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
+	// ErrTimeoutWritingToCartographer denotes that the slam service is not available.
+	ErrTimeoutWritingToCartographer = errors.New("timeout writing to cartographer; context deadline exceeded")
 	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
 )
@@ -232,7 +232,6 @@ func New(
 		Named:                      c.ResourceName().AsNamed(),
 		lidar:                      timedLidar,
 		movementSensor:             timedMovementSensor,
-		movementSensorName:         movementSensorName,
 		subAlgo:                    subAlgo,
 		configParams:               svcConfig.ConfigParams,
 		cancelSensorProcessFunc:    cancelSensorProcessFunc,
@@ -395,18 +394,12 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		return err
 	}
 
-	cartoCfg := cartofacade.CartoConfig{
-		Camera:             cartoSvc.lidar.Name(),
-		MovementSensor:     cartoSvc.movementSensorName,
-		ComponentReference: cartoSvc.lidar.Name(),
-		LidarConfig:        cartofacade.TwoD,
-		EnableMapping:      cartoSvc.enableMapping,
-		ExistingMap:        cartoSvc.existingMap,
-	}
-
-	if cartoSvc.movementSensorName == "" {
+	var movementSensorName string
+	if cartoSvc.movementSensor == nil {
 		cartoSvc.logger.Debug("No movement sensor provided, setting use_imu_data to false")
 	} else {
+		movementSensorName = cartoSvc.movementSensor.Name()
+
 		movementSensorProperties := cartoSvc.movementSensor.Properties()
 		if movementSensorProperties.IMUSupported {
 			cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
@@ -414,6 +407,18 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		} else {
 			cartoSvc.logger.Warn("Movement sensor was provided but does not support IMU data, setting use_imu_data to false")
 		}
+		if movementSensorProperties.OdometerSupported {
+			cartoSvc.logger.Debug("Odometer is supported")
+		}
+	}
+
+	cartoCfg := cartofacade.CartoConfig{
+		Camera:             cartoSvc.lidar.Name(),
+		MovementSensor:     movementSensorName,
+		ComponentReference: cartoSvc.lidar.Name(),
+		LidarConfig:        cartofacade.TwoD,
+		EnableMapping:      cartoSvc.enableMapping,
+		ExistingMap:        cartoSvc.existingMap,
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
@@ -463,13 +468,10 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 type CartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
-	mu                 sync.Mutex
-	SlamMode           cartofacade.SlamMode
-	closed             bool
-	lidar              s.TimedLidar
-	movementSensor     s.TimedMovementSensor
-	movementSensorName string
-	subAlgo            SubAlgo
+	SlamMode       cartofacade.SlamMode
+	lidar          s.TimedLidar
+	movementSensor s.TimedMovementSensor
+	subAlgo        SubAlgo
 
 	configParams map[string]string
 
@@ -500,10 +502,6 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 		cartoSvc.logger.Warn("Position called with use_cloud_slam set to true")
 		return nil, "", ErrUseCloudSlamEnabled
 	}
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("Position called after closed")
-		return nil, "", ErrClosed
-	}
 
 	pos, err := cartoSvc.cartofacade.Position(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
@@ -532,11 +530,6 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, ErrUseCloudSlamEnabled
 	}
 
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("PointCloudMap called after closed")
-		return nil, ErrClosed
-	}
-
 	pc, err := cartoSvc.cartofacade.PointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
 		return nil, err
@@ -552,11 +545,6 @@ func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() 
 	if cartoSvc.useCloudSlam {
 		cartoSvc.logger.Warn("InternalState called with use_cloud_slam set to true")
 		return nil, ErrUseCloudSlamEnabled
-	}
-
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("InternalState called after closed")
-		return nil, ErrClosed
 	}
 
 	is, err := cartoSvc.cartofacade.InternalState(ctx, cartoSvc.cartoFacadeTimeout)
@@ -592,11 +580,6 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 		return time.Time{}, ErrUseCloudSlamEnabled
 	}
 
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("LatestMapInfo called after closed")
-		return time.Time{}, ErrClosed
-	}
-
 	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
 		cartoSvc.mapTimestamp = time.Now().UTC()
 	}
@@ -610,10 +593,6 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		cartoSvc.logger.Warn("DoCommand called with use_cloud_slam set to true")
 		return nil, ErrUseCloudSlamEnabled
 	}
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("DoCommand called after closed")
-		return nil, ErrClosed
-	}
 
 	if _, ok := req["job_done"]; ok {
 		return map[string]interface{}{"job_done": cartoSvc.jobDone.Load()}, nil
@@ -624,18 +603,12 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *CartographerService) Close(ctx context.Context) error {
-	cartoSvc.mu.Lock()
 	if cartoSvc.useCloudSlam {
 		return nil
 	}
 
 	cartoSvc.logger.Info("Closing cartographer module")
 
-	defer cartoSvc.mu.Unlock()
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("Close() called multiple times")
-		return nil
-	}
 	// stop sensor process workers
 	cartoSvc.cancelSensorProcessFunc()
 	cartoSvc.sensorProcessWorkers.Wait()
@@ -649,7 +622,6 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 	// stop carto facade workers
 	cartoSvc.cancelCartoFacadeFunc()
 	cartoSvc.cartoFacadeWorkers.Wait()
-	cartoSvc.closed = true
 
 	cartoSvc.logger.Info("Closing complete")
 	return nil

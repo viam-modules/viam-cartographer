@@ -275,7 +275,7 @@ func TestClose(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	ctx := context.Background()
 
-	t.Run("is idempotent and makes all endpoints return closed errors", func(t *testing.T) {
+	t.Run("is idempotent and results in cartofacade timeout errors", func(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
@@ -302,24 +302,24 @@ func TestClose(t *testing.T) {
 		pose, componentRef, err := svc.Position(ctx)
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentRef, test.ShouldBeEmpty)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrTimeoutWritingToCartographer)
 
 		gpcmF, err := svc.PointCloudMap(ctx)
 		test.That(t, gpcmF, test.ShouldBeNil)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrTimeoutWritingToCartographer)
 
 		gisF, err := svc.InternalState(ctx)
 		test.That(t, gisF, test.ShouldBeNil)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrTimeoutWritingToCartographer)
 
-		mapTime, err := svc.LatestMapInfo(ctx)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
-		test.That(t, mapTime, test.ShouldResemble, time.Time{})
+		// LatestMapInfo does not call into cartofacade and does therefore not return an error
+		_, err = svc.LatestMapInfo(ctx)
+		test.That(t, err, test.ShouldBeNil)
 
 		cmd := map[string]interface{}{}
 		resp, err := svc.DoCommand(ctx, cmd)
 		test.That(t, resp, test.ShouldBeNil)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, err, test.ShouldBeError, viamgrpc.UnimplementedError)
 	})
 }
 
