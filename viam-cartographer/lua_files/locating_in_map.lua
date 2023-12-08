@@ -15,10 +15,13 @@ TRAJECTORY_BUILDER.trajectory_builder_2d.max_range = 25.
 TRAJECTORY_BUILDER.trajectory_builder_2d.missing_data_ray_length = 25 -- DO NOT CHANGE
 
 -- tuneable:
-TRAJECTORY_BUILDER.trajectory_builder_2d.submaps.num_range_data = 100
 TRAJECTORY_BUILDER.pure_localization_trimmer = {
   max_submaps_to_keep = 3,
 }
+TRAJECTORY_BUILDER.trajectory_builder_2d.submaps.num_range_data = 30
+TRAJECTORY_BUILDER.trajectory_builder_2d.ceres_scan_matcher.occupied_space_weight = 20.
+TRAJECTORY_BUILDER.trajectory_builder_2d.ceres_scan_matcher.translation_weight = 10.0
+TRAJECTORY_BUILDER.trajectory_builder_2d.ceres_scan_matcher.rotation_weight = 1.
 
 -- ===== Global SLAM Options ======
 -- no reason to change these:
