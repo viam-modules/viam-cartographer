@@ -3,6 +3,8 @@ package sensorprocess
 
 import (
 	"context"
+	"errors"
+	"sort"
 	"strings"
 	"time"
 
@@ -19,16 +21,48 @@ type Config struct {
 	CartoFacade cartofacade.Interface
 	IsOnline    bool
 
-	Lidar s.TimedLidar
-	IMU   s.TimedMovementSensor
+	Lidar          s.TimedLidar
+	MovementSensor s.TimedMovementSensor
 
 	Timeout         time.Duration
 	InternalTimeout time.Duration
 	Logger          logging.Logger
 }
 
+// getInitialMovementSensorReading gets the initial movement sensor reading.
+// It discards all movement sensor readings that were recorded before the first lidar reading.
+func (config *Config) getInitialMovementSensorReading(ctx context.Context,
+	lidarReading s.TimedLidarReadingResponse,
+) (s.TimedMovementSensorReadingResponse, error) {
+	if config.MovementSensor == nil || (!config.MovementSensor.Properties().IMUSupported &&
+		!config.MovementSensor.Properties().OdometerSupported) {
+		return s.TimedMovementSensorReadingResponse{}, errors.New("movement sensor is not supported")
+	}
+	for {
+		movementSensorReading, err := config.MovementSensor.TimedMovementSensorReading(ctx)
+		if err != nil {
+			return s.TimedMovementSensorReadingResponse{}, err
+		}
+
+		var readingTime time.Time
+		if config.MovementSensor.Properties().IMUSupported {
+			// we can assume that the imu reading time is earlier than the odometer reading
+			// time, since the imu reading is taken before the odometer reading
+			readingTime = movementSensorReading.TimedIMUResponse.ReadingTime
+		} else {
+			// we reach this case if the imu is not supported
+			readingTime = movementSensorReading.TimedOdometerResponse.ReadingTime
+		}
+
+		if !readingTime.Before(lidarReading.ReadingTime) {
+			return movementSensorReading, nil
+		}
+	}
+}
+
 // StartOfflineSensorProcess starts the process of adding lidar and movement sensor data
-// in a deterministically defined order to cartographer.
+// in a deterministically defined order to cartographer. Returns a bool that indicates
+// whether or not the end of either the lidar or movement sensor datasets have been reached.
 func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 	// get the initial lidar reading
 	lidarReading, err := config.Lidar.TimedLidarReading(ctx)
@@ -37,21 +71,20 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
 	}
 
-	var imuReading s.TimedIMUReadingResponse
-	if config.IMU != nil {
+	var movementSensorReading s.TimedMovementSensorReadingResponse
+	if config.MovementSensor != nil && (config.MovementSensor.Properties().IMUSupported ||
+		config.MovementSensor.Properties().OdometerSupported) {
 		// get the initial IMU reading; discard all IMU readings that were recorded before the first lidar reading
-		for {
-			movementSensorReading, err := config.IMU.TimedMovementSensorReading(ctx)
-			if err != nil {
-				config.Logger.Warn(err)
-				return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
-			}
-
-			imuReading = *movementSensorReading.TimedIMUResponse
-			if !imuReading.ReadingTime.Before(lidarReading.ReadingTime) {
-				break
-			}
+		movementSensorReading, err = config.getInitialMovementSensorReading(ctx, lidarReading)
+		if err != nil {
+			config.Logger.Warn(err)
+			return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
 		}
+	}
+
+	type readingTime struct {
+		sensorType  string
+		readingTime time.Time
 	}
 
 	// loop over all the data until one of the datasets has reached its end
@@ -60,9 +93,38 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 		case <-ctx.Done():
 			return false
 		default:
+			// create a map of supported sensors and their reading time stamps
+			readingTimes := []readingTime{
+				{sensorType: "lidar", readingTime: lidarReading.ReadingTime},
+			}
+			if config.MovementSensor != nil && config.MovementSensor.Properties().IMUSupported {
+				readingTimes = append(readingTimes,
+					readingTime{
+						sensorType:  "movement-sensor",
+						readingTime: movementSensorReading.TimedIMUResponse.ReadingTime,
+					})
+			} else if config.MovementSensor != nil && config.MovementSensor.Properties().OdometerSupported {
+				readingTimes = append(readingTimes,
+					readingTime{
+						sensorType:  "movement-sensor",
+						readingTime: movementSensorReading.TimedOdometerResponse.ReadingTime,
+					})
+			}
+
+			// sort the readings based on their time stamp
+			sort.Slice(readingTimes,
+				func(i, j int) bool {
+					// if the timestamps are the same, we want to prioritize the lidar measurement before
+					// the movement sensor measurement
+					if readingTimes[i].readingTime.Equal(readingTimes[j].readingTime) {
+						return readingTimes[i].sensorType == "lidar"
+					}
+					return readingTimes[i].readingTime.Before(readingTimes[j].readingTime)
+				})
+
 			// insert the reading with the earliest time stamp
-			if config.IMU == nil ||
-				!lidarReading.ReadingTime.After(imuReading.ReadingTime) {
+			switch readingTimes[0].sensorType {
+			case "lidar":
 				if err := config.tryAddLidarReadingUntilSuccess(ctx, lidarReading); err != nil {
 					return false
 				}
@@ -76,11 +138,11 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 					}
 					return lidarEndOfDataSetReached
 				}
-			} else {
-				if err := config.tryAddIMUReadingUntilSuccess(ctx, imuReading); err != nil {
+			case "movement-sensor":
+				if err := config.tryAddMovementSensorReadingUntilSuccess(ctx, movementSensorReading); err != nil {
 					return false
 				}
-				movementSensorReading, err := config.IMU.TimedMovementSensorReading(ctx)
+				movementSensorReading, err = config.MovementSensor.TimedMovementSensorReading(ctx)
 				if err != nil {
 					config.Logger.Warn(err)
 					msEndOfDataSetReached := strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
@@ -89,7 +151,6 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 					}
 					return msEndOfDataSetReached
 				}
-				imuReading = *movementSensorReading.TimedIMUResponse
 			}
 		}
 	}

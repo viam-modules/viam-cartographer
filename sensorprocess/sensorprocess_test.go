@@ -145,9 +145,9 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 				now := time.Now().UTC()
 
 				if tt.imuEnabled {
-					config.IMU = &injectMovementSensor
+					config.MovementSensor = &injectMovementSensor
 				} else {
-					config.IMU = nil
+					config.MovementSensor = nil
 				}
 
 				numLidarData := 0
@@ -168,6 +168,11 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 						return movementSensorReading, nil
 					}
 					return s.TimedMovementSensorReadingResponse{}, replay.ErrEndOfDataset
+				}
+				injectMovementSensor.PropertiesFunc = func() s.MovementSensorProperties {
+					return s.MovementSensorProperties{
+						IMUSupported: true,
+					}
 				}
 
 				actualDataInsertions := []string{}
@@ -392,10 +397,14 @@ func TestStartLidar(t *testing.T) {
 func TestTryAddIMUReading(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
-	reading := s.TimedIMUReadingResponse{
+	imuReading := s.TimedIMUReadingResponse{
 		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 1, Y: 1, Z: 1},
 		ReadingTime:        time.Now().UTC(),
+	}
+
+	reading := s.TimedMovementSensorReadingResponse{
+		TimedIMUResponse: &imuReading,
 	}
 
 	injectLidar := inject.TimedLidar{}
@@ -404,14 +413,19 @@ func TestTryAddIMUReading(t *testing.T) {
 	injectImu := inject.TimedMovementSensor{}
 	injectImu.NameFunc = func() string { return "good_imu" }
 	injectImu.DataFrequencyHzFunc = func() int { return 20 }
+	injectImu.PropertiesFunc = func() s.MovementSensorProperties {
+		return s.MovementSensorProperties{
+			IMUSupported: true,
+		}
+	}
 
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:       &injectLidar,
-		IMU:         &injectImu,
-		Timeout:     10 * time.Second,
+		Logger:         logger,
+		CartoFacade:    &cf,
+		IsOnline:       injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:          &injectLidar,
+		MovementSensor: &injectImu,
+		Timeout:        10 * time.Second,
 	}
 
 	t.Run("when AddIMUReading blocks for more than the date rate and succeeds, time to sleep is 0", func(t *testing.T) {
@@ -425,7 +439,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
+		timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -440,7 +454,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
+		timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -455,7 +469,7 @@ func TestTryAddIMUReading(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
+		timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldEqual, 0)
 	})
 
@@ -469,9 +483,9 @@ func TestTryAddIMUReading(t *testing.T) {
 			return nil
 		}
 
-		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
+		timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMU.DataFrequencyHz())
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
 	})
 
 	t.Run("when AddIMUReading is faster than the date rate and returns a lock error, time to sleep is <= date rate", func(t *testing.T) {
@@ -484,9 +498,9 @@ func TestTryAddIMUReading(t *testing.T) {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 
-		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
+		timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMU.DataFrequencyHz())
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
 	})
 
 	t.Run("when AddIMUReading is faster than date rate "+
@@ -500,9 +514,9 @@ func TestTryAddIMUReading(t *testing.T) {
 			return errUnknown
 		}
 
-		timeToSleep := config.tryAddIMUReadingOnce(context.Background(), reading)
+		timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), reading)
 		test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
-		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.IMU.DataFrequencyHz())
+		test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
 	})
 }
 
@@ -515,11 +529,11 @@ func TestAddIMUReadingInOnline(t *testing.T) {
 	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		IsOnline:    true,
-		IMU:         &injectImu,
-		Timeout:     10 * time.Second,
+		Logger:         logger,
+		CartoFacade:    &cf,
+		IsOnline:       true,
+		MovementSensor: &injectImu,
+		Timeout:        10 * time.Second,
 	}
 
 	t.Run("returns error when IMU GetData returns error, doesn't try to add IMU data", func(t *testing.T) {
@@ -551,12 +565,12 @@ func TestStartIMU(t *testing.T) {
 	injectImu.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:       &injectLidar,
-		IMU:         &injectImu,
-		Timeout:     10 * time.Second,
+		Logger:         logger,
+		CartoFacade:    &cf,
+		IsOnline:       injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:          &injectLidar,
+		MovementSensor: &injectImu,
+		Timeout:        10 * time.Second,
 	}
 
 	t.Run("exits loop when the context was cancelled", func(t *testing.T) {
@@ -566,11 +580,11 @@ func TestStartIMU(t *testing.T) {
 		replaySensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(lidar, imu), string(imu), 20, logger)
 		test.That(t, err, test.ShouldBeNil)
 
-		config.IMU = replaySensor
+		config.MovementSensor = replaySensor
 
 		cancelFunc()
 
-		config.StartIMU(cancelCtx)
+		config.StartMovementSensor(cancelCtx)
 	})
 }
 
@@ -652,11 +666,11 @@ func TestTryAddIMUReadingUntilSuccess(t *testing.T) {
 	injectImu.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 
 	config := Config{
-		Logger:      logger,
-		CartoFacade: &cf,
-		IsOnline:    false,
-		IMU:         &injectImu,
-		Timeout:     10 * time.Second,
+		Logger:         logger,
+		CartoFacade:    &cf,
+		IsOnline:       false,
+		MovementSensor: &injectImu,
+		Timeout:        10 * time.Second,
 	}
 
 	t.Run("replay IMU adds sensor data until success", func(t *testing.T) {
@@ -688,10 +702,10 @@ func TestTryAddIMUReadingUntilSuccess(t *testing.T) {
 			}
 			return nil
 		}
-		config.IMU = replayIMU
+		config.MovementSensor = replayIMU
 		config.Lidar = &injectLidar
 
-		config.tryAddIMUReadingUntilSuccess(ctx, expectedIMUReading)
+		config.tryAddMovementSensorReadingUntilSuccess(ctx, expectedMovementSensorReading)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 
 		firstTimestamp := calls[0].currentReading.ReadingTime

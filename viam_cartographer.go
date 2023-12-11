@@ -118,7 +118,7 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 		CartoFacade:     cartoSvc.cartofacade,
 		IsOnline:        cartoSvc.lidar.DataFrequencyHz() != 0,
 		Lidar:           cartoSvc.lidar,
-		IMU:             cartoSvc.movementSensor,
+		MovementSensor:  cartoSvc.movementSensor,
 		Timeout:         cartoSvc.cartoFacadeTimeout,
 		InternalTimeout: cartoSvc.cartoFacadeInternalTimeout,
 		Logger:          cartoSvc.logger,
@@ -132,11 +132,11 @@ func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerServic
 			spConfig.StartLidar(cancelCtx)
 		}()
 
-		if spConfig.IMU != nil {
+		if spConfig.MovementSensor != nil {
 			cartoSvc.sensorProcessWorkers.Add(1)
 			go func() {
 				defer cartoSvc.sensorProcessWorkers.Done()
-				spConfig.StartIMU(cancelCtx)
+				spConfig.StartMovementSensor(cancelCtx)
 			}()
 		}
 	} else {
@@ -187,10 +187,19 @@ func New(
 		return nil, err
 	}
 
+	// Get the lidar for the Dim2D cartographer sub algorithm
 	lidarName := svcConfig.Camera["name"]
+	timedLidar, err := s.NewLidar(ctx, deps, lidarName, optionalConfigParams.LidarDataFrequencyHz, logger)
+	if err != nil {
+		return nil, err
+	}
 
+	// Get the movement sensor if one is configured and check if it supports an IMU and/or odometer.
 	movementSensorName := optionalConfigParams.MovementSensorName
-	if movementSensorName != "" {
+	var timedMovementSensor s.TimedMovementSensor
+	if movementSensorName == "" {
+		logger.Info("no movement sensor configured, proceeding without IMU and without odometer")
+	} else {
 		if optionalConfigParams.LidarDataFrequencyHz == 0 && optionalConfigParams.MovementSensorDataFrequencyHz != 0 {
 			return nil, errors.New("In offline mode, but movement sensor data frequency is nonzero")
 		}
@@ -198,21 +207,11 @@ func New(
 		if optionalConfigParams.LidarDataFrequencyHz != 0 && optionalConfigParams.MovementSensorDataFrequencyHz == 0 {
 			return nil, errors.New("In online mode, but movement sensor data frequency is zero")
 		}
-	}
 
-	// Get the lidar for the Dim2D cartographer sub algorithm
-	timedLidar, err := s.NewLidar(ctx, deps, lidarName, optionalConfigParams.LidarDataFrequencyHz, logger)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the movement sensor if one is configured and check if it supports an IMU and/or odometer.
-	var timedMovementSensor s.TimedMovementSensor
-	if movementSensorName == "" {
-		logger.Info("no movement sensor configured, proceeding without IMU and without odometer")
-	} else if timedMovementSensor, err = s.NewMovementSensor(ctx, deps, movementSensorName,
-		optionalConfigParams.MovementSensorDataFrequencyHz, logger); err != nil {
-		return nil, err
+		if timedMovementSensor, err = s.NewMovementSensor(ctx, deps, movementSensorName,
+			optionalConfigParams.MovementSensorDataFrequencyHz, logger); err != nil {
+			return nil, err
+		}
 	}
 
 	// Need to be able to shut down the sensor process before the cartoFacade
@@ -232,7 +231,6 @@ func New(
 		Named:                      c.ResourceName().AsNamed(),
 		lidar:                      timedLidar,
 		movementSensor:             timedMovementSensor,
-		movementSensorName:         movementSensorName,
 		subAlgo:                    subAlgo,
 		configParams:               svcConfig.ConfigParams,
 		cancelSensorProcessFunc:    cancelSensorProcessFunc,
@@ -395,18 +393,11 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		return err
 	}
 
-	cartoCfg := cartofacade.CartoConfig{
-		Camera:             cartoSvc.lidar.Name(),
-		MovementSensor:     cartoSvc.movementSensorName,
-		ComponentReference: cartoSvc.lidar.Name(),
-		LidarConfig:        cartofacade.TwoD,
-		EnableMapping:      cartoSvc.enableMapping,
-		ExistingMap:        cartoSvc.existingMap,
-	}
-
-	if cartoSvc.movementSensorName == "" {
+	var movementSensorName string
+	if cartoSvc.movementSensor == nil {
 		cartoSvc.logger.Debug("No movement sensor provided, setting use_imu_data to false")
 	} else {
+		movementSensorName = cartoSvc.movementSensor.Name()
 		movementSensorProperties := cartoSvc.movementSensor.Properties()
 		if movementSensorProperties.IMUSupported {
 			cartoSvc.logger.Warn("IMU configured, setting use_imu_data to true")
@@ -414,6 +405,18 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 		} else {
 			cartoSvc.logger.Warn("Movement sensor was provided but does not support IMU data, setting use_imu_data to false")
 		}
+		if movementSensorProperties.OdometerSupported {
+			cartoSvc.logger.Debug("Odometer is supported")
+		}
+	}
+
+	cartoCfg := cartofacade.CartoConfig{
+		Camera:             cartoSvc.lidar.Name(),
+		MovementSensor:     movementSensorName,
+		ComponentReference: cartoSvc.lidar.Name(),
+		LidarConfig:        cartofacade.TwoD,
+		EnableMapping:      cartoSvc.enableMapping,
+		ExistingMap:        cartoSvc.existingMap,
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
@@ -463,13 +466,13 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 type CartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
-	mu                 sync.Mutex
-	SlamMode           cartofacade.SlamMode
-	closed             bool
-	lidar              s.TimedLidar
-	movementSensor     s.TimedMovementSensor
-	movementSensorName string
-	subAlgo            SubAlgo
+	SlamMode       cartofacade.SlamMode
+	lidar          s.TimedLidar
+	movementSensor s.TimedMovementSensor
+	subAlgo        SubAlgo
+
+	muClose sync.Mutex
+	closed  bool
 
 	configParams map[string]string
 
@@ -500,7 +503,11 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 		cartoSvc.logger.Warn("Position called with use_cloud_slam set to true")
 		return nil, "", ErrUseCloudSlamEnabled
 	}
-	if cartoSvc.closed {
+
+	cartoSvc.muClose.Lock()
+	cartoSvcClosed := cartoSvc.closed
+	cartoSvc.muClose.Unlock()
+	if cartoSvcClosed {
 		cartoSvc.logger.Warn("Position called after closed")
 		return nil, "", ErrClosed
 	}
@@ -532,7 +539,10 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, ErrUseCloudSlamEnabled
 	}
 
-	if cartoSvc.closed {
+	cartoSvc.muClose.Lock()
+	cartoSvcClosed := cartoSvc.closed
+	cartoSvc.muClose.Unlock()
+	if cartoSvcClosed {
 		cartoSvc.logger.Warn("PointCloudMap called after closed")
 		return nil, ErrClosed
 	}
@@ -554,7 +564,10 @@ func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() 
 		return nil, ErrUseCloudSlamEnabled
 	}
 
-	if cartoSvc.closed {
+	cartoSvc.muClose.Lock()
+	cartoSvcClosed := cartoSvc.closed
+	cartoSvc.muClose.Unlock()
+	if cartoSvcClosed {
 		cartoSvc.logger.Warn("InternalState called after closed")
 		return nil, ErrClosed
 	}
@@ -592,7 +605,10 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 		return time.Time{}, ErrUseCloudSlamEnabled
 	}
 
-	if cartoSvc.closed {
+	cartoSvc.muClose.Lock()
+	cartoSvcClosed := cartoSvc.closed
+	cartoSvc.muClose.Unlock()
+	if cartoSvcClosed {
 		cartoSvc.logger.Warn("LatestMapInfo called after closed")
 		return time.Time{}, ErrClosed
 	}
@@ -610,7 +626,11 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		cartoSvc.logger.Warn("DoCommand called with use_cloud_slam set to true")
 		return nil, ErrUseCloudSlamEnabled
 	}
-	if cartoSvc.closed {
+
+	cartoSvc.muClose.Lock()
+	cartoSvcClosed := cartoSvc.closed
+	cartoSvc.muClose.Unlock()
+	if cartoSvcClosed {
 		cartoSvc.logger.Warn("DoCommand called after closed")
 		return nil, ErrClosed
 	}
@@ -624,14 +644,14 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *CartographerService) Close(ctx context.Context) error {
-	cartoSvc.mu.Lock()
+	cartoSvc.muClose.Lock()
+	defer cartoSvc.muClose.Unlock()
 	if cartoSvc.useCloudSlam {
 		return nil
 	}
 
 	cartoSvc.logger.Info("Closing cartographer module")
 
-	defer cartoSvc.mu.Unlock()
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("Close() called multiple times")
 		return nil

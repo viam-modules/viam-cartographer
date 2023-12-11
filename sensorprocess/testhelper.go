@@ -45,6 +45,9 @@ DATA binary
 		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
 		AngularVelocity:    spatialmath.AngularVelocity{X: 0.017453292519943295, Y: 0.008726646259971648, Z: 0},
 	}
+	expectedMovementSensorReading = s.TimedMovementSensorReadingResponse{
+		TimedIMUResponse: &expectedIMUReading,
+	}
 	errUnknown = errors.New("unknown error")
 )
 
@@ -155,18 +158,18 @@ func onlineModeIMUTestHelper(
 	}
 
 	config.CartoFacade = &cf
-	config.IMU = imu
+	config.MovementSensor = imu
 	config.IsOnline = true
 
-	err = config.addIMUReadingInOnline(ctx)
+	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, len(calls), test.ShouldEqual, 1)
 
-	err = config.addIMUReadingInOnline(ctx)
+	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, len(calls), test.ShouldEqual, 2)
 
-	err = config.addIMUReadingInOnline(ctx)
+	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, len(calls), test.ShouldEqual, 3)
 
@@ -261,9 +264,9 @@ func invalidOnlineModeIMUTestHelper(
 	injectLidar.DataFrequencyHzFunc = func() int { return lidarDataFrequencyHz }
 	config.Lidar = &injectLidar
 
-	config.IMU = imu
+	config.MovementSensor = imu
 
-	err = config.addIMUReadingInOnline(ctx)
+	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldNotBeNil)
 	test.That(t, len(calls), test.ShouldEqual, 0)
 }
