@@ -67,15 +67,6 @@ func (config *Config) tryAddMovementSensorReadingUntilSuccess(ctx context.Contex
 		case <-ctx.Done():
 			return ctx.Err()
 		default:
-			if !imuDone {
-				if err := config.tryAddIMUReading(ctx, *reading.TimedIMUResponse); err != nil {
-					if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-						config.Logger.Warnw("Retrying IMU sensor reading due to error from cartofacade", "error", err)
-					}
-				} else {
-					imuDone = true
-				}
-			}
 			if !odometerDone {
 				if err := config.tryAddOdometerReading(ctx, *reading.TimedOdometerResponse); err != nil {
 					if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
@@ -83,6 +74,15 @@ func (config *Config) tryAddMovementSensorReadingUntilSuccess(ctx context.Contex
 					}
 				} else {
 					odometerDone = true
+				}
+			}
+			if !imuDone {
+				if err := config.tryAddIMUReading(ctx, *reading.TimedIMUResponse); err != nil {
+					if !errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
+						config.Logger.Warnw("Retrying IMU sensor reading due to error from cartofacade", "error", err)
+					}
+				} else {
+					imuDone = true
 				}
 			}
 			if imuDone && odometerDone {
@@ -96,22 +96,22 @@ func (config *Config) tryAddMovementSensorReadingUntilSuccess(ctx context.Contex
 func (config *Config) tryAddMovementSensorReadingOnce(ctx context.Context, reading s.TimedMovementSensorReadingResponse) int {
 	startTime := time.Now().UTC()
 
-	if config.MovementSensor.Properties().IMUSupported {
-		if err := config.tryAddIMUReading(ctx, *reading.TimedIMUResponse); err != nil {
-			if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
-				config.Logger.Debugw("Skipping IMU sensor reading due to lock contention in cartofacade", "error", err)
-			} else {
-				config.Logger.Warnw("Skipping IMU sensor reading due to error from cartofacade", "error", err)
-			}
-		}
-	}
-
 	if config.MovementSensor.Properties().OdometerSupported {
 		if err := config.tryAddOdometerReading(ctx, *reading.TimedOdometerResponse); err != nil {
 			if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
 				config.Logger.Debugw("Skipping odometer sensor reading due to lock contention in cartofacade", "error", err)
 			} else {
 				config.Logger.Warnw("Skipping odometer sensor reading due to error from cartofacade", "error", err)
+			}
+		}
+	}
+
+	if config.MovementSensor.Properties().IMUSupported {
+		if err := config.tryAddIMUReading(ctx, *reading.TimedIMUResponse); err != nil {
+			if errors.Is(err, cartofacade.ErrUnableToAcquireLock) {
+				config.Logger.Debugw("Skipping IMU sensor reading due to lock contention in cartofacade", "error", err)
+			} else {
+				config.Logger.Warnw("Skipping IMU sensor reading due to error from cartofacade", "error", err)
 			}
 		}
 	}

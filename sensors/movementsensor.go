@@ -107,23 +107,6 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 
 	timeoutCtx, cancel := context.WithTimeout(ctx, timedMovementSensorReadingTimeout)
 	defer cancel()
-	if ms.imuSupported {
-	imuLoop:
-		for {
-			select {
-			case <-timeoutCtx.Done():
-				return TimedMovementSensorReadingResponse{}, errors.Wrap(timeoutCtx.Err(), "timed out getting IMU data")
-			default:
-				if timedIMUReadingResponse, err = ms.timedIMUReading(timeoutCtx, &angVel, &linAcc,
-					&readingTimeAngularVel, &readingTimeLinearAcc); err != nil && !errors.Is(err, ErrNoValidReadingObtained) {
-					return TimedMovementSensorReadingResponse{}, err
-				}
-				if timedIMUReadingResponse != nil {
-					break imuLoop
-				}
-			}
-		}
-	}
 	if ms.odometerSupported {
 	odometerLoop:
 		for {
@@ -137,6 +120,23 @@ func (ms *MovementSensor) TimedMovementSensorReading(ctx context.Context) (Timed
 				}
 				if timedOdometerReadingResponse != nil {
 					break odometerLoop
+				}
+			}
+		}
+	}
+	if ms.imuSupported {
+	imuLoop:
+		for {
+			select {
+			case <-timeoutCtx.Done():
+				return TimedMovementSensorReadingResponse{}, errors.Wrap(timeoutCtx.Err(), "timed out getting IMU data")
+			default:
+				if timedIMUReadingResponse, err = ms.timedIMUReading(timeoutCtx, &angVel, &linAcc,
+					&readingTimeAngularVel, &readingTimeLinearAcc); err != nil && !errors.Is(err, ErrNoValidReadingObtained) {
+					return TimedMovementSensorReadingResponse{}, err
+				}
+				if timedIMUReadingResponse != nil {
+					break imuLoop
 				}
 			}
 		}

@@ -45,13 +45,13 @@ func (config *Config) getInitialMovementSensorReading(ctx context.Context,
 		}
 
 		var readingTime time.Time
-		if config.MovementSensor.Properties().IMUSupported {
-			// we can assume that the imu reading time is earlier than the odometer reading
-			// time, since the imu reading is taken before the odometer reading
-			readingTime = movementSensorReading.TimedIMUResponse.ReadingTime
-		} else {
-			// we reach this case if the imu is not supported
+		if config.MovementSensor.Properties().OdometerSupported {
+			// we can assume that the odometer reading time is earlier than the imu reading
+			// time, since the odometer reading is taken before the imu reading
 			readingTime = movementSensorReading.TimedOdometerResponse.ReadingTime
+		} else {
+			// we reach this case if the odometer is not supported
+			readingTime = movementSensorReading.TimedIMUResponse.ReadingTime
 		}
 
 		if !readingTime.Before(lidarReading.ReadingTime) {
