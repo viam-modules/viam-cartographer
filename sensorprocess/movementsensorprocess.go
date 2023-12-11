@@ -28,8 +28,8 @@ func (config *Config) StartMovementSensor(ctx context.Context) {
 	}
 }
 
-// addMovementSensorReadingInOnline ensures the most recent movement sensor scan,
-// after corresponding lidar scans, gets processed by cartographer.
+// addMovementSensorReadingInOnline attempts to get and add a movement sensor reading to the
+// cartofacade.
 func (config *Config) addMovementSensorReadingInOnline(ctx context.Context) error {
 	// get next movement sensor data response; ignoring status since it is always false
 	movementSensorReading, err := config.MovementSensor.TimedMovementSensorReading(ctx)
