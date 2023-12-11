@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	defaultTime = time.Time{}
+	undefinedTime = time.Time{}
 	// ErrMovementSensorNeitherIMUNorOdometer denotes that the provided movement sensor does neither support
 	// an IMU nor a movement sensor.
 	ErrMovementSensorNeitherIMUNorOdometer = errors.New("'movement_sensor' must either support both LinearAcceleration and " +
@@ -170,7 +170,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 		return TimedIMUReadingResponse{}, false
 	}
 
-	if *readingTimeLinearAcc == defaultTime || readingTimeLinearAcc.Sub(*readingTimeAngularVel).Milliseconds() < 0 {
+	if *readingTimeLinearAcc == undefinedTime || readingTimeLinearAcc.Sub(*readingTimeAngularVel).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if *linAcc, err = ms.sensor.LinearAcceleration(ctxWithMetadata, make(map[string]interface{})); err != nil {
 			return &TimedIMUReadingResponse{}, errors.Wrap(err, "could not obtain LinearAcceleration")
@@ -190,7 +190,7 @@ func (ms *MovementSensor) timedIMUReading(ctx context.Context, angVel *spatialma
 		return &response, nil
 	}
 
-	if *readingTimeAngularVel == defaultTime || readingTimeAngularVel.Sub(*readingTimeLinearAcc).Milliseconds() < 0 {
+	if *readingTimeAngularVel == undefinedTime || readingTimeAngularVel.Sub(*readingTimeLinearAcc).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if *angVel, err = ms.sensor.AngularVelocity(ctxWithMetadata, make(map[string]interface{})); err != nil {
 			return &TimedIMUReadingResponse{}, errors.Wrap(err, "could not obtain AngularVelocity")
@@ -231,7 +231,7 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 		return TimedOdometerReadingResponse{}, false
 	}
 
-	if *readingTimePosition == defaultTime || readingTimePosition.Sub(*readingTimeOrientation).Milliseconds() < 0 {
+	if *readingTimePosition == undefinedTime || readingTimePosition.Sub(*readingTimeOrientation).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if position, _, err = ms.sensor.Position(ctxWithMetadata, make(map[string]interface{})); err != nil {
 			return &TimedOdometerReadingResponse{}, errors.Wrap(err, "could not obtain Position")
@@ -251,7 +251,7 @@ func (ms *MovementSensor) timedOdometerReading(ctx context.Context, position *ge
 		return &response, nil
 	}
 
-	if *readingTimeOrientation == defaultTime || readingTimeOrientation.Sub(*readingTimePosition).Milliseconds() < 0 {
+	if *readingTimeOrientation == undefinedTime || readingTimeOrientation.Sub(*readingTimePosition).Milliseconds() < 0 {
 		ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 		if *orientation, err = ms.sensor.Orientation(ctxWithMetadata, make(map[string]interface{})); err != nil {
 			return &TimedOdometerReadingResponse{}, errors.Wrap(err, "could not obtain Orientation")
