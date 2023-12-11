@@ -24,17 +24,12 @@ func TestStartMovementSensor(t *testing.T) {
 	injectLidar := inject.TimedLidar{}
 	injectLidar.DataFrequencyHzFunc = func() int { return 5 }
 
-	injectImu := inject.TimedMovementSensor{}
-	injectImu.NameFunc = func() string { return "good_imu" }
-	injectImu.DataFrequencyHzFunc = func() int { return 20 }
-
 	config := Config{
-		Logger:         logger,
-		CartoFacade:    &cf,
-		IsOnline:       injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:          &injectLidar,
-		MovementSensor: &injectImu,
-		Timeout:        10 * time.Second,
+		Logger:      logger,
+		CartoFacade: &cf,
+		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
+		Lidar:       &injectLidar,
+		Timeout:     10 * time.Second,
 	}
 
 	t.Run("exits loop when the context was cancelled", func(t *testing.T) {
@@ -56,32 +51,32 @@ func TestAddMovementSensorReadingInOnline(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	injectImu := inject.TimedMovementSensor{}
-	injectImu.NameFunc = func() string { return "good_imu" }
-	injectImu.DataFrequencyHzFunc = func() int { return 20 }
+	injectMovementSensor := inject.TimedMovementSensor{}
+	injectMovementSensor.NameFunc = func() string { return "good_movement_sensor" }
+	injectMovementSensor.DataFrequencyHzFunc = func() int { return 20 }
 
 	config := Config{
 		Logger:         logger,
 		CartoFacade:    &cf,
 		IsOnline:       true,
-		MovementSensor: &injectImu,
+		MovementSensor: &injectMovementSensor,
 		Timeout:        10 * time.Second,
 	}
 
-	t.Run("returns error when IMU GetData returns error, doesn't try to add IMU data", func(t *testing.T) {
-		invalidOnlineModeIMUTestHelper(context.Background(), t, cf, config, 10, s.IMUWithErroringFunctions, 10)
+	t.Run("returns error when movement sensor GetData returns error, doesn't try to add IMU data", func(t *testing.T) {
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config, 10, s.IMUWithErroringFunctions, 10)
 	})
 
 	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-		invalidOnlineModeIMUTestHelper(context.Background(), t, cf, config, 10, s.InvalidReplayIMU, 10)
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config, 10, s.InvalidReplayIMU, 10)
 	})
 
 	t.Run("online replay IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		onlineModeIMUTestHelper(context.Background(), t, config, cf, s.ReplayIMU)
+		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayIMU)
 	})
 
 	t.Run("online IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		onlineModeIMUTestHelper(context.Background(), t, config, cf, s.GoodIMU)
+		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodIMU)
 	})
 }
 

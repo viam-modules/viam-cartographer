@@ -51,7 +51,7 @@ DATA binary
 	errUnknown = errors.New("unknown error")
 )
 
-func onlineModeLidarTestHelper(
+func validAddLidarReadingInOnlineTestHelper(
 	ctx context.Context,
 	t *testing.T,
 	config Config,
@@ -123,7 +123,7 @@ func onlineModeLidarTestHelper(
 	}
 }
 
-func onlineModeIMUTestHelper(
+func validAddMovementSensorReadingInOnlineTestHelper(
 	ctx context.Context,
 	t *testing.T,
 	config Config,
@@ -195,7 +195,7 @@ func onlineModeIMUTestHelper(
 	}
 }
 
-func invalidOnlineModeLidarTestHelper(
+func invalidAddLidarReadingInOnlineTestHelper(
 	ctx context.Context,
 	t *testing.T,
 	cartoFacadeMock cartofacade.Mock,
@@ -230,7 +230,7 @@ func invalidOnlineModeLidarTestHelper(
 	test.That(t, len(calls), test.ShouldEqual, 0)
 }
 
-func invalidOnlineModeIMUTestHelper(
+func invalidAddMovementSensorReadingInOnlineTestHelper(
 	ctx context.Context,
 	t *testing.T,
 	cartoFacadeMock cartofacade.Mock,

@@ -18,16 +18,10 @@ func TestStartLidar(t *testing.T) {
 	logger := logging.NewTestLogger(t)
 	cf := cartofacade.Mock{}
 
-	dataFrequencyHz := 5
-	injectLidar := inject.TimedLidar{}
-	injectLidar.NameFunc = func() string { return "good_lidar" }
-	injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
-
 	config := Config{
 		Logger:      logger,
 		CartoFacade: &cf,
-		IsOnline:    injectLidar.DataFrequencyHzFunc() != 0,
-		Lidar:       &injectLidar,
+		IsOnline:    true,
 		Timeout:     10 * time.Second,
 	}
 
@@ -35,7 +29,7 @@ func TestStartLidar(t *testing.T) {
 		cancelCtx, cancelFunc := context.WithCancel(context.Background())
 
 		lidar, imu := s.FinishedReplayLidar, s.NoMovementSensor
-		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), dataFrequencyHz, logger)
+		replaySensor, err := s.NewLidar(context.Background(), s.SetupDeps(lidar, imu), string(lidar), 5, logger)
 		test.That(t, err, test.ShouldBeNil)
 
 		config.Lidar = replaySensor
@@ -64,15 +58,15 @@ func TestAddLidarReadingInOnline(t *testing.T) {
 	}
 
 	t.Run("returns error when lidar GetData returns error, doesn't try to add lidar data", func(t *testing.T) {
-		invalidOnlineModeLidarTestHelper(context.Background(), t, cf, config, s.LidarWithErroringFunctions, 10)
+		invalidAddLidarReadingInOnlineTestHelper(context.Background(), t, cf, config, s.LidarWithErroringFunctions, 10)
 	})
 
 	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-		invalidOnlineModeLidarTestHelper(context.Background(), t, cf, config, s.InvalidReplayLidar, 10)
+		invalidAddLidarReadingInOnlineTestHelper(context.Background(), t, cf, config, s.InvalidReplayLidar, 10)
 	})
 
 	t.Run("online lidar adds sensor reading once and ignores errors", func(t *testing.T) {
-		onlineModeLidarTestHelper(context.Background(), t, config, cf, s.GoodLidar)
+		validAddLidarReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodLidar)
 	})
 }
 
