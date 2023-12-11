@@ -28,6 +28,12 @@ type addIMUReadingArgs struct {
 	currentReading s.TimedIMUReadingResponse
 }
 
+type addOdometerReadingArgs struct {
+	timeout        time.Duration
+	sensorName     string
+	currentReading s.TimedOdometerReadingResponse
+}
+
 var (
 	//nolint:dupword
 	expectedPCD = []byte(`VERSION .7
@@ -128,14 +134,17 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 	t *testing.T,
 	config Config,
 	cf cartofacade.Mock,
-	testImu s.TestSensor,
+	testMovementSensor s.TestSensor,
+	imuEnabled bool,
+	odometerEnabled bool,
 ) {
 	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 100
-	imu, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testImu), string(testImu), dataFrequencyHz, logger)
+	movementSensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testMovementSensor),
+		string(testMovementSensor), dataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	var calls []addIMUReadingArgs
+	var imuCalls []addIMUReadingArgs
 	cf.AddIMUReadingFunc = func(
 		ctx context.Context,
 		timeout time.Duration,
@@ -147,35 +156,57 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 			sensorName:     sensorName,
 			currentReading: currentReading,
 		}
-		calls = append(calls, args)
-		if len(calls) == 1 {
+		imuCalls = append(imuCalls, args)
+		if len(imuCalls) == 1 {
 			return errUnknown
 		}
-		if len(calls) == 2 {
+		if len(imuCalls) == 2 {
+			return cartofacade.ErrUnableToAcquireLock
+		}
+		return nil
+	}
+
+	var odometerCalls []addOdometerReadingArgs
+	cf.AddOdometerReadingFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+		sensorName string,
+		currentReading s.TimedOdometerReadingResponse,
+	) error {
+		args := addOdometerReadingArgs{
+			timeout:        timeout,
+			sensorName:     sensorName,
+			currentReading: currentReading,
+		}
+		odometerCalls = append(odometerCalls, args)
+		if len(odometerCalls) == 1 {
+			return errUnknown
+		}
+		if len(odometerCalls) == 2 {
 			return cartofacade.ErrUnableToAcquireLock
 		}
 		return nil
 	}
 
 	config.CartoFacade = &cf
-	config.MovementSensor = imu
+	config.MovementSensor = movementSensor
 	config.IsOnline = true
 
 	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, len(calls), test.ShouldEqual, 1)
+	test.That(t, len(imuCalls), test.ShouldEqual, 1)
 
 	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, len(calls), test.ShouldEqual, 2)
+	test.That(t, len(imuCalls), test.ShouldEqual, 2)
 
 	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, len(calls), test.ShouldEqual, 3)
+	test.That(t, len(imuCalls), test.ShouldEqual, 3)
 
-	for i, call := range calls {
+	for i, call := range imuCalls {
 		t.Logf("call %d", i)
-		test.That(t, call.sensorName, test.ShouldResemble, string(testImu))
+		test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
 		// the IMU test fixture happens to always return the same readings currently
 		// in reality they are likely different every time
 		test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, expectedIMUReading.LinearAcceleration)
@@ -183,15 +214,15 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
 	}
 
-	if testImu == s.GoodIMU {
-		test.That(t, calls[0].currentReading.ReadingTime.Before(calls[1].currentReading.ReadingTime), test.ShouldBeTrue)
-		test.That(t, calls[1].currentReading.ReadingTime.Before(calls[2].currentReading.ReadingTime), test.ShouldBeTrue)
-	} else if testImu == s.ReplayIMU {
+	if testMovementSensor == s.GoodIMU {
+		test.That(t, imuCalls[0].currentReading.ReadingTime.Before(imuCalls[1].currentReading.ReadingTime), test.ShouldBeTrue)
+		test.That(t, imuCalls[1].currentReading.ReadingTime.Before(imuCalls[2].currentReading.ReadingTime), test.ShouldBeTrue)
+	} else if testMovementSensor == s.ReplayIMU {
 		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, calls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
+		test.That(t, imuCalls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
 	} else {
-		t.Errorf("no timestamp tests provided for %v", string(testImu))
+		t.Errorf("no timestamp tests provided for %v", string(testMovementSensor))
 	}
 }
 
@@ -236,14 +267,17 @@ func invalidAddMovementSensorReadingInOnlineTestHelper(
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
 	lidarDataFrequencyHz int,
-	testIMU s.TestSensor,
-	imuDataFrequencyHz int,
+	testMovementSensor s.TestSensor,
+	movementSensorDataFrequencyHz int,
+	imuEnabled bool,
+	odometerEnabled bool,
 ) {
 	logger := logging.NewTestLogger(t)
-	imu, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testIMU), string(testIMU), imuDataFrequencyHz, logger)
+	movementSensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testMovementSensor),
+		string(testMovementSensor), movementSensorDataFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
-	var calls []addIMUReadingArgs
+	var imuCalls []addIMUReadingArgs
 	cartoFacadeMock.AddIMUReadingFunc = func(
 		ctx context.Context,
 		timeout time.Duration,
@@ -255,7 +289,23 @@ func invalidAddMovementSensorReadingInOnlineTestHelper(
 			sensorName:     sensorName,
 			currentReading: currentReading,
 		}
-		calls = append(calls, args)
+		imuCalls = append(imuCalls, args)
+		return nil
+	}
+
+	var odometerCalls []addOdometerReadingArgs
+	cartoFacadeMock.AddOdometerReadingFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+		sensorName string,
+		currentReading s.TimedOdometerReadingResponse,
+	) error {
+		args := addOdometerReadingArgs{
+			timeout:        timeout,
+			sensorName:     sensorName,
+			currentReading: currentReading,
+		}
+		odometerCalls = append(odometerCalls, args)
 		return nil
 	}
 	config.CartoFacade = &cartoFacadeMock
@@ -264,9 +314,10 @@ func invalidAddMovementSensorReadingInOnlineTestHelper(
 	injectLidar.DataFrequencyHzFunc = func() int { return lidarDataFrequencyHz }
 	config.Lidar = &injectLidar
 
-	config.MovementSensor = imu
+	config.MovementSensor = movementSensor
 
 	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldNotBeNil)
-	test.That(t, len(calls), test.ShouldEqual, 0)
+	test.That(t, len(imuCalls), test.ShouldEqual, 0)
+	test.That(t, len(odometerCalls), test.ShouldEqual, 0)
 }

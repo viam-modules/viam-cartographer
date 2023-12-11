@@ -63,20 +63,34 @@ func TestAddMovementSensorReadingInOnline(t *testing.T) {
 		Timeout:        10 * time.Second,
 	}
 
-	t.Run("returns error when movement sensor GetData returns error, doesn't try to add IMU data", func(t *testing.T) {
-		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config, 10, s.IMUWithErroringFunctions, 10)
+	t.Run("returns error when LinearAcceleration or AngularVelocity returns error, doesn't try to add IMU data", func(t *testing.T) {
+		lidarFrequencyHz := 10
+		movementSensorFrequencyHz := 10
+		imuEnabled := true
+		odometerEnabled := false
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
+			lidarFrequencyHz, s.IMUWithErroringFunctions, movementSensorFrequencyHz, imuEnabled, odometerEnabled)
 	})
 
-	t.Run("returns error when replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
-		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config, 10, s.InvalidReplayIMU, 10)
+	t.Run("returns error when IMU replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
+		lidarFrequencyHz := 10
+		movementSensorFrequencyHz := 10
+		imuEnabled := true
+		odometerEnabled := false
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
+			lidarFrequencyHz, s.InvalidReplayIMU, movementSensorFrequencyHz, imuEnabled, odometerEnabled)
 	})
 
 	t.Run("online replay IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayIMU)
+		imuEnabled := true
+		odometerEnabled := false
+		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayIMU, imuEnabled, odometerEnabled)
 	})
 
 	t.Run("online IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodIMU)
+		imuEnabled := true
+		odometerEnabled := false
+		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodIMU, imuEnabled, odometerEnabled)
 	})
 }
 
