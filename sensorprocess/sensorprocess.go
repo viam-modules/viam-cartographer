@@ -97,6 +97,10 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 			readingTimes := []readingTime{
 				{sensorType: "lidar", readingTime: lidarReading.ReadingTime},
 			}
+			// default to the slightly later imu timestamp, in case that the odometer time stamp was
+			// taken before the lidar time stamp, but the imu time stamp was taken after the lidar time
+			// stamp, we'll want to prioritize adding the lidar measurement before adding the movement
+			// sensor measurement
 			if config.MovementSensor != nil && config.MovementSensor.Properties().IMUSupported {
 				readingTimes = append(readingTimes,
 					readingTime{
