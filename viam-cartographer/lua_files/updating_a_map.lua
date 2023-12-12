@@ -9,7 +9,6 @@ include "map_builder.lua"
 -- ===== Local SLAM Options ======
 -- no reason to change these:
 TRAJECTORY_BUILDER.trajectory_builder_2d.use_imu_data = false
-TRAJECTORY_BUILDER.trajectory_builder_2d.use_online_correlative_scan_matching = true
 TRAJECTORY_BUILDER.trajectory_builder_2d.min_range = 0.2
 TRAJECTORY_BUILDER.trajectory_builder_2d.max_range = 25.
 TRAJECTORY_BUILDER.trajectory_builder_2d.missing_data_ray_length = 25 -- DO NOT CHANGE
@@ -27,9 +26,9 @@ MAP_BUILDER.pose_graph.overlapping_submaps_trimmer_2d = {
   min_covered_area = 1.0,
   min_added_submaps_count = 1
 }
-TRAJECTORY_BUILDER.trajectory_builder_2d.ceres_scan_matcher.occupied_space_weight = 20.
-TRAJECTORY_BUILDER.trajectory_builder_2d.ceres_scan_matcher.translation_weight = 10.0
-TRAJECTORY_BUILDER.trajectory_builder_2d.ceres_scan_matcher.rotation_weight = 1.
+MAP_BUILDER.pose_graph.ceres_scan_matcher.occupied_space_weight = 20.
+MAP_BUILDER.pose_graph.ceres_scan_matcher.translation_weight = 10.
+MAP_BUILDER.pose_graph.ceres_scan_matcher.rotation_weight = 1.
 
 -- ===== Return Options ======
 options = {
