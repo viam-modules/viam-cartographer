@@ -25,9 +25,9 @@ type TimedLidar interface {
 // TimedLidarReadingResponse represents a lidar reading with a time & allows the caller
 // to know if the reading is from a replay camera.
 type TimedLidarReadingResponse struct {
-	Reading        []byte
-	ReadingTime    time.Time
-	IsReplaySensor bool
+	Reading            []byte
+	ReadingTime        time.Time
+	TestIsReplaySensor bool
 }
 
 // Lidar represents a LIDAR sensor.
@@ -50,7 +50,7 @@ func (lidar Lidar) DataFrequencyHz() int {
 // TimedLidarReading returns data from the lidar and the time the reading is from & whether
 // it was a replay sensor or not.
 func (lidar Lidar) TimedLidarReading(ctx context.Context) (TimedLidarReadingResponse, error) {
-	replay := false
+	testIsReplaySensor := false
 
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
 	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata)
@@ -65,12 +65,12 @@ func (lidar Lidar) TimedLidarReading(ctx context.Context) (TimedLidarReadingResp
 	}
 
 	if timeRequestedMetadata, ok := md[contextutils.TimeRequestedMetadataKey]; ok {
-		replay = true
+		testIsReplaySensor = true
 		if readingTime, err = time.Parse(time.RFC3339Nano, timeRequestedMetadata[0]); err != nil {
 			return TimedLidarReadingResponse{}, errors.Wrap(err, replayTimestampErrorMessage)
 		}
 	}
-	return TimedLidarReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, IsReplaySensor: replay}, nil
+	return TimedLidarReadingResponse{Reading: buf.Bytes(), ReadingTime: readingTime, TestIsReplaySensor: testIsReplaySensor}, nil
 }
 
 // NewLidar returns a new Lidar.

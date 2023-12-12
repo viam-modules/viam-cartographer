@@ -115,31 +115,39 @@ func TerminateCartoLib() error {
 
 func initSensorProcesses(cancelCtx context.Context, cartoSvc *CartographerService) {
 	spConfig := sensorprocess.Config{
-		CartoFacade:              cartoSvc.cartofacade,
-		IsOnline:                 cartoSvc.lidar.DataFrequencyHz() != 0,
-		Lidar:                    cartoSvc.lidar,
-		IMU:                      cartoSvc.movementSensor,
-		Timeout:                  cartoSvc.cartoFacadeTimeout,
-		InternalTimeout:          cartoSvc.cartoFacadeInternalTimeout,
-		Logger:                   cartoSvc.logger,
-		RunFinalOptimizationFunc: cartoSvc.cartofacade.RunFinalOptimization,
-		Mutex:                    &sync.Mutex{},
+		CartoFacade:     cartoSvc.cartofacade,
+		IsOnline:        cartoSvc.lidar.DataFrequencyHz() != 0,
+		Lidar:           cartoSvc.lidar,
+		IMU:             cartoSvc.movementSensor,
+		Timeout:         cartoSvc.cartoFacadeTimeout,
+		InternalTimeout: cartoSvc.cartoFacadeInternalTimeout,
+		Logger:          cartoSvc.logger,
 	}
 
-	cartoSvc.sensorProcessWorkers.Add(1)
-	go func() {
-		defer cartoSvc.sensorProcessWorkers.Done()
-		if jobDone := spConfig.StartLidar(cancelCtx); jobDone {
-			cartoSvc.jobDone.Store(true)
-			cartoSvc.cancelSensorProcessFunc()
-		}
-	}()
-
-	if spConfig.IMU != nil {
+	if spConfig.IsOnline {
+		// online mode is parallelized
 		cartoSvc.sensorProcessWorkers.Add(1)
 		go func() {
 			defer cartoSvc.sensorProcessWorkers.Done()
-			_ = spConfig.StartIMU(cancelCtx)
+			spConfig.StartLidar(cancelCtx)
+		}()
+
+		if spConfig.IMU != nil {
+			cartoSvc.sensorProcessWorkers.Add(1)
+			go func() {
+				defer cartoSvc.sensorProcessWorkers.Done()
+				spConfig.StartIMU(cancelCtx)
+			}()
+		}
+	} else {
+		// offline mode is sequential
+		cartoSvc.sensorProcessWorkers.Add(1)
+		go func() {
+			defer cartoSvc.sensorProcessWorkers.Done()
+			if jobDone := spConfig.StartOfflineSensorProcess(cancelCtx); jobDone {
+				cartoSvc.jobDone.Store(true)
+				cartoSvc.cancelSensorProcessFunc()
+			}
 		}()
 	}
 }

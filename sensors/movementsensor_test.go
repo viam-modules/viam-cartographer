@@ -35,8 +35,8 @@ func TestNewMovementSensor(t *testing.T) {
 		deps := s.SetupDeps(lidar, movementSensor)
 		actualMs, err := s.NewMovementSensor(context.Background(), deps, string(movementSensor), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeError,
-			errors.New("error getting movement sensor \""+string(movementSensor)+"\" for slam service: \""+
-				"rdk:component:movement_sensor/"+string(movementSensor)+"\" missing from dependencies"))
+			errors.New("error getting movement sensor \""+string(movementSensor)+"\" for slam service: "+
+				"Resource missing from dependencies. Resource: rdk:component:movement_sensor/"+string(movementSensor)))
 		test.That(t, actualMs, test.ShouldResemble, &s.MovementSensor{})
 	})
 
@@ -171,7 +171,7 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
 		test.That(t, actualReading.TimedOdometerResponse, test.ShouldBeNil)
-		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
+		test.That(t, actualReading.TestIsReplaySensor, test.ShouldBeFalse)
 	})
 
 	t.Run("when a live odometer succeeds, returns current time in UTC and the reading", func(t *testing.T) {
@@ -195,7 +195,7 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
 		test.That(t, actualReading.TimedIMUResponse, test.ShouldBeNil)
-		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
+		test.That(t, actualReading.TestIsReplaySensor, test.ShouldBeFalse)
 	})
 
 	t.Run("when a movemement sensor that supports both an odometer and an IMU succeeds,"+
@@ -222,6 +222,6 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.After(beforeReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
-		test.That(t, actualReading.IsReplaySensor, test.ShouldBeFalse)
+		test.That(t, actualReading.TestIsReplaySensor, test.ShouldBeFalse)
 	})
 }

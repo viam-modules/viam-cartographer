@@ -27,6 +27,7 @@ type CartoMock struct {
 	TerminateFunc            func() error
 	AddLidarReadingFunc      func(string, s.TimedLidarReadingResponse) error
 	AddIMUReadingFunc        func(string, s.TimedIMUReadingResponse) error
+	AddOdometerReadingFunc   func(string, s.TimedOdometerReadingResponse) error
 	PositionFunc             func() (Position, error)
 	PointCloudMapFunc        func() ([]byte, error)
 	InternalStateFunc        func() ([]byte, error)
@@ -66,11 +67,19 @@ func (cf *CartoMock) addLidarReading(lidar string, reading s.TimedLidarReadingRe
 }
 
 // addIMUReading calls the injected AddIMUReadingFunc or the real version.
-func (cf *CartoMock) addIMUReading(imu string, reading s.TimedIMUReadingResponse) error {
+func (cf *CartoMock) addIMUReading(movementSensor string, reading s.TimedIMUReadingResponse) error {
 	if cf.AddIMUReadingFunc == nil {
-		return cf.Carto.addIMUReading(imu, reading)
+		return cf.Carto.addIMUReading(movementSensor, reading)
 	}
-	return cf.AddIMUReadingFunc(imu, reading)
+	return cf.AddIMUReadingFunc(movementSensor, reading)
+}
+
+// addOdometerReading calls the injected AddOdometerReadingFunc or the real version.
+func (cf *CartoMock) addOdometerReading(movementSensor string, reading s.TimedOdometerReadingResponse) error {
+	if cf.AddOdometerReadingFunc == nil {
+		return cf.Carto.addOdometerReading(movementSensor, reading)
+	}
+	return cf.AddOdometerReadingFunc(movementSensor, reading)
 }
 
 // position calls the injected PositionFunc or the real version.

@@ -85,9 +85,9 @@ setup: install-dependencies ensure-submodule-initialized artifact-pull
 install-dependencies:
 ifneq (, $(shell which brew))
 	brew update
-	brew install abseil boost ceres-solver protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc clang-format
+	brew install abseil boost viamrobotics/brews/ceres-solver@2.1 protobuf ninja cairo googletest lua@5.3 pkg-config cmake go@1.20 grpc clang-format
 	brew link lua@5.3
-	brew install openssl@3 eigen gflags glog suite-sparse sphinx-doc pcl nlopt-static
+	brew install openssl@3 eigen gflags glog sphinx-doc pcl viamrobotics/brews/nlopt-static
 else ifneq (, $(shell which apt-get))
 	$(warning  "Installing cartographer external dependencies via APT.")
 	$(warning "Packages may be too old to work with this project.")

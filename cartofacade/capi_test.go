@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang/geo/r3"
+	geo "github.com/kellydunn/golang-geo"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
@@ -58,18 +59,18 @@ func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.
 		ReadingTime: timestamp,
 	}
 
-	err = vc.addLidarReading("mylidar", reading)
+	err = vc.addLidarReading("my-lidar", reading)
 	test.That(t, err, test.ShouldBeNil)
 }
 
 func TestGetConfig(t *testing.T) {
-	t.Run("config properly converted between C and go with no IMU specified", func(t *testing.T) {
-		cfg := GetTestConfig("mylidar", "", "", true)
+	t.Run("config properly converted between C and go with no movement sensor specified", func(t *testing.T) {
+		cfg := GetTestConfig("my-lidar", "", "", true)
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
 		camera := bstringToGoString(vcc.camera)
-		test.That(t, camera, test.ShouldResemble, "mylidar")
+		test.That(t, camera, test.ShouldResemble, "my-lidar")
 
 		enableMapping := bool(vcc.enable_mapping)
 		test.That(t, enableMapping, test.ShouldBeTrue)
@@ -77,16 +78,16 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
 
-	t.Run("config properly converted between C and go with an IMU specified", func(t *testing.T) {
-		cfg := GetTestConfig("mylidar", "myIMU", "", true)
+	t.Run("config properly converted between C and go with a movement sensor specified", func(t *testing.T) {
+		cfg := GetTestConfig("my-lidar", "my-movement-sensor", "", true)
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
 		camera := bstringToGoString(vcc.camera)
-		test.That(t, camera, test.ShouldResemble, "mylidar")
+		test.That(t, camera, test.ShouldResemble, "my-lidar")
 
 		movementSensor := bstringToGoString(vcc.movement_sensor)
-		test.That(t, movementSensor, test.ShouldResemble, "myIMU")
+		test.That(t, movementSensor, test.ShouldResemble, "my-movement-sensor")
 
 		enableMapping := bool(vcc.enable_mapping)
 		test.That(t, enableMapping, test.ShouldBeTrue)
@@ -94,18 +95,18 @@ func TestGetConfig(t *testing.T) {
 		test.That(t, vcc.lidar_config, test.ShouldEqual, TwoD)
 	})
 
-	t.Run("config properly converted between C and go with an IMU specified and existing map", func(t *testing.T) {
+	t.Run("config properly converted between C and go with a movement sensor specified and an existing map", func(t *testing.T) {
 		filename := "viam-cartographer/outputs/viam-office-02-22-3/internal_state/internal_state_0.pbstream"
 
-		cfg := GetTestConfig("mylidar", "myIMU", filename, false)
+		cfg := GetTestConfig("my-lidar", "my-movement-sensor", filename, false)
 		vcc, err := getConfig(cfg)
 		test.That(t, err, test.ShouldBeNil)
 
 		camera := bstringToGoString(vcc.camera)
-		test.That(t, camera, test.ShouldResemble, "mylidar")
+		test.That(t, camera, test.ShouldResemble, "my-lidar")
 
 		movementSensor := bstringToGoString(vcc.movement_sensor)
-		test.That(t, movementSensor, test.ShouldResemble, "myIMU")
+		test.That(t, movementSensor, test.ShouldResemble, "my-movement-sensor")
 
 		enableMapping := bool(vcc.enable_mapping)
 		test.That(t, enableMapping, test.ShouldBeFalse)
@@ -137,30 +138,53 @@ func TestToLidarReading(t *testing.T) {
 			Reading:     []byte("he0llo"),
 			ReadingTime: timestamp,
 		}
-		sr := toLidarReading("mylidar", reading)
-		test.That(t, bstringToGoString(sr.lidar), test.ShouldResemble, "mylidar")
+		sr := toLidarReading("my-lidar", reading)
+		test.That(t, bstringToGoString(sr.lidar), test.ShouldResemble, "my-lidar")
 		test.That(t, bstringToGoString(sr.lidar_reading), test.ShouldResemble, "he0llo")
 		test.That(t, sr.lidar_reading_time_unix_milli, test.ShouldEqual, timestamp.UnixMilli())
 	})
 }
 
 func TestToIMUReading(t *testing.T) {
-	reading := s.TimedIMUReadingResponse{
-		LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
-		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
-	}
 	t.Run("IMU reading properly converted between c and go", func(t *testing.T) {
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		reading.ReadingTime = timestamp
-		sr := toIMUReading("myIMU", reading)
-		test.That(t, bstringToGoString(sr.imu), test.ShouldResemble, "myIMU")
-		test.That(t, sr.lin_acc_x, test.ShouldEqual, 0.1)
-		test.That(t, sr.lin_acc_y, test.ShouldEqual, 0)
-		test.That(t, sr.lin_acc_z, test.ShouldEqual, 9.8)
-		test.That(t, sr.ang_vel_x, test.ShouldEqual, 0)
-		test.That(t, sr.ang_vel_y, test.ShouldEqual, -0.2)
-		test.That(t, sr.ang_vel_z, test.ShouldEqual, 0)
+		reading := s.TimedIMUReadingResponse{
+			LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
+			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
+			ReadingTime:        timestamp,
+		}
+		sr := toIMUReading("my-movement-sensor", reading)
+		test.That(t, bstringToGoString(sr.imu), test.ShouldResemble, "my-movement-sensor")
+		test.That(t, sr.lin_acc_x, test.ShouldEqual, reading.LinearAcceleration.X)
+		test.That(t, sr.lin_acc_y, test.ShouldEqual, reading.LinearAcceleration.Y)
+		test.That(t, sr.lin_acc_z, test.ShouldEqual, reading.LinearAcceleration.Z)
+		test.That(t, sr.ang_vel_x, test.ShouldEqual, reading.AngularVelocity.X)
+		test.That(t, sr.ang_vel_y, test.ShouldEqual, reading.AngularVelocity.Y)
+		test.That(t, sr.ang_vel_z, test.ShouldEqual, reading.AngularVelocity.Z)
 		test.That(t, sr.imu_reading_time_unix_milli, test.ShouldEqual, timestamp.UnixMilli())
+	})
+}
+
+func TestToOdometerReading(t *testing.T) {
+	t.Run("odometer reading properly converted between c and go", func(t *testing.T) {
+		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+		reading := s.TimedOdometerReadingResponse{
+			Position:    geo.NewPoint(4, 5),
+			Orientation: &spatialmath.Quaternion{Real: 0.8, Imag: -0.2, Jmag: 5.6, Kmag: -0.7},
+			ReadingTime: timestamp,
+		}
+		origin := geo.NewPoint(0, 0)
+		translation := spatialmath.GeoPointToPoint(reading.Position, origin)
+		sr := toOdometerReading("my-movement-sensor", reading)
+		test.That(t, bstringToGoString(sr.odometer), test.ShouldResemble, "my-movement-sensor")
+		test.That(t, sr.translation_x, test.ShouldEqual, translation.X)
+		test.That(t, sr.translation_y, test.ShouldEqual, translation.Y)
+		test.That(t, sr.translation_z, test.ShouldEqual, translation.Z)
+		test.That(t, sr.rotation_x, test.ShouldEqual, reading.Orientation.Quaternion().Imag)
+		test.That(t, sr.rotation_y, test.ShouldEqual, reading.Orientation.Quaternion().Jmag)
+		test.That(t, sr.rotation_z, test.ShouldEqual, reading.Orientation.Quaternion().Kmag)
+		test.That(t, sr.rotation_w, test.ShouldEqual, reading.Orientation.Quaternion().Real)
+		test.That(t, sr.odometer_reading_time_unix_milli, test.ShouldEqual, timestamp.UnixMilli())
 	})
 }
 
@@ -172,15 +196,15 @@ func TestBstringToByteSlice(t *testing.T) {
 	})
 }
 
-func TestCGoAPIWithoutIMU(t *testing.T) {
+func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 	pvcl, err := NewLib(0, 1)
 
-	t.Run("test state machine without IMU", func(t *testing.T) {
+	t.Run("test state machine without movement sensor", func(t *testing.T) {
 		// initialize viam_carto_lib
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg := GetTestConfig("mylidar", "", "", true)
+		cfg := GetTestConfig("my-lidar", "", "", true)
 		algoCfg := GetTestAlgoConfig(false)
 		vc, err := NewCarto(cfg, algoCfg, &CartoLibMock{})
 
@@ -241,7 +265,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 			Reading:     []byte(""),
 			ReadingTime: timestamp,
 		}
-		err = vc.addLidarReading("mylidar", reading)
+		err = vc.addLidarReading("my-lidar", reading)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_LIDAR_READING_EMPTY")
 
@@ -251,9 +275,28 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 			Reading:     []byte("he0llo"),
 			ReadingTime: timestamp,
 		}
-		err = vc.addLidarReading("mylidar", reading)
+		err = vc.addLidarReading("my-lidar", reading)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_LIDAR_READING_INVALID")
+
+		// test position should be unchanged by failed attempt to add data
+		position, err = vc.position()
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_GET_POSITION_NOT_INITIALIZED"))
+		test.That(t, position, test.ShouldResemble, Position{})
+
+		// test pointCloudMap should be unchanged by failed attempt to add data
+		pcd, err = vc.pointCloudMap()
+		test.That(t, pcd, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
+
+		// test internalState should be unchanged by failed attempt to add data
+		internalState, err = vc.internalState()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, len(internalState), test.ShouldEqual, len(lastInternalState))
+		lastInternalState = internalState
 
 		confirmBinaryCompressedUnsupported(t)
 
@@ -299,7 +342,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		// test position zeroed
 		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
+		test.That(t, position.ComponentReference, test.ShouldEqual, "my-lidar")
 		positionIsZero(t, position)
 
 		// test pointCloudMap now returns a non empty result
@@ -326,7 +369,7 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 		// test position, is no longer zeroed
 		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
+		test.That(t, position.ComponentReference, test.ShouldEqual, "my-lidar")
 		test.That(t, position.X, test.ShouldNotEqual, 0)
 		test.That(t, position.Y, test.ShouldNotEqual, 0)
 		test.That(t, position.Z, test.ShouldEqual, 0)
@@ -373,20 +416,15 @@ func TestCGoAPIWithoutIMU(t *testing.T) {
 	})
 }
 
-func TestCGoAPIWithIMU(t *testing.T) {
+func TestCGoAPIWithMovementSensor(t *testing.T) {
 	pvcl, err := NewLib(0, 1)
 
-	reading := s.TimedIMUReadingResponse{
-		LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
-		AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
-	}
-
-	t.Run("test state machine with IMU", func(t *testing.T) {
+	t.Run("test state machine with movement sensor", func(t *testing.T) {
 		// initialize viam_carto_lib
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pvcl, test.ShouldNotBeNil)
 
-		cfg := GetTestConfig("mylidar", "", "", true)
+		cfg := GetTestConfig("my-lidar", "", "", true)
 
 		// test invalid IMU enabling configuration
 		algoCfg := GetTestAlgoConfig(true)
@@ -394,7 +432,7 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
-		cfg = GetTestConfig("mylidar", "myIMU", "", true)
+		cfg = GetTestConfig("my-lidar", "my-movement-sensor", "", true)
 		algoCfg = GetTestAlgoConfig(true)
 		vc, err = NewCarto(cfg, algoCfg, &pvcl)
 
@@ -426,12 +464,56 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		test.That(t, len(internalState), test.ShouldBeGreaterThan, 0)
 		lastInternalState := internalState
 
-		// test invalid addIMUReading: sensor name unknown
+		// test invalid addLidarReading: sensor name unknown
 		timestamp := time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
-		reading.ReadingTime = timestamp
-		err = vc.addIMUReading("not my sensor", reading)
+		lidarReading := s.TimedLidarReadingResponse{
+			Reading:     []byte("he0llo"),
+			ReadingTime: timestamp,
+		}
+		err = vc.addLidarReading("not my sensor", lidarReading)
 		test.That(t, err, test.ShouldBeError)
 		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_UNKNOWN_SENSOR_NAME")
+
+		// test invalid addIMUReading: sensor name unknown
+		timestamp = time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+		imuReading := s.TimedIMUReadingResponse{
+			LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
+			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
+			ReadingTime:        timestamp,
+		}
+		err = vc.addIMUReading("not my sensor", imuReading)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_UNKNOWN_SENSOR_NAME")
+
+		// test invalid addOdometerReading: sensor name unknown
+		timestamp = time.Date(2021, 8, 15, 14, 30, 45, 100, time.UTC)
+		odometerReading := s.TimedOdometerReadingResponse{
+			Position:    geo.NewPoint(4, 5),
+			Orientation: &spatialmath.Quaternion{Real: 0.8, Imag: -0.2, Jmag: 5.6, Kmag: -0.7},
+			ReadingTime: timestamp,
+		}
+		err = vc.addOdometerReading("not my sensor", odometerReading)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err.Error(), test.ShouldResemble, "VIAM_CARTO_UNKNOWN_SENSOR_NAME")
+
+		// test position should be unchanged by failed attempt to add data
+		position, err = vc.position()
+		test.That(t, err, test.ShouldNotBeNil)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_GET_POSITION_NOT_INITIALIZED"))
+		test.That(t, position, test.ShouldResemble, Position{})
+
+		// test pointCloudMap should be unchanged by failed attempt to add data
+		pcd, err = vc.pointCloudMap()
+		test.That(t, pcd, test.ShouldBeNil)
+		test.That(t, err, test.ShouldBeError)
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_POINTCLOUD_MAP_EMPTY"))
+
+		// test internalState should be unchanged by failed attempt to add data
+		internalState, err = vc.internalState()
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, internalState, test.ShouldNotBeNil)
+		test.That(t, len(internalState), test.ShouldEqual, len(lastInternalState))
+		lastInternalState = internalState
 
 		confirmBinaryCompressedUnsupported(t)
 
@@ -444,19 +526,29 @@ func TestCGoAPIWithIMU(t *testing.T) {
 
 		// 1. test valid addLidarReading: valid reading ascii
 		tDelta := time.Second * 5
-		imuReadingOffset := time.Millisecond * 5
+		movementSensorReadingOffset := time.Millisecond * 5
 		t.Log("lidar reading 1")
 		timestamp = timestamp.Add(tDelta)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/0.pcd", timestamp, pointcloud.PCDAscii)
 
-		// test valid addIMUReading with same timestamp
+		// test valid addIMUReading with closely followed timestamp
 		t.Log("IMU reading 1")
 		testIMUReading := s.TimedIMUReadingResponse{
 			LinearAcceleration: r3.Vector{X: 0, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: 0, Z: 0},
-			ReadingTime:        timestamp.Add(imuReadingOffset),
+			ReadingTime:        timestamp.Add(movementSensorReadingOffset),
 		}
-		err = vc.addIMUReading("myIMU", testIMUReading)
+		err = vc.addIMUReading("my-movement-sensor", testIMUReading)
+		test.That(t, err, test.ShouldBeNil)
+
+		// test valid addOdometerReading with closely followed timestamp
+		t.Log("odometer reading 1")
+		testOdometerReading := s.TimedOdometerReadingResponse{
+			Position:    geo.NewPoint(4, 5),
+			Orientation: &spatialmath.Quaternion{Real: 0.8, Imag: -0.2, Jmag: 5.6, Kmag: -0.7},
+			ReadingTime: timestamp.Add(2 * movementSensorReadingOffset),
+		}
+		err = vc.addOdometerReading("my-movement-sensor", testOdometerReading)
 		test.That(t, err, test.ShouldBeNil)
 
 		// 2. test valid addLidarReading: valid reading binary
@@ -464,14 +556,24 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		timestamp = timestamp.Add(tDelta)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/1.pcd", timestamp, pointcloud.PCDBinary)
 
-		// test valid addIMUReading with same timestamp
+		// test valid addIMUReading with closely followed timestamp
 		t.Log("IMU reading 2")
 		testIMUReading = s.TimedIMUReadingResponse{
 			LinearAcceleration: r3.Vector{X: 0.1, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: 0, Y: -0.2, Z: 0},
-			ReadingTime:        timestamp.Add(imuReadingOffset),
+			ReadingTime:        timestamp.Add(movementSensorReadingOffset),
 		}
-		err = vc.addIMUReading("myIMU", testIMUReading)
+		err = vc.addIMUReading("my-movement-sensor", testIMUReading)
+		test.That(t, err, test.ShouldBeNil)
+
+		// test valid addOdometerReading with closely followed timestamp
+		t.Log("odometer reading 2")
+		testOdometerReading = s.TimedOdometerReadingResponse{
+			Position:    geo.NewPoint(5, 6),
+			Orientation: &spatialmath.Quaternion{Real: 0.7, Imag: -0.1, Jmag: 5.4, Kmag: -0.8},
+			ReadingTime: timestamp.Add(2 * movementSensorReadingOffset),
+		}
+		err = vc.addOdometerReading("my-movement-sensor", testOdometerReading)
 		test.That(t, err, test.ShouldBeNil)
 
 		// third sensor reading populates the pointcloud map and the position
@@ -479,20 +581,30 @@ func TestCGoAPIWithIMU(t *testing.T) {
 		timestamp = timestamp.Add(tDelta)
 		testAddLidarReading(t, vc, "viam-cartographer/mock_lidar/2.pcd", timestamp, pointcloud.PCDBinary)
 
-		// test valid addIMUReading with same timestamp
+		// test valid addIMUReading with closely followed timestamp
 		t.Log("IMU reading 3")
 		testIMUReading = s.TimedIMUReadingResponse{
 			LinearAcceleration: r3.Vector{X: 0.2, Y: 0, Z: 9.8},
 			AngularVelocity:    spatialmath.AngularVelocity{X: -0.6, Y: 0, Z: 0},
-			ReadingTime:        timestamp.Add(imuReadingOffset),
+			ReadingTime:        timestamp.Add(movementSensorReadingOffset),
 		}
-		err = vc.addIMUReading("myIMU", testIMUReading)
+		err = vc.addIMUReading("my-movement-sensor", testIMUReading)
 		test.That(t, err, test.ShouldBeNil)
 
-		// test position zeroed
+		// test valid addOdometerReading with closely followed timestamp
+		t.Log("odometer reading 3")
+		testOdometerReading = s.TimedOdometerReadingResponse{
+			Position:    geo.NewPoint(6, 7),
+			Orientation: &spatialmath.Quaternion{Real: 0.4, Imag: 0.1, Jmag: 4.4, Kmag: -0.1},
+			ReadingTime: timestamp.Add(2 * movementSensorReadingOffset),
+		}
+		err = vc.addOdometerReading("my-movement-sensor", testOdometerReading)
+		test.That(t, err, test.ShouldBeNil)
+
+		// test position is not zeroed
 		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "mylidar")
+		test.That(t, position.ComponentReference, test.ShouldEqual, "my-lidar")
 		test.That(t, r3.Vector{X: position.X, Y: position.Y, Z: position.Z}, test.ShouldNotResemble, r3.Vector{X: 0, Y: 0, Z: 0})
 
 		// test pointCloudMap returns a non empty result
