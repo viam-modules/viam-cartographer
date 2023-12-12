@@ -438,3 +438,280 @@ func validAddMovementSensorReadingUntilSuccessTestHelper(
 		}
 	}
 }
+
+func TestTryAddMovementSensorReadingOnceTestHelper(
+	ctx context.Context,
+	t *testing.T,
+	config Config,
+	cf cartofacade.Mock,
+) {
+	config.CartoFacade = &cf
+
+	// Set up movement sensor reading
+	now := time.Now().UTC()
+	var movementSensorReading s.TimedMovementSensorReadingResponse
+	if config.MovementSensor.Properties().IMUSupported {
+		movementSensorReading.TimedIMUResponse = &s.TimedIMUReadingResponse{
+			AngularVelocity:    s.TestAngVel,
+			LinearAcceleration: s.TestLinAcc,
+			ReadingTime:        now,
+		}
+	}
+	if config.MovementSensor.Properties().OdometerSupported {
+		movementSensorReading.TimedOdometerResponse = &s.TimedOdometerReadingResponse{
+			Position:    s.TestPosition,
+			Orientation: s.TestOrientation,
+			ReadingTime: now,
+		}
+	}
+
+	if config.MovementSensor.Properties().IMUSupported {
+
+		// In case that the odometer is also supported, let's assume it works fast and efficiently for all the
+		// following test cases
+		cf.AddOdometerReadingFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+			sensorName string,
+			currentReading s.TimedOdometerReadingResponse,
+		) error {
+			return nil
+		}
+
+		t.Run("when AddIMUReading blocks for more than the date rate and succeeds, time to sleep is 0", func(t *testing.T) {
+			var imuCalls []addIMUReadingArgs
+			cf.AddIMUReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedIMUReadingResponse,
+			) error {
+				time.Sleep(1 * time.Second)
+				args := addIMUReadingArgs{
+					timeout:        timeout,
+					sensorName:     sensorName,
+					currentReading: currentReading,
+				}
+				imuCalls = append(imuCalls, args)
+				return nil
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldEqual, 0)
+
+			if config.MovementSensor.Properties().IMUSupported {
+				test.That(t, len(imuCalls), test.ShouldEqual, 1)
+				for i, call := range imuCalls {
+					t.Logf("call %d", i)
+					test.That(t, call.sensorName, test.ShouldResemble, config.MovementSensor.Name())
+					test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, movementSensorReading.TimedIMUResponse.LinearAcceleration)
+					test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, movementSensorReading.TimedIMUResponse.AngularVelocity)
+					test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+				}
+			}
+		})
+
+		t.Run("when AddIMUReading is slower than date rate and returns a lock error, time to sleep is 0", func(t *testing.T) {
+			cf.AddIMUReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedIMUReadingResponse,
+			) error {
+				time.Sleep(1 * time.Second)
+				return cartofacade.ErrUnableToAcquireLock
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldEqual, 0)
+		})
+
+		t.Run("when AddIMUReading blocks for more than the date rate and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+			cf.AddIMUReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedIMUReadingResponse,
+			) error {
+				time.Sleep(1 * time.Second)
+				return errUnknown
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldEqual, 0)
+		})
+
+		t.Run("when AddIMUReading is faster than the date rate and succeeds, time to sleep is <= date rate", func(t *testing.T) {
+			cf.AddIMUReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedIMUReadingResponse,
+			) error {
+				return nil
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
+			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
+		})
+
+		t.Run("when AddIMUReading is faster than the date rate and returns a lock error, time to sleep is <= date rate", func(t *testing.T) {
+			cf.AddIMUReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedIMUReadingResponse,
+			) error {
+				return cartofacade.ErrUnableToAcquireLock
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
+			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
+		})
+
+		t.Run("when AddIMUReading or AddOdometerReading are faster than date rate "+
+			"and returns an unexpected error, time to sleep is <= date rate", func(t *testing.T) {
+			cf.AddIMUReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedIMUReadingResponse,
+			) error {
+				return errUnknown
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
+			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
+		})
+
+	}
+
+	if config.MovementSensor.Properties().OdometerSupported {
+
+		// In case that the IMU is also supported, let's assume it works fast and efficiently for all the
+		// following test cases
+		cf.AddIMUReadingFunc = func(
+			ctx context.Context,
+			timeout time.Duration,
+			sensorName string,
+			currentReading s.TimedIMUReadingResponse,
+		) error {
+			return errUnknown
+		}
+
+		t.Run("when AddOdometerReading blocks for more than the date rate and succeeds, time to sleep is 0", func(t *testing.T) {
+			var odometerCalls []addOdometerReadingArgs
+			cf.AddOdometerReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedOdometerReadingResponse,
+			) error {
+				time.Sleep(1 * time.Second)
+				args := addOdometerReadingArgs{
+					timeout:        timeout,
+					sensorName:     sensorName,
+					currentReading: currentReading,
+				}
+				odometerCalls = append(odometerCalls, args)
+				return nil
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldEqual, 0)
+
+			if config.MovementSensor.Properties().OdometerSupported {
+				test.That(t, len(odometerCalls), test.ShouldEqual, 1)
+				firstTimestamp := odometerCalls[0].currentReading.ReadingTime
+				for i, call := range odometerCalls {
+					t.Logf("call %d", i)
+					test.That(t, call.sensorName, test.ShouldResemble, config.MovementSensor.Name())
+					test.That(t, call.currentReading.Position, test.ShouldResemble, movementSensorReading.TimedOdometerResponse.Position)
+					test.That(t, call.currentReading.Orientation, test.ShouldResemble, movementSensorReading.TimedOdometerResponse.Orientation)
+					test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+					test.That(t, call.currentReading.ReadingTime, test.ShouldEqual, firstTimestamp)
+				}
+			}
+		})
+
+		t.Run("when AddOdometerReading is slower than date rate and returns a lock error, time to sleep is 0", func(t *testing.T) {
+			cf.AddOdometerReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedOdometerReadingResponse,
+			) error {
+				time.Sleep(1 * time.Second)
+				return cartofacade.ErrUnableToAcquireLock
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldEqual, 0)
+		})
+
+		t.Run("when AddOdometerReading blocks for more than the date rate and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+			cf.AddOdometerReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedOdometerReadingResponse,
+			) error {
+				time.Sleep(1 * time.Second)
+				return errUnknown
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldEqual, 0)
+		})
+
+		t.Run("when AddOdometerReading are faster than the date rate and succeeds, time to sleep is <= date rate", func(t *testing.T) {
+			cf.AddOdometerReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedOdometerReadingResponse,
+			) error {
+				return nil
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
+			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
+		})
+
+		t.Run("when AddOdometerReading are faster than the date rate and returns a lock error, time to sleep is <= date rate", func(t *testing.T) {
+			cf.AddOdometerReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedOdometerReadingResponse,
+			) error {
+				return cartofacade.ErrUnableToAcquireLock
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
+			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
+		})
+
+		t.Run("when AddOdometerReading are faster than date rate "+
+			"and returns an unexpected error, time to sleep is <= date rate", func(t *testing.T) {
+			cf.AddOdometerReadingFunc = func(
+				ctx context.Context,
+				timeout time.Duration,
+				sensorName string,
+				currentReading s.TimedOdometerReadingResponse,
+			) error {
+				return errUnknown
+			}
+
+			timeToSleep := config.tryAddMovementSensorReadingOnce(context.Background(), movementSensorReading)
+			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
+			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
+		})
+
+	}
+}
