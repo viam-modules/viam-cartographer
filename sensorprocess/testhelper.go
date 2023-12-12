@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
@@ -14,6 +13,7 @@ import (
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 	"github.com/viamrobotics/viam-cartographer/sensors/inject"
+	rdkutils "go.viam.com/rdk/utils"
 )
 
 type addLidarReadingArgs struct {
@@ -47,13 +47,7 @@ VIEWPOINT 0 0 0 1 0 0 0
 POINTS 0
 DATA binary
 `)
-	expectedIMUReading = s.TimedIMUReadingResponse{
-		LinearAcceleration: r3.Vector{X: 1, Y: 1, Z: 1},
-		AngularVelocity:    spatialmath.AngularVelocity{X: 0.017453292519943295, Y: 0.008726646259971648, Z: 0},
-	}
-	expectedMovementSensorReading = s.TimedMovementSensorReadingResponse{
-		TimedIMUResponse: &expectedIMUReading,
-	}
+
 	errUnknown = errors.New("unknown error")
 )
 
@@ -129,14 +123,47 @@ func validAddLidarReadingInOnlineTestHelper(
 	}
 }
 
+func invalidAddLidarReadingInOnlineTestHelper(
+	ctx context.Context,
+	t *testing.T,
+	cartoFacadeMock cartofacade.Mock,
+	config Config,
+	testLidar s.TestSensor,
+	lidarDataFrequencyHz int,
+) {
+	logger := logging.NewTestLogger(t)
+	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoMovementSensor), string(testLidar), lidarDataFrequencyHz, logger)
+	test.That(t, err, test.ShouldBeNil)
+
+	var calls []addLidarReadingArgs
+	cartoFacadeMock.AddLidarReadingFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+		sensorName string,
+		currentReading s.TimedLidarReadingResponse,
+	) error {
+		args := addLidarReadingArgs{
+			timeout:        timeout,
+			sensorName:     sensorName,
+			currentReading: currentReading,
+		}
+		calls = append(calls, args)
+		return nil
+	}
+	config.Lidar = lidar
+	config.CartoFacade = &cartoFacadeMock
+
+	err = config.addLidarReadingInOnline(ctx)
+	test.That(t, err, test.ShouldNotBeNil)
+	test.That(t, len(calls), test.ShouldEqual, 0)
+}
+
 func validAddMovementSensorReadingInOnlineTestHelper(
 	ctx context.Context,
 	t *testing.T,
 	config Config,
 	cf cartofacade.Mock,
 	testMovementSensor s.TestSensor,
-	imuEnabled bool,
-	odometerEnabled bool,
 ) {
 	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 100
@@ -192,26 +219,57 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 	config.MovementSensor = movementSensor
 	config.IsOnline = true
 
-	err = config.addMovementSensorReadingInOnline(ctx)
-	test.That(t, err, test.ShouldBeNil)
-	test.That(t, len(imuCalls), test.ShouldEqual, 1)
+	testNumberCalls := func(movementSensor s.TimedMovementSensor, expectedNumberCalls int) {
+		if movementSensor.Properties().IMUSupported {
+			test.That(t, len(imuCalls), test.ShouldEqual, expectedNumberCalls)
+		} else {
+			test.That(t, len(imuCalls), test.ShouldEqual, 0)
+		}
+		if movementSensor.Properties().OdometerSupported {
+			test.That(t, len(odometerCalls), test.ShouldEqual, expectedNumberCalls)
+		} else {
+			test.That(t, len(odometerCalls), test.ShouldEqual, 0)
+		}
+	}
 
 	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, len(imuCalls), test.ShouldEqual, 2)
+	testNumberCalls(movementSensor, 1)
 
 	err = config.addMovementSensorReadingInOnline(ctx)
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, len(imuCalls), test.ShouldEqual, 3)
+	testNumberCalls(movementSensor, 2)
 
-	for i, call := range imuCalls {
-		t.Logf("call %d", i)
-		test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
-		// the IMU test fixture happens to always return the same readings currently
-		// in reality they are likely different every time
-		test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, expectedIMUReading.LinearAcceleration)
-		test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, expectedIMUReading.AngularVelocity)
-		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+	err = config.addMovementSensorReadingInOnline(ctx)
+	test.That(t, err, test.ShouldBeNil)
+	testNumberCalls(movementSensor, 3)
+
+	if movementSensor.Properties().IMUSupported {
+		for i, call := range imuCalls {
+			t.Logf("call %d", i)
+			test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
+			// the IMU test fixture happens to always return the same readings currently
+			// in reality they are likely different every time
+			test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, s.TestLinAcc)
+			test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, spatialmath.AngularVelocity{
+				X: rdkutils.DegToRad(s.TestAngVel.X),
+				Y: rdkutils.DegToRad(s.TestAngVel.Y),
+				Z: rdkutils.DegToRad(s.TestAngVel.Z),
+			})
+			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+		}
+	}
+
+	if movementSensor.Properties().OdometerSupported {
+		for i, call := range odometerCalls {
+			t.Logf("call %d", i)
+			test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
+			// the odometer test fixture happens to always return the same readings currently
+			// in reality they are likely different every time
+			test.That(t, call.currentReading.Position, test.ShouldResemble, s.TestPosition)
+			test.That(t, call.currentReading.Orientation, test.ShouldResemble, s.TestOrientation)
+			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+		}
 	}
 
 	if testMovementSensor == s.GoodIMU {
@@ -226,41 +284,6 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 	}
 }
 
-func invalidAddLidarReadingInOnlineTestHelper(
-	ctx context.Context,
-	t *testing.T,
-	cartoFacadeMock cartofacade.Mock,
-	config Config,
-	testLidar s.TestSensor,
-	lidarDataFrequencyHz int,
-) {
-	logger := logging.NewTestLogger(t)
-	lidar, err := s.NewLidar(context.Background(), s.SetupDeps(testLidar, s.NoMovementSensor), string(testLidar), lidarDataFrequencyHz, logger)
-	test.That(t, err, test.ShouldBeNil)
-
-	var calls []addLidarReadingArgs
-	cartoFacadeMock.AddLidarReadingFunc = func(
-		ctx context.Context,
-		timeout time.Duration,
-		sensorName string,
-		currentReading s.TimedLidarReadingResponse,
-	) error {
-		args := addLidarReadingArgs{
-			timeout:        timeout,
-			sensorName:     sensorName,
-			currentReading: currentReading,
-		}
-		calls = append(calls, args)
-		return nil
-	}
-	config.Lidar = lidar
-	config.CartoFacade = &cartoFacadeMock
-
-	err = config.addLidarReadingInOnline(ctx)
-	test.That(t, err, test.ShouldNotBeNil)
-	test.That(t, len(calls), test.ShouldEqual, 0)
-}
-
 func invalidAddMovementSensorReadingInOnlineTestHelper(
 	ctx context.Context,
 	t *testing.T,
@@ -269,8 +292,6 @@ func invalidAddMovementSensorReadingInOnlineTestHelper(
 	lidarDataFrequencyHz int,
 	testMovementSensor s.TestSensor,
 	movementSensorDataFrequencyHz int,
-	imuEnabled bool,
-	odometerEnabled bool,
 ) {
 	logger := logging.NewTestLogger(t)
 	movementSensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testMovementSensor),

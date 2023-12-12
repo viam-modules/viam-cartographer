@@ -26,14 +26,14 @@ const BadTime = "NOT A TIME"
 var (
 	// TestTimestamp can be used to test specific timestamps provided by a replay sensor.
 	TestTimestamp = time.Now().UTC().Format("2006-01-02T15:04:05.999999Z")
-	// LinAcc is the successful mock linear acceleration result used for testing.
-	LinAcc = r3.Vector{X: 1, Y: 1, Z: 1}
-	// AngVel is the successful mock angular velocity result used for testing.
-	AngVel = spatialmath.AngularVelocity{X: 1, Y: .5, Z: 0}
-	// Position is the successful mock position result used for testing.
-	Position = geo.NewPoint(1, 2)
-	// Orientation is the successful mock orientation result used for testing.
-	Orientation = spatialmath.NewZeroOrientation()
+	// TestLinAcc is the successful mock linear acceleration result used for testing.
+	TestLinAcc = r3.Vector{X: 1, Y: 2, Z: 3}
+	// TestAngVel is the successful mock angular velocity result used for testing.
+	TestAngVel = spatialmath.AngularVelocity{X: 1.1, Y: .5, Z: 0}
+	// TestPosition is the successful mock position result used for testing.
+	TestPosition = geo.NewPoint(5, 4)
+	// TestOrientation is the successful mock orientation result used for testing.
+	TestOrientation = &spatialmath.Quaternion{Real: 0.1, Imag: -0.2, Jmag: 2.5, Kmag: -9.1}
 )
 
 // TestSensor represents sensors used for testing.
@@ -260,10 +260,10 @@ func getFinishedReplayLidar() *inject.Camera {
 func getGoodIMU() *inject.MovementSensor {
 	imu := &inject.MovementSensor{}
 	imu.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return LinAcc, nil
+		return TestLinAcc, nil
 	}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return AngVel, nil
+		return TestAngVel, nil
 	}
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -298,14 +298,14 @@ func getReplayIMU(testTime string) *inject.MovementSensor {
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return LinAcc, nil
+		return TestLinAcc, nil
 	}
 	imu.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return AngVel, nil
+		return TestAngVel, nil
 	}
 	imu.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -336,10 +336,10 @@ func getFinishedReplayIMU() *inject.MovementSensor {
 func getGoodOdometer() *inject.MovementSensor {
 	odometer := &inject.MovementSensor{}
 	odometer.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return Position, 10, nil
+		return TestPosition, 10, nil
 	}
 	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
-		return Orientation, nil
+		return TestOrientation, nil
 	}
 	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -374,14 +374,14 @@ func getReplayOdometer(testTime string) *inject.MovementSensor {
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return Position, 1.2, nil
+		return TestPosition, 1.2, nil
 	}
 	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return Orientation, nil
+		return TestOrientation, nil
 	}
 	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -420,16 +420,16 @@ func getMovementSensorNotIMUAndNotOdometer() *inject.MovementSensor {
 func getMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
 	movementSensor := &inject.MovementSensor{}
 	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return Position, 10, nil
+		return TestPosition, 10, nil
 	}
 	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
-		return Orientation, nil
+		return TestOrientation, nil
 	}
 	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return LinAcc, nil
+		return TestLinAcc, nil
 	}
 	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return AngVel, nil
+		return TestAngVel, nil
 	}
 	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -453,10 +453,10 @@ func getMovementSensorWithErroringPropertiesFunc() *inject.MovementSensor {
 func getMovementSensorWithInvalidProperties() *inject.MovementSensor {
 	movementSensor := &inject.MovementSensor{}
 	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
-		return LinAcc, nil
+		return TestLinAcc, nil
 	}
 	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
-		return AngVel, nil
+		return TestAngVel, nil
 	}
 	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{

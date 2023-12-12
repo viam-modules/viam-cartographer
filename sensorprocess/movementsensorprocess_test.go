@@ -63,34 +63,40 @@ func TestAddMovementSensorReadingInOnline(t *testing.T) {
 		Timeout:        10 * time.Second,
 	}
 
-	t.Run("returns error when LinearAcceleration or AngularVelocity returns error, doesn't try to add IMU data", func(t *testing.T) {
+	t.Run("returns error when LinearAcceleration or AngularVelocity return an error, doesn't try to add IMU data", func(t *testing.T) {
 		lidarFrequencyHz := 10
 		movementSensorFrequencyHz := 10
-		imuEnabled := true
-		odometerEnabled := false
 		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
-			lidarFrequencyHz, s.IMUWithErroringFunctions, movementSensorFrequencyHz, imuEnabled, odometerEnabled)
+			lidarFrequencyHz, s.IMUWithErroringFunctions, movementSensorFrequencyHz)
+	})
+
+	t.Run("returns error when Position or Orientation return an error, doesn't try to add odometer data", func(t *testing.T) {
+		lidarFrequencyHz := 10
+		movementSensorFrequencyHz := 10
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
+			lidarFrequencyHz, s.OdometerWithErroringFunctions, movementSensorFrequencyHz)
 	})
 
 	t.Run("returns error when IMU replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
 		lidarFrequencyHz := 10
 		movementSensorFrequencyHz := 10
-		imuEnabled := true
-		odometerEnabled := false
 		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
-			lidarFrequencyHz, s.InvalidReplayIMU, movementSensorFrequencyHz, imuEnabled, odometerEnabled)
+			lidarFrequencyHz, s.InvalidReplayIMU, movementSensorFrequencyHz)
+	})
+
+	t.Run("returns error when odometer replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
+		lidarFrequencyHz := 10
+		movementSensorFrequencyHz := 10
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
+			lidarFrequencyHz, s.InvalidReplayOdometer, movementSensorFrequencyHz)
 	})
 
 	t.Run("online replay IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		imuEnabled := true
-		odometerEnabled := false
-		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayIMU, imuEnabled, odometerEnabled)
+		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayIMU)
 	})
 
 	t.Run("online IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		imuEnabled := true
-		odometerEnabled := false
-		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodIMU, imuEnabled, odometerEnabled)
+		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodIMU)
 	})
 }
 
@@ -144,15 +150,24 @@ func TestTryAddMovementSensorReadingUntilSuccess(t *testing.T) {
 		config.MovementSensor = replayIMU
 		config.Lidar = &injectLidar
 
-		config.tryAddMovementSensorReadingUntilSuccess(ctx, expectedMovementSensorReading)
+		now := time.Now()
+		movementSensorReading := s.TimedMovementSensorReadingResponse{
+			TimedIMUResponse: &s.TimedIMUReadingResponse{
+				AngularVelocity:    s.TestAngVel,
+				LinearAcceleration: s.TestLinAcc,
+				ReadingTime:        now,
+			},
+		}
+
+		config.tryAddMovementSensorReadingUntilSuccess(ctx, movementSensorReading)
 		test.That(t, len(calls), test.ShouldEqual, 3)
 
 		firstTimestamp := calls[0].currentReading.ReadingTime
 		for i, call := range calls {
 			t.Logf("call %d", i)
 			test.That(t, call.sensorName, test.ShouldResemble, string(imu))
-			test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, expectedIMUReading.LinearAcceleration)
-			test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, expectedIMUReading.AngularVelocity)
+			test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, movementSensorReading.TimedIMUResponse.LinearAcceleration)
+			test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, movementSensorReading.TimedIMUResponse.AngularVelocity)
 			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
 			test.That(t, call.currentReading.ReadingTime, test.ShouldEqual, firstTimestamp)
 		}
