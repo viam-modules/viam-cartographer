@@ -164,7 +164,7 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 	config Config,
 	cf cartofacade.Mock,
 	testMovementSensor s.TestSensor,
-) {
+) ([]addIMUReadingArgs, []addOdometerReadingArgs) {
 	logger := logging.NewTestLogger(t)
 	dataFrequencyHz := 100
 	movementSensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testMovementSensor),
@@ -272,16 +272,7 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 		}
 	}
 
-	if testMovementSensor == s.GoodIMU {
-		test.That(t, imuCalls[0].currentReading.ReadingTime.Before(imuCalls[1].currentReading.ReadingTime), test.ShouldBeTrue)
-		test.That(t, imuCalls[1].currentReading.ReadingTime.Before(imuCalls[2].currentReading.ReadingTime), test.ShouldBeTrue)
-	} else if testMovementSensor == s.ReplayIMU {
-		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, imuCalls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
-	} else {
-		t.Errorf("no timestamp tests provided for %v", string(testMovementSensor))
-	}
+	return imuCalls, odometerCalls
 }
 
 func invalidAddMovementSensorReadingInOnlineTestHelper(
@@ -341,4 +332,109 @@ func invalidAddMovementSensorReadingInOnlineTestHelper(
 	test.That(t, err, test.ShouldNotBeNil)
 	test.That(t, len(imuCalls), test.ShouldEqual, 0)
 	test.That(t, len(odometerCalls), test.ShouldEqual, 0)
+}
+
+func validAddMovementSensorReadingUntilSuccessTestHelper(
+	ctx context.Context,
+	t *testing.T,
+	config Config,
+	cf cartofacade.Mock,
+	testMovementSensor s.TestSensor,
+) {
+	logger := logging.NewTestLogger(t)
+	dataFrequencyHz := 0
+	movementSensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testMovementSensor),
+		string(testMovementSensor), dataFrequencyHz, logger)
+	test.That(t, err, test.ShouldBeNil)
+
+	var imuCalls []addIMUReadingArgs
+	cf.AddIMUReadingFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+		sensorName string,
+		currentReading s.TimedIMUReadingResponse,
+	) error {
+		args := addIMUReadingArgs{
+			timeout:        timeout,
+			sensorName:     sensorName,
+			currentReading: currentReading,
+		}
+		imuCalls = append(imuCalls, args)
+		if len(imuCalls) == 1 {
+			return errUnknown
+		}
+		if len(imuCalls) == 2 {
+			return cartofacade.ErrUnableToAcquireLock
+		}
+		return nil
+	}
+
+	var odometerCalls []addOdometerReadingArgs
+	cf.AddOdometerReadingFunc = func(
+		ctx context.Context,
+		timeout time.Duration,
+		sensorName string,
+		currentReading s.TimedOdometerReadingResponse,
+	) error {
+		args := addOdometerReadingArgs{
+			timeout:        timeout,
+			sensorName:     sensorName,
+			currentReading: currentReading,
+		}
+		odometerCalls = append(odometerCalls, args)
+		if len(odometerCalls) == 1 {
+			return errUnknown
+		}
+		if len(odometerCalls) == 2 {
+			return cartofacade.ErrUnableToAcquireLock
+		}
+		return nil
+	}
+
+	config.CartoFacade = &cf
+	config.MovementSensor = movementSensor
+	config.IsOnline = true
+
+	now := time.Now()
+	var movementSensorReading s.TimedMovementSensorReadingResponse
+	if movementSensor.Properties().IMUSupported {
+		movementSensorReading.TimedIMUResponse = &s.TimedIMUReadingResponse{
+			AngularVelocity:    s.TestAngVel,
+			LinearAcceleration: s.TestLinAcc,
+			ReadingTime:        now,
+		}
+	}
+	if movementSensor.Properties().OdometerSupported {
+		movementSensorReading.TimedOdometerResponse = &s.TimedOdometerReadingResponse{
+			Position:    s.TestPosition,
+			Orientation: s.TestOrientation,
+			ReadingTime: now,
+		}
+	}
+
+	config.tryAddMovementSensorReadingUntilSuccess(ctx, movementSensorReading)
+	if movementSensor.Properties().IMUSupported {
+		test.That(t, len(imuCalls), test.ShouldEqual, 3)
+		firstTimestamp := imuCalls[0].currentReading.ReadingTime
+		for i, call := range imuCalls {
+			t.Logf("call %d", i)
+			test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
+			test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, movementSensorReading.TimedIMUResponse.LinearAcceleration)
+			test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, movementSensorReading.TimedIMUResponse.AngularVelocity)
+			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+			test.That(t, call.currentReading.ReadingTime, test.ShouldEqual, firstTimestamp)
+		}
+	}
+	if movementSensor.Properties().OdometerSupported {
+		test.That(t, len(odometerCalls), test.ShouldEqual, 3)
+		firstTimestamp := odometerCalls[0].currentReading.ReadingTime
+		for i, call := range odometerCalls {
+			t.Logf("call %d", i)
+			test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
+			test.That(t, call.currentReading.Position, test.ShouldResemble, movementSensorReading.TimedOdometerResponse.Position)
+			test.That(t, call.currentReading.Orientation, test.ShouldResemble, movementSensorReading.TimedOdometerResponse.Orientation)
+			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
+			test.That(t, call.currentReading.ReadingTime, test.ShouldEqual, firstTimestamp)
+		}
+	}
 }

@@ -107,7 +107,7 @@ func TestProperties(t *testing.T) {
 	})
 
 	t.Run("both IMU and odometer supported", func(t *testing.T) {
-		lidar, movementSensor := s.GoodLidar, s.MovementSensorBothIMUAndOdometer
+		lidar, movementSensor := s.GoodLidar, s.GoodMovementSensorBothIMUAndOdometer
 		deps := s.SetupDeps(lidar, movementSensor)
 		actualMovementSensor, err := s.NewMovementSensor(ctx, deps, string(movementSensor), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -200,7 +200,7 @@ func TestTimedMovementSensorReading(t *testing.T) {
 
 	t.Run("when a movemement sensor that supports both an odometer and an IMU succeeds,"+
 		" returns current time in UTC and the reading", func(t *testing.T) {
-		lidar, odometer := s.GoodLidar, s.MovementSensorBothIMUAndOdometer
+		lidar, odometer := s.GoodLidar, s.GoodMovementSensorBothIMUAndOdometer
 		deps := s.SetupDeps(lidar, odometer)
 		actualOdometer, err := s.NewMovementSensor(ctx, deps, string(odometer), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)

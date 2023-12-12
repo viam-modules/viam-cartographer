@@ -91,8 +91,10 @@ const (
 
 	// MovementSensorNotIMUNotOdometer is a movement sensor that does neither support an IMU nor an odometer.
 	MovementSensorNotIMUNotOdometer TestSensor = "movement_sensor_not_imu_not_odometer"
-	// MovementSensorBothIMUAndOdometer is a movement sensor that dsupports both an IMU nor an odometer.
-	MovementSensorBothIMUAndOdometer TestSensor = "movement_sensor_imu_and_odometer"
+	// GoodMovementSensorBothIMUAndOdometer is a movement sensor that supports both an IMU nor an odometer.
+	GoodMovementSensorBothIMUAndOdometer TestSensor = "good_movement_sensor_imu_and_odometer"
+	// MovementSensorBothIMUAndOdometerWithErroringFunctions is a movement sensor whose functions return errors.
+	MovementSensorBothIMUAndOdometerWithErroringFunctions TestSensor = "movement_sensor_imu_and_odometer_with_erroring_functions"
 	// MovementSensorWithErroringPropertiesFunc is a movement sensor whose Properties function returns an error.
 	MovementSensorWithErroringPropertiesFunc TestSensor = "movement_sensor_with_erroring_properties_function"
 	// MovementSensorWithInvalidProperties is a movement sensor whose properties are invalid.
@@ -101,6 +103,14 @@ const (
 	GibberishMovementSensor TestSensor = "gibberish_movement_sensor"
 	// NoMovementSensor is a movement sensor that represents that no movement sensor is set up or added.
 	NoMovementSensor TestSensor = ""
+
+	// ReplayMovementSensorBothIMUAndOdometer is a replay movement sensor that supports both an IMU nor an odometer.
+	ReplayMovementSensorBothIMUAndOdometer TestSensor = "replay_movement_sensor_imu_and_odometer"
+	// InvalidReplayMovementSensorBothIMUAndOdometer is a replay movement sensor that supports both an IMU nor an odometer.
+	InvalidReplayMovementSensorBothIMUAndOdometer TestSensor = "invalid_replay_movement_sensor_imu_and_odometer"
+	// FinishedReplayMovementSensor is a movement sensor whose LinearAcceleration, AngularVelocity, Position, and Orientation
+	//  functions return an end of dataset error.
+	FinishedReplayMovementSensor TestSensor = "finished_replay_movement_sensor"
 )
 
 var (
@@ -115,20 +125,24 @@ var (
 	}
 
 	testMovementSensors = map[TestSensor]func() *inject.MovementSensor{
-		GoodIMU:                                  getGoodIMU,
-		IMUWithErroringFunctions:                 getIMUWithErroringFunctions,
-		ReplayIMU:                                func() *inject.MovementSensor { return getReplayIMU(TestTimestamp) },
-		InvalidReplayIMU:                         func() *inject.MovementSensor { return getReplayIMU(BadTime) },
-		FinishedReplayIMU:                        func() *inject.MovementSensor { return getFinishedReplayIMU() },
-		GoodOdometer:                             getGoodOdometer,
-		OdometerWithErroringFunctions:            getOdometerWithErroringFunctions,
-		ReplayOdometer:                           func() *inject.MovementSensor { return getReplayOdometer(TestTimestamp) },
-		InvalidReplayOdometer:                    func() *inject.MovementSensor { return getReplayOdometer(BadTime) },
-		FinishedReplayOdometer:                   func() *inject.MovementSensor { return getFinishedReplayOdometer() },
-		MovementSensorNotIMUNotOdometer:          getMovementSensorNotIMUAndNotOdometer,
-		MovementSensorBothIMUAndOdometer:         getMovementSensorBothIMUAndOdometer,
-		MovementSensorWithErroringPropertiesFunc: getMovementSensorWithErroringPropertiesFunc,
-		MovementSensorWithInvalidProperties:      getMovementSensorWithInvalidProperties,
+		GoodIMU:                              getGoodIMU,
+		IMUWithErroringFunctions:             getIMUWithErroringFunctions,
+		ReplayIMU:                            func() *inject.MovementSensor { return getReplayIMU(TestTimestamp) },
+		InvalidReplayIMU:                     func() *inject.MovementSensor { return getReplayIMU(BadTime) },
+		FinishedReplayIMU:                    func() *inject.MovementSensor { return getFinishedReplayIMU() },
+		GoodOdometer:                         getGoodOdometer,
+		OdometerWithErroringFunctions:        getOdometerWithErroringFunctions,
+		ReplayOdometer:                       func() *inject.MovementSensor { return getReplayOdometer(TestTimestamp) },
+		InvalidReplayOdometer:                func() *inject.MovementSensor { return getReplayOdometer(BadTime) },
+		FinishedReplayOdometer:               func() *inject.MovementSensor { return getFinishedReplayOdometer() },
+		MovementSensorNotIMUNotOdometer:      getMovementSensorNotIMUAndNotOdometer,
+		GoodMovementSensorBothIMUAndOdometer: getGoodMovementSensorBothIMUAndOdometer,
+		MovementSensorBothIMUAndOdometerWithErroringFunctions: getMovementSensorBothIMUAndOdometerWithErroringFunctions,
+		MovementSensorWithErroringPropertiesFunc:              getMovementSensorWithErroringPropertiesFunc,
+		MovementSensorWithInvalidProperties:                   getMovementSensorWithInvalidProperties,
+		ReplayMovementSensorBothIMUAndOdometer:                func() *inject.MovementSensor { return getReplayMovementSensor(TestTimestamp) },
+		InvalidReplayMovementSensorBothIMUAndOdometer:         func() *inject.MovementSensor { return getReplayMovementSensor(BadTime) },
+		FinishedReplayMovementSensor:                          func() *inject.MovementSensor { return getFinishedReplayMovementSensor() },
 	}
 )
 
@@ -417,7 +431,7 @@ func getMovementSensorNotIMUAndNotOdometer() *inject.MovementSensor {
 	return movementSensor
 }
 
-func getMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
+func getGoodMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
 	movementSensor := &inject.MovementSensor{}
 	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
 		return TestPosition, 10, nil
@@ -437,6 +451,31 @@ func getMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
 			OrientationSupported:        true,
 			PositionSupported:           true,
 			LinearAccelerationSupported: true,
+		}, nil
+	}
+	return movementSensor
+}
+
+func getMovementSensorBothIMUAndOdometerWithErroringFunctions() *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		return r3.Vector{}, errors.New(InvalidSensorTestErrMsg)
+	}
+	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		return spatialmath.AngularVelocity{}, errors.New(InvalidSensorTestErrMsg)
+	}
+	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
+		return &geo.Point{}, 0.0, errors.New(InvalidSensorTestErrMsg)
+	}
+	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
+		return &spatialmath.Quaternion{}, errors.New(InvalidSensorTestErrMsg)
+	}
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			LinearAccelerationSupported: true,
+			PositionSupported:           true,
+			OrientationSupported:        true,
 		}, nil
 	}
 	return movementSensor
@@ -463,6 +502,72 @@ func getMovementSensorWithInvalidProperties() *inject.MovementSensor {
 			AngularVelocitySupported:    false,
 			LinearAccelerationSupported: true,
 			PositionSupported:           false,
+			OrientationSupported:        true,
+		}, nil
+	}
+	return movementSensor
+}
+
+func getReplayMovementSensor(testTime string) *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
+		}
+		return TestLinAcc, nil
+	}
+	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
+		}
+		return TestAngVel, nil
+	}
+	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
+		}
+		return TestPosition, 1.2, nil
+	}
+	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
+		md := ctx.Value(contextutils.MetadataContextKey)
+		if mdMap, ok := md.(map[string][]string); ok {
+			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
+		}
+		return TestOrientation, nil
+	}
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			LinearAccelerationSupported: true,
+			PositionSupported:           true,
+			OrientationSupported:        true,
+		}, nil
+	}
+	return movementSensor
+}
+
+func getFinishedReplayMovementSensor() *inject.MovementSensor {
+	movementSensor := &inject.MovementSensor{}
+	movementSensor.LinearAccelerationFunc = func(ctx context.Context, extra map[string]interface{}) (r3.Vector, error) {
+		return r3.Vector{}, replay.ErrEndOfDataset
+	}
+	movementSensor.AngularVelocityFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.AngularVelocity, error) {
+		return spatialmath.AngularVelocity{}, replay.ErrEndOfDataset
+	}
+	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
+		return geo.NewPoint(0, 0), 0.0, replay.ErrEndOfDataset
+	}
+	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
+		return &spatialmath.Quaternion{}, replay.ErrEndOfDataset
+	}
+	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
+		return &movementsensor.Properties{
+			AngularVelocitySupported:    true,
+			LinearAccelerationSupported: true,
+			PositionSupported:           true,
 			OrientationSupported:        true,
 		}, nil
 	}

@@ -77,6 +77,13 @@ func TestAddMovementSensorReadingInOnline(t *testing.T) {
 			lidarFrequencyHz, s.OdometerWithErroringFunctions, movementSensorFrequencyHz)
 	})
 
+	t.Run("returns error when LinearAcceleration, AngularVelocity, Position, and Orientation return an error, doesn't try to add movement sensor data", func(t *testing.T) {
+		lidarFrequencyHz := 10
+		movementSensorFrequencyHz := 10
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
+			lidarFrequencyHz, s.MovementSensorBothIMUAndOdometerWithErroringFunctions, movementSensorFrequencyHz)
+	})
+
 	t.Run("returns error when IMU replay sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
 		lidarFrequencyHz := 10
 		movementSensorFrequencyHz := 10
@@ -91,12 +98,57 @@ func TestAddMovementSensorReadingInOnline(t *testing.T) {
 			lidarFrequencyHz, s.InvalidReplayOdometer, movementSensorFrequencyHz)
 	})
 
+	t.Run("returns error when replay movement sensor timestamp is invalid, doesn't try to add sensor data", func(t *testing.T) {
+		lidarFrequencyHz := 10
+		movementSensorFrequencyHz := 10
+		invalidAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, cf, config,
+			lidarFrequencyHz, s.InvalidReplayMovementSensorBothIMUAndOdometer, movementSensorFrequencyHz)
+	})
+
 	t.Run("online replay IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayIMU)
+		imuCalls, odometerCalls := validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayIMU)
+		test.That(t, len(odometerCalls), test.ShouldBeZeroValue)
+		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, imuCalls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
+	})
+
+	t.Run("online replay odometer adds sensor reading once and ignores errors", func(t *testing.T) {
+		imuCalls, odometerCalls := validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayOdometer)
+		test.That(t, len(imuCalls), test.ShouldBeZeroValue)
+		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, odometerCalls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
+	})
+
+	t.Run("online replay movement sensor adds sensor reading once and ignores errors", func(t *testing.T) {
+		imuCalls, odometerCalls := validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.ReplayMovementSensorBothIMUAndOdometer)
+		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, imuCalls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
+		test.That(t, odometerCalls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
 	})
 
 	t.Run("online IMU adds sensor reading once and ignores errors", func(t *testing.T) {
-		validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodIMU)
+		imuCalls, odometerCalls := validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodIMU)
+		test.That(t, len(odometerCalls), test.ShouldBeZeroValue)
+		test.That(t, imuCalls[0].currentReading.ReadingTime.Before(imuCalls[1].currentReading.ReadingTime), test.ShouldBeTrue)
+		test.That(t, imuCalls[1].currentReading.ReadingTime.Before(imuCalls[2].currentReading.ReadingTime), test.ShouldBeTrue)
+	})
+
+	t.Run("online odometer adds sensor reading once and ignores errors", func(t *testing.T) {
+		imuCalls, odometerCalls := validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodOdometer)
+		test.That(t, len(imuCalls), test.ShouldBeZeroValue)
+		test.That(t, odometerCalls[0].currentReading.ReadingTime.Before(odometerCalls[1].currentReading.ReadingTime), test.ShouldBeTrue)
+		test.That(t, odometerCalls[1].currentReading.ReadingTime.Before(odometerCalls[2].currentReading.ReadingTime), test.ShouldBeTrue)
+	})
+
+	t.Run("online movement sensor adds sensor reading once and ignores errors", func(t *testing.T) {
+		imuCalls, odometerCalls := validAddMovementSensorReadingInOnlineTestHelper(context.Background(), t, config, cf, s.GoodMovementSensorBothIMUAndOdometer)
+		test.That(t, imuCalls[0].currentReading.ReadingTime.Before(imuCalls[1].currentReading.ReadingTime), test.ShouldBeTrue)
+		test.That(t, imuCalls[1].currentReading.ReadingTime.Before(imuCalls[2].currentReading.ReadingTime), test.ShouldBeTrue)
+		test.That(t, odometerCalls[0].currentReading.ReadingTime.Before(odometerCalls[1].currentReading.ReadingTime), test.ShouldBeTrue)
+		test.That(t, odometerCalls[1].currentReading.ReadingTime.Before(odometerCalls[2].currentReading.ReadingTime), test.ShouldBeTrue)
 	})
 }
 
@@ -106,71 +158,23 @@ func TestTryAddMovementSensorReadingUntilSuccess(t *testing.T) {
 
 	cf := cartofacade.Mock{}
 
-	dataFrequencyHz := 0
-	injectImu := inject.TimedMovementSensor{}
-	injectImu.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
-
 	config := Config{
-		Logger:         logger,
-		CartoFacade:    &cf,
-		IsOnline:       false,
-		MovementSensor: &injectImu,
-		Timeout:        10 * time.Second,
+		Logger:      logger,
+		CartoFacade: &cf,
+		IsOnline:    false,
+		Timeout:     10 * time.Second,
 	}
 
-	t.Run("replay IMU adds sensor data until success", func(t *testing.T) {
-		lidar, imu := s.NoLidar, s.ReplayIMU
-		replayIMU, err := s.NewMovementSensor(context.Background(), s.SetupDeps(lidar, imu), string(imu), dataFrequencyHz, logger)
-		test.That(t, err, test.ShouldBeNil)
+	t.Run("replay IMU attempts to add sensor data until success", func(t *testing.T) {
+		validAddMovementSensorReadingUntilSuccessTestHelper(ctx, t, config, cf, s.ReplayIMU)
+	})
 
-		injectLidar := inject.TimedLidar{}
-		injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
+	t.Run("replay odometer attempts to add sensor data until success", func(t *testing.T) {
+		validAddMovementSensorReadingUntilSuccessTestHelper(ctx, t, config, cf, s.ReplayOdometer)
+	})
 
-		var calls []addIMUReadingArgs
-		cf.AddIMUReadingFunc = func(
-			ctx context.Context,
-			timeout time.Duration,
-			sensorName string,
-			currentReading s.TimedIMUReadingResponse,
-		) error {
-			args := addIMUReadingArgs{
-				timeout:        timeout,
-				sensorName:     sensorName,
-				currentReading: currentReading,
-			}
-			calls = append(calls, args)
-			if len(calls) == 1 {
-				return errUnknown
-			}
-			if len(calls) == 2 {
-				return cartofacade.ErrUnableToAcquireLock
-			}
-			return nil
-		}
-		config.MovementSensor = replayIMU
-		config.Lidar = &injectLidar
-
-		now := time.Now()
-		movementSensorReading := s.TimedMovementSensorReadingResponse{
-			TimedIMUResponse: &s.TimedIMUReadingResponse{
-				AngularVelocity:    s.TestAngVel,
-				LinearAcceleration: s.TestLinAcc,
-				ReadingTime:        now,
-			},
-		}
-
-		config.tryAddMovementSensorReadingUntilSuccess(ctx, movementSensorReading)
-		test.That(t, len(calls), test.ShouldEqual, 3)
-
-		firstTimestamp := calls[0].currentReading.ReadingTime
-		for i, call := range calls {
-			t.Logf("call %d", i)
-			test.That(t, call.sensorName, test.ShouldResemble, string(imu))
-			test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, movementSensorReading.TimedIMUResponse.LinearAcceleration)
-			test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, movementSensorReading.TimedIMUResponse.AngularVelocity)
-			test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
-			test.That(t, call.currentReading.ReadingTime, test.ShouldEqual, firstTimestamp)
-		}
+	t.Run("replay movement sensor attempts to add sensor data until success", func(t *testing.T) {
+		validAddMovementSensorReadingUntilSuccessTestHelper(ctx, t, config, cf, s.ReplayMovementSensorBothIMUAndOdometer)
 	})
 }
 
