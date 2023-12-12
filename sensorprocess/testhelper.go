@@ -8,12 +8,12 @@ import (
 
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/spatialmath"
+	rdkutils "go.viam.com/rdk/utils"
 	"go.viam.com/test"
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 	"github.com/viamrobotics/viam-cartographer/sensors/inject"
-	rdkutils "go.viam.com/rdk/utils"
 )
 
 type addLidarReadingArgs struct {
@@ -280,13 +280,13 @@ func invalidAddMovementSensorReadingInOnlineTestHelper(
 	t *testing.T,
 	cartoFacadeMock cartofacade.Mock,
 	config Config,
-	lidarDataFrequencyHz int,
 	testMovementSensor s.TestSensor,
-	movementSensorDataFrequencyHz int,
 ) {
 	logger := logging.NewTestLogger(t)
+	lidarFrequencyHz := 10
+	movementSensorFrequencyHz := 10
 	movementSensor, err := s.NewMovementSensor(context.Background(), s.SetupDeps(s.NoLidar, testMovementSensor),
-		string(testMovementSensor), movementSensorDataFrequencyHz, logger)
+		string(testMovementSensor), movementSensorFrequencyHz, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	var imuCalls []addIMUReadingArgs
@@ -323,7 +323,7 @@ func invalidAddMovementSensorReadingInOnlineTestHelper(
 	config.CartoFacade = &cartoFacadeMock
 
 	injectLidar := inject.TimedLidar{}
-	injectLidar.DataFrequencyHzFunc = func() int { return lidarDataFrequencyHz }
+	injectLidar.DataFrequencyHzFunc = func() int { return lidarFrequencyHz }
 	config.Lidar = &injectLidar
 
 	config.MovementSensor = movementSensor
@@ -412,7 +412,8 @@ func validAddMovementSensorReadingUntilSuccessTestHelper(
 		}
 	}
 
-	config.tryAddMovementSensorReadingUntilSuccess(ctx, movementSensorReading)
+	err = config.tryAddMovementSensorReadingUntilSuccess(ctx, movementSensorReading)
+	test.That(t, err, test.ShouldBeNil)
 	if movementSensor.Properties().IMUSupported {
 		test.That(t, len(imuCalls), test.ShouldEqual, 3)
 		firstTimestamp := imuCalls[0].currentReading.ReadingTime
@@ -439,8 +440,7 @@ func validAddMovementSensorReadingUntilSuccessTestHelper(
 	}
 }
 
-func TestTryAddMovementSensorReadingOnceTestHelper(
-	ctx context.Context,
+func tryAddMovementSensorReadingOnceTestHelper(
 	t *testing.T,
 	config Config,
 	cf cartofacade.Mock,
@@ -466,7 +466,6 @@ func TestTryAddMovementSensorReadingOnceTestHelper(
 	}
 
 	if config.MovementSensor.Properties().IMUSupported {
-
 		// In case that the odometer is also supported, let's assume it works fast and efficiently for all the
 		// following test cases
 		cf.AddOdometerReadingFunc = func(
@@ -586,11 +585,9 @@ func TestTryAddMovementSensorReadingOnceTestHelper(
 			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
 		})
-
 	}
 
 	if config.MovementSensor.Properties().OdometerSupported {
-
 		// In case that the IMU is also supported, let's assume it works fast and efficiently for all the
 		// following test cases
 		cf.AddIMUReadingFunc = func(
@@ -652,7 +649,8 @@ func TestTryAddMovementSensorReadingOnceTestHelper(
 			test.That(t, timeToSleep, test.ShouldEqual, 0)
 		})
 
-		t.Run("when AddOdometerReading blocks for more than the date rate and returns an unexpected error, time to sleep is 0", func(t *testing.T) {
+		t.Run("when AddOdometerReading blocks for more than the date rate and returns an unexpected error, "+
+			"time to sleep is 0", func(t *testing.T) {
 			cf.AddOdometerReadingFunc = func(
 				ctx context.Context,
 				timeout time.Duration,
@@ -682,7 +680,8 @@ func TestTryAddMovementSensorReadingOnceTestHelper(
 			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
 		})
 
-		t.Run("when AddOdometerReading are faster than the date rate and returns a lock error, time to sleep is <= date rate", func(t *testing.T) {
+		t.Run("when AddOdometerReading are faster than the date rate and returns a lock error, "+
+			"time to sleep is <= date rate", func(t *testing.T) {
 			cf.AddOdometerReadingFunc = func(
 				ctx context.Context,
 				timeout time.Duration,
@@ -712,6 +711,5 @@ func TestTryAddMovementSensorReadingOnceTestHelper(
 			test.That(t, timeToSleep, test.ShouldBeGreaterThan, 0)
 			test.That(t, timeToSleep, test.ShouldBeLessThanOrEqualTo, 1000/config.MovementSensor.DataFrequencyHz())
 		})
-
 	}
 }

@@ -175,7 +175,8 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 				expectedDataInsertions:  []string{"lidar: 2", "odometer: 3", "lidar: 4", "odometer: 5"},
 			},
 			{
-				description:             "if movement sensor data ends before lidar data ends, stop adding data once end of movement sensor dataset is reached",
+				description: "if movement sensor data ends before lidar data ends, stop adding data once end " +
+					"of movement sensor dataset is reached",
 				imuEnabled:              true,
 				odometerEnabled:         true,
 				lidarReadingTimeAddedMs: []int{2, 4, 6, 8, 10, 12},
@@ -204,7 +205,10 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 				odometerEnabled:         true,
 				lidarReadingTimeAddedMs: []int{1, 3, 5},
 				msReadingTimeAddedMs:    []int{2, 3, 4, 6, 8, 10, 12},
-				expectedDataInsertions:  []string{"lidar: 1", "odometer: 2", "imu: 2", "lidar: 3", "odometer: 3", "imu: 3", "odometer: 4", "imu: 4", "lidar: 5"},
+				expectedDataInsertions: []string{
+					"lidar: 1", "odometer: 2", "imu: 2", "lidar: 3", "odometer: 3",
+					"imu: 3", "odometer: 4", "imu: 4", "lidar: 5",
+				},
 			},
 		}
 
@@ -234,11 +238,13 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 					if numMovementSensorData < len(tt.msReadingTimeAddedMs) {
 						if tt.odometerEnabled {
 							movementSensorReading.TimedOdometerResponse = &odometerReading
-							movementSensorReading.TimedOdometerResponse.ReadingTime = now.Add(time.Duration(tt.msReadingTimeAddedMs[numMovementSensorData]) * time.Millisecond)
+							odometerReadingTime := now.Add(time.Duration(tt.msReadingTimeAddedMs[numMovementSensorData]) * time.Millisecond)
+							movementSensorReading.TimedOdometerResponse.ReadingTime = odometerReadingTime
 						}
 						if tt.imuEnabled {
 							movementSensorReading.TimedIMUResponse = &imuReading
-							movementSensorReading.TimedIMUResponse.ReadingTime = now.Add(time.Duration(tt.msReadingTimeAddedMs[numMovementSensorData]) * time.Millisecond)
+							imuReadingTime := now.Add(time.Duration(tt.msReadingTimeAddedMs[numMovementSensorData]) * time.Millisecond)
+							movementSensorReading.TimedIMUResponse.ReadingTime = imuReadingTime
 						}
 						numMovementSensorData++
 						return movementSensorReading, nil
@@ -433,11 +439,13 @@ func TestGetInitialMovementSensorReading(t *testing.T) {
 					if numMovementSensorData < len(tt.msReadingTimeAddedMs) {
 						if tt.odometerEnabled {
 							movementSensorReading.TimedOdometerResponse = &odometerReading
-							movementSensorReading.TimedOdometerResponse.ReadingTime = now.Add(time.Duration(tt.msReadingTimeAddedMs[numMovementSensorData]) * time.Millisecond)
+							odometerReadingTime := now.Add(time.Duration(tt.msReadingTimeAddedMs[numMovementSensorData]) * time.Millisecond)
+							movementSensorReading.TimedOdometerResponse.ReadingTime = odometerReadingTime
 						}
 						if tt.imuEnabled {
 							movementSensorReading.TimedIMUResponse = &imuReading
-							movementSensorReading.TimedIMUResponse.ReadingTime = now.Add(time.Duration(float64(tt.msReadingTimeAddedMs[numMovementSensorData])+0.1) * time.Millisecond)
+							imuReadingTime := now.Add(time.Duration(float64(tt.msReadingTimeAddedMs[numMovementSensorData])+0.1) * time.Millisecond)
+							movementSensorReading.TimedIMUResponse.ReadingTime = imuReadingTime
 						}
 						numMovementSensorData++
 						return movementSensorReading, nil
