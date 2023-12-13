@@ -37,8 +37,12 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) error {
 
 	// add IMU data to cartographer and sleep remainder of time interval
 	timeToSleep := config.tryAddIMUReadingOnce(ctx, *imuReading.TimedIMUResponse)
-	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-	config.Logger.Debugf("imu sleep for %vms", timeToSleep)
+
+	if imuReading.TestIsReplaySensor {
+		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+		config.Logger.Debugf("imu sleep for %vms", timeToSleep)
+	}
+
 	return nil
 }
 
