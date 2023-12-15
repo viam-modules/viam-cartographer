@@ -3,7 +3,7 @@ package sensorprocess
 
 import (
 	"context"
-	"strings"
+	"errors"
 	"time"
 
 	"go.viam.com/rdk/components/camera/replaypcd"
@@ -34,7 +34,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 	lidarReading, err := config.Lidar.TimedLidarReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
-		return strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
+		return errors.Is(err, replaypcd.ErrEndOfDataset)
 	}
 
 	var imuReading s.TimedIMUReadingResponse
@@ -44,7 +44,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 			movementSensorReading, err := config.IMU.TimedMovementSensorReading(ctx)
 			if err != nil {
 				config.Logger.Warn(err)
-				return strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
+				return errors.Is(err, replaymovementsensor.ErrEndOfDataset)
 			}
 
 			imuReading = *movementSensorReading.TimedIMUResponse
@@ -70,7 +70,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 				lidarReading, err = config.Lidar.TimedLidarReading(ctx)
 				if err != nil {
 					config.Logger.Warn(err)
-					lidarEndOfDataSetReached := strings.Contains(err.Error(), replaypcd.ErrEndOfDataset.Error())
+					lidarEndOfDataSetReached := errors.Is(err, replaypcd.ErrEndOfDataset)
 					if lidarEndOfDataSetReached {
 						config.runFinalOptimization(ctx)
 					}
@@ -83,7 +83,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 				movementSensorReading, err := config.IMU.TimedMovementSensorReading(ctx)
 				if err != nil {
 					config.Logger.Warn(err)
-					msEndOfDataSetReached := strings.Contains(err.Error(), replaymovementsensor.ErrEndOfDataset.Error())
+					msEndOfDataSetReached := errors.Is(err, replaymovementsensor.ErrEndOfDataset)
 					if msEndOfDataSetReached {
 						config.runFinalOptimization(ctx)
 					}

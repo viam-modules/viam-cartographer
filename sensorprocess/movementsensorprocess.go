@@ -9,6 +9,7 @@ import (
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
+	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 )
 
 // StartIMU polls the IMU to get the next sensor reading and adds it to the cartofacade.
@@ -32,6 +33,9 @@ func (config *Config) addIMUReadingInOnline(ctx context.Context) error {
 	imuReading, err := config.IMU.TimedMovementSensorReading(ctx)
 	if err != nil {
 		config.Logger.Warn(err)
+		if errors.Is(err, replaymovementsensor.ErrEndOfDataset) {
+			time.Sleep(1 * time.Second)
+		}
 		return err
 	}
 
