@@ -58,8 +58,7 @@ type TimedMovementSensorReadingResponse struct {
 
 // TimedIMUReadingResponse represents an IMU sensor reading with a time.
 type TimedIMUReadingResponse struct {
-	// TODO[kat]: AngularVelocity is currently in radians. Either leave a comment, or change this.
-	AngularVelocity    spatialmath.AngularVelocity
+	AngularVelocity    spatialmath.AngularVelocity // We set the values in radians/s instead of deg/s
 	LinearAcceleration r3.Vector
 	ReadingTime        time.Time
 }
