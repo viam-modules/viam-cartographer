@@ -11,11 +11,11 @@ jobs:
       matrix:
         include:
           - arch: buildjet-8vcpu-ubuntu-2204
-            image: ghcr.io/viamrobotics/canon:amd64-cache
-            platform: linux/amd64
+            image: ghcr.io/viamrobotics/rdk-devenv:amd64-cache
+            platform: amd64
           - arch: buildjet-8vcpu-ubuntu-2204-arm
-            image: ghcr.io/viamrobotics/canon:arm64-cache
-            platform: linux/arm64
+            image: ghcr.io/viamrobotics/rdk-devenv:arm64-cache
+            platform: arm64
     runs-on: ${{ matrix.arch }}
     container:
       image: ${{ matrix.image }}
@@ -93,6 +93,6 @@ jobs:
       # Currently we only run valgrind on arm64 as x86
       # doesn't valgrind clean due to what appears to be a bug in GLOG
       # https://github.com/viamrobotics/viam-cartographer/actions/runs/5156238014/jobs/9287413446
-      if: matrix.platform != 'linux/amd64'
+      if: matrix.platform != 'amd64'
       run: |
         sudo -u testbot bash -lc 'make setup-cpp-debug && make test-cpp-valgrind'
