@@ -7,9 +7,10 @@ import (
 	"math"
 	"time"
 
+	"go.viam.com/rdk/components/camera/replaypcd"
+
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
-	"go.viam.com/rdk/components/camera/replaypcd"
 )
 
 // StartLidar polls the lidar to get the next sensor reading and adds it to the cartofacade.

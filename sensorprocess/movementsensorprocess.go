@@ -7,9 +7,10 @@ import (
 	"math"
 	"time"
 
+	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
+
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
-	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 )
 
 // StartIMU polls the IMU to get the next sensor reading and adds it to the cartofacade.
