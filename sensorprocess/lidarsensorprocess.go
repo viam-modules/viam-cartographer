@@ -7,6 +7,8 @@ import (
 	"math"
 	"time"
 
+	"go.viam.com/rdk/components/camera/replaypcd"
+
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
@@ -32,13 +34,18 @@ func (config *Config) addLidarReadingInOnline(ctx context.Context) error {
 	// get next lidar data response; ignoring status since it is always false
 	lidarReading, err := config.Lidar.TimedLidarReading(ctx)
 	if err != nil {
+		if errors.Is(err, replaypcd.ErrEndOfDataset) {
+			time.Sleep(1 * time.Second)
+		}
 		return err
 	}
 
 	// add lidar data to cartographer and sleep remainder of time interval
 	timeToSleep := config.tryAddLidarReadingOnce(ctx, lidarReading)
-	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-	config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
+	if !lidarReading.TestIsReplaySensor {
+		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+		config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
+	}
 	return nil
 }
 
