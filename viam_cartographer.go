@@ -585,8 +585,8 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 	return cartoSvc.mapTimestamp, nil
 }
 
-// LatestMapInfo returns a new timestamp every time it is called when in mapping mode, to signal
-// that the map should be updated. In localizing, the timestamp returned is the timestamp of the session.
+// Properties returns information regarding the current SLAM session including the mapping mode and
+// is the session is being run in the cloud.
 func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Properties, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Properties")
 	defer span.End()
