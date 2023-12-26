@@ -603,7 +603,11 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 			mappingMode = slam.MappingModeUpdateExistingMap
 		}
 	} else {
-		mappingMode = slam.MappingModeLocalizationOnly
+		if cartoSvc.existingMap == "" {
+			return slam.Properties{}, errors.New("localization mode requires an existing map")
+		} else {
+			mappingMode = slam.MappingModeLocalizationOnly
+		}
 	}
 
 	prop := slam.Properties{
