@@ -72,6 +72,10 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 		test.That(t, mapTime, test.ShouldResemble, time.Time{})
 
+		prop, err := svc.Properties(ctx)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
+		test.That(t, prop, test.ShouldResemble, slam.Properties{})
+
 		cmd := map[string]interface{}{}
 		resp, err := svc.DoCommand(ctx, cmd)
 		test.That(t, resp, test.ShouldBeNil)
@@ -127,6 +131,11 @@ func TestNew(t *testing.T) {
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeNil)
 
+		prop, err := svc.Properties(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, prop.CloudSlam, test.ShouldBeFalse)
+		test.That(t, prop.MappingMode, test.ShouldEqual, slam.MappingModeNewMap)
+
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
 
@@ -154,12 +163,14 @@ func TestNew(t *testing.T) {
 		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
+		// Test position
 		pose, componentReference, err := svc.Position(context.Background())
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldNotBeNil)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
+		// Test pointcloud map
 		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
@@ -167,6 +178,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
 
+		// Test internal state
 		isFunc, err := svc.InternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
@@ -178,6 +190,12 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
+
+		// Test properties
+		prop, err := svc.Properties(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, prop.CloudSlam, test.ShouldBeFalse)
+		test.That(t, prop.MappingMode, test.ShouldEqual, slam.MappingModeLocalizationOnly)
 
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
@@ -203,6 +221,7 @@ func TestNew(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.UpdatingMode)
 
+		// Test position
 		pose, componentReference, err := svc.Position(context.Background())
 		test.That(t, pose, test.ShouldBeNil)
 		test.That(t, componentReference, test.ShouldBeEmpty)
@@ -212,6 +231,7 @@ func TestNew(t *testing.T) {
 		timestamp1, err := svc.LatestMapInfo(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
+		// Test pointcloud map
 		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
@@ -219,6 +239,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
 
+		// Test internal state
 		isFunc, err := svc.InternalState(context.Background())
 		test.That(t, err, test.ShouldBeNil)
 
@@ -231,6 +252,12 @@ func TestNew(t *testing.T) {
 
 		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
 		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
+
+		// Test properties
+		prop, err := svc.Properties(context.Background())
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, prop.CloudSlam, test.ShouldBeFalse)
+		test.That(t, prop.MappingMode, test.ShouldEqual, slam.MappingModeUpdateExistingMap)
 
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
@@ -315,6 +342,10 @@ func TestClose(t *testing.T) {
 		mapTime, err := svc.LatestMapInfo(ctx)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 		test.That(t, mapTime, test.ShouldResemble, time.Time{})
+
+		prop, err := svc.Properties(ctx)
+		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
+		test.That(t, prop, test.ShouldResemble, slam.Properties{})
 
 		cmd := map[string]interface{}{}
 		resp, err := svc.DoCommand(ctx, cmd)
