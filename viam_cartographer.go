@@ -497,7 +497,7 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Position")
 	defer span.End()
 
-	if err := cartoSvc.checkCloseAndCloudStatus("Position"); err != nil {
+	if err := cartoSvc.isOpenAndRunningLocally("Position"); err != nil {
 		return nil, "", err
 	}
 
@@ -524,7 +524,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::PointCloudMap")
 	defer span.End()
 
-	if err := cartoSvc.checkCloseAndCloudStatus("PointCloudMap"); err != nil {
+	if err := cartoSvc.isOpenAndRunningLocally("PointCloudMap"); err != nil {
 		return nil, err
 	}
 
@@ -541,7 +541,7 @@ func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() 
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::InternalState")
 	defer span.End()
 
-	if err := cartoSvc.checkCloseAndCloudStatus("InternalState"); err != nil {
+	if err := cartoSvc.isOpenAndRunningLocally("InternalState"); err != nil {
 		return nil, err
 	}
 
@@ -574,7 +574,7 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::LatestMapInfo")
 	defer span.End()
 
-	if err := cartoSvc.checkCloseAndCloudStatus("LatestMapInfo"); err != nil {
+	if err := cartoSvc.isOpenAndRunningLocally("LatestMapInfo"); err != nil {
 		return time.Time{}, err
 	}
 
@@ -591,25 +591,25 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Properties")
 	defer span.End()
 
-	if err := cartoSvc.checkCloseAndCloudStatus("Properties"); err != nil {
+	if err := cartoSvc.isOpenAndRunningLocally("Properties"); err != nil {
 		return slam.Properties{}, err
 	}
 
-        props := slam.Properties{
-		CloudSlam:   cartoSvc.useCloudSlam,
-	}
-	
-	if cartoSvc.enableMapping && cartoSvc.existingMap == "" {
-	    props.MappingMode = slam.MappingModeNewMap
-        } else if cartoSvc.enableMapping && cartoSvc.existingMap != "" 
-	    props.MappingMode  = slam.MappingModeUpdateExistingMap
-        } else if !cartoSvc.enableMapping && cartoSvc.existingMap != "" 
-            props.MappingMode  = slam.MappingModeLocalizationOnly
-        } else {
-	    return slam.Properties{}, errors.New("invalid mode: localizing requires an existing map")
+	props := slam.Properties{
+		CloudSlam: cartoSvc.useCloudSlam,
 	}
 
-	return prop, nil
+	if cartoSvc.enableMapping && cartoSvc.existingMap == "" {
+		props.MappingMode = slam.MappingModeNewMap
+	} else if cartoSvc.enableMapping && cartoSvc.existingMap != "" {
+		props.MappingMode = slam.MappingModeUpdateExistingMap
+	} else if !cartoSvc.enableMapping && cartoSvc.existingMap != "" {
+		props.MappingMode = slam.MappingModeLocalizationOnly
+	} else {
+		return slam.Properties{}, errors.New("invalid mode: localizing requires an existing map")
+	}
+
+	return props, nil
 }
 
 // DoCommand receives arbitrary commands.
@@ -617,7 +617,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::DoCommand")
 	defer span.End()
 
-	if err := cartoSvc.checkCloseAndCloudStatus("DoCommand"); err != nil {
+	if err := cartoSvc.isOpenAndRunningLocally("DoCommand"); err != nil {
 		return nil, err
 	}
 
@@ -686,7 +686,7 @@ func CheckQuaternionFromClientAlgo(pose spatialmath.Pose, componentReference str
 }
 
 // checkCloseAndCloudStatus returns an error if the cartographer service has been previously closed or is being run in the cloud.
-func (cartoSvc *CartographerService) checkCloseAndCloudStatus(cmd string) error {
+func (cartoSvc *CartographerService) isOpenAndRunningLocally(cmd string) error {
 	if cartoSvc.useCloudSlam {
 		cartoSvc.logger.Warnf("%v called with use_cloud_slam set to true", cmd)
 		return ErrUseCloudSlamEnabled
