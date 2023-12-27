@@ -595,25 +595,20 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 		return slam.Properties{}, err
 	}
 
-	var mappingMode slam.MappingMode
-	if cartoSvc.enableMapping {
-		if cartoSvc.existingMap == "" {
-			mappingMode = slam.MappingModeNewMap
-		} else {
-			mappingMode = slam.MappingModeUpdateExistingMap
-		}
-	} else {
-		if cartoSvc.existingMap == "" {
-			return slam.Properties{}, errors.New("localization mode requires an existing map")
-		} else {
-			mappingMode = slam.MappingModeLocalizationOnly
-		}
+        props := slam.Properties{
+		CloudSlam:   cartoSvc.useCloudSlam,
+	}
+	
+	if cartoSvc.enableMapping && cartoSvc.existingMap == "" {
+	    props.MappingMode = slam.MappingModeNewMap
+        } else if cartoSvc.enableMapping && cartoSvc.existingMap != "" 
+	    props.MappingMode  = slam.MappingModeUpdateExistingMap
+        } else if !cartoSvc.enableMapping && cartoSvc.existingMap != "" 
+            props.MappingMode  = slam.MappingModeLocalizationOnly
+        } else {
+	    return slam.Properties{}, errors.New("invalid mode: localizing requires an existing map")
 	}
 
-	prop := slam.Properties{
-		CloudSlam:   cartoSvc.useCloudSlam,
-		MappingMode: mappingMode,
-	}
 	return prop, nil
 }
 
