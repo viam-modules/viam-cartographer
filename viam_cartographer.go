@@ -483,8 +483,13 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp time.Time
-	jobDone      atomic.Bool
+	mapTimestamp                  time.Time
+	sensorValidationMaxTimeoutSec int
+	sensorValidationIntervalSec   int
+	jobDone                       atomic.Bool
+	postprocessed                 bool
+	addedPoints                   []byte
+	removedPoints                 []byte
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -541,6 +546,11 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	if err != nil {
 		return nil, err
 	}
+
+	if cartoSvc.postprocessed {
+		pc = append(pc, cartoSvc.addedPoints...)
+	}
+
 	return toChunkedFunc(pc), nil
 }
 
