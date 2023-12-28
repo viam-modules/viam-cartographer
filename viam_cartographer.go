@@ -35,6 +35,8 @@ var (
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
 	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
+	// ErrBadPostprocessingPointsFormat denotes that the points have not been properly formatted
+	ErrBadPostprocessingPointsFormat = errors.New("could not cast points to a *[]r3.Vector")
 )
 
 const (
@@ -44,6 +46,10 @@ const (
 	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
+	jobDoneCommand                       = "job_done"
+	togglePostprocessedCommand           = "toggle_postprocessed"
+	addPointsCommand                     = "add_points"
+	removePointsCommand                  = "remove_points"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -486,7 +492,7 @@ type CartographerService struct {
 
 	mapTimestamp  time.Time
 	jobDone       atomic.Bool
-	postprocessed bool
+	postprocessed atomic.Bool
 	addedPoints   *[]r3.Vector
 	removedPoints *[]r3.Vector
 
@@ -546,7 +552,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, err
 	}
 
-	if cartoSvc.postprocessed {
+	if cartoSvc.postprocessed.Load() {
 		pc, err = postprocess.UpdatePointCloud(pc, cartoSvc.addedPoints, cartoSvc.removedPoints)
 		if err != nil {
 			return nil, err
@@ -627,11 +633,53 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		return nil, ErrClosed
 	}
 
-	if _, ok := req["job_done"]; ok {
-		return map[string]interface{}{"job_done": cartoSvc.jobDone.Load()}, nil
+	if _, ok := req[jobDoneCommand]; ok {
+		return map[string]interface{}{jobDoneCommand: cartoSvc.jobDone.Load()}, nil
+	}
+
+	if _, ok := req[togglePostprocessedCommand]; ok {
+		cartoSvc.postprocessed.Store(!cartoSvc.postprocessed.Load())
+		return map[string]interface{}{"postprocessed": cartoSvc.postprocessed.Load()}, nil
+	}
+
+	if points, ok := req[addPointsCommand]; ok {
+		err := cartoSvc.updatePostprocessingPoints(points, addPointsCommand)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if points, ok := req[removePointsCommand]; ok {
+		err := cartoSvc.updatePostprocessingPoints(points, removePointsCommand)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return nil, viamgrpc.UnimplementedError
+}
+
+func (cartoSvc *CartographerService) updatePostprocessingPoints(
+	points interface{},
+	command string,
+) error {
+	cartoSvc.postprocessed.Store(true)
+
+	pointsVec, ok := points.([]r3.Vector)
+	if !ok {
+		return ErrBadPostprocessingPointsFormat
+	}
+
+	switch command {
+	case addPointsCommand:
+		addedPoints := append(*cartoSvc.addedPoints, pointsVec...)
+		cartoSvc.addedPoints = &addedPoints
+	case removePointsCommand:
+		removedPoints := append(*cartoSvc.removedPoints, pointsVec...)
+		cartoSvc.removedPoints = &removedPoints
+	}
+
+	return nil
 }
 
 // Close out of all slam related processes.
