@@ -22,6 +22,7 @@ import (
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
+	"github.com/viamrobotics/viam-cartographer/postprocess"
 	"github.com/viamrobotics/viam-cartographer/sensorprocess"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
@@ -483,13 +484,11 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp                  time.Time
-	sensorValidationMaxTimeoutSec int
-	sensorValidationIntervalSec   int
-	jobDone                       atomic.Bool
-	postprocessed                 bool
-	addedPoints                   []byte
-	removedPoints                 []byte
+	mapTimestamp  time.Time
+	jobDone       atomic.Bool
+	postprocessed bool
+	addedPoints   *[]r3.Vector
+	removedPoints *[]r3.Vector
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -548,7 +547,10 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	}
 
 	if cartoSvc.postprocessed {
-		pc = append(pc, cartoSvc.addedPoints...)
+		pc, err = postprocess.UpdatePointCloud(pc, cartoSvc.addedPoints, cartoSvc.removedPoints)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return toChunkedFunc(pc), nil
