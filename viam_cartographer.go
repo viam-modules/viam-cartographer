@@ -550,7 +550,6 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 
 	if cartoSvc.postprocessed.Load() {
 		var updatedPc []byte
-		cartoSvc.logger.Infof("updating point cloud %s", len(cartoSvc.postprocessingTasks))
 		err = postprocess.UpdatePointCloud(pc, &updatedPc, cartoSvc.postprocessingTasks)
 		if err != nil {
 			return nil, err
