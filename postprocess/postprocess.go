@@ -3,34 +3,90 @@ package postprocess
 
 import (
 	"bytes"
+	"errors"
 	"image/color"
+	"reflect"
 
 	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/pointcloud"
 )
 
+type Instruction int
+
+const (
+	AddPointsInstruction    Instruction = iota
+	RemovePointsInstruction             = iota
+)
+
+const (
+	TogglePostprocessedCommand = "toggle_postprocessed"
+	AddPointsCommand           = "add_points"
+	RemovePointsCommand        = "remove_points"
+	UndoPostprocess            = "undo_postprocess"
+)
+
+var (
+	// ErrBadPostprocessingPointsFormat denotes that the points have not been properly formatted
+	ErrBadPostprocessingPointsFormat = errors.New("could not parse provided points")
+)
+
+type Task struct {
+	Instruction Instruction
+	Points      []r3.Vector
+}
+
+func ParseDoCommand(
+	unstructuredPoints interface{},
+	instruction Instruction,
+) (Task, error) {
+	if reflect.TypeOf(unstructuredPoints).Kind() != reflect.Slice {
+		return Task{}, ErrBadPostprocessingPointsFormat
+	}
+
+	task := Task{}
+	slice := reflect.ValueOf(unstructuredPoints)
+
+	for i := 0; i < slice.Len(); i++ {
+		val := slice.Index(i)
+		if reflect.TypeOf(val).Kind() != reflect.Struct {
+			return Task{}, ErrBadPostprocessingPointsFormat
+		}
+
+		x := val.Elem().MapIndex(reflect.ValueOf("X"))
+		y := val.Elem().MapIndex(reflect.ValueOf("Y"))
+		task.Points = append(task.Points, r3.Vector{X: x.Elem().Float(), Y: y.Elem().Float()})
+	}
+
+	task.Instruction = instruction
+	return task, nil
+}
+
 func UpdatePointCloud(
 	data []byte,
 	updatedData *[]byte,
-	addedPoints []r3.Vector,
-	removedPoints []r3.Vector,
+	tasks []Task,
 ) error {
-	if len(addedPoints) != 0 {
-		err := updatePointCloudWithAddedPoints(data, updatedData, addedPoints)
-		if err != nil {
-			return err
-		}
-	} else {
-		*updatedData = append(*updatedData, data...)
+	// populate updated data with original data
+	err := updatePointCloudWithAddedPoints(data, updatedData, []r3.Vector{})
+	if err != nil {
+		return err
 	}
 
-	if len(removedPoints) != 0 {
-		err := updatePointCloudWithRemovedPoints(updatedData, removedPoints)
-		if err != nil {
-			return err
+	// iterate through tasks and add or remove points
+	for _, task := range tasks {
+		switch task.Instruction {
+		case AddPointsInstruction:
+			err := updatePointCloudWithAddedPoints(data, updatedData, task.Points)
+			if err != nil {
+				return err
+			}
+		case RemovePointsInstruction:
+			err := updatePointCloudWithRemovedPoints(updatedData, task.Points)
+			if err != nil {
+				return err
+			}
 		}
 	}
-
 	return nil
 }
 

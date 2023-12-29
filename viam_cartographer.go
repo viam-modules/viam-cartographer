@@ -5,7 +5,6 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
-	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -36,8 +35,8 @@ var (
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
 	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
-	// ErrBadPostprocessingPointsFormat denotes that the points have not been properly formatted
-	ErrBadPostprocessingPointsFormat = errors.New("could not cast points to a *[]r3.Vector")
+	// ErrNoPostprocessingToUndo denotes that the points have not been properly formatted
+	ErrNoPostprocessingToUndo = errors.New("there are no postprocessing tasks to undo")
 )
 
 const (
@@ -47,10 +46,7 @@ const (
 	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
-	jobDoneCommand                       = "job_done"
-	togglePostprocessedCommand           = "toggle_postprocessed"
-	addPointsCommand                     = "add_points"
-	removePointsCommand                  = "remove_points"
+	JobDoneCommand                       = "job_done"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -491,11 +487,10 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp  time.Time
-	jobDone       atomic.Bool
-	postprocessed atomic.Bool
-	addedPoints   []r3.Vector
-	removedPoints []r3.Vector
+	mapTimestamp        time.Time
+	jobDone             atomic.Bool
+	postprocessed       atomic.Bool
+	postprocessingTasks []postprocess.Task
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -556,7 +551,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	if cartoSvc.postprocessed.Load() {
 		var updatedPc []byte
 		cartoSvc.logger.Info("updating point cloud")
-		err = postprocess.UpdatePointCloud(pc, &updatedPc, cartoSvc.addedPoints, cartoSvc.removedPoints)
+		err = postprocess.UpdatePointCloud(pc, &updatedPc, cartoSvc.postprocessingTasks)
 		if err != nil {
 			return nil, err
 		}
@@ -638,65 +633,47 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		return nil, ErrClosed
 	}
 
-	if _, ok := req[jobDoneCommand]; ok {
-		return map[string]interface{}{jobDoneCommand: cartoSvc.jobDone.Load()}, nil
+	if _, ok := req[JobDoneCommand]; ok {
+		return map[string]interface{}{JobDoneCommand: cartoSvc.jobDone.Load()}, nil
 	}
 
-	if _, ok := req[togglePostprocessedCommand]; ok {
+	if _, ok := req[postprocess.TogglePostprocessedCommand]; ok {
 		cartoSvc.postprocessed.Store(!cartoSvc.postprocessed.Load())
 		return map[string]interface{}{"postprocessed": cartoSvc.postprocessed.Load()}, nil
 	}
 
-	if points, ok := req[addPointsCommand]; ok {
-		err := cartoSvc.updatePostprocessingPoints(points, addPointsCommand)
+	if points, ok := req[postprocess.AddPointsCommand]; ok {
+		task, err := postprocess.ParseDoCommand(points, postprocess.AddPointsInstruction)
 		if err != nil {
 			return nil, err
 		}
-		return map[string]interface{}{addPointsCommand: "success"}, nil
+
+		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
+		cartoSvc.postprocessed.Store(true)
+		return map[string]interface{}{postprocess.AddPointsCommand: "success"}, nil
 	}
 
-	if points, ok := req[removePointsCommand]; ok {
-		err := cartoSvc.updatePostprocessingPoints(points, removePointsCommand)
+	if points, ok := req[postprocess.RemovePointsCommand]; ok {
+		task, err := postprocess.ParseDoCommand(points, postprocess.RemovePointsInstruction)
 		if err != nil {
 			return nil, err
 		}
 
-		return map[string]interface{}{removePointsCommand: "success"}, nil
+		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
+		cartoSvc.postprocessed.Store(true)
+		return map[string]interface{}{postprocess.RemovePointsCommand: "success"}, nil
+	}
+
+	if _, ok := req[postprocess.UndoPostprocess]; ok {
+		if len(cartoSvc.postprocessingTasks) == 0 {
+			return nil, ErrNoPostprocessingToUndo
+		}
+
+		cartoSvc.postprocessingTasks = cartoSvc.postprocessingTasks[:len(cartoSvc.postprocessingTasks)-1]
+		return map[string]interface{}{postprocess.UndoPostprocess: "success"}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError
-}
-
-func (cartoSvc *CartographerService) updatePostprocessingPoints(
-	unstructuredPoints interface{},
-	command string,
-) error {
-	if reflect.TypeOf(unstructuredPoints).Kind() != reflect.Slice {
-		return ErrBadPostprocessingPointsFormat
-	}
-
-	points := []r3.Vector{}
-	slice := reflect.ValueOf(unstructuredPoints)
-
-	for i := 0; i < slice.Len(); i++ {
-		val := slice.Index(i)
-		if reflect.TypeOf(val).Kind() != reflect.Struct {
-			return ErrBadPostprocessingPointsFormat
-		}
-		x := val.Elem().MapIndex(reflect.ValueOf("X"))
-		y := val.Elem().MapIndex(reflect.ValueOf("Y"))
-		points = append(points, r3.Vector{X: x.Elem().Float(), Y: y.Elem().Float()})
-	}
-
-	switch command {
-	case addPointsCommand:
-		cartoSvc.addedPoints = append(cartoSvc.addedPoints, points...)
-	case removePointsCommand:
-		cartoSvc.removedPoints = append(cartoSvc.removedPoints, points...)
-	}
-
-	cartoSvc.postprocessed.Store(true)
-	return nil
 }
 
 // Close out of all slam related processes.

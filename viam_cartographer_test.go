@@ -356,5 +356,11 @@ func TestDoCommand(t *testing.T) {
 		test.That(t, err, test.ShouldEqual, viamgrpc.UnimplementedError)
 		test.That(t, resp, test.ShouldBeNil)
 	})
+	t.Run("returns false when given 'job_done'", func(t *testing.T) {
+		cmd := map[string]interface{}{viamcartographer.JobDoneCommand: ""}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, resp, test.ShouldBeNil)
+	})
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 }
