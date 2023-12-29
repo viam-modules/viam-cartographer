@@ -68,10 +68,6 @@ func TestNew(t *testing.T) {
 		test.That(t, gisF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
-		mapTime, err := svc.LatestMapInfo(ctx)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
-		test.That(t, mapTime, test.ShouldResemble, time.Time{})
-
 		prop, err := svc.Properties(ctx)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 		test.That(t, prop, test.ShouldResemble, slam.Properties{})
@@ -160,9 +156,6 @@ func TestNew(t *testing.T) {
 		test.That(t, ok, test.ShouldBeTrue)
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.LocalizingMode)
 
-		timestamp1, err := svc.LatestMapInfo(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-
 		// Test position
 		pose, componentReference, err := svc.Position(context.Background())
 		test.That(t, pose, test.ShouldBeNil)
@@ -185,11 +178,6 @@ func TestNew(t *testing.T) {
 		is, err := slam.HelperConcatenateChunksToFull(isFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
-
-		timestamp2, err := svc.LatestMapInfo(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-		test.That(t, timestamp1, test.ShouldResemble, timestamp2)
 
 		// Test properties
 		prop, err := svc.Properties(context.Background())
@@ -228,9 +216,6 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldNotBeNil)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
-		timestamp1, err := svc.LatestMapInfo(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-
 		// Test pointcloud map
 		pcmFunc, err := svc.PointCloudMap(context.Background())
 		test.That(t, err, test.ShouldBeNil)
@@ -246,12 +231,6 @@ func TestNew(t *testing.T) {
 		is, err := slam.HelperConcatenateChunksToFull(isFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, is, test.ShouldNotBeNil)
-
-		timestamp2, err := svc.LatestMapInfo(context.Background())
-		test.That(t, err, test.ShouldBeNil)
-
-		test.That(t, timestamp1.After(_zeroTime), test.ShouldBeTrue)
-		test.That(t, timestamp2.After(timestamp1), test.ShouldBeTrue)
 
 		// Test properties
 		prop, err := svc.Properties(context.Background())
@@ -338,10 +317,6 @@ func TestClose(t *testing.T) {
 		gisF, err := svc.InternalState(ctx)
 		test.That(t, gisF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
-
-		mapTime, err := svc.LatestMapInfo(ctx)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
-		test.That(t, mapTime, test.ShouldResemble, time.Time{})
 
 		prop, err := svc.Properties(ctx)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)

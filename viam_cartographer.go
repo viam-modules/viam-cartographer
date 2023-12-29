@@ -240,7 +240,6 @@ func New(
 		logger:                     logger,
 		cartoFacadeTimeout:         cartoFacadeTimeout,
 		cartoFacadeInternalTimeout: cartoFacadeInternalTimeout,
-		mapTimestamp:               time.Now().UTC(),
 		enableMapping:              optionalConfigParams.EnableMapping,
 		existingMap:                optionalConfigParams.ExistingMap,
 	}
@@ -483,8 +482,7 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp time.Time
-	jobDone      atomic.Bool
+	jobDone atomic.Bool
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -566,23 +564,6 @@ func toChunkedFunc(b []byte) func() ([]byte, error) {
 		return chunk[:bytesRead], err
 	}
 	return f
-}
-
-// LatestMapInfo returns a new timestamp every time it is called when in mapping mode, to signal
-// that the map should be updated. In localizing, the timestamp returned is the timestamp of the session.
-func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Time, error) {
-	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::LatestMapInfo")
-	defer span.End()
-
-	if err := cartoSvc.isOpenAndRunningLocally("LatestMapInfo"); err != nil {
-		return time.Time{}, err
-	}
-
-	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
-		cartoSvc.mapTimestamp = time.Now().UTC()
-	}
-
-	return cartoSvc.mapTimestamp, nil
 }
 
 // Properties returns information regarding the current SLAM session including the mapping mode and
