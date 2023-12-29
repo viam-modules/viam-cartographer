@@ -1,4 +1,4 @@
-// package postproces contains functionality to postprocess
+// package postproces contains functionality to postprocess pointcloud maps
 package postprocess
 
 import (
@@ -47,13 +47,13 @@ func ParseDoCommand(
 	slice := reflect.ValueOf(unstructuredPoints)
 
 	for i := 0; i < slice.Len(); i++ {
-		val := slice.Index(i)
+		val := slice.Index(i).Elem()
 		if reflect.TypeOf(val).Kind() != reflect.Struct {
 			return Task{}, ErrBadPostprocessingPointsFormat
 		}
 
-		x := val.Elem().MapIndex(reflect.ValueOf("X"))
-		y := val.Elem().MapIndex(reflect.ValueOf("Y"))
+		x := val.MapIndex(reflect.ValueOf("X"))
+		y := val.MapIndex(reflect.ValueOf("Y"))
 		task.Points = append(task.Points, r3.Vector{X: x.Elem().Float(), Y: y.Elem().Float()})
 	}
 
@@ -66,17 +66,13 @@ func UpdatePointCloud(
 	updatedData *[]byte,
 	tasks []Task,
 ) error {
-	// populate updated data with original data
-	err := updatePointCloudWithAddedPoints(data, updatedData, []r3.Vector{})
-	if err != nil {
-		return err
-	}
+	*updatedData = append(*updatedData, data...)
 
 	// iterate through tasks and add or remove points
 	for _, task := range tasks {
 		switch task.Instruction {
 		case AddPointsInstruction:
-			err := updatePointCloudWithAddedPoints(data, updatedData, task.Points)
+			err := updatePointCloudWithAddedPoints(updatedData, task.Points)
 			if err != nil {
 				return err
 			}
@@ -90,10 +86,10 @@ func UpdatePointCloud(
 	return nil
 }
 
-func updatePointCloudWithAddedPoints(data []byte, updatedData *[]byte, points []r3.Vector) error {
+func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) error {
 	const FULL_CONFIDENCE = 100
 
-	reader := bytes.NewReader(data)
+	reader := bytes.NewReader(*updatedData)
 	pc, err := pointcloud.ReadPCD(reader)
 	if err != nil {
 		return err
