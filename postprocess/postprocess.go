@@ -11,36 +11,36 @@ import (
 
 func UpdatePointCloud(
 	data []byte,
-	addedPoints *[]r3.Vector,
-	removedPoints *[]r3.Vector,
-) ([]byte, error) {
-	updatedData := data
-	var err error
+	updatedData *[]byte,
+	addedPoints []r3.Vector,
+	removedPoints []r3.Vector,
+) error {
+	if len(addedPoints) != 0 {
+		err := updatePointCloudWithAddedPoints(data, updatedData, addedPoints)
+		if err != nil {
+			return err
+		}
+	} else {
+		*updatedData = append(*updatedData, data...)
+	}
 
-	if addedPoints != nil {
-		updatedData, err = updatePointCloudWithAddedPoints(updatedData, *addedPoints)
-		if err == nil {
-			return nil, err
+	if len(removedPoints) != 0 {
+		err := updatePointCloudWithRemovedPoints(updatedData, removedPoints)
+		if err != nil {
+			return err
 		}
 	}
 
-	if removedPoints != nil {
-		updatedData, err = updatePointCloudWithRemovedPoints(updatedData, *removedPoints)
-		if err == nil {
-			return nil, err
-		}
-	}
-
-	return updatedData, nil
+	return nil
 }
 
-func updatePointCloudWithAddedPoints(data []byte, points []r3.Vector) ([]byte, error) {
+func updatePointCloudWithAddedPoints(data []byte, updatedData *[]byte, points []r3.Vector) error {
 	const FULL_CONFIDENCE = 100
 
 	reader := bytes.NewReader(data)
 	pc, err := pointcloud.ReadPCD(reader)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	for _, point := range points {
@@ -58,20 +58,25 @@ func updatePointCloudWithAddedPoints(data []byte, points []r3.Vector) ([]byte, e
 	var buf bytes.Buffer
 	err = pointcloud.ToPCD(pc, &buf, pointcloud.PCDBinary)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return buf.Bytes(), nil
+	// Initalize updatedData with new points
+	*updatedData = make([]byte, buf.Len())
+	updatedReader := bytes.NewReader(buf.Bytes())
+	updatedReader.Read(*updatedData)
+
+	return nil
 }
 
-func updatePointCloudWithRemovedPoints(data []byte, points []r3.Vector) ([]byte, error) {
-	reader := bytes.NewReader(data)
+func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) error {
+	reader := bytes.NewReader(*updatedData)
 	pc, err := pointcloud.ReadPCD(reader)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var updatedPC pointcloud.PointCloud
+	updatedPC := pointcloud.NewWithPrealloc(pc.Size() - len(points))
 
 	filterRemovedPoints := func(p r3.Vector, d pointcloud.Data) bool {
 		// Always return true so iteration continues
@@ -88,11 +93,16 @@ func updatePointCloudWithRemovedPoints(data []byte, points []r3.Vector) ([]byte,
 
 	pc.Iterate(0, 0, filterRemovedPoints)
 
-	var buf bytes.Buffer
+	buf := bytes.Buffer{}
 	err = pointcloud.ToPCD(updatedPC, &buf, pointcloud.PCDBinary)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return buf.Bytes(), nil
+	// Overwrite updatedData with new points
+	*updatedData = make([]byte, buf.Len())
+	updatedReader := bytes.NewReader(buf.Bytes())
+	updatedReader.Read(*updatedData)
+
+	return nil
 }

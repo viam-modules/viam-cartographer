@@ -4,7 +4,7 @@ BIN_OUTPUT_PATH = bin/$(shell uname -s)-$(shell uname -m)
 TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
 GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
 TAG_VERSION ?= $(shell git tag --points-at | sort -Vr | head -n1)
-GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}'"
+GO_BUILD_LDFLAGS := -ldflags "-X 'main.Version=${TAG_VERSION}' -X 'main.GitRevision=${GIT_REVISION}' "
 CGO_BUILD_LDFLAGS := -L$(shell pwd)/viam-cartographer/$(BUILD_DIR) -L$(shell pwd)/viam-cartographer/$(BUILD_DIR)/cartographer
 SHELL := /usr/bin/env bash
 export PATH := $(TOOL_BIN):$(PATH)

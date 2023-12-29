@@ -5,6 +5,7 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"reflect"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -493,8 +494,8 @@ type CartographerService struct {
 	mapTimestamp  time.Time
 	jobDone       atomic.Bool
 	postprocessed atomic.Bool
-	addedPoints   *[]r3.Vector
-	removedPoints *[]r3.Vector
+	addedPoints   []r3.Vector
+	removedPoints []r3.Vector
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -553,10 +554,14 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	}
 
 	if cartoSvc.postprocessed.Load() {
-		pc, err = postprocess.UpdatePointCloud(pc, cartoSvc.addedPoints, cartoSvc.removedPoints)
+		var updatedPc []byte
+		cartoSvc.logger.Info("updating point cloud")
+		err = postprocess.UpdatePointCloud(pc, &updatedPc, cartoSvc.addedPoints, cartoSvc.removedPoints)
 		if err != nil {
 			return nil, err
 		}
+
+		return toChunkedFunc(updatedPc), nil
 	}
 
 	return toChunkedFunc(pc), nil
@@ -647,6 +652,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		if err != nil {
 			return nil, err
 		}
+		return map[string]interface{}{addPointsCommand: "success"}, nil
 	}
 
 	if points, ok := req[removePointsCommand]; ok {
@@ -654,31 +660,42 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		if err != nil {
 			return nil, err
 		}
+
+		return map[string]interface{}{removePointsCommand: "success"}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError
 }
 
 func (cartoSvc *CartographerService) updatePostprocessingPoints(
-	points interface{},
+	unstructuredPoints interface{},
 	command string,
 ) error {
-	cartoSvc.postprocessed.Store(true)
-
-	pointsVec, ok := points.([]r3.Vector)
-	if !ok {
+	if reflect.TypeOf(unstructuredPoints).Kind() != reflect.Slice {
 		return ErrBadPostprocessingPointsFormat
+	}
+
+	points := []r3.Vector{}
+	slice := reflect.ValueOf(unstructuredPoints)
+
+	for i := 0; i < slice.Len(); i++ {
+		val := slice.Index(i)
+		if reflect.TypeOf(val).Kind() != reflect.Struct {
+			return ErrBadPostprocessingPointsFormat
+		}
+		x := val.Elem().MapIndex(reflect.ValueOf("X"))
+		y := val.Elem().MapIndex(reflect.ValueOf("Y"))
+		points = append(points, r3.Vector{X: x.Elem().Float(), Y: y.Elem().Float()})
 	}
 
 	switch command {
 	case addPointsCommand:
-		addedPoints := append(*cartoSvc.addedPoints, pointsVec...)
-		cartoSvc.addedPoints = &addedPoints
+		cartoSvc.addedPoints = append(cartoSvc.addedPoints, points...)
 	case removePointsCommand:
-		removedPoints := append(*cartoSvc.removedPoints, pointsVec...)
-		cartoSvc.removedPoints = &removedPoints
+		cartoSvc.removedPoints = append(cartoSvc.removedPoints, points...)
 	}
 
+	cartoSvc.postprocessed.Store(true)
 	return nil
 }
 
