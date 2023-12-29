@@ -637,12 +637,12 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		return map[string]interface{}{JobDoneCommand: cartoSvc.jobDone.Load()}, nil
 	}
 
-	if _, ok := req[postprocess.TogglePostprocessedCommand]; ok {
+	if _, ok := req[postprocess.ToggleCommand]; ok {
 		cartoSvc.postprocessed.Store(!cartoSvc.postprocessed.Load())
 		return map[string]interface{}{"postprocessed": cartoSvc.postprocessed.Load()}, nil
 	}
 
-	if points, ok := req[postprocess.AddPointsCommand]; ok {
+	if points, ok := req[postprocess.AddCommand]; ok {
 		task, err := postprocess.ParseDoCommand(points, postprocess.AddPointsInstruction)
 		if err != nil {
 			return nil, err
@@ -650,10 +650,10 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
 		cartoSvc.postprocessed.Store(true)
-		return map[string]interface{}{postprocess.AddPointsCommand: "success"}, nil
+		return map[string]interface{}{postprocess.AddCommand: "success"}, nil
 	}
 
-	if points, ok := req[postprocess.RemovePointsCommand]; ok {
+	if points, ok := req[postprocess.RemoveCommand]; ok {
 		task, err := postprocess.ParseDoCommand(points, postprocess.RemovePointsInstruction)
 		if err != nil {
 			return nil, err
@@ -661,16 +661,16 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
 		cartoSvc.postprocessed.Store(true)
-		return map[string]interface{}{postprocess.RemovePointsCommand: "success"}, nil
+		return map[string]interface{}{postprocess.RemoveCommand: "success"}, nil
 	}
 
-	if _, ok := req[postprocess.UndoPostprocess]; ok {
+	if _, ok := req[postprocess.UndoCommand]; ok {
 		if len(cartoSvc.postprocessingTasks) == 0 {
 			return nil, ErrNoPostprocessingToUndo
 		}
 
 		cartoSvc.postprocessingTasks = cartoSvc.postprocessingTasks[:len(cartoSvc.postprocessingTasks)-1]
-		return map[string]interface{}{postprocess.UndoPostprocess: "success"}, nil
+		return map[string]interface{}{postprocess.UndoCommand: "success"}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError

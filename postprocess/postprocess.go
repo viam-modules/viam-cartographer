@@ -19,10 +19,11 @@ const (
 )
 
 const (
-	TogglePostprocessedCommand = "toggle_postprocessing"
-	AddPointsCommand           = "add_points"
-	RemovePointsCommand        = "remove_points"
-	UndoPostprocess            = "undo_postprocessing"
+	// expected strings for DoCommand
+	ToggleCommand = "postprocess_toggle"
+	AddCommand    = "postprocess_add"
+	RemoveCommand = "postprocess_remove"
+	UndoCommand   = "postprocess_undo"
 )
 
 var (
