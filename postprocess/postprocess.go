@@ -19,10 +19,10 @@ const (
 )
 
 const (
-	TogglePostprocessedCommand = "toggle_postprocessed"
+	TogglePostprocessedCommand = "toggle_postprocessing"
 	AddPointsCommand           = "add_points"
 	RemovePointsCommand        = "remove_points"
-	UndoPostprocess            = "undo_postprocess"
+	UndoPostprocess            = "undo_postprocessing"
 )
 
 var (
