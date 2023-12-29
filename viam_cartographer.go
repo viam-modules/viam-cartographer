@@ -586,7 +586,7 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 }
 
 // Properties returns information regarding the current SLAM session including the mapping mode and
-// is the session is being run in the cloud.
+// if the session is being run in the cloud.
 func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Properties, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Properties")
 	defer span.End()
