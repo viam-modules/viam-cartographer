@@ -643,7 +643,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 	}
 
 	if points, ok := req[postprocess.AddCommand]; ok {
-		task, err := postprocess.ParseDoCommand(points, postprocess.AddPointsInstruction)
+		task, err := postprocess.ParseDoCommand(points, postprocess.Add)
 		if err != nil {
 			return nil, err
 		}
@@ -654,7 +654,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 	}
 
 	if points, ok := req[postprocess.RemoveCommand]; ok {
-		task, err := postprocess.ParseDoCommand(points, postprocess.RemovePointsInstruction)
+		task, err := postprocess.ParseDoCommand(points, postprocess.Remove)
 		if err != nil {
 			return nil, err
 		}

@@ -14,8 +14,8 @@ import (
 type Instruction int
 
 const (
-	AddPointsInstruction    Instruction = iota
-	RemovePointsInstruction             = iota
+	Add    Instruction = iota
+	Remove             = iota
 )
 
 const (
@@ -72,12 +72,12 @@ func UpdatePointCloud(
 	// iterate through tasks and add or remove points
 	for _, task := range tasks {
 		switch task.Instruction {
-		case AddPointsInstruction:
+		case Add:
 			err := updatePointCloudWithAddedPoints(updatedData, task.Points)
 			if err != nil {
 				return err
 			}
-		case RemovePointsInstruction:
+		case Remove:
 			err := updatePointCloudWithRemovedPoints(updatedData, task.Points)
 			if err != nil {
 				return err
