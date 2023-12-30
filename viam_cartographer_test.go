@@ -8,6 +8,7 @@ package viamcartographer_test
 import (
 	"context"
 	"os"
+	"reflect"
 	"testing"
 	"time"
 
@@ -20,6 +21,7 @@ import (
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
+	"github.com/viamrobotics/viam-cartographer/postprocess"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
@@ -360,7 +362,106 @@ func TestDoCommand(t *testing.T) {
 		cmd := map[string]interface{}{viamcartographer.JobDoneCommand: ""}
 		resp, err := svc.DoCommand(context.Background(), cmd)
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, resp, test.ShouldBeNil)
+		test.That(
+			t,
+			resp, test.ShouldResemble,
+			map[string]interface{}{viamcartographer.JobDoneCommand: false},
+		)
 	})
+	t.Run("changes postprocess bool after 'postprocess_toggle'", func(t *testing.T) {
+		cmd := map[string]interface{}{postprocess.ToggleCommand: ""}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(
+			t,
+			resp, test.ShouldResemble,
+			map[string]interface{}{viamcartographer.PostprocessToggleResponseKey: true},
+		)
+
+		cmd = map[string]interface{}{postprocess.ToggleCommand: ""}
+		resp, err = svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(
+			t,
+			resp, test.ShouldResemble,
+			map[string]interface{}{viamcartographer.PostprocessToggleResponseKey: false},
+		)
+	})
+	t.Run(
+		"errors if 'postprocess_undo' is called before any postprocessing has occurred",
+		func(t *testing.T) {
+			cmd := map[string]interface{}{postprocess.UndoCommand: ""}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeError, viamcartographer.ErrNoPostprocessingToUndo)
+			test.That(t, resp, test.ShouldBeNil)
+		})
+	t.Run(
+		"succeeds if 'postprocess_undo' is called after any postprocessing has occurred",
+		func(t *testing.T) {
+			point := map[string]interface{}{"X": reflect.ValueOf(1.0).Float(), "Y": reflect.ValueOf(1.0).Float()}
+			cmd := map[string]interface{}{postprocess.AddCommand: []interface{}{point}}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeNil)
+			test.That(
+				t,
+				resp,
+				test.ShouldResemble,
+				map[string]interface{}{postprocess.AddCommand: viamcartographer.SuccessMessage},
+			)
+
+			cmd = map[string]interface{}{postprocess.UndoCommand: ""}
+			resp, err = svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeNil)
+			test.That(
+				t,
+				resp,
+				test.ShouldResemble,
+				map[string]interface{}{postprocess.UndoCommand: viamcartographer.SuccessMessage},
+			)
+		})
+	t.Run(
+		"success if 'postprocess_add' is called correctly",
+		func(t *testing.T) {
+			point := map[string]interface{}{"X": reflect.ValueOf(1.0).Float(), "Y": reflect.ValueOf(1.0).Float()}
+			cmd := map[string]interface{}{postprocess.AddCommand: []interface{}{point}}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeNil)
+			test.That(
+				t,
+				resp,
+				test.ShouldResemble,
+				map[string]interface{}{postprocess.AddCommand: viamcartographer.SuccessMessage},
+			)
+		})
+	t.Run(
+		"errors if 'postprocess_add' is called with incorrect format",
+		func(t *testing.T) {
+			cmd := map[string]interface{}{postprocess.AddCommand: "hello"}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeError, postprocess.ErrBadPostprocessingPointsFormat)
+			test.That(t, resp, test.ShouldBeNil)
+		})
+	t.Run(
+		"success if 'postprocess_remove' is called correctly",
+		func(t *testing.T) {
+			point := map[string]interface{}{"X": reflect.ValueOf(1.0).Float(), "Y": reflect.ValueOf(1.0).Float()}
+			cmd := map[string]interface{}{postprocess.RemoveCommand: []interface{}{point}}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeNil)
+			test.That(
+				t,
+				resp,
+				test.ShouldResemble,
+				map[string]interface{}{postprocess.RemoveCommand: viamcartographer.SuccessMessage},
+			)
+		})
+	t.Run(
+		"errors if 'postprocess_remove' is called with incorrect format",
+		func(t *testing.T) {
+			cmd := map[string]interface{}{postprocess.RemoveCommand: "hello"}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeError, postprocess.ErrBadPostprocessingPointsFormat)
+			test.That(t, resp, test.ShouldBeNil)
+		})
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 }

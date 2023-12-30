@@ -47,6 +47,8 @@ const (
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
 	JobDoneCommand                       = "job_done"
+	SuccessMessage                       = "success"
+	PostprocessToggleResponseKey         = "postproessed"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -638,7 +640,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 	if _, ok := req[postprocess.ToggleCommand]; ok {
 		cartoSvc.postprocessed.Store(!cartoSvc.postprocessed.Load())
-		return map[string]interface{}{"postprocessed": cartoSvc.postprocessed.Load()}, nil
+		return map[string]interface{}{PostprocessToggleResponseKey: cartoSvc.postprocessed.Load()}, nil
 	}
 
 	if points, ok := req[postprocess.AddCommand]; ok {
@@ -649,7 +651,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
 		cartoSvc.postprocessed.Store(true)
-		return map[string]interface{}{postprocess.AddCommand: "success"}, nil
+		return map[string]interface{}{postprocess.AddCommand: SuccessMessage}, nil
 	}
 
 	if points, ok := req[postprocess.RemoveCommand]; ok {
@@ -660,7 +662,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
 		cartoSvc.postprocessed.Store(true)
-		return map[string]interface{}{postprocess.RemoveCommand: "success"}, nil
+		return map[string]interface{}{postprocess.RemoveCommand: SuccessMessage}, nil
 	}
 
 	if _, ok := req[postprocess.UndoCommand]; ok {
@@ -669,7 +671,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		}
 
 		cartoSvc.postprocessingTasks = cartoSvc.postprocessingTasks[:len(cartoSvc.postprocessingTasks)-1]
-		return map[string]interface{}{postprocess.UndoCommand: "success"}, nil
+		return map[string]interface{}{postprocess.UndoCommand: SuccessMessage}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError
