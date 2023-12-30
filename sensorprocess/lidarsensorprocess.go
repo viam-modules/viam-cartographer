@@ -37,10 +37,8 @@ func (config *Config) addLidarReadingInOnline(ctx context.Context) error {
 
 	// add lidar data to cartographer and sleep remainder of time interval
 	timeToSleep := config.tryAddLidarReadingOnce(ctx, lidarReading)
-	if !lidarReading.TestIsReplaySensor {
-		time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
-		config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
-	}
+	time.Sleep(time.Duration(timeToSleep) * time.Millisecond)
+	config.Logger.Debugf("lidar sleep for %vms", timeToSleep)
 	return nil
 }
 
