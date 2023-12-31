@@ -35,9 +35,9 @@ var (
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
 	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
-	// ErrNoPostprocessingToUndo denotes that the points have not been properly formatted
+	// ErrNoPostprocessingToUndo denotes that the points have not been properly formatted.
 	ErrNoPostprocessingToUndo = errors.New("there are no postprocessing tasks to undo")
-	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided
+	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
 	ErrBadPostprocessingPointsFormat = errors.New("invalid postprocessing points format")
 )
 
@@ -48,9 +48,13 @@ const (
 	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
-	JobDoneCommand                       = "job_done"
-	SuccessMessage                       = "success"
-	PostprocessToggleResponseKey         = "postproessed"
+
+	// JobDoneCommand is the string that needs to be sent to DoCommand to find out if the job has finished.
+	JobDoneCommand = "job_done"
+	// SuccessMessage is sent back after a successful DoCommand request.
+	SuccessMessage = "success"
+	// PostprocessToggleResponseKey is the key sent back for the toggle postprocess command.
+	PostprocessToggleResponseKey = "postprocessed"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{

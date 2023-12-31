@@ -1,4 +1,4 @@
-// package postproces contains functionality to postprocess pointcloud maps
+// Package postprocess contains functionality to postprocess pointcloud maps
 package postprocess
 
 import (
@@ -10,50 +10,61 @@ import (
 	"go.viam.com/rdk/pointcloud"
 )
 
+// Instruction describes the action of the postprocess step.
 type Instruction int
 
 const (
-	Add    Instruction = iota
-	Remove             = iota
+	// Add is the instruction for adding points.
+	Add Instruction = iota
+	// Remove is the instruction for removing points.
+	Remove = iota
 )
 
 const (
 	fullConfidence = 100
 
-	// expected strings for DoCommand
+	// ToggleCommand can be used to turn postprocessing on and off.
 	ToggleCommand = "postprocess_toggle"
-	AddCommand    = "postprocess_add"
+	// AddCommand can be used to add points to the pointcloud  map.
+	AddCommand = "postprocess_add"
+	// RemoveCommand can be used to remove points from the pointcloud  map.
 	RemoveCommand = "postprocess_remove"
-	UndoCommand   = "postprocess_undo"
-	xKey          = "X"
-	yKey          = "Y"
+	// UndoCommand can be used to undo last postprocessing step.
+	UndoCommand = "postprocess_undo"
+	xKey        = "X"
+	yKey        = "Y"
 )
 
 var (
-	// ErrPointsNotASlice denotes that the points have not been properly formatted as a slice
+	// ErrPointsNotASlice denotes that the points have not been properly formatted as a slice.
 	ErrPointsNotASlice = errors.New("could not parse provided points as a slice")
 
-	// ErrPointNotAMap denotes that a point has not been properly formatted as a map
+	// ErrPointNotAMap denotes that a point has not been properly formatted as a map.
 	ErrPointNotAMap = errors.New("could not parse provided point as a map")
 
-	// ErrXNotProvided denotes that an X value is not a float64
+	// ErrXNotProvided denotes that an X value was not provided..
 	ErrXNotProvided = errors.New("could X not provided")
 
-	// ErrXNotFloat64 denotes that an X value is not a float64
+	// ErrXNotFloat64 denotes that an X value is not a float64.
 	ErrXNotFloat64 = errors.New("could not parse provided X as a float64")
 
-	// ErrYNotProvided denotes that an X value is not a float64
+	// ErrYNotProvided denotes that a Y value was not provided.
 	ErrYNotProvided = errors.New("could X not provided")
 
-	// ErrXNotFloat64 denotes that an X value is not a float64
+	// ErrYNotFloat64 denotes that an Y value is not a float64.
 	ErrYNotFloat64 = errors.New("could not parse provided X as a float64")
+
+	// ErrRemovingPoints denotes that something unexpected happened during removal.
+	ErrRemovingPoints = errors.New("unexpected number of points after removal")
 )
 
+// Task can be used to construct a postprocessing step.
 type Task struct {
 	Instruction Instruction
 	Points      []r3.Vector
 }
 
+// ParseDoCommand parses postprocessing DoCommands into Tasks.
 func ParseDoCommand(
 	unstructuredPoints interface{},
 	instruction Instruction,
@@ -95,6 +106,10 @@ func ParseDoCommand(
 	return task, nil
 }
 
+/*
+UpdatePointCloud iterated through a list of tasks and adds or removes poitns from data
+and writes the updated pointcloud to updatedData.
+*/
 func UpdatePointCloud(
 	data []byte,
 	updatedData *[]byte,
@@ -136,7 +151,10 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 			confidence score to be encoded in the blue parameter of the RGB value, on a
 			scale from 1-100.
 		*/
-		pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence}))
+		err := pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence}))
+		if err != nil {
+			return err
+		}
 	}
 
 	var buf bytes.Buffer
@@ -145,10 +163,13 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 		return err
 	}
 
-	// Initalize updatedData with new points
+	// Initialize updatedData with new points
 	*updatedData = make([]byte, buf.Len())
 	updatedReader := bytes.NewReader(buf.Bytes())
-	updatedReader.Read(*updatedData)
+	_, err = updatedReader.Read(*updatedData)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -171,11 +192,23 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 			}
 		}
 
-		updatedPC.Set(p, d)
-		return true
+		err := updatedPC.Set(p, d)
+		// end early if point cannot be set
+		return err == nil
 	}
 
 	pc.Iterate(0, 0, filterRemovedPoints)
+
+	// confirm iterate did not have to end early
+	if updatedPC.Size() != pc.Size()-len(points) {
+		/*
+			Note: this condition will occur if:
+				- points in task do not exist in the point cloud
+				- points have already been removed
+				- some error occurred while copying valid points
+		*/
+		return ErrRemovingPoints
+	}
 
 	buf := bytes.Buffer{}
 	err = pointcloud.ToPCD(updatedPC, &buf, pointcloud.PCDBinary)
@@ -186,7 +219,10 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 	// Overwrite updatedData with new points
 	*updatedData = make([]byte, buf.Len())
 	updatedReader := bytes.NewReader(buf.Bytes())
-	updatedReader.Read(*updatedData)
+	_, err = updatedReader.Read(*updatedData)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

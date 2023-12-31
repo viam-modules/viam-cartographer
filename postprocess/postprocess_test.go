@@ -104,6 +104,17 @@ func TestUpdatePointCloudWithRemovedPoints(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, errors.New("error reading header line 0: EOF"))
 	})
 
+	t.Run("errors if points do not exist", func(t *testing.T) {
+		originalPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 2}, {X: 3, Y: 3}}
+		var originalPointsBytes []byte
+		err := vecSliceToBytes(originalPoints, &originalPointsBytes)
+		test.That(t, err, test.ShouldBeNil)
+
+		// update original byte slice with new points
+		err = updatePointCloudWithRemovedPoints(&originalPointsBytes, []r3.Vector{{X: 4, Y: 4}})
+		test.That(t, err, test.ShouldBeError, ErrRemovingPoints)
+	})
+
 	t.Run("successfully returns point cloud with postprocessed points", func(t *testing.T) {
 		originalPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 2}, {X: 3, Y: 3}}
 		var originalPointsBytes []byte
@@ -132,7 +143,8 @@ func TestUpdatePointCloud(t *testing.T) {
 		{X: 0, Y: 0},
 		{X: 1, Y: 1},
 		{X: 3, Y: 3},
-		{X: 5, Y: 5}}
+		{X: 5, Y: 5},
+	}
 	var postprocessedPointsBytes []byte
 	err = vecSliceToBytes(postprocessedPoints, &postprocessedPointsBytes)
 	test.That(t, err, test.ShouldBeNil)
@@ -165,7 +177,7 @@ func vecSliceToBytes(points []r3.Vector, outputData *[]byte) error {
 		return err
 	}
 
-	// Initalize updatedData with new points
+	// Initialize updatedData with new points
 	*outputData = make([]byte, buf.Len())
 	updatedReader := bytes.NewReader(buf.Bytes())
 	updatedReader.Read(*outputData)
