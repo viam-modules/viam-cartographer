@@ -8,7 +8,6 @@ package viamcartographer_test
 import (
 	"context"
 	"os"
-	"reflect"
 	"testing"
 	"time"
 
@@ -398,7 +397,7 @@ func TestDoCommand(t *testing.T) {
 	t.Run(
 		"succeeds if 'postprocess_undo' is called after any postprocessing has occurred",
 		func(t *testing.T) {
-			point := map[string]interface{}{"X": reflect.ValueOf(1.0).Float(), "Y": reflect.ValueOf(1.0).Float()}
+			point := map[string]interface{}{"X": float64(1), "Y": float64(1)}
 			cmd := map[string]interface{}{postprocess.AddCommand: []interface{}{point}}
 			resp, err := svc.DoCommand(context.Background(), cmd)
 			test.That(t, err, test.ShouldBeNil)
@@ -422,7 +421,7 @@ func TestDoCommand(t *testing.T) {
 	t.Run(
 		"success if 'postprocess_add' is called correctly",
 		func(t *testing.T) {
-			point := map[string]interface{}{"X": reflect.ValueOf(1.0).Float(), "Y": reflect.ValueOf(1.0).Float()}
+			point := map[string]interface{}{"X": float64(1), "Y": float64(1)}
 			cmd := map[string]interface{}{postprocess.AddCommand: []interface{}{point}}
 			resp, err := svc.DoCommand(context.Background(), cmd)
 			test.That(t, err, test.ShouldBeNil)
@@ -438,13 +437,13 @@ func TestDoCommand(t *testing.T) {
 		func(t *testing.T) {
 			cmd := map[string]interface{}{postprocess.AddCommand: "hello"}
 			resp, err := svc.DoCommand(context.Background(), cmd)
-			test.That(t, err, test.ShouldBeError, postprocess.ErrBadPostprocessingPointsFormat)
+			test.That(t, err.Error(), test.ShouldContainSubstring, viamcartographer.ErrBadPostprocessingPointsFormat.Error())
 			test.That(t, resp, test.ShouldBeNil)
 		})
 	t.Run(
 		"success if 'postprocess_remove' is called correctly",
 		func(t *testing.T) {
-			point := map[string]interface{}{"X": reflect.ValueOf(1.0).Float(), "Y": reflect.ValueOf(1.0).Float()}
+			point := map[string]interface{}{"X": float64(1), "Y": float64(1)}
 			cmd := map[string]interface{}{postprocess.RemoveCommand: []interface{}{point}}
 			resp, err := svc.DoCommand(context.Background(), cmd)
 			test.That(t, err, test.ShouldBeNil)
@@ -460,7 +459,7 @@ func TestDoCommand(t *testing.T) {
 		func(t *testing.T) {
 			cmd := map[string]interface{}{postprocess.RemoveCommand: "hello"}
 			resp, err := svc.DoCommand(context.Background(), cmd)
-			test.That(t, err, test.ShouldBeError, postprocess.ErrBadPostprocessingPointsFormat)
+			test.That(t, err.Error(), test.ShouldContainSubstring, viamcartographer.ErrBadPostprocessingPointsFormat.Error())
 			test.That(t, resp, test.ShouldBeNil)
 		})
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)

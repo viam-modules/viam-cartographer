@@ -37,6 +37,8 @@ var (
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
 	// ErrNoPostprocessingToUndo denotes that the points have not been properly formatted
 	ErrNoPostprocessingToUndo = errors.New("there are no postprocessing tasks to undo")
+	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided
+	ErrBadPostprocessingPointsFormat = errors.New("invalid postprocessing points format")
 )
 
 const (
@@ -646,7 +648,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 	if points, ok := req[postprocess.AddCommand]; ok {
 		task, err := postprocess.ParseDoCommand(points, postprocess.Add)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(ErrBadPostprocessingPointsFormat, err.Error())
 		}
 
 		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
@@ -657,7 +659,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 	if points, ok := req[postprocess.RemoveCommand]; ok {
 		task, err := postprocess.ParseDoCommand(points, postprocess.Remove)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(ErrBadPostprocessingPointsFormat, err.Error())
 		}
 
 		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)

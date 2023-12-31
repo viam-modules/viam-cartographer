@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"image/color"
-	"reflect"
 
 	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/pointcloud"
@@ -19,16 +18,35 @@ const (
 )
 
 const (
+	fullConfidence = 100
+
 	// expected strings for DoCommand
 	ToggleCommand = "postprocess_toggle"
 	AddCommand    = "postprocess_add"
 	RemoveCommand = "postprocess_remove"
 	UndoCommand   = "postprocess_undo"
+	xKey          = "X"
+	yKey          = "Y"
 )
 
 var (
-	// ErrBadPostprocessingPointsFormat denotes that the points have not been properly formatted
-	ErrBadPostprocessingPointsFormat = errors.New("could not parse provided points")
+	// ErrPointsNotASlice denotes that the points have not been properly formatted as a slice
+	ErrPointsNotASlice = errors.New("could not parse provided points as a slice")
+
+	// ErrPointNotAMap denotes that a point has not been properly formatted as a map
+	ErrPointNotAMap = errors.New("could not parse provided point as a map")
+
+	// ErrXNotProvided denotes that an X value is not a float64
+	ErrXNotProvided = errors.New("could X not provided")
+
+	// ErrXNotFloat64 denotes that an X value is not a float64
+	ErrXNotFloat64 = errors.New("could not parse provided X as a float64")
+
+	// ErrYNotProvided denotes that an X value is not a float64
+	ErrYNotProvided = errors.New("could X not provided")
+
+	// ErrXNotFloat64 denotes that an X value is not a float64
+	ErrYNotFloat64 = errors.New("could not parse provided X as a float64")
 )
 
 type Task struct {
@@ -40,25 +58,40 @@ func ParseDoCommand(
 	unstructuredPoints interface{},
 	instruction Instruction,
 ) (Task, error) {
-	if reflect.TypeOf(unstructuredPoints).Kind() != reflect.Slice {
-		return Task{}, ErrBadPostprocessingPointsFormat
+	pointSlice, ok := unstructuredPoints.([]interface{})
+	if !ok {
+		return Task{}, ErrPointsNotASlice
 	}
 
 	task := Task{}
-	slice := reflect.ValueOf(unstructuredPoints)
-
-	for i := 0; i < slice.Len(); i++ {
-		val := slice.Index(i).Elem()
-		if reflect.TypeOf(val).Kind() != reflect.Struct {
-			return Task{}, ErrBadPostprocessingPointsFormat
+	for _, point := range pointSlice {
+		pointMap, ok := point.(map[string]interface{})
+		if !ok {
+			return Task{}, ErrPointNotAMap
 		}
 
-		x := val.MapIndex(reflect.ValueOf("X"))
-		y := val.MapIndex(reflect.ValueOf("Y"))
-		task.Points = append(task.Points, r3.Vector{X: x.Elem().Float(), Y: y.Elem().Float()})
-	}
+		x, ok := pointMap[xKey]
+		if !ok {
+			return Task{}, ErrXNotProvided
+		}
 
-	task.Instruction = instruction
+		xFloat, ok := x.(float64)
+		if !ok {
+			return Task{}, ErrXNotFloat64
+		}
+
+		y, ok := pointMap[yKey]
+		if !ok {
+			return Task{}, ErrYNotProvided
+		}
+
+		yFloat, ok := y.(float64)
+		if !ok {
+			return Task{}, ErrXNotFloat64
+		}
+
+		task.Points = append(task.Points, r3.Vector{X: xFloat, Y: yFloat})
+	}
 	return task, nil
 }
 
@@ -88,8 +121,6 @@ func UpdatePointCloud(
 }
 
 func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) error {
-	const FULL_CONFIDENCE = 100
-
 	reader := bytes.NewReader(*updatedData)
 	pc, err := pointcloud.ReadPCD(reader)
 	if err != nil {
@@ -105,7 +136,7 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 			confidence score to be encoded in the blue parameter of the RGB value, on a
 			scale from 1-100.
 		*/
-		pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: FULL_CONFIDENCE}))
+		pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence}))
 	}
 
 	var buf bytes.Buffer
