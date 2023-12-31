@@ -22,6 +22,8 @@ const (
 
 const (
 	fullConfidence = 100
+	xKey           = "X"
+	yKey           = "Y"
 
 	// ToggleCommand can be used to turn postprocessing on and off.
 	ToggleCommand = "postprocess_toggle"
@@ -31,8 +33,6 @@ const (
 	RemoveCommand = "postprocess_remove"
 	// UndoCommand can be used to undo last postprocessing step.
 	UndoCommand = "postprocess_undo"
-	xKey        = "X"
-	yKey        = "Y"
 )
 
 var (
@@ -42,7 +42,7 @@ var (
 	// ErrPointNotAMap denotes that a point has not been properly formatted as a map.
 	ErrPointNotAMap = errors.New("could not parse provided point as a map")
 
-	// ErrXNotProvided denotes that an X value was not provided..
+	// ErrXNotProvided denotes that an X value was not provided.
 	ErrXNotProvided = errors.New("could X not provided")
 
 	// ErrXNotFloat64 denotes that an X value is not a float64.
