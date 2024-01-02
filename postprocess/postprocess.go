@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"image/color"
-	"math"
 
 	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/pointcloud"
@@ -104,6 +103,10 @@ func UpdatePointCloud(
 	updatedData *[]byte,
 	tasks []Task,
 ) error {
+	if updatedData == nil {
+		return errors.New("cannot provide nil udpated data")
+	}
+
 	*updatedData = append(*updatedData, data...)
 
 	// iterate through tasks and add or remove points
@@ -125,6 +128,10 @@ func UpdatePointCloud(
 }
 
 func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) error {
+	if updatedData == nil {
+		return errors.New("cannot provide nil udpated data")
+	}
+
 	reader := bytes.NewReader(*updatedData)
 	pc, err := pointcloud.ReadPCD(reader)
 	if err != nil {
@@ -140,7 +147,7 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 			confidence score to be encoded in the blue parameter of the RGB value, on a
 			scale from 1-100.
 		*/
-		err := pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence, R: math.MaxUint8}))
+		err := pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence}))
 		if err != nil {
 			return err
 		}
@@ -164,6 +171,10 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 }
 
 func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) error {
+	if updatedData == nil {
+		return errors.New("cannot provide nil udpated data")
+	}
+
 	reader := bytes.NewReader(*updatedData)
 	pc, err := pointcloud.ReadPCD(reader)
 	if err != nil {
