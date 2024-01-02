@@ -104,46 +104,35 @@ func TestUpdatePointCloudWithRemovedPoints(t *testing.T) {
 		test.That(t, err, test.ShouldBeError, errors.New("error reading header line 0: EOF"))
 	})
 
-	t.Run("errors if points do not exist", func(t *testing.T) {
-		originalPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 2}, {X: 3, Y: 3}}
-		var originalPointsBytes []byte
-		err := vecSliceToBytes(originalPoints, &originalPointsBytes)
-		test.That(t, err, test.ShouldBeNil)
-
-		// update original byte slice with new points
-		err = updatePointCloudWithRemovedPoints(&originalPointsBytes, []r3.Vector{{X: 4, Y: 4}})
-		test.That(t, err, test.ShouldBeError, ErrRemovingPoints)
-	})
-
 	t.Run("successfully returns point cloud with postprocessed points", func(t *testing.T) {
-		originalPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 2}, {X: 3, Y: 3}}
+		originalPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1000, Y: 1000}, {X: 2000, Y: 2000}, {X: 2020, Y: 2020}, {X: 3000, Y: 3000}}
 		var originalPointsBytes []byte
 		err := vecSliceToBytes(originalPoints, &originalPointsBytes)
 		test.That(t, err, test.ShouldBeNil)
 
-		postprocessedPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1, Y: 1}}
+		postprocessedPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1000, Y: 1000}}
 		var postprocessedPointsBytes []byte
 		err = vecSliceToBytes(postprocessedPoints, &postprocessedPointsBytes)
 		test.That(t, err, test.ShouldBeNil)
 
 		// update original byte slice with new points
-		err = updatePointCloudWithRemovedPoints(&originalPointsBytes, []r3.Vector{{X: 2, Y: 2}, {X: 3, Y: 3}})
+		err = updatePointCloudWithRemovedPoints(&originalPointsBytes, []r3.Vector{{X: 2000, Y: 2000}, {X: 3000, Y: 3000}})
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, postprocessedPointsBytes, test.ShouldResemble, originalPointsBytes)
 	})
 }
 
 func TestUpdatePointCloud(t *testing.T) {
-	originalPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1, Y: 1}, {X: 2, Y: 2}, {X: 3, Y: 3}}
+	originalPoints := []r3.Vector{{X: 0, Y: 0}, {X: 1000, Y: 1000}, {X: 2000, Y: 2000}, {X: 3000, Y: 3000}}
 	var originalPointsBytes []byte
 	err := vecSliceToBytes(originalPoints, &originalPointsBytes)
 	test.That(t, err, test.ShouldBeNil)
 
 	postprocessedPoints := []r3.Vector{
 		{X: 0, Y: 0},
-		{X: 1, Y: 1},
-		{X: 3, Y: 3},
-		{X: 5, Y: 5},
+		{X: 1000, Y: 1000},
+		{X: 3000, Y: 3000},
+		{X: 5000, Y: 5000},
 	}
 	var postprocessedPointsBytes []byte
 	err = vecSliceToBytes(postprocessedPoints, &postprocessedPointsBytes)
@@ -152,11 +141,11 @@ func TestUpdatePointCloud(t *testing.T) {
 	tasks := []Task{
 		{
 			Instruction: Add,
-			Points:      []r3.Vector{{X: 4, Y: 4}, {X: 5, Y: 5}},
+			Points:      []r3.Vector{{X: 4000, Y: 4000}, {X: 5000, Y: 5000}},
 		},
 		{
 			Instruction: Remove,
-			Points:      []r3.Vector{{X: 2, Y: 2}, {X: 4, Y: 4}},
+			Points:      []r3.Vector{{X: 2000, Y: 2000}, {X: 4000, Y: 4000}},
 		},
 	}
 	var updatedData []byte

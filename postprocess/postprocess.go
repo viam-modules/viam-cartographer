@@ -22,6 +22,7 @@ const (
 
 const (
 	fullConfidence = 100
+	removalRadius  = 100 // mm
 	xKey           = "X"
 	yKey           = "Y"
 
@@ -107,7 +108,7 @@ func ParseDoCommand(
 }
 
 /*
-UpdatePointCloud iterated through a list of tasks and adds or removes poitns from data
+UpdatePointCloud iterated through a list of tasks and adds or removes points from data
 and writes the updated pointcloud to updatedData.
 */
 func UpdatePointCloud(
@@ -182,12 +183,15 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 	}
 
 	updatedPC := pointcloud.NewWithPrealloc(pc.Size() - len(points))
+	pointsVisited := 0
 
 	filterRemovedPoints := func(p r3.Vector, d pointcloud.Data) bool {
+		pointsVisited++
 		// Always return true so iteration continues
 
 		for _, point := range points {
-			if point == p {
+			// remove all points within the removalRadius from the removed points
+			if point.Distance(p) <= removalRadius {
 				return true
 			}
 		}
@@ -200,12 +204,10 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 	pc.Iterate(0, 0, filterRemovedPoints)
 
 	// confirm iterate did not have to end early
-	if updatedPC.Size() != pc.Size()-len(points) {
+	if pc.Size() != pointsVisited {
 		/*
-			Note: this condition will occur if:
-				- points in task do not exist in the point cloud
-				- points have already been removed
-				- some error occurred while copying valid points
+			Note: this condition will occur if some error occurred while copying valid points
+			and will be how we can tell that this error occurred: err := updatedPC.Set(p, d)
 		*/
 		return ErrRemovingPoints
 	}
