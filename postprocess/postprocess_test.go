@@ -23,32 +23,32 @@ func TestParseDoCommand(t *testing.T) {
 		{
 			msg: "errors if unstructuredPoints is not a slice",
 			cmd: "hello",
-			err: ErrPointsNotASlice,
+			err: errPointsNotASlice,
 		},
 		{
 			msg: "errors if unstructuredPoints is not a slice of maps",
 			cmd: []interface{}{1},
-			err: ErrPointNotAMap,
+			err: errPointNotAMap,
 		},
 		{
 			msg: "errors if unstructuredPoints contains a point where X is not float64",
 			cmd: []interface{}{map[string]interface{}{"Y": float64(2)}},
-			err: ErrXNotProvided,
+			err: errXNotProvided,
 		},
 		{
 			msg: "errors if unstructuredPoints contains a point where X is not float64",
 			cmd: []interface{}{map[string]interface{}{"X": 1, "Y": float64(2)}},
-			err: ErrXNotFloat64,
+			err: errXNotFloat64,
 		},
 		{
 			msg: "errors if unstructuredPoints contains a point where Y is not provided",
 			cmd: []interface{}{map[string]interface{}{"X": float64(1)}},
-			err: ErrYNotProvided,
+			err: errYNotProvided,
 		},
 		{
 			msg: "errors if unstructuredPoints contains a point where Y is not float64",
 			cmd: []interface{}{map[string]interface{}{"X": float64(1), "Y": 2}},
-			err: ErrYNotFloat64,
+			err: errYNotFloat64,
 		},
 	} {
 		t.Run(fmt.Sprintf("%s for Add task", tc.msg), func(t *testing.T) {

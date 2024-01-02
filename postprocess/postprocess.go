@@ -38,26 +38,13 @@ const (
 )
 
 var (
-	// ErrPointsNotASlice denotes that the points have not been properly formatted as a slice.
-	ErrPointsNotASlice = errors.New("could not parse provided points as a slice")
-
-	// ErrPointNotAMap denotes that a point has not been properly formatted as a map.
-	ErrPointNotAMap = errors.New("could not parse provided point as a map")
-
-	// ErrXNotProvided denotes that an X value was not provided.
-	ErrXNotProvided = errors.New("could X not provided")
-
-	// ErrXNotFloat64 denotes that an X value is not a float64.
-	ErrXNotFloat64 = errors.New("could not parse provided X as a float64")
-
-	// ErrYNotProvided denotes that a Y value was not provided.
-	ErrYNotProvided = errors.New("could X not provided")
-
-	// ErrYNotFloat64 denotes that an Y value is not a float64.
-	ErrYNotFloat64 = errors.New("could not parse provided X as a float64")
-
-	// ErrRemovingPoints denotes that something unexpected happened during removal.
-	ErrRemovingPoints = errors.New("unexpected number of points after removal")
+	errPointsNotASlice = errors.New("could not parse provided points as a slice")
+	errPointNotAMap    = errors.New("could not parse provided point as a map")
+	errXNotProvided    = errors.New("could X not provided")
+	errXNotFloat64     = errors.New("could not parse provided X as a float64")
+	errYNotProvided    = errors.New("could X not provided")
+	errYNotFloat64     = errors.New("could not parse provided X as a float64")
+	errRemovingPoints  = errors.New("unexpected number of points after removal")
 )
 
 // Task can be used to construct a postprocessing step.
@@ -73,34 +60,34 @@ func ParseDoCommand(
 ) (Task, error) {
 	pointSlice, ok := unstructuredPoints.([]interface{})
 	if !ok {
-		return Task{}, ErrPointsNotASlice
+		return Task{}, errPointsNotASlice
 	}
 
-	task := Task{}
+	task := Task{Instruction: instruction}
 	for _, point := range pointSlice {
 		pointMap, ok := point.(map[string]interface{})
 		if !ok {
-			return Task{}, ErrPointNotAMap
+			return Task{}, errPointNotAMap
 		}
 
 		x, ok := pointMap[xKey]
 		if !ok {
-			return Task{}, ErrXNotProvided
+			return Task{}, errXNotProvided
 		}
 
 		xFloat, ok := x.(float64)
 		if !ok {
-			return Task{}, ErrXNotFloat64
+			return Task{}, errXNotFloat64
 		}
 
 		y, ok := pointMap[yKey]
 		if !ok {
-			return Task{}, ErrYNotProvided
+			return Task{}, errYNotProvided
 		}
 
 		yFloat, ok := y.(float64)
 		if !ok {
-			return Task{}, ErrXNotFloat64
+			return Task{}, errXNotFloat64
 		}
 
 		task.Points = append(task.Points, r3.Vector{X: xFloat, Y: yFloat})
@@ -210,7 +197,7 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 			Note: this condition will occur if some error occurred while copying valid points
 			and will be how we can tell that this error occurred: err := updatedPC.Set(p, d)
 		*/
-		return ErrRemovingPoints
+		return errRemovingPoints
 	}
 
 	buf := bytes.Buffer{}
