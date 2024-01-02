@@ -152,7 +152,7 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 			confidence score to be encoded in the blue parameter of the RGB value, on a
 			scale from 1-100.
 		*/
-		err := pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence}))
+		err := pc.Set(point, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence, R: fullConfidence}))
 		if err != nil {
 			return err
 		}
