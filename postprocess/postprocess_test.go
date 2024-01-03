@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
+	"math"
 	"testing"
 
 	"github.com/golang/geo/r3"
@@ -157,7 +158,7 @@ func TestUpdatePointCloud(t *testing.T) {
 func vecSliceToBytes(points []r3.Vector, outputData *[]byte) error {
 	pc := pointcloud.NewWithPrealloc(len(points))
 	for _, p := range points {
-		pc.Set(p, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence}))
+		pc.Set(p, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence, R: math.MaxUint8}))
 	}
 
 	buf := bytes.Buffer{}
