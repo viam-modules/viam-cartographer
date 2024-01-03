@@ -38,7 +38,6 @@ type OptionalConfigParams struct {
 
 var (
 	errCameraMustHaveName        = errors.New("\"camera[name]\" is required")
-	errModeHasToBeProvided       = errors.New("\"mode\" config parameter is required")
 	errLocalizationInOfflineMode = newError("\"camera[data_freq_hz]\" and enable_mapping = false. localization in offline mode not supported.")
 )
 

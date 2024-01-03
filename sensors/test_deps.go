@@ -44,7 +44,8 @@ const (
 	// InvalidSensorTestErrMsg represents an error message that indicates that the sensor is invalid.
 	InvalidSensorTestErrMsg = "invalid test sensor"
 
-	// ---------- LIDAR Test Sensors --------------
+	// ---------- LIDAR Test Sensors --------------.
+
 	// GoodLidar is a lidar that works as expected and returns a pointcloud.
 	GoodLidar TestSensor = "good_lidar"
 	// WarmingUpLidar is a lidar whose NextPointCloud function returns a "warming up" error.
@@ -65,7 +66,8 @@ const (
 	// FinishedReplayLidar is a lidar whose NextPointCloud function returns an end of dataset error.
 	FinishedReplayLidar TestSensor = "finished_replay_lidar"
 
-	// ------------- IMU Test Sensors ---------------
+	// ------------- IMU Test Sensors ---------------.
+
 	// GoodIMU is an IMU that works as expected and returns linear acceleration and angular velocity values.
 	GoodIMU TestSensor = "good_imu"
 	// IMUWithErroringFunctions is an IMU whose functions return errors.
@@ -79,7 +81,8 @@ const (
 	// dataset error.
 	FinishedReplayIMU TestSensor = "finished_replay_imu"
 
-	// -------------- ODOMETER Test Sensors ------------
+	// -------------- ODOMETER Test Sensors ------------.
+
 	// GoodOdometer is an odometer that works as expected and returns position and orientation values.
 	GoodOdometer TestSensor = "good_odometer"
 	// OdometerWithErroringFunctions is an Odometer whose functions return errors.
@@ -93,7 +96,8 @@ const (
 	// dataset error.
 	FinishedReplayOdometer TestSensor = "finished_replay_odometer"
 
-	// ------------- IMU + ODOMETER Test Sensors ----------
+	// ------------- IMU + ODOMETER Test Sensors ----------.
+
 	// MovementSensorNotIMUNotOdometer is a movement sensor that does neither support an IMU nor an odometer.
 	MovementSensorNotIMUNotOdometer TestSensor = "movement_sensor_not_imu_not_odometer"
 	// GoodMovementSensorBothIMUAndOdometer is a movement sensor that supports both an IMU nor an odometer.
