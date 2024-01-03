@@ -144,8 +144,8 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 		}{
 			{
 				description:             "no movement sensor data is added if movement sensor is not enabled",
-				odometerEnabled:         false,
 				imuEnabled:              false,
+				odometerEnabled:         false,
 				lidarReadingTimeAddedMs: []int{0, 2, 4, 6, 8},
 				msReadingTimeAddedMs:    []int{1, 3, 5},
 				expectedDataInsertions:  []string{"lidar: 0", "lidar: 2", "lidar: 4", "lidar: 6", "lidar: 8"},
@@ -249,7 +249,7 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 						numMovementSensorData++
 						return movementSensorReading, nil
 					}
-					return movementSensorReading, replay.ErrEndOfDataset
+					return s.TimedMovementSensorReadingResponse{}, replay.ErrEndOfDataset
 				}
 				injectMovementSensor.PropertiesFunc = func() s.MovementSensorProperties {
 					return s.MovementSensorProperties{

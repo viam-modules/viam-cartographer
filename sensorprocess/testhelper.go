@@ -248,7 +248,7 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 		for i, call := range imuCalls {
 			t.Logf("call %d", i)
 			test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
-			// the IMU test fixture happens to always return the same readings currently
+			// the IMU test fixture happens to always return the same readings currently;
 			// in reality they are likely different every time
 			test.That(t, call.currentReading.LinearAcceleration, test.ShouldResemble, s.TestLinAcc)
 			test.That(t, call.currentReading.AngularVelocity, test.ShouldResemble, spatialmath.AngularVelocity{
@@ -264,7 +264,7 @@ func validAddMovementSensorReadingInOnlineTestHelper(
 		for i, call := range odometerCalls {
 			t.Logf("call %d", i)
 			test.That(t, call.sensorName, test.ShouldResemble, string(testMovementSensor))
-			// the odometer test fixture happens to always return the same readings currently
+			// the odometer test fixture happens to always return the same readings currently;
 			// in reality they are likely different every time
 			test.That(t, call.currentReading.Position, test.ShouldResemble, s.TestPosition)
 			test.That(t, call.currentReading.Orientation, test.ShouldResemble, s.TestOrientation)

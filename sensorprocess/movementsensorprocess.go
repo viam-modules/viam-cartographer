@@ -56,9 +56,11 @@ func (config *Config) addMovementSensorReadingInOnline(ctx context.Context) erro
 // process each reading so if we cannot acquire the lock we should try again.
 func (config *Config) tryAddMovementSensorReadingUntilSuccess(ctx context.Context, reading s.TimedMovementSensorReadingResponse) error {
 	var imuDone, odometerDone bool
+	// set IMU as done since it is not supported: we won't attempt to add IMU data to cartographer
 	if !config.MovementSensor.Properties().IMUSupported {
 		imuDone = true
 	}
+	// set odometer as done since it is not supported: we won't attempt to add odometer data to cartographer
 	if !config.MovementSensor.Properties().OdometerSupported {
 		odometerDone = true
 	}

@@ -2,6 +2,7 @@ package sensors
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/golang/geo/r3"
@@ -43,6 +44,7 @@ const (
 	// InvalidSensorTestErrMsg represents an error message that indicates that the sensor is invalid.
 	InvalidSensorTestErrMsg = "invalid test sensor"
 
+	// ---------- LIDAR Test Sensors --------------
 	// GoodLidar is a lidar that works as expected and returns a pointcloud.
 	GoodLidar TestSensor = "good_lidar"
 	// WarmingUpLidar is a lidar whose NextPointCloud function returns a "warming up" error.
@@ -63,6 +65,7 @@ const (
 	// FinishedReplayLidar is a lidar whose NextPointCloud function returns an end of dataset error.
 	FinishedReplayLidar TestSensor = "finished_replay_lidar"
 
+	// ------------- IMU Test Sensors ---------------
 	// GoodIMU is an IMU that works as expected and returns linear acceleration and angular velocity values.
 	GoodIMU TestSensor = "good_imu"
 	// IMUWithErroringFunctions is an IMU whose functions return errors.
@@ -76,6 +79,7 @@ const (
 	// dataset error.
 	FinishedReplayIMU TestSensor = "finished_replay_imu"
 
+	// -------------- ODOMETER Test Sensors ------------
 	// GoodOdometer is an odometer that works as expected and returns position and orientation values.
 	GoodOdometer TestSensor = "good_odometer"
 	// OdometerWithErroringFunctions is an Odometer whose functions return errors.
@@ -89,6 +93,7 @@ const (
 	// dataset error.
 	FinishedReplayOdometer TestSensor = "finished_replay_odometer"
 
+	// ------------- IMU + ODOMETER Test Sensors ----------
 	// MovementSensorNotIMUNotOdometer is a movement sensor that does neither support an IMU nor an odometer.
 	MovementSensorNotIMUNotOdometer TestSensor = "movement_sensor_not_imu_not_odometer"
 	// GoodMovementSensorBothIMUAndOdometer is a movement sensor that supports both an IMU nor an odometer.
@@ -350,7 +355,7 @@ func getFinishedReplayIMU() *inject.MovementSensor {
 func getGoodOdometer() *inject.MovementSensor {
 	odometer := &inject.MovementSensor{}
 	odometer.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return TestPosition, 10, nil
+		return TestPosition, 0.0, nil
 	}
 	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
 		return TestOrientation, nil
@@ -367,10 +372,10 @@ func getGoodOdometer() *inject.MovementSensor {
 func getOdometerWithErroringFunctions() *inject.MovementSensor {
 	odometer := &inject.MovementSensor{}
 	odometer.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return &geo.Point{}, 0.0, errors.New(InvalidSensorTestErrMsg)
+		return geo.NewPoint(math.NaN(), math.NaN()), math.NaN(), errors.New(InvalidSensorTestErrMsg)
 	}
 	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
-		return &spatialmath.Quaternion{}, errors.New(InvalidSensorTestErrMsg)
+		return nil, errors.New(InvalidSensorTestErrMsg)
 	}
 	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -388,7 +393,7 @@ func getReplayOdometer(testTime string) *inject.MovementSensor {
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return TestPosition, 1.2, nil
+		return TestPosition, 0.0, nil
 	}
 	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
@@ -409,10 +414,10 @@ func getReplayOdometer(testTime string) *inject.MovementSensor {
 func getFinishedReplayOdometer() *inject.MovementSensor {
 	odometer := &inject.MovementSensor{}
 	odometer.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return geo.NewPoint(0, 0), 0.0, replay.ErrEndOfDataset
+		return geo.NewPoint(math.NaN(), math.NaN()), math.NaN(), replay.ErrEndOfDataset
 	}
 	odometer.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
-		return &spatialmath.Quaternion{}, replay.ErrEndOfDataset
+		return nil, replay.ErrEndOfDataset
 	}
 	odometer.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -434,7 +439,7 @@ func getMovementSensorNotIMUAndNotOdometer() *inject.MovementSensor {
 func getGoodMovementSensorBothIMUAndOdometer() *inject.MovementSensor {
 	movementSensor := &inject.MovementSensor{}
 	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return TestPosition, 10, nil
+		return TestPosition, 0.0, nil
 	}
 	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
 		return TestOrientation, nil
@@ -465,10 +470,10 @@ func getMovementSensorBothIMUAndOdometerWithErroringFunctions() *inject.Movement
 		return spatialmath.AngularVelocity{}, errors.New(InvalidSensorTestErrMsg)
 	}
 	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return &geo.Point{}, 0.0, errors.New(InvalidSensorTestErrMsg)
+		return geo.NewPoint(math.NaN(), math.NaN()), math.NaN(), errors.New(InvalidSensorTestErrMsg)
 	}
 	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
-		return &spatialmath.Quaternion{}, errors.New(InvalidSensorTestErrMsg)
+		return nil, errors.New(InvalidSensorTestErrMsg)
 	}
 	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{
@@ -529,7 +534,7 @@ func getReplayMovementSensor(testTime string) *inject.MovementSensor {
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return TestPosition, 1.2, nil
+		return TestPosition, 0.0, nil
 	}
 	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
@@ -558,10 +563,10 @@ func getFinishedReplayMovementSensor() *inject.MovementSensor {
 		return spatialmath.AngularVelocity{}, replay.ErrEndOfDataset
 	}
 	movementSensor.PositionFunc = func(ctx context.Context, extra map[string]interface{}) (*geo.Point, float64, error) {
-		return geo.NewPoint(0, 0), 0.0, replay.ErrEndOfDataset
+		return geo.NewPoint(math.NaN(), math.NaN()), math.NaN(), replay.ErrEndOfDataset
 	}
 	movementSensor.OrientationFunc = func(ctx context.Context, extra map[string]interface{}) (spatialmath.Orientation, error) {
-		return &spatialmath.Quaternion{}, replay.ErrEndOfDataset
+		return nil, replay.ErrEndOfDataset
 	}
 	movementSensor.PropertiesFunc = func(ctx context.Context, extra map[string]interface{}) (*movementsensor.Properties, error) {
 		return &movementsensor.Properties{

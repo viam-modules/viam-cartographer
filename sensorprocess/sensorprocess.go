@@ -16,6 +16,18 @@ import (
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
 
+type sensorType int64
+
+const (
+	lidar sensorType = iota
+	movementSensor
+)
+
+type offlineSensorReadingTime struct {
+	sensorType  sensorType
+	readingTime time.Time
+}
+
 // Config holds config needed throughout the process of adding a sensor reading to the cartofacade.
 type Config struct {
 	CartoFacade cartofacade.Interface
@@ -82,11 +94,6 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 		}
 	}
 
-	type readingTime struct {
-		sensorType  string
-		readingTime time.Time
-	}
-
 	// loop over all the data until one of the datasets has reached its end
 	for {
 		select {
@@ -94,23 +101,23 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 			return false
 		default:
 			// create a map of supported sensors and their reading time stamps
-			readingTimes := []readingTime{
-				{sensorType: "lidar", readingTime: lidarReading.ReadingTime},
+			readingTimes := []offlineSensorReadingTime{
+				{sensorType: lidar, readingTime: lidarReading.ReadingTime},
 			}
-			// default to the slightly later imu timestamp, in case that the odometer time stamp was
+			// default to the slightly later imu timestamp: in case that the odometer time stamp was
 			// taken before the lidar time stamp, but the imu time stamp was taken after the lidar time
 			// stamp, we'll want to prioritize adding the lidar measurement before adding the movement
 			// sensor measurement
 			if config.MovementSensor != nil && config.MovementSensor.Properties().IMUSupported {
 				readingTimes = append(readingTimes,
-					readingTime{
-						sensorType:  "movement-sensor",
+					offlineSensorReadingTime{
+						sensorType:  movementSensor,
 						readingTime: movementSensorReading.TimedIMUResponse.ReadingTime,
 					})
 			} else if config.MovementSensor != nil && config.MovementSensor.Properties().OdometerSupported {
 				readingTimes = append(readingTimes,
-					readingTime{
-						sensorType:  "movement-sensor",
+					offlineSensorReadingTime{
+						sensorType:  movementSensor,
 						readingTime: movementSensorReading.TimedOdometerResponse.ReadingTime,
 					})
 			}
@@ -121,14 +128,14 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 					// if the timestamps are the same, we want to prioritize the lidar measurement before
 					// the movement sensor measurement
 					if readingTimes[i].readingTime.Equal(readingTimes[j].readingTime) {
-						return readingTimes[i].sensorType == "lidar"
+						return readingTimes[i].sensorType == lidar
 					}
 					return readingTimes[i].readingTime.Before(readingTimes[j].readingTime)
 				})
 
 			// insert the reading with the earliest time stamp
 			switch readingTimes[0].sensorType {
-			case "lidar":
+			case lidar:
 				if err := config.tryAddLidarReadingUntilSuccess(ctx, lidarReading); err != nil {
 					return false
 				}
@@ -142,7 +149,7 @@ func (config *Config) StartOfflineSensorProcess(ctx context.Context) bool {
 					}
 					return lidarEndOfDataSetReached
 				}
-			case "movement-sensor":
+			case movementSensor:
 				if err := config.tryAddMovementSensorReadingUntilSuccess(ctx, movementSensorReading); err != nil {
 					return false
 				}

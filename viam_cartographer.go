@@ -508,7 +508,7 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 	cartoSvcClosed := cartoSvc.closed
 	cartoSvc.muClose.Unlock()
 	if cartoSvcClosed {
-		cartoSvc.logger.Warn("Position called after closed")
+		cartoSvc.logger.Warn("Position called after shutting down of cartographer has been initiated")
 		return nil, "", ErrClosed
 	}
 
@@ -543,7 +543,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	cartoSvcClosed := cartoSvc.closed
 	cartoSvc.muClose.Unlock()
 	if cartoSvcClosed {
-		cartoSvc.logger.Warn("PointCloudMap called after closed")
+		cartoSvc.logger.Warn("PointCloudMap called after shutting down of cartographer has been initiated")
 		return nil, ErrClosed
 	}
 
@@ -568,7 +568,7 @@ func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() 
 	cartoSvcClosed := cartoSvc.closed
 	cartoSvc.muClose.Unlock()
 	if cartoSvcClosed {
-		cartoSvc.logger.Warn("InternalState called after closed")
+		cartoSvc.logger.Warn("InternalState called after shutting down of cartographer has been initiated")
 		return nil, ErrClosed
 	}
 
@@ -609,7 +609,7 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 	cartoSvcClosed := cartoSvc.closed
 	cartoSvc.muClose.Unlock()
 	if cartoSvcClosed {
-		cartoSvc.logger.Warn("LatestMapInfo called after closed")
+		cartoSvc.logger.Warn("LatestMapInfo called after shutting down of cartographer has been initiated")
 		return time.Time{}, ErrClosed
 	}
 
@@ -631,7 +631,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 	cartoSvcClosed := cartoSvc.closed
 	cartoSvc.muClose.Unlock()
 	if cartoSvcClosed {
-		cartoSvc.logger.Warn("DoCommand called after closed")
+		cartoSvc.logger.Warn("DoCommand called after shutting down of cartographer has been initiated")
 		return nil, ErrClosed
 	}
 
