@@ -22,6 +22,7 @@ import (
 
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
 	vcConfig "github.com/viamrobotics/viam-cartographer/config"
+	"github.com/viamrobotics/viam-cartographer/postprocess"
 	"github.com/viamrobotics/viam-cartographer/sensorprocess"
 	s "github.com/viamrobotics/viam-cartographer/sensors"
 )
@@ -34,6 +35,10 @@ var (
 	ErrClosed = errors.Errorf("resource (%s) is closed", Model.String())
 	// ErrUseCloudSlamEnabled denotes that the slam service method was called while use_cloud_slam was set to true.
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
+	// ErrNoPostprocessingToUndo denotes that the points have not been properly formatted.
+	ErrNoPostprocessingToUndo = errors.New("there are no postprocessing tasks to undo")
+	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
+	ErrBadPostprocessingPointsFormat = errors.New("invalid postprocessing points format")
 )
 
 const (
@@ -43,6 +48,13 @@ const (
 	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
+
+	// JobDoneCommand is the string that needs to be sent to DoCommand to find out if the job has finished.
+	JobDoneCommand = "job_done"
+	// SuccessMessage is sent back after a successful DoCommand request.
+	SuccessMessage = "success"
+	// PostprocessToggleResponseKey is the key sent back for the toggle postprocess command.
+	PostprocessToggleResponseKey = "postprocessed"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -483,8 +495,10 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp time.Time
-	jobDone      atomic.Bool
+	mapTimestamp        time.Time
+	jobDone             atomic.Bool
+	postprocessed       atomic.Bool
+	postprocessingTasks []postprocess.Task
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -541,6 +555,17 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	if err != nil {
 		return nil, err
 	}
+
+	if cartoSvc.postprocessed.Load() {
+		var updatedPc []byte
+		err = postprocess.UpdatePointCloud(pc, &updatedPc, cartoSvc.postprocessingTasks)
+		if err != nil {
+			return nil, err
+		}
+
+		return toChunkedFunc(updatedPc), nil
+	}
+
 	return toChunkedFunc(pc), nil
 }
 
@@ -615,8 +640,44 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		return nil, ErrClosed
 	}
 
-	if _, ok := req["job_done"]; ok {
-		return map[string]interface{}{"job_done": cartoSvc.jobDone.Load()}, nil
+	if _, ok := req[JobDoneCommand]; ok {
+		return map[string]interface{}{JobDoneCommand: cartoSvc.jobDone.Load()}, nil
+	}
+
+	if _, ok := req[postprocess.ToggleCommand]; ok {
+		cartoSvc.postprocessed.Store(!cartoSvc.postprocessed.Load())
+		return map[string]interface{}{PostprocessToggleResponseKey: cartoSvc.postprocessed.Load()}, nil
+	}
+
+	if points, ok := req[postprocess.AddCommand]; ok {
+		task, err := postprocess.ParseDoCommand(points, postprocess.Add)
+		if err != nil {
+			return nil, errors.Wrap(ErrBadPostprocessingPointsFormat, err.Error())
+		}
+
+		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
+		cartoSvc.postprocessed.Store(true)
+		return map[string]interface{}{postprocess.AddCommand: SuccessMessage}, nil
+	}
+
+	if points, ok := req[postprocess.RemoveCommand]; ok {
+		task, err := postprocess.ParseDoCommand(points, postprocess.Remove)
+		if err != nil {
+			return nil, errors.Wrap(ErrBadPostprocessingPointsFormat, err.Error())
+		}
+
+		cartoSvc.postprocessingTasks = append(cartoSvc.postprocessingTasks, task)
+		cartoSvc.postprocessed.Store(true)
+		return map[string]interface{}{postprocess.RemoveCommand: SuccessMessage}, nil
+	}
+
+	if _, ok := req[postprocess.UndoCommand]; ok {
+		if len(cartoSvc.postprocessingTasks) == 0 {
+			return nil, ErrNoPostprocessingToUndo
+		}
+
+		cartoSvc.postprocessingTasks = cartoSvc.postprocessingTasks[:len(cartoSvc.postprocessingTasks)-1]
+		return map[string]interface{}{postprocess.UndoCommand: SuccessMessage}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError
