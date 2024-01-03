@@ -44,6 +44,7 @@ var (
 	errYNotProvided    = errors.New("could X not provided")
 	errYNotFloat64     = errors.New("could not parse provided X as a float64")
 	errRemovingPoints  = errors.New("unexpected number of points after removal")
+	errNilUpdatedData  = errors.New("cannot provide nil updated data")
 )
 
 // Task can be used to construct a postprocessing step.
@@ -104,7 +105,7 @@ func UpdatePointCloud(
 	tasks []Task,
 ) error {
 	if updatedData == nil {
-		return errors.New("cannot provide nil udpated data")
+		return errNilUpdatedData
 	}
 
 	*updatedData = append(*updatedData, data...)
@@ -129,7 +130,7 @@ func UpdatePointCloud(
 
 func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) error {
 	if updatedData == nil {
-		return errors.New("cannot provide nil udpated data")
+		return errNilUpdatedData
 	}
 
 	reader := bytes.NewReader(*updatedData)
@@ -172,7 +173,7 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 
 func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) error {
 	if updatedData == nil {
-		return errors.New("cannot provide nil udpated data")
+		return errNilUpdatedData
 	}
 
 	reader := bytes.NewReader(*updatedData)
