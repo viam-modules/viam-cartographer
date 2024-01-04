@@ -236,7 +236,7 @@ void CartoFacade::IOInit() {
     if (slam_mode == viam::carto_facade::SlamMode::UPDATING ||
         slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
         // Check if apriori map file exists
-        boost_swap_impl::ifstream f(config.existing_map.c_str());
+        std::ifstream f(config.existing_map.c_str());
         if (!f.good()) {
             throw VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR;
         }
