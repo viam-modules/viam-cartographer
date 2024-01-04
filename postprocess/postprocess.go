@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"math"
 
+	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"go.viam.com/rdk/pointcloud"
 )
@@ -20,6 +21,8 @@ const (
 	// Remove is the instruction for removing points.
 	Remove = iota
 )
+
+var logger = golog.NewDebugLogger("postprocess")
 
 const (
 	fullConfidence = 100
@@ -59,6 +62,7 @@ func ParseDoCommand(
 	unstructuredPoints interface{},
 	instruction Instruction,
 ) (Task, error) {
+	logger.Info("DEBUGLOGS: parsingDoCommand")
 	pointSlice, ok := unstructuredPoints.([]interface{})
 	if !ok {
 		return Task{}, errPointsNotASlice
@@ -105,6 +109,7 @@ func UpdatePointCloud(
 	updatedData *[]byte,
 	tasks []Task,
 ) error {
+	logger.Info("DEBUGLOGS: UpdatePointCloud")
 	if updatedData == nil {
 		return errNilUpdatedData
 	}
@@ -115,11 +120,13 @@ func UpdatePointCloud(
 	for _, task := range tasks {
 		switch task.Instruction {
 		case Add:
+			logger.Info("DEBUGLOGS: got an add task")
 			err := updatePointCloudWithAddedPoints(updatedData, task.Points)
 			if err != nil {
 				return err
 			}
 		case Remove:
+			logger.Info("DEBUGLOGS: got an remove task")
 			err := updatePointCloudWithRemovedPoints(updatedData, task.Points)
 			if err != nil {
 				return err
@@ -130,17 +137,21 @@ func UpdatePointCloud(
 }
 
 func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) error {
+	logger.Info("DEBUGLOGS: updatePointCloudWithAddedPoints")
 	if updatedData == nil {
 		return errNilUpdatedData
 	}
 
 	reader := bytes.NewReader(*updatedData)
+	logger.Info("DEBUGLOGS: bytes.NewReader(*updatedData)")
 	pc, err := pointcloud.ReadPCD(reader)
+	logger.Info("DEBUGLOGS: read pcd")
 	if err != nil {
 		return err
 	}
 
 	for _, point := range points {
+		logger.Infof("DEBUGLOGS: on point %v", point)
 		/*
 			Viam expects pointcloud data with fields "x y z" or "x y z rgb", and for
 			this to be specified in the pointcloud header in the FIELDS entry. If color
@@ -154,17 +165,22 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 			return err
 		}
 	}
+	logger.Info("DEBUGLOGS: finished iterating through points")
 
 	var buf bytes.Buffer
 	err = pointcloud.ToPCD(pc, &buf, pointcloud.PCDBinary)
 	if err != nil {
 		return err
 	}
+	logger.Info("DEBUGLOGS: toPCD")
 
 	// Initialize updatedData with new points
 	*updatedData = make([]byte, buf.Len())
+	logger.Info("DEBUGLOGS: new byte slice")
 	updatedReader := bytes.NewReader(buf.Bytes())
+	logger.Info("DEBUGLOGS: read byte buffer")
 	_, err = updatedReader.Read(*updatedData)
+	logger.Info("DEBUGLOGS: read from reader")
 	if err != nil {
 		return err
 	}
@@ -173,20 +189,25 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 }
 
 func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) error {
+	logger.Info("DEBUGLOGS: updatePointCloudWithRemovedPoints")
 	if updatedData == nil {
 		return errNilUpdatedData
 	}
 
 	reader := bytes.NewReader(*updatedData)
+	logger.Info("DEBUGLOGS: NewReader")
 	pc, err := pointcloud.ReadPCD(reader)
+	logger.Info("DEBUGLOGS: ReadPCD")
 	if err != nil {
 		return err
 	}
 
+	logger.Info("DEBUGLOGS: NewWithPrealloc")
 	updatedPC := pointcloud.NewWithPrealloc(pc.Size() - len(points))
 	pointsVisited := 0
 
 	filterRemovedPoints := func(p r3.Vector, d pointcloud.Data) bool {
+		logger.Info("DEBUGLOGS: filterRemovedPoints")
 		pointsVisited++
 		// Always return true so iteration continues
 
@@ -203,6 +224,7 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 	}
 
 	pc.Iterate(0, 0, filterRemovedPoints)
+	logger.Info("DEBUGLOGS: pc.Iterate")
 
 	// confirm iterate did not have to end early
 	if pc.Size() != pointsVisited {
@@ -212,17 +234,22 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 		*/
 		return errRemovingPoints
 	}
+	logger.Info("DEBUGLOGS: pc.Iterate")
 
 	buf := bytes.Buffer{}
 	err = pointcloud.ToPCD(updatedPC, &buf, pointcloud.PCDBinary)
+	logger.Info("DEBUGLOGS: ToPCD")
 	if err != nil {
 		return err
 	}
 
 	// Overwrite updatedData with new points
 	*updatedData = make([]byte, buf.Len())
+	logger.Info("DEBUGLOGS: new byte slice")
 	updatedReader := bytes.NewReader(buf.Bytes())
+	logger.Info("DEBUGLOGS: read byte buffer")
 	_, err = updatedReader.Read(*updatedData)
+	logger.Info("DEBUGLOGS: read from reader")
 	if err != nil {
 		return err
 	}

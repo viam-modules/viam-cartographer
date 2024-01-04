@@ -556,14 +556,19 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, err
 	}
 
+	cartoSvc.logger.Info("DEBUGLOGS: got pointcloud map from C++")
 	if cartoSvc.postprocessed.Load() {
+		cartoSvc.logger.Info("DEBUGLOGS: postprocessed = true")
 		var updatedPc []byte
+		cartoSvc.logger.Info("DEBUGLOGS: calling UpdatePointCloud")
 		err = postprocess.UpdatePointCloud(pc, &updatedPc, cartoSvc.postprocessingTasks)
 		if err != nil {
 			return nil, err
 		}
 
 		return toChunkedFunc(updatedPc), nil
+	} else {
+		cartoSvc.logger.Info("DEBUGLOGS: postprocessed = false")
 	}
 
 	return toChunkedFunc(pc), nil
