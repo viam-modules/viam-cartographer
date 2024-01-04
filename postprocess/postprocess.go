@@ -22,8 +22,6 @@ const (
 	Remove = iota
 )
 
-var logger = golog.NewDebugLogger("postprocess")
-
 const (
 	fullConfidence = 100
 	removalRadius  = 100 // mm
@@ -62,6 +60,7 @@ func ParseDoCommand(
 	unstructuredPoints interface{},
 	instruction Instruction,
 ) (Task, error) {
+	logger := golog.NewDebugLogger("postprocess")
 	logger.Info("DEBUGLOGS: parsingDoCommand")
 	pointSlice, ok := unstructuredPoints.([]interface{})
 	if !ok {
@@ -109,6 +108,7 @@ func UpdatePointCloud(
 	updatedData *[]byte,
 	tasks []Task,
 ) error {
+	logger := golog.NewDebugLogger("postprocess")
 	logger.Info("DEBUGLOGS: UpdatePointCloud")
 	if updatedData == nil {
 		return errNilUpdatedData
@@ -137,6 +137,7 @@ func UpdatePointCloud(
 }
 
 func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) error {
+	logger := golog.NewDebugLogger("postprocess")
 	logger.Info("DEBUGLOGS: updatePointCloudWithAddedPoints")
 	if updatedData == nil {
 		return errNilUpdatedData
@@ -150,8 +151,8 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 		return err
 	}
 
-	for _, point := range points {
-		logger.Infof("DEBUGLOGS: on point %v", point)
+	for i, point := range points {
+		logger.Infof("DEBUGLOGS: on point %d", i)
 		/*
 			Viam expects pointcloud data with fields "x y z" or "x y z rgb", and for
 			this to be specified in the pointcloud header in the FIELDS entry. If color
@@ -189,6 +190,7 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 }
 
 func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) error {
+	logger := golog.NewDebugLogger("postprocess")
 	logger.Info("DEBUGLOGS: updatePointCloudWithRemovedPoints")
 	if updatedData == nil {
 		return errNilUpdatedData

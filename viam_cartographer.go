@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/edaniels/golog"
 	"github.com/golang/geo/r3"
 	"github.com/pkg/errors"
 	"go.opencensus.io/trace"
@@ -556,8 +557,9 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, err
 	}
 
-	cartoSvc.logger.Info("DEBUGLOGS: got pointcloud map from C++")
-	cartoSvc.logger.Infof("DEBUGLOGS: postprocessed = %s", cartoSvc.postprocessed.Load())
+	logger := golog.NewDebugLogger("kimlog")
+	logger.Info("DEBUGLOGS: got pointcloud map from C++")
+	logger.Infof("DEBUGLOGS: postprocessed = true", cartoSvc.postprocessed.Load())
 	if cartoSvc.postprocessed.Load() {
 		var updatedPc []byte
 		cartoSvc.logger.Info("DEBUGLOGS: calling UpdatePointCloud")
