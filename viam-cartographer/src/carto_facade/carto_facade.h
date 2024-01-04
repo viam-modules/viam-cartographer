@@ -110,35 +110,32 @@ typedef struct viam_carto_odometer_reading {
 #define VIAM_CARTO_LIB_PLATFORM_INVALID 5
 #define VIAM_CARTO_LIB_INVALID 6
 #define VIAM_CARTO_LIB_NOT_INITIALIZED 7
-#define VIAM_CARTO_UNKNOWN_ERROR 9
-#define VIAM_CARTO_DATA_DIR_NOT_PROVIDED 10
-#define VIAM_CARTO_SLAM_MODE_INVALID 11
-#define VIAM_CARTO_LIDAR_CONFIG_INVALID 12
-#define VIAM_CARTO_MAP_RATE_SEC_INVALID 13
-#define VIAM_CARTO_COMPONENT_REFERENCE_INVALID 14
-#define VIAM_CARTO_LUA_CONFIG_NOT_FOUND 15
-#define VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE 16
-#define VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR 17
-#define VIAM_CARTO_MAP_CREATION_ERROR 18
-#define VIAM_CARTO_UNKNOWN_SENSOR_NAME 19
-#define VIAM_CARTO_LIDAR_READING_EMPTY 20
-#define VIAM_CARTO_LIDAR_READING_INVALID 21
-#define VIAM_CARTO_GET_POSITION_RESPONSE_INVALID 22
-#define VIAM_CARTO_GET_POSITION_NOT_INITIALIZED 23
-#define VIAM_CARTO_POINTCLOUD_MAP_EMPTY 24
-#define VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID 25
-#define VIAM_CARTO_LIB_ALREADY_INITIALIZED 26
-#define VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID 27
-#define VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR 28
-#define VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR 29
-#define VIAM_CARTO_NOT_IN_INITIALIZED_STATE 30
-#define VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE 31
-#define VIAM_CARTO_NOT_IN_STARTED_STATE 32
-#define VIAM_CARTO_NOT_IN_TERMINATABLE_STATE 33
-#define VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH 34
-#define VIAM_CARTO_IMU_READING_EMPTY 35
-#define VIAM_CARTO_IMU_READING_INVALID 36
-#define VIAM_CARTO_ODOMETER_READING_INVALID 37
+#define VIAM_CARTO_UNKNOWN_ERROR 8
+#define VIAM_CARTO_SLAM_MODE_INVALID 9
+#define VIAM_CARTO_LIDAR_CONFIG_INVALID 10
+#define VIAM_CARTO_COMPONENT_REFERENCE_INVALID 11
+#define VIAM_CARTO_LUA_CONFIG_NOT_FOUND 12
+#define VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR 13
+#define VIAM_CARTO_MAP_CREATION_ERROR 14
+#define VIAM_CARTO_UNKNOWN_SENSOR_NAME 15
+#define VIAM_CARTO_LIDAR_READING_EMPTY 16
+#define VIAM_CARTO_LIDAR_READING_INVALID 17
+#define VIAM_CARTO_GET_POSITION_RESPONSE_INVALID 18
+#define VIAM_CARTO_GET_POSITION_NOT_INITIALIZED 19
+#define VIAM_CARTO_POINTCLOUD_MAP_EMPTY 20
+#define VIAM_CARTO_GET_POINT_CLOUD_MAP_RESPONSE_INVALID 21
+#define VIAM_CARTO_LIB_ALREADY_INITIALIZED 22
+#define VIAM_CARTO_GET_INTERNAL_STATE_RESPONSE_INVALID 23
+#define VIAM_CARTO_GET_INTERNAL_STATE_FILE_WRITE_IO_ERROR 24
+#define VIAM_CARTO_GET_INTERNAL_STATE_FILE_READ_IO_ERROR 25
+#define VIAM_CARTO_NOT_IN_INITIALIZED_STATE 26
+#define VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE 27
+#define VIAM_CARTO_NOT_IN_STARTED_STATE 28
+#define VIAM_CARTO_NOT_IN_TERMINATABLE_STATE 29
+#define VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH 30
+#define VIAM_CARTO_IMU_READING_EMPTY 31
+#define VIAM_CARTO_IMU_READING_INVALID 32
+#define VIAM_CARTO_ODOMETER_READING_INVALID 33
 
 typedef struct viam_carto_algo_config {
     bool optimize_on_start;
@@ -160,10 +157,7 @@ typedef struct viam_carto_algo_config {
 typedef struct viam_carto_config {
     bstring camera;
     bstring movement_sensor;
-    int map_rate_sec;
-    bstring data_dir;
     viam_carto_LIDAR_CONFIG lidar_config;
-    bool cloud_story_enabled;
     bool enable_mapping;
     bstring existing_map;
 } viam_carto_config;
@@ -373,11 +367,8 @@ static const double resolutionMeters = 0.05;
 typedef struct config {
     std::string camera;
     std::string movement_sensor;
-    std::chrono::seconds map_rate_sec;
-    std::string data_dir;
     bstring component_reference;
     viam_carto_LIDAR_CONFIG lidar_config;
-    bool cloud_story_enabled;
     bool enable_mapping;
     std::string existing_map;
 } config;
@@ -393,10 +384,7 @@ const std::string configuration_localization_basename = "locating_in_map.lua";
 const std::string configuration_update_basename = "updating_a_map.lua";
 
 carto_facade::SlamMode determine_slam_mode(std::string path_to_map,
-                                           std::chrono::seconds map_rate_sec);
-
-carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(
-    std::string path_to_map, bool enable_mapping);
+                                           bool enable_mapping);
 
 int slam_mode_to_vc_slam_mode(viam::carto_facade::SlamMode sm);
 
@@ -408,12 +396,10 @@ class CartoFacade {
     ~CartoFacade();
 
     // IOInit:
-    // 1. detects if the data_dir has a deprecated format & throws if it does
-    // 2. creates the data_dir with the correct format if it doesn't exist
-    // 3. sets the correct slam mode
-    // 4. creates & configures the map builder with the right hyperparameters
+    // 1. sets the correct slam mode
+    // 2. creates & configures the map builder with the right hyperparameters
     // based on the slam mode
-    // 5. starts the trajectory builder
+    // 3. starts the trajectory builder
     //
     // Needs to be first method called on newly instantiated CartoFacade object.
     void IOInit();
@@ -452,7 +438,6 @@ class CartoFacade {
     viam_carto_lib *lib;
     viam::carto_facade::config config;
     viam_carto_algo_config algo_config;
-    std::string path_to_internal_state;
     std::string path_to_internal_state_file;
     std::atomic<CartoFacadeState> state{CartoFacadeState::INITIALIZED};
     std::string configuration_directory;
@@ -467,18 +452,6 @@ class CartoFacade {
 
    private:
     // moved from namespace
-    // StartSaveInternalState starts the map saving process in a separate
-    // thread.
-    void StartSaveInternalState();
-
-    // StopSaveInternalState stops the map saving process that is running in a
-    // separate thread.
-    void StopSaveInternalState();
-
-    // SaveInternalStateOnInterval saves internal state with a filename that
-    // includes the timestamp of the time when the map is saved.
-    void SaveInternalStateOnInterval();
-
     std::shared_mutex optimization_shared_mutex;
 
     std::unique_ptr<std::thread> thread_save_internal_state;

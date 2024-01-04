@@ -95,14 +95,11 @@ const (
 type CartoConfig struct {
 	Camera             string
 	MovementSensor     string
-	MapRateSecond      int
-	DataDir            string
 	ComponentReference string
 	LidarConfig        LidarConfig
 
-	CloudStoryEnabled bool
-	EnableMapping     bool
-	ExistingMap       string
+	EnableMapping bool
+	ExistingMap   string
 }
 
 // CartoAlgoConfig contains config values from app
@@ -392,17 +389,6 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 		return C.viam_carto_config{}, err
 	}
 
-	// Remove cloud_story_enabled, map_rate_sec, and data_dir from C++ code
-	// JIRA Ticket: RSDK-52334 https://viam.atlassian.net/browse/RSDK-5334
-	vcc.cloud_story_enabled = C.bool(true)
-	vcc.data_dir = goStringToBstring("/tmp/")
-	if cfg.EnableMapping {
-		// Set to arbitrarily high value to ensure no maps get saved during operation
-		vcc.map_rate_sec = C.int(9000)
-	} else {
-		vcc.map_rate_sec = C.int(0)
-	}
-
 	vcc.lidar_config = lidarCfg
 
 	vcc.enable_mapping = C.bool(cfg.EnableMapping)
@@ -519,20 +505,16 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_LIB_NOT_INITIALIZED")
 	case C.VIAM_CARTO_UNKNOWN_ERROR:
 		return errors.New("VIAM_CARTO_UNKNOWN_ERROR")
-	case C.VIAM_CARTO_DATA_DIR_NOT_PROVIDED:
-		return errors.New("VIAM_CARTO_DATA_DIR_NOT_PROVIDED")
 	case C.VIAM_CARTO_SLAM_MODE_INVALID:
 		return errors.New("VIAM_CARTO_SLAM_MODE_INVALID")
 	case C.VIAM_CARTO_LIDAR_CONFIG_INVALID:
 		return errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID")
-	case C.VIAM_CARTO_MAP_RATE_SEC_INVALID:
-		return errors.New("VIAM_CARTO_MAP_RATE_SEC_INVALID")
 	case C.VIAM_CARTO_COMPONENT_REFERENCE_INVALID:
 		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID")
 	case C.VIAM_CARTO_LUA_CONFIG_NOT_FOUND:
 		return errors.New("VIAM_CARTO_LUA_CONFIG_NOT_FOUND")
-	case C.VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE:
-		return errors.New("VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE")
+	case C.VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR:
+		return errors.New("VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR")
 	case C.VIAM_CARTO_MAP_CREATION_ERROR:
 		return errors.New("VIAM_CARTO_MAP_CREATION_ERROR")
 	case C.VIAM_CARTO_UNKNOWN_SENSOR_NAME:
@@ -567,6 +549,8 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_NOT_IN_TERMINATABLE_STATE")
 	case C.VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH:
 		return errors.New("VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH")
+	case C.VIAM_CARTO_IMU_READING_EMPTY:
+		return errors.New("VIAM_CARTO_IMU_READING_EMPTY")
 	case C.VIAM_CARTO_IMU_READING_INVALID:
 		return errors.New("VIAM_CARTO_IMU_READING_INVALID")
 	case C.VIAM_CARTO_ODOMETER_READING_INVALID:

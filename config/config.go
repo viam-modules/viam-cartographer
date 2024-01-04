@@ -31,7 +31,6 @@ type OptionalConfigParams struct {
 	LidarDataFrequencyHz          int
 	MovementSensorName            string
 	MovementSensorDataFrequencyHz int
-	MapRateSec                    int
 	EnableMapping                 bool
 	ExistingMap                   string
 }
