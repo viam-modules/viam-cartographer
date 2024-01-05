@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -695,6 +696,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 			return nil, ErrBadPostprocessingPath
 		}
 
+		path = filepath.Clean(path)
 		bytes, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
