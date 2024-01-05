@@ -556,7 +556,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, ErrClosed
 	}
 
-	if cartoSvc.existingMap != "" && !cartoSvc.enableMapping && cartoSvc.postprocessedPointCloud != nil {
+	if cartoSvc.existingMap != "" && !cartoSvc.enableMapping && cartoSvc.postprocessedPointCloud != nil && cartoSvc.postprocessed.Load() {
 		return toChunkedFunc(*cartoSvc.postprocessedPointCloud), nil
 	}
 
@@ -700,6 +700,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 			return nil, err
 		}
 		cartoSvc.postprocessedPointCloud = &bytes
+		cartoSvc.postprocessed.Store(true)
 		return map[string]interface{}{postprocess.PathCommand: SuccessMessage}, nil
 	}
 
