@@ -557,6 +557,11 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, ErrClosed
 	}
 
+	/*
+		cartoSvc.existingMap != "" && !cartoSvc.enableMapping to check if we are in localization mode.
+		cartoSvc.postprocessedPointCloud != nil to check that the pointcloud has been set.
+		cartoSvc.postprocessed.Load() to check if postprocessed has not been toggled off.
+	*/
 	if cartoSvc.existingMap != "" && !cartoSvc.enableMapping && cartoSvc.postprocessedPointCloud != nil && cartoSvc.postprocessed.Load() {
 		return toChunkedFunc(*cartoSvc.postprocessedPointCloud), nil
 	}
