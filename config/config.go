@@ -38,7 +38,7 @@ type OptionalConfigParams struct {
 
 var (
 	errCameraMustHaveName        = errors.New("\"camera[name]\" is required")
-	errLocalizationInOfflineMode = newError("\"camera[data_freq_hz]\" and enable_mapping = false. localization in offline mode not supported.")
+	errLocalizationInOfflineMode = newError("\"camera[data_freq_hz]\" and enable_mapping = false. Localization in offline mode is not supported.")
 )
 
 // Validate creates the list of implicit dependencies.
