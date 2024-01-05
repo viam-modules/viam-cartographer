@@ -28,6 +28,7 @@ const SensorId kOdometerSensorId{SensorId::SensorType::ODOMETRY, "odometry"};
 
 class MapBuilder {
    public:
+    MapBuilder() : trajectory_builder(){};
     ~MapBuilder();
     // SetUp reads in the cartographer parameters via reading in the lua files.
     void SetUp(std::string configuration_directory,

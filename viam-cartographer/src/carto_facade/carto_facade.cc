@@ -230,13 +230,10 @@ void CartoFacade::IOInit() {
         map_builder.BuildMapBuilder();
     }
 
-    // TODO: google cartographer will terminate the program if
-    // the internal state is invalid
-    // see https://viam.atlassian.net/browse/RSDK-3553
     if (slam_mode == viam::carto_facade::SlamMode::UPDATING ||
         slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
         // Check if apriori map file exists
-        std::ifstream f(config.existing_map.c_str());
+        std::ifstream f(path_to_internal_state_file);
         if (!f.good()) {
             throw VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR;
         }
