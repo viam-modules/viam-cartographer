@@ -35,6 +35,8 @@ const (
 	RemoveCommand = "postprocess_remove"
 	// UndoCommand can be used to undo last postprocessing step.
 	UndoCommand = "postprocess_undo"
+	// PathCommand can be used to specify a pcd that has already been postprocessed.
+	PathCommand = "postprocess_path"
 )
 
 var (

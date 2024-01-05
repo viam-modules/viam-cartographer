@@ -5,6 +5,7 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"os"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -39,6 +40,8 @@ var (
 	ErrNoPostprocessingToUndo = errors.New("there are no postprocessing tasks to undo")
 	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
 	ErrBadPostprocessingPointsFormat = errors.New("invalid postprocessing points format")
+	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
+	ErrBadPostprocessingPath = errors.New("could not parse path to pcd")
 )
 
 const (
@@ -495,10 +498,12 @@ type CartographerService struct {
 	sensorProcessWorkers    sync.WaitGroup
 	cartoFacadeWorkers      sync.WaitGroup
 
-	mapTimestamp        time.Time
-	jobDone             atomic.Bool
-	postprocessed       atomic.Bool
-	postprocessingTasks []postprocess.Task
+	mapTimestamp time.Time
+	jobDone      atomic.Bool
+
+	postprocessed           atomic.Bool
+	postprocessingTasks     []postprocess.Task
+	postprocessedPointCloud *[]byte
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -549,6 +554,10 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	if cartoSvc.closed {
 		cartoSvc.logger.Warn("PointCloudMap called after closed")
 		return nil, ErrClosed
+	}
+
+	if cartoSvc.existingMap != "" && !cartoSvc.enableMapping && cartoSvc.postprocessedPointCloud != nil {
+		return toChunkedFunc(*cartoSvc.postprocessedPointCloud), nil
 	}
 
 	pc, err := cartoSvc.cartofacade.PointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
@@ -678,6 +687,20 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 		cartoSvc.postprocessingTasks = cartoSvc.postprocessingTasks[:len(cartoSvc.postprocessingTasks)-1]
 		return map[string]interface{}{postprocess.UndoCommand: SuccessMessage}, nil
+	}
+
+	if val, ok := req[postprocess.PathCommand]; ok {
+		path, ok := val.(string)
+		if !ok {
+			return nil, ErrBadPostprocessingPath
+		}
+
+		bytes, err := os.ReadFile(path)
+		if err != nil {
+			return nil, err
+		}
+		cartoSvc.postprocessedPointCloud = &bytes
+		return map[string]interface{}{postprocess.PathCommand: SuccessMessage}, nil
 	}
 
 	return nil, viamgrpc.UnimplementedError
