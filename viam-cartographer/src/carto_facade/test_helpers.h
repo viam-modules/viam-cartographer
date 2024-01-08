@@ -18,7 +18,6 @@ std::string binary_pcd(std::vector<std::vector<double>> points);
 
 std::string ascii_pcd(std::vector<std::vector<double>> points);
 
-boost::filesystem::path make_tmp_dir();
 }  // namespace test_helpers
 }  // namespace carto_facade
 }  // namespace viam
