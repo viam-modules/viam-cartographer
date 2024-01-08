@@ -466,13 +466,12 @@ func terminateCartoFacade(ctx context.Context, cartoSvc *CartographerService) er
 type CartographerService struct {
 	resource.Named
 	resource.AlwaysRebuild
+	mu             sync.Mutex
 	SlamMode       cartofacade.SlamMode
+	closed         bool
 	lidar          s.TimedLidar
 	movementSensor s.TimedMovementSensor
 	subAlgo        SubAlgo
-
-	mu     sync.Mutex
-	closed bool
 
 	configParams map[string]string
 
