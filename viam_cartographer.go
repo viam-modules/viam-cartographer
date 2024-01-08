@@ -471,8 +471,8 @@ type CartographerService struct {
 	movementSensor s.TimedMovementSensor
 	subAlgo        SubAlgo
 
-	muClose sync.Mutex
-	closed  bool
+	mu     sync.Mutex
+	closed bool
 
 	configParams map[string]string
 
@@ -504,10 +504,7 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 		return nil, "", ErrUseCloudSlamEnabled
 	}
 
-	cartoSvc.muClose.Lock()
-	cartoSvcClosed := cartoSvc.closed
-	cartoSvc.muClose.Unlock()
-	if cartoSvcClosed {
+	if cartoSvc.closed {
 		cartoSvc.logger.Warn("Position called after shutting down of cartographer has been initiated")
 		return nil, "", ErrClosed
 	}
@@ -539,10 +536,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return nil, ErrUseCloudSlamEnabled
 	}
 
-	cartoSvc.muClose.Lock()
-	cartoSvcClosed := cartoSvc.closed
-	cartoSvc.muClose.Unlock()
-	if cartoSvcClosed {
+	if cartoSvc.closed {
 		cartoSvc.logger.Warn("PointCloudMap called after shutting down of cartographer has been initiated")
 		return nil, ErrClosed
 	}
@@ -564,10 +558,7 @@ func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() 
 		return nil, ErrUseCloudSlamEnabled
 	}
 
-	cartoSvc.muClose.Lock()
-	cartoSvcClosed := cartoSvc.closed
-	cartoSvc.muClose.Unlock()
-	if cartoSvcClosed {
+	if cartoSvc.closed {
 		cartoSvc.logger.Warn("InternalState called after shutting down of cartographer has been initiated")
 		return nil, ErrClosed
 	}
@@ -605,10 +596,7 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 		return time.Time{}, ErrUseCloudSlamEnabled
 	}
 
-	cartoSvc.muClose.Lock()
-	cartoSvcClosed := cartoSvc.closed
-	cartoSvc.muClose.Unlock()
-	if cartoSvcClosed {
+	if cartoSvc.closed {
 		cartoSvc.logger.Warn("LatestMapInfo called after shutting down of cartographer has been initiated")
 		return time.Time{}, ErrClosed
 	}
@@ -627,10 +615,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		return nil, ErrUseCloudSlamEnabled
 	}
 
-	cartoSvc.muClose.Lock()
-	cartoSvcClosed := cartoSvc.closed
-	cartoSvc.muClose.Unlock()
-	if cartoSvcClosed {
+	if cartoSvc.closed {
 		cartoSvc.logger.Warn("DoCommand called after shutting down of cartographer has been initiated")
 		return nil, ErrClosed
 	}
@@ -644,8 +629,8 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 // Close out of all slam related processes.
 func (cartoSvc *CartographerService) Close(ctx context.Context) error {
-	cartoSvc.muClose.Lock()
-	defer cartoSvc.muClose.Unlock()
+	cartoSvc.mu.Lock()
+	defer cartoSvc.mu.Unlock()
 	if cartoSvc.useCloudSlam {
 		return nil
 	}
