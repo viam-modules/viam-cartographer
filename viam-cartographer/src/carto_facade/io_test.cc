@@ -12,25 +12,6 @@ namespace io {
 
 BOOST_AUTO_TEST_SUITE(CartoFacade_io)
 
-BOOST_AUTO_TEST_CASE(MakeFilenameWithTimestamp_success) {
-    std::string path_to_dir = "path_to_dir";
-
-    std::time_t t = std::time(nullptr);
-    std::string filename = MakeFilenameWithTimestamp(path_to_dir, t);
-
-    // Check if the filename beginning is as expected
-    std::string path_prefix = "/map_data_";
-    std::string filename_start =
-        filename.substr(0, path_to_dir.length() + path_prefix.length());
-    BOOST_TEST(filename_start.compare(path_to_dir + path_prefix) == 0);
-    // Extract timestamp
-    double filename_time = ReadTimeFromTimestamp(filename.substr(
-        filename.find(filename_prefix) + filename_prefix.length(),
-        filename.find(".pcd")));
-
-    BOOST_TEST((double)t == filename_time);
-}
-
 BOOST_AUTO_TEST_CASE(TimedPointCloudDataFromPCDBuilder_success) {
     // Create a mini PCD file and save it in a tmp directory
     std::string filename = "rplidar_data_2022-01-01T01:00:00.0001Z.pcd";

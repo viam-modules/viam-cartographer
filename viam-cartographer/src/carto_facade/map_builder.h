@@ -61,14 +61,6 @@ class MapBuilder {
 
     void StartTrajectoryBuilder(bool use_imu_data);
 
-    // SetStartTime sets the start_time to the time stamp from the first sensor
-    // file that is being read in.
-    void SetStartTime(double input_start_time);
-
-    // GetDataFromFile creates a TimedPointCloudData object from reading in
-    // a PCD file.
-    cartographer::sensor::TimedPointCloudData GetDataFromFile(std::string file);
-
     // GetGlobalPose returns the local pose based on the provided a local pose.
     cartographer::transform::Rigid3d GetGlobalPose();
 
@@ -129,7 +121,6 @@ class MapBuilder {
     ::cartographer::transform::Rigid3d local_slam_result_pose =
         cartographer::transform::Rigid3d();
     ;
-    double start_time = -1;
 };
 }  // namespace carto_facade
 }  // namespace viam

@@ -17,14 +17,6 @@ namespace io {
 
 namespace fs = boost::filesystem;
 
-const std::string MakeFilenameWithTimestamp(std::string path_to_dir,
-                                            std::time_t t) {
-    char timestamp[100];
-    std::strftime(timestamp, sizeof(timestamp), time_format.c_str(),
-                  std::gmtime(&t));
-    return path_to_dir + "/" + "map_data_" + timestamp + ".pbstream";
-}
-
 cartographer::sensor::TimedPointCloudData TimedPointCloudDataFromPCDBuilder(
     std::string file_path, double start_time) {
     pcl::console::setVerbosityLevel(pcl::console::L_ALWAYS);
