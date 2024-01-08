@@ -38,7 +38,8 @@ type OptionalConfigParams struct {
 
 var (
 	errCameraMustHaveName        = errors.New("\"camera[name]\" is required")
-	errLocalizationInOfflineMode = newError("camera[data_freq_hz] and enable_mapping = false. localization in offline mode not supported.")
+	errLocalizationInOfflineMode = newError("\"camera[data_freq_hz]\" and enable_mapping = false." +
+		" Localization in offline mode is not supported.")
 )
 
 // Validate creates the list of implicit dependencies.
@@ -65,7 +66,8 @@ func (config *Config) Validate(path string) ([]string, error) {
 		deps = append(deps, movementSensorName)
 	}
 
-	if config.ConfigParams["mode"] == "" {
+	mode, ok := config.ConfigParams["mode"]
+	if !ok || mode == "" {
 		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
 	}
 
