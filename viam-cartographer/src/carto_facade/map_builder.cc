@@ -11,7 +11,6 @@
 #include "cartographer/mapping/map_builder_interface.h"
 #include "cartographer/mapping/trajectory_builder_interface.h"
 #include "glog/logging.h"
-#include "io.h"
 #include "map_builder.h"
 
 namespace viam {

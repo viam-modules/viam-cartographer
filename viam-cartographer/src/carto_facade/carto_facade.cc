@@ -9,7 +9,6 @@
 #include <boost/uuid/uuid_io.hpp>
 
 #include "glog/logging.h"
-#include "io.h"
 #include "map_builder.h"
 #include "util.h"
 
