@@ -459,7 +459,7 @@ class CartoFacade {
     std::mutex viam_response_mutex;
     cartographer::transform::Rigid3d latest_global_pose =
         cartographer::transform::Rigid3d();
-    // The latest_pointcloud_map variable is used enable GetPointCloudMap to
+    // The latest_pointcloud_map variable is used to enable GetPointCloudMap to
     // send the most recent map out while cartographer works on creating an
     // optimized map. It is only updated right before the optimization is
     // started.
