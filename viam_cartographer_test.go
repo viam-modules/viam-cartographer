@@ -16,6 +16,7 @@ import (
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/test"
+	"go.viam.com/utils/artifact"
 
 	viamcartographer "github.com/viamrobotics/viam-cartographer"
 	"github.com/viamrobotics/viam-cartographer/cartofacade"
@@ -460,6 +461,29 @@ func TestDoCommand(t *testing.T) {
 			cmd := map[string]interface{}{postprocess.RemoveCommand: "hello"}
 			resp, err := svc.DoCommand(context.Background(), cmd)
 			test.That(t, err.Error(), test.ShouldContainSubstring, viamcartographer.ErrBadPostprocessingPointsFormat.Error())
+			test.That(t, resp, test.ShouldBeNil)
+		})
+	t.Run(
+		"success if 'postprocess_path' is called correctly",
+		func(t *testing.T) {
+			path := artifact.MustPath("viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_1.pcd")
+			cmd := map[string]interface{}{postprocess.PathCommand: path}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err, test.ShouldBeNil)
+			test.That(
+				t,
+				resp,
+				test.ShouldResemble,
+				map[string]interface{}{postprocess.PathCommand: viamcartographer.SuccessMessage},
+			)
+		})
+	t.Run(
+		"errors if 'postprocess_path' is called with incorrect format",
+		func(t *testing.T) {
+			point := map[string]interface{}{"X": float64(1), "Y": float64(1)}
+			cmd := map[string]interface{}{postprocess.PathCommand: point}
+			resp, err := svc.DoCommand(context.Background(), cmd)
+			test.That(t, err.Error(), test.ShouldContainSubstring, viamcartographer.ErrBadPostprocessingPath.Error())
 			test.That(t, resp, test.ShouldBeNil)
 		})
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
