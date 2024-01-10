@@ -581,7 +581,7 @@ void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
 
     std::string filename =
-        "temp_internal_state_" + boost::uuids::to_string(uuid) + ".pbstream";
+        "/tmp/temp_internal_state_" + boost::uuids::to_string(uuid) + ".pbstream";
 
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
