@@ -28,6 +28,7 @@ const SensorId kOdometerSensorId{SensorId::SensorType::ODOMETRY, "odometry"};
 
 class MapBuilder {
    public:
+    MapBuilder() : trajectory_builder(){};
     ~MapBuilder();
     // SetUp reads in the cartographer parameters via reading in the lua files.
     void SetUp(std::string configuration_directory,
@@ -49,24 +50,7 @@ class MapBuilder {
     bool SaveMapToFile(bool include_unfinished_submaps,
                        const std::string filename_with_timestamp);
 
-    // SaveMapToStream converted the saved pbstream to a stream and deletes the
-    // file.
-    std::string ConvertSavedMapToStream(
-        const std::string filename_with_timestamp, std::string *buffer);
-
-    // TryFileClose attempts to close an opened ifstream, returning an error
-    // string if it fails.
-    std::string TryFileClose(std::ifstream &file, std::string filename);
-
     void StartTrajectoryBuilder(bool use_imu_data);
-
-    // SetStartTime sets the start_time to the time stamp from the first sensor
-    // file that is being read in.
-    void SetStartTime(double input_start_time);
-
-    // GetDataFromFile creates a TimedPointCloudData object from reading in
-    // a PCD file.
-    cartographer::sensor::TimedPointCloudData GetDataFromFile(std::string file);
 
     // GetGlobalPose returns the local pose based on the provided a local pose.
     cartographer::transform::Rigid3d GetGlobalPose();
@@ -128,7 +112,6 @@ class MapBuilder {
     ::cartographer::transform::Rigid3d local_slam_result_pose =
         cartographer::transform::Rigid3d();
     ;
-    double start_time = -1;
 };
 }  // namespace carto_facade
 }  // namespace viam

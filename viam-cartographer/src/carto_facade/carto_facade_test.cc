@@ -28,24 +28,21 @@ const auto tol = tt::tolerance(0.001);
 
 namespace viam {
 namespace carto_facade {
-viam_carto_config viam_carto_config_setup(
-    int map_rate_sec, viam_carto_LIDAR_CONFIG lidar_config,
-    std::string data_dir, std::string camera, std::string movement_sensor,
-    bool cloud_story_enabled, bool enable_mapping, std::string existing_map) {
+viam_carto_config viam_carto_config_setup(viam_carto_LIDAR_CONFIG lidar_config,
+                                          std::string camera,
+                                          std::string movement_sensor,
+                                          bool enable_mapping,
+                                          std::string existing_map) {
     struct viam_carto_config vcc;
-    vcc.map_rate_sec = map_rate_sec;
     vcc.lidar_config = lidar_config;
-    vcc.data_dir = bfromcstr(data_dir.c_str());
     vcc.camera = bfromcstr(camera.c_str());
     vcc.movement_sensor = bfromcstr(movement_sensor.c_str());
-    vcc.cloud_story_enabled = cloud_story_enabled;
     vcc.enable_mapping = enable_mapping;
     vcc.existing_map = bfromcstr(existing_map.c_str());
     return vcc;
 }
 
 void viam_carto_config_teardown(viam_carto_config vcc) {
-    BOOST_TEST(bdestroy(vcc.data_dir) == BSTR_OK);
     BOOST_TEST(bdestroy(vcc.camera) == BSTR_OK);
     BOOST_TEST(bdestroy(vcc.movement_sensor) == BSTR_OK);
     BOOST_TEST(bdestroy(vcc.existing_map) == BSTR_OK);
@@ -172,44 +169,25 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
     viam_carto *vc;
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
 
     std::string camera = "lidar";
     std::string movement_sensor = "movement_sensor";
     std::string no_camera = "";
     std::string no_movement_sensor = "";
 
-    // Test config validation with empty data_dir
-    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
-    struct viam_carto_config vcc_empty_data_dir = viam_carto_config_setup(
-        1, VIAM_CARTO_THREE_D, "", camera, movement_sensor, false, false, "");
-
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_empty_data_dir, ac) ==
-               VIAM_CARTO_DATA_DIR_NOT_PROVIDED);
-
     // Test config validation with no camera
-    ac = viam_carto_algo_config_setup(false);
+    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(false);
     struct viam_carto_config vcc_empty_component_ref = viam_carto_config_setup(
-        1, VIAM_CARTO_THREE_D, tmp_dir.string(), no_camera, no_movement_sensor,
-        false, false, "");
+        VIAM_CARTO_THREE_D, no_camera, no_movement_sensor, true, "");
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_empty_component_ref, ac) ==
                VIAM_CARTO_COMPONENT_REFERENCE_INVALID);
 
-    // Test config validation with invalid map rate sec
     ac = viam_carto_algo_config_setup(true);
-    struct viam_carto_config vcc_invalid_map_rate_sec =
-        viam_carto_config_setup(-1, VIAM_CARTO_THREE_D, tmp_dir.string(),
-                                camera, movement_sensor, false, false, "");
-
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_map_rate_sec, ac) ==
-               VIAM_CARTO_MAP_RATE_SEC_INVALID);
-
     // Test config validation with invalid lidar config
-    struct viam_carto_config vcc_invalid_lidar_config = viam_carto_config_setup(
-        1, static_cast<viam_carto_LIDAR_CONFIG>(-1), tmp_dir.string(), camera,
-        movement_sensor, false, false, "");
+    struct viam_carto_config vcc_invalid_lidar_config =
+        viam_carto_config_setup(static_cast<viam_carto_LIDAR_CONFIG>(-1),
+                                camera, movement_sensor, true, "");
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_lidar_config, ac) ==
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
@@ -217,38 +195,18 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     // Test config validation with invalid movement sensor config
     ac = viam_carto_algo_config_setup(true);
     struct viam_carto_config vcc_invalid_movement_sensor_config =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                no_movement_sensor, false, false, "");
+        viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, no_movement_sensor,
+                                true, "");
 
     BOOST_TEST(
         viam_carto_init(&vc, lib, vcc_invalid_movement_sensor_config, ac) ==
         VIAM_CARTO_IMU_PROVIDED_AND_IMU_ENABLED_MISMATCH);
 
-    //  Test config validation with deprecated config structure
-    fs::path deprecated_path = tmp_dir / fs::path(bfs::unique_path().string());
-    fs::create_directories(deprecated_path.string() + "/data");
-
     ac = viam_carto_algo_config_setup(true);
-    struct viam_carto_config vcc_deprecated_path =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, deprecated_path.string(),
-                                camera, movement_sensor, false, false, "");
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_deprecated_path, ac) ==
-               VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE);
-
-    // Test config validation with invalid path
-    fs::path invalid_path = tmp_dir / fs::path(bfs::unique_path().string()) /
-                            fs::path(bfs::unique_path().string());
-
-    struct viam_carto_config vcc_invalid_path =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, invalid_path.string(),
-                                camera, movement_sensor, false, false, "");
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_invalid_path, ac) ==
-               VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR);
-
     // Test config validation with movement sensor (success)
     struct viam_carto_config vcc_with_movement_sensor_succ =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false, "");
+        viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, movement_sensor,
+                                true, "");
 
     BOOST_TEST(viam_carto_init(nullptr, lib, vcc_with_movement_sensor_succ,
                                ac) == VIAM_CARTO_VC_INVALID);
@@ -274,8 +232,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     viam_carto *vc2;
     ac = viam_carto_algo_config_setup(false);
     struct viam_carto_config vcc_without_movement_sensor_succ =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                no_movement_sensor, false, false, "");
+        viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, no_movement_sensor,
+                                true, "");
 
     BOOST_TEST(viam_carto_init(&vc2, lib, vcc_without_movement_sensor_succ,
                                ac) == VIAM_CARTO_SUCCESS);
@@ -285,25 +243,20 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     BOOST_TEST(viam_carto_terminate(&vc2) ==
                VIAM_CARTO_VC_INVALID);  // can't terminate same instance again
 
+    // TODO: Move all suite level setup & teardown to boost test hook
     // Teardown
-    viam_carto_config_teardown(vcc_empty_data_dir);
     viam_carto_config_teardown(vcc_empty_component_ref);
-    viam_carto_config_teardown(vcc_invalid_map_rate_sec);
     viam_carto_config_teardown(vcc_invalid_lidar_config);
     viam_carto_config_teardown(vcc_invalid_movement_sensor_config);
-    viam_carto_config_teardown(vcc_deprecated_path);
-    viam_carto_config_teardown(vcc_invalid_path);
     viam_carto_config_teardown(vcc_with_movement_sensor_succ);
     viam_carto_config_teardown(vcc_without_movement_sensor_succ);
-    // TODO: Move all suite level setup & teardown to boost test hook
-    fs::remove_all(tmp_dir);
 
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(viam_carto_lib_terminate(&lib) ==
                VIAM_CARTO_LIB_INVALID);  // can't terminate same instance again
 }
 
-BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
+BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode) {
     viam_carto_lib *lib;
     BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
 
@@ -315,7 +268,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         // mapping
         viam_carto *vc1;
         struct viam_carto_config vcc_mapping = viam_carto_config_setup(
-            1, VIAM_CARTO_THREE_D, "", camera, movement_sensor, true, true, "");
+            VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
         BOOST_TEST(viam_carto_init(&vc1, lib, vcc_mapping, ac) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(vc1->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
@@ -376,9 +329,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
         // updating
         viam_carto *vc2;
 
-        struct viam_carto_config vcc_updating = viam_carto_config_setup(
-            1, VIAM_CARTO_THREE_D, "", camera, movement_sensor, true, true,
-            internal_state_file_path);
+        struct viam_carto_config vcc_updating =
+            viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, movement_sensor,
+                                    true, internal_state_file_path);
         BOOST_TEST(viam_carto_init(&vc2, lib, vcc_updating, ac) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(vc2->slam_mode == VIAM_CARTO_SLAM_MODE_UPDATING);
@@ -418,9 +371,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
     {
         // updating optimize_on_start
         viam_carto *vc3;
-        struct viam_carto_config vcc_updating = viam_carto_config_setup(
-            1, VIAM_CARTO_THREE_D, "", camera, movement_sensor, true, true,
-            internal_state_file_path);
+        struct viam_carto_config vcc_updating =
+            viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, movement_sensor,
+                                    true, internal_state_file_path);
 
         BOOST_TEST(viam_carto_init(&vc3, lib, vcc_updating,
                                    ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
@@ -435,9 +388,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
     {
         // localizing
         viam_carto *vc4;
-        struct viam_carto_config vcc_localizing = viam_carto_config_setup(
-            0, VIAM_CARTO_THREE_D, "", camera, movement_sensor, true, false,
-            internal_state_file_path);
+        struct viam_carto_config vcc_localizing =
+            viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, movement_sensor,
+                                    false, internal_state_file_path);
         BOOST_TEST(viam_carto_init(&vc4, lib, vcc_localizing, ac) ==
                    VIAM_CARTO_SUCCESS);
         BOOST_TEST(vc4->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
@@ -470,9 +423,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
     {
         // localizing optimize_on_start
         viam_carto *vc5;
-        struct viam_carto_config vcc_localizing = viam_carto_config_setup(
-            0, VIAM_CARTO_THREE_D, "", camera, movement_sensor, true, false,
-            internal_state_file_path);
+        struct viam_carto_config vcc_localizing =
+            viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, movement_sensor,
+                                    false, internal_state_file_path);
         BOOST_TEST(viam_carto_init(&vc5, lib, vcc_localizing,
                                    ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
         BOOST_TEST(vc5->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
@@ -484,215 +437,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode_cloud_story_enabled) {
     }
 
     {
-        // invalid
-        auto empty_dir = tmp_dir / fs::path(bfs::unique_path().string());
-        ;
-        viam_carto *vc6;
-        struct viam_carto_config vcc_invalid = viam_carto_config_setup(
-            0, VIAM_CARTO_THREE_D, empty_dir.string(), camera, movement_sensor,
-            false, false, "test.pbstream");
-        BOOST_TEST(viam_carto_init(&vc6, lib, vcc_invalid, ac) ==
-                   VIAM_CARTO_SLAM_MODE_INVALID);
-        viam_carto_config_teardown(vcc_invalid);
-    }
-
-    // TODO: Move all suite level setup & teardown to boost test hook
-    fs::remove_all(tmp_dir);
-
-    BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
-}
-
-BOOST_AUTO_TEST_CASE(CartoFacade_init_derive_slam_mode) {
-    viam_carto_lib *lib;
-    BOOST_TEST(viam_carto_lib_init(&lib, 0, 1) == VIAM_CARTO_SUCCESS);
-
-    std::string camera = "lidar";
-    std::string movement_sensor = "movement_sensor";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
-
-    fs::create_directory(tmp_dir);
-    {
-        // mapping
-        viam_carto *vc1;
-        auto mapping_dir = tmp_dir / fs::path("mapping_dir");
-        struct viam_carto_config vcc_mapping =
-            viam_carto_config_setup(1, VIAM_CARTO_THREE_D, mapping_dir.string(),
-                                    camera, movement_sensor, false, false, "");
-        BOOST_TEST(viam_carto_init(&vc1, lib, vcc_mapping, ac) ==
-                   VIAM_CARTO_SUCCESS);
-        BOOST_TEST(vc1->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
-        viam::carto_facade::CartoFacade *cf1 =
-            static_cast<viam::carto_facade::CartoFacade *>(vc1->carto_obj);
-        BOOST_TEST(cf1->slam_mode == SlamMode::MAPPING);
-        BOOST_TEST(cf1->map_builder.GetOptimizeEveryNNodes() ==
-                   ac.optimize_every_n_nodes);
-        BOOST_TEST(cf1->map_builder.GetNumRangeData() == ac.num_range_data);
-        BOOST_TEST(cf1->map_builder.GetMissingDataRayLength() ==
-                       ac.missing_data_ray_length,
-                   tol);
-        BOOST_TEST(cf1->map_builder.GetMaxRange() == ac.max_range, tol);
-        BOOST_TEST(cf1->map_builder.GetMinRange() == ac.min_range, tol);
-        BOOST_TEST(cf1->map_builder.GetOccupiedSpaceWeight() ==
-                       ac.occupied_space_weight,
-                   tol);
-        BOOST_TEST(
-            cf1->map_builder.GetTranslationWeight() == ac.translation_weight,
-            tol);
-        BOOST_TEST(cf1->map_builder.GetRotationWeight() == ac.rotation_weight,
-                   tol);
-        // END TEST
-        BOOST_TEST(viam_carto_terminate(&vc1) == VIAM_CARTO_SUCCESS);
-        viam_carto_config_teardown(vcc_mapping);
-    }
-
-    auto updating_dir = tmp_dir / fs::path("updating_dir");
-    // updating setup
-    {
-        auto internal_state_dir = updating_dir / fs::path("internal_state");
-        fs::create_directories(internal_state_dir);
-        // we need to copy a valid internal state when we boot in updating mode
-        // otherwise cartographer terminates the entire os process
-        // see: https://viam.atlassian.net/browse/RSDK-3553
-        auto internal_state_artifact_source =
-            fs::current_path() /
-            fs::path(
-                ".artifact/data/viam-cartographer/outputs/viam-office-02-22-3/"
-                "internal_state/internal_state_0.pbstream");
-
-        VLOG(1) << "internal_state_artifact_source: "
-                << internal_state_artifact_source;
-        VLOG(1) << "exists(internal_state_artifact_source): "
-                << exists(internal_state_artifact_source);
-        VLOG(1) << "internal_state_dir: " << internal_state_dir;
-        VLOG(1) << "exists(internal_state_dir): " << exists(internal_state_dir);
-        auto internal_state_artifact_target =
-            internal_state_dir /
-            fs::path("map_data_2022-02-11T01:44:53.1903Z.pbstream");
-        fs::copy_file(internal_state_artifact_source,
-                      internal_state_artifact_target);
-    }
-
-    {
-        // updating
-        viam_carto *vc2;
-
-        struct viam_carto_config vcc_updating = viam_carto_config_setup(
-            1, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, false, false, "");
-        BOOST_TEST(viam_carto_init(&vc2, lib, vcc_updating, ac) ==
-                   VIAM_CARTO_SUCCESS);
-        BOOST_TEST(vc2->slam_mode == VIAM_CARTO_SLAM_MODE_UPDATING);
-        viam::carto_facade::CartoFacade *cf2 =
-            static_cast<viam::carto_facade::CartoFacade *>(vc2->carto_obj);
-        BOOST_TEST(cf2->slam_mode == SlamMode::UPDATING);
-        BOOST_TEST(cf2->map_builder.GetOptimizeEveryNNodes() ==
-                   ac.optimize_every_n_nodes);
-        BOOST_TEST(cf2->map_builder.GetNumRangeData() == ac.num_range_data);
-        BOOST_TEST(cf2->map_builder.GetMissingDataRayLength() ==
-                       ac.missing_data_ray_length,
-                   tol);
-        BOOST_TEST(cf2->map_builder.GetMaxRange() == ac.max_range, tol);
-        BOOST_TEST(cf2->map_builder.GetMinRange() == ac.min_range, tol);
-        BOOST_TEST(cf2->map_builder.GetFreshSubmapsCount() ==
-                   ac.fresh_submaps_count);
-        BOOST_TEST(cf2->map_builder.GetMinCoveredArea() == ac.min_covered_area,
-                   tol);
-        BOOST_TEST(cf2->map_builder.GetMinAddedSubmapsCount() ==
-                   ac.min_added_submaps_count);
-        BOOST_TEST(cf2->map_builder.GetOccupiedSpaceWeight() ==
-                       ac.occupied_space_weight,
-                   tol);
-        BOOST_TEST(
-            cf2->map_builder.GetTranslationWeight() == ac.translation_weight,
-            tol);
-        BOOST_TEST(cf2->map_builder.GetRotationWeight() == ac.rotation_weight,
-                   tol);
-        BOOST_TEST(viam_carto_terminate(&vc2) == VIAM_CARTO_SUCCESS);
-        viam_carto_config_teardown(vcc_updating);
-    }
-    struct viam_carto_algo_config ac_optimize_on_start =
-        viam_carto_algo_config_setup(true);
-    ac_optimize_on_start.optimize_on_start = true;
-
-    {
-        // updating optimize_on_start
-        viam_carto *vc3;
-        struct viam_carto_config vcc_updating = viam_carto_config_setup(
-            1, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, false, false, "");
-
-        BOOST_TEST(viam_carto_init(&vc3, lib, vcc_updating,
-                                   ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(vc3->slam_mode == VIAM_CARTO_SLAM_MODE_UPDATING);
-        viam::carto_facade::CartoFacade *cf2 =
-            static_cast<viam::carto_facade::CartoFacade *>(vc3->carto_obj);
-        BOOST_TEST(cf2->slam_mode == SlamMode::UPDATING);
-        BOOST_TEST(viam_carto_terminate(&vc3) == VIAM_CARTO_SUCCESS);
-        viam_carto_config_teardown(vcc_updating);
-    }
-
-    {
-        // localizing
-        viam_carto *vc4;
-        struct viam_carto_config vcc_localizing = viam_carto_config_setup(
-            0, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, false, false, "");
-        BOOST_TEST(viam_carto_init(&vc4, lib, vcc_localizing, ac) ==
-                   VIAM_CARTO_SUCCESS);
-        BOOST_TEST(vc4->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
-        viam::carto_facade::CartoFacade *cf3 =
-            static_cast<viam::carto_facade::CartoFacade *>(vc4->carto_obj);
-        BOOST_TEST(cf3->slam_mode == SlamMode::LOCALIZING);
-        BOOST_TEST(cf3->map_builder.GetOptimizeEveryNNodes() ==
-                   ac.optimize_every_n_nodes);
-        BOOST_TEST(cf3->map_builder.GetNumRangeData() == ac.num_range_data);
-        BOOST_TEST(cf3->map_builder.GetMissingDataRayLength() ==
-                       ac.missing_data_ray_length,
-                   tol);
-        BOOST_TEST(cf3->map_builder.GetMaxRange() == ac.max_range, tol);
-        BOOST_TEST(cf3->map_builder.GetMinRange() == ac.min_range, tol);
-        BOOST_TEST(cf3->map_builder.GetMaxSubmapsToKeep() ==
-                   ac.max_submaps_to_keep);
-        BOOST_TEST(cf3->map_builder.GetOccupiedSpaceWeight() ==
-                       ac.occupied_space_weight,
-                   tol);
-        BOOST_TEST(
-            cf3->map_builder.GetTranslationWeight() == ac.translation_weight,
-            tol);
-        BOOST_TEST(cf3->map_builder.GetRotationWeight() == ac.rotation_weight,
-                   tol);
-        BOOST_TEST(viam_carto_terminate(&vc4) == VIAM_CARTO_SUCCESS);
-        viam_carto_config_teardown(vcc_localizing);
-    }
-
-    {
-        // localizing optimize_on_start
-        viam_carto *vc5;
-        struct viam_carto_config vcc_localizing = viam_carto_config_setup(
-            0, VIAM_CARTO_THREE_D, updating_dir.string(), camera,
-            movement_sensor, false, false, "");
-        BOOST_TEST(viam_carto_init(&vc5, lib, vcc_localizing,
-                                   ac_optimize_on_start) == VIAM_CARTO_SUCCESS);
-        BOOST_TEST(vc5->slam_mode == VIAM_CARTO_SLAM_MODE_LOCALIZING);
-        viam::carto_facade::CartoFacade *cf3 =
-            static_cast<viam::carto_facade::CartoFacade *>(vc5->carto_obj);
-        BOOST_TEST(cf3->slam_mode == SlamMode::LOCALIZING);
-        BOOST_TEST(viam_carto_terminate(&vc5) == VIAM_CARTO_SUCCESS);
-        viam_carto_config_teardown(vcc_localizing);
-    }
-
-    {
-        // invalid
-        auto empty_dir = tmp_dir / fs::path(bfs::unique_path().string());
-        ;
+        // invalid file path
         viam_carto *vc6;
         struct viam_carto_config vcc_invalid =
-            viam_carto_config_setup(0, VIAM_CARTO_THREE_D, empty_dir.string(),
-                                    camera, movement_sensor, false, false, "");
+            viam_carto_config_setup(VIAM_CARTO_THREE_D, camera, movement_sensor,
+                                    false, "test.pbstream");
         BOOST_TEST(viam_carto_init(&vc6, lib, vcc_invalid, ac) ==
-                   VIAM_CARTO_SLAM_MODE_INVALID);
+                   VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR);
         viam_carto_config_teardown(vcc_invalid);
     }
 
@@ -710,11 +461,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_without_movement_sensor) {
     viam_carto *vc;
     std::string camera = "lidar";
     std::string movement_sensor = "";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(false);
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
@@ -734,20 +482,15 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_without_movement_sensor) {
     BOOST_TEST((cf->algo_config.occupied_space_weight) == 20, tol);
     BOOST_TEST((cf->algo_config.translation_weight) == 10, tol);
     BOOST_TEST((cf->algo_config.rotation_weight) == 1, tol);
-    auto path_to_internal_state = tmp_dir / fs::path("internal_state");
 
-    BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
     BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
     BOOST_TEST((cf->config.camera) == camera);
     BOOST_TEST((cf->config.movement_sensor) == movement_sensor);
-    BOOST_TEST((cf->config.map_rate_sec).count() == 1);
-    BOOST_TEST((cf->config.data_dir) == tmp_dir.string());
     BOOST_TEST(to_std_string(cf->config.component_reference) == "lidar");
     BOOST_TEST((cf->config.lidar_config) == VIAM_CARTO_THREE_D);
 
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
     viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
@@ -762,12 +505,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
     viam_carto *vc;
     std::string camera = "lidar";
     std::string movement_sensor = "";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(60, VIAM_CARTO_THREE_D, tmp_dir.string(),
-
-                                camera, movement_sensor, false, false, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(false);
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
@@ -1147,7 +886,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
     // Terminate
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
     viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
@@ -1160,28 +898,20 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config_without_movement_sensor) {
 
     std::string camera = "lidar";
     std::string movement_sensor = "";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
-
-                                camera, movement_sensor, true, true, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
 
     struct config c = viam::carto_facade::from_viam_carto_config(vcc);
 
     BOOST_TEST(to_std_string(c.component_reference) == "lidar");
-    BOOST_TEST(c.data_dir == tmp_dir.string());
     BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
-    BOOST_TEST(c.map_rate_sec.count() == 1);
     BOOST_TEST(c.camera == "lidar");
     BOOST_TEST(c.movement_sensor == "");
-    BOOST_TEST(c.cloud_story_enabled == true);
     BOOST_TEST(c.enable_mapping == true);
 
     viam_carto_config_teardown(vcc);
     BOOST_TEST(bdestroy(c.component_reference) == BSTR_OK);
 
-    fs::remove_all(tmp_dir);
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }
@@ -1199,12 +929,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_without_movement_sensor) {
     viam_carto *vc;
     std::string camera = "lidar";
     std::string movement_sensor = "";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(),
-
-                                camera, movement_sensor, false, false, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(false);
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
@@ -1213,21 +939,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_without_movement_sensor) {
         static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
 
-    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
-    BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
-
     // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(((cf->state) == CartoFacadeState::STARTED));
-
-    // Confirm at least one map is persisted within the map_rate_sec
-    VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
-    // TODO: This should busy wait until this condition happens & the tests
-    // passes or 2 seconds goes by & the test fails.
-    std::this_thread::sleep_for(cf->config.map_rate_sec +
-                                std::chrono::seconds(1));
-    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
-    BOOST_TEST(!fs::is_empty(cf->path_to_internal_state));
 
     // Stop
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
@@ -1236,7 +950,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_without_movement_sensor) {
     // Terminate
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
     viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
@@ -1250,11 +963,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_with_movement_sensor) {
     viam_carto *vc;
     std::string camera = "lidar";
     std::string movement_sensor = "movement_sensor";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(vc->slam_mode == VIAM_CARTO_SLAM_MODE_MAPPING);
@@ -1275,20 +985,15 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_with_movement_sensor) {
     BOOST_TEST((cf->algo_config.occupied_space_weight) == 20, tol);
     BOOST_TEST((cf->algo_config.translation_weight) == 10, tol);
     BOOST_TEST((cf->algo_config.rotation_weight) == 1, tol);
-    auto path_to_internal_state = tmp_dir / fs::path("internal_state");
 
-    BOOST_TEST((cf->path_to_internal_state) == path_to_internal_state.string());
     BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
     BOOST_TEST((cf->config.camera) == camera);
     BOOST_TEST((cf->config.movement_sensor) == movement_sensor);
-    BOOST_TEST((cf->config.map_rate_sec).count() == 1);
-    BOOST_TEST((cf->config.data_dir) == tmp_dir.string());
     BOOST_TEST(to_std_string(cf->config.component_reference) == "lidar");
     BOOST_TEST((cf->config.lidar_config) == VIAM_CARTO_THREE_D);
 
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
     viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
@@ -1303,12 +1008,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     viam_carto *vc;
     std::string camera = "lidar";
     std::string movement_sensor = "movement_sensor";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(60, VIAM_CARTO_THREE_D, tmp_dir.string(),
-
-                                camera, movement_sensor, false, false, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
@@ -1867,7 +1568,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
     // Terminate
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
     viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
@@ -1880,27 +1580,20 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config_with_movement_sensor) {
 
     std::string camera = "lidar";
     std::string movement_sensor = "movement_sensor";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, true, true, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
 
     struct config c = viam::carto_facade::from_viam_carto_config(vcc);
 
     BOOST_TEST(to_std_string(c.component_reference) == "lidar");
-    BOOST_TEST(c.data_dir == tmp_dir.string());
     BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
-    BOOST_TEST(c.map_rate_sec.count() == 1);
     BOOST_TEST(c.camera == "lidar");
     BOOST_TEST(c.movement_sensor == "movement_sensor");
-    BOOST_TEST(c.cloud_story_enabled == true);
     BOOST_TEST(c.enable_mapping == true);
 
     viam_carto_config_teardown(vcc);
     BOOST_TEST(bdestroy(c.component_reference) == BSTR_OK);
 
-    fs::remove_all(tmp_dir);
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
 }
@@ -1918,11 +1611,8 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_movement_sensor) {
     viam_carto *vc;
     std::string camera = "lidar";
     std::string movement_sensor = "movement_sensor";
-    fs::path tmp_dir =
-        fs::temp_directory_path() / fs::path(bfs::unique_path().string());
-    struct viam_carto_config vcc =
-        viam_carto_config_setup(1, VIAM_CARTO_THREE_D, tmp_dir.string(), camera,
-                                movement_sensor, false, false, "");
+    struct viam_carto_config vcc = viam_carto_config_setup(
+        VIAM_CARTO_THREE_D, camera, movement_sensor, true, "");
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(true);
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc, ac) == VIAM_CARTO_SUCCESS);
@@ -1931,21 +1621,9 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_movement_sensor) {
         static_cast<viam::carto_facade::CartoFacade *>(vc->carto_obj);
     BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
 
-    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
-    BOOST_TEST(fs::is_empty(cf->path_to_internal_state));
-
     // Start
     BOOST_TEST(viam_carto_start(vc) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(((cf->state) == CartoFacadeState::STARTED));
-
-    // Confirm at least one map is persisted within the map_rate_sec
-    VLOG(1) << "path_to_internal_state: " << cf->path_to_internal_state;
-    // TODO: This should busy wait until this condition happens & the tests
-    // passes or 2 seconds goes by & the test fails.
-    std::this_thread::sleep_for(cf->config.map_rate_sec +
-                                std::chrono::seconds(1));
-    BOOST_TEST(fs::is_directory(cf->path_to_internal_state));
-    BOOST_TEST(!fs::is_empty(cf->path_to_internal_state));
 
     // Stop
     BOOST_TEST(viam_carto_stop(vc) == VIAM_CARTO_SUCCESS);
@@ -1954,7 +1632,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_start_stop_with_movement_sensor) {
     // Terminate
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
     viam_carto_config_teardown(vcc);
-    fs::remove_all(tmp_dir);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);

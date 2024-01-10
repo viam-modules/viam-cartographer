@@ -11,7 +11,6 @@
 #include "cartographer/mapping/map_builder_interface.h"
 #include "cartographer/mapping/trajectory_builder_interface.h"
 #include "glog/logging.h"
-#include "io.h"
 #include "map_builder.h"
 
 namespace viam {
@@ -141,25 +140,6 @@ MapBuilder::GetLocalSlamResultCallback() {
     };
 }
 
-void MapBuilder::SetStartTime(double input_start_time) {
-    start_time = input_start_time;
-}
-
-cartographer::sensor::TimedPointCloudData MapBuilder::GetDataFromFile(
-    std::string file) {
-    cartographer::sensor::TimedPointCloudData point_cloud;
-
-    if (start_time == -1) {
-        throw std::runtime_error("start_time has not been initialized");
-    }
-    point_cloud = viam::carto_facade::io::TimedPointCloudDataFromPCDBuilder(
-        file, start_time);
-
-    return point_cloud;
-}
-
-// TODO: There might still be a lot of room to improve accuracy & speed.
-// Might be worth investigating in the future.
 cartographer::transform::Rigid3d MapBuilder::GetGlobalPose() {
     auto local_transform =
         map_builder_->pose_graph()->GetLocalToGlobalTransform(trajectory_id);
