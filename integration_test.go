@@ -117,7 +117,7 @@ func TestIntegrationCartographer(t *testing.T) {
 				test.That(t, err, test.ShouldBeNil)
 			}()
 
-			// Set mapRateSec for mapping mode
+			// Enable mapping mode
 			enableMapping := true
 
 			// Run mapping test
