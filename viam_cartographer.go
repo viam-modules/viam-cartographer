@@ -518,14 +518,9 @@ type CartographerService struct {
 func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.Pose, string, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Position")
 	defer span.End()
-	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("Position called with use_cloud_slam set to true")
-		return nil, "", ErrUseCloudSlamEnabled
-	}
 
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("Position called after shutting down of cartographer has been initiated")
-		return nil, "", ErrClosed
+	if err := cartoSvc.isOpenAndRunningLocally("Position"); err != nil {
+		return nil, "", err
 	}
 
 	pos, err := cartoSvc.cartofacade.Position(ctx, cartoSvc.cartoFacadeTimeout)
@@ -550,14 +545,9 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::PointCloudMap")
 	defer span.End()
-	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("PointCloudMap called with use_cloud_slam set to true")
-		return nil, ErrUseCloudSlamEnabled
-	}
 
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("PointCloudMap called after shutting down of cartographer has been initiated")
-		return nil, ErrClosed
+	if err := cartoSvc.isOpenAndRunningLocally("PointCloudMap"); err != nil {
+		return nil, err
 	}
 
 	/*
@@ -592,14 +582,9 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::InternalState")
 	defer span.End()
-	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("InternalState called with use_cloud_slam set to true")
-		return nil, ErrUseCloudSlamEnabled
-	}
 
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("InternalState called after shutting down of cartographer has been initiated")
-		return nil, ErrClosed
+	if err := cartoSvc.isOpenAndRunningLocally("InternalState"); err != nil {
+		return nil, err
 	}
 
 	is, err := cartoSvc.cartofacade.InternalState(ctx, cartoSvc.cartoFacadeTimeout)
@@ -625,19 +610,41 @@ func toChunkedFunc(b []byte) func() ([]byte, error) {
 	return f
 }
 
+// Properties returns information regarding the current SLAM session including the mapping mode and
+// is the session is being run in the cloud.
+func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Properties, error) {
+	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Properties")
+	defer span.End()
+
+	if err := cartoSvc.isOpenAndRunningLocally("Properties"); err != nil {
+		return slam.Properties{}, err
+	}
+
+	props := slam.Properties{
+		CloudSlam: cartoSvc.useCloudSlam,
+	}
+
+	if cartoSvc.enableMapping && cartoSvc.existingMap == "" {
+		props.MappingMode = slam.MappingModeNewMap
+	} else if cartoSvc.enableMapping && cartoSvc.existingMap != "" {
+		props.MappingMode = slam.MappingModeUpdateExistingMap
+	} else if !cartoSvc.enableMapping && cartoSvc.existingMap != "" {
+		props.MappingMode = slam.MappingModeLocalizationOnly
+	} else {
+		return slam.Properties{}, errors.New("invalid mode: localizing requires an existing map")
+	}
+
+	return props, nil
+}
+
 // LatestMapInfo returns a new timestamp every time it is called when in mapping mode, to signal
 // that the map should be updated. In localizing, the timestamp returned is the timestamp of the session.
 func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Time, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::LatestMapInfo")
 	defer span.End()
-	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("LatestMapInfo called with use_cloud_slam set to true")
-		return time.Time{}, ErrUseCloudSlamEnabled
-	}
 
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("LatestMapInfo called after shutting down of cartographer has been initiated")
-		return time.Time{}, ErrClosed
+	if err := cartoSvc.isOpenAndRunningLocally("LatestMapInfo"); err != nil {
+		return time.Time{}, err
 	}
 
 	if cartoSvc.SlamMode != cartofacade.LocalizingMode {
@@ -649,14 +656,11 @@ func (cartoSvc *CartographerService) LatestMapInfo(ctx context.Context) (time.Ti
 
 // DoCommand receives arbitrary commands.
 func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[string]interface{}) (map[string]interface{}, error) {
-	if cartoSvc.useCloudSlam {
-		cartoSvc.logger.Warn("DoCommand called with use_cloud_slam set to true")
-		return nil, ErrUseCloudSlamEnabled
-	}
+	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::DoCommand")
+	defer span.End()
 
-	if cartoSvc.closed {
-		cartoSvc.logger.Warn("DoCommand called after shutting down of cartographer has been initiated")
-		return nil, ErrClosed
+	if err := cartoSvc.isOpenAndRunningLocally("DoCommand"); err != nil {
+		return nil, err
 	}
 
 	if _, ok := req[JobDoneCommand]; ok {
@@ -773,4 +777,18 @@ func CheckQuaternionFromClientAlgo(pose spatialmath.Pose, componentReference str
 		return actualPose, componentReference, nil
 	}
 	return nil, "", errors.Errorf("error getting SLAM position: quaternion not given, %v", returnedExt)
+}
+
+// checkCloseAndCloudStatus returns an error if the cartographer service has been previously closed or is being run in the cloud.
+func (cartoSvc *CartographerService) isOpenAndRunningLocally(cmd string) error {
+	if cartoSvc.useCloudSlam {
+		cartoSvc.logger.Warnf("%v called with use_cloud_slam set to true", cmd)
+		return ErrUseCloudSlamEnabled
+	}
+	if cartoSvc.closed {
+		cartoSvc.logger.Warnf("%v called after closed", cmd)
+		return ErrClosed
+	}
+
+	return nil
 }
