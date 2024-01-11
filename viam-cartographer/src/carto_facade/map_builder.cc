@@ -98,8 +98,8 @@ void MapBuilder::AddSensorData(
     const std::string &sensor_id,
     cartographer::sensor::TimedPointCloudData measurement) {
     trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
+    int a = 1;
 }
-
 
 void MapBuilder::AddSensorData(const std::string &sensor_id,
                                cartographer::sensor::ImuData measurement) {
