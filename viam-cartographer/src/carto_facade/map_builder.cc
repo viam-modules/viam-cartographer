@@ -100,6 +100,7 @@ void MapBuilder::AddSensorData(
     trajectory_builder->AddSensorData(kRangeSensorId.id, measurement);
 }
 
+
 void MapBuilder::AddSensorData(const std::string &sensor_id,
                                cartographer::sensor::ImuData measurement) {
     trajectory_builder->AddSensorData(kIMUSensorId.id, measurement);
