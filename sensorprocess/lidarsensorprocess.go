@@ -31,7 +31,7 @@ func (config *Config) StartLidar(ctx context.Context) {
 // addLidarReadingsInOnline ensures the most recent lidar scan, after any corresponding IMU scans, gets processed
 // by cartographer.
 func (config *Config) addLidarReadingInOnline(ctx context.Context) error {
-	// get next lidar data response; ignoring status since it is always false
+	// get next lidar data response
 	lidarReading, err := config.Lidar.TimedLidarReading(ctx)
 	if err != nil {
 		if errors.Is(err, replaypcd.ErrEndOfDataset) {
