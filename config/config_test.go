@@ -126,7 +126,6 @@ func TestGetOptionalParameters(t *testing.T) {
 		test.That(t, optionalConfigParams.MovementSensorName, test.ShouldEqual, "")
 		test.That(t, optionalConfigParams.MovementSensorDataFrequencyHz, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
-		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.ExistingMap, test.ShouldEqual, "")
 	})
 
@@ -150,7 +149,6 @@ func TestGetOptionalParameters(t *testing.T) {
 		test.That(t, optionalConfigParams.MovementSensorName, test.ShouldEqual, "")
 		test.That(t, optionalConfigParams.MovementSensorDataFrequencyHz, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.EnableMapping, test.ShouldBeFalse)
-		test.That(t, optionalConfigParams.MapRateSec, test.ShouldEqual, 0)
 		test.That(t, optionalConfigParams.ExistingMap, test.ShouldEqual, "")
 	})
 

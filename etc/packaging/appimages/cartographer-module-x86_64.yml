@@ -39,7 +39,8 @@ AppDir:
     - libboost-filesystem1.74.0 
     - libpcl-io1.13 
     - libnlopt0
-
+    - libxcb-shm0
+    
   files:
     include: []
     exclude:

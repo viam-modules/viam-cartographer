@@ -76,17 +76,6 @@ std::string ascii_pcd(std::vector<std::vector<double>> points) {
     return pcd;
 }
 
-boost::filesystem::path make_tmp_dir() {
-    boost::filesystem::path tmp_dir = boost::filesystem::temp_directory_path() /
-                                      boost::filesystem::unique_path();
-    bool ok = boost::filesystem::create_directory(tmp_dir);
-    if (!ok) {
-        throw std::runtime_error("could not create directory: " +
-                                 tmp_dir.string());
-    }
-    return tmp_dir;
-}
-
 }  // namespace test_helpers
 }  // namespace carto_facade
 }  // namespace viam

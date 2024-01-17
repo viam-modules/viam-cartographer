@@ -9,7 +9,6 @@
 #include <boost/uuid/uuid_io.hpp>
 
 #include "glog/logging.h"
-#include "io.h"
 #include "map_builder.h"
 #include "util.h"
 
@@ -113,21 +112,9 @@ config from_viam_carto_config(viam_carto_config vcc) {
     struct config c;
     c.camera = to_std_string(vcc.camera);
     c.movement_sensor = to_std_string(vcc.movement_sensor);
-    c.data_dir = to_std_string(vcc.data_dir);
-    c.map_rate_sec = std::chrono::seconds(vcc.map_rate_sec);
-    c.cloud_story_enabled = vcc.cloud_story_enabled;
     c.enable_mapping = vcc.enable_mapping;
     c.existing_map = to_std_string(vcc.existing_map);
     c.lidar_config = vcc.lidar_config;
-
-    if (!c.cloud_story_enabled) {
-        if (c.data_dir.size() == 0) {
-            throw VIAM_CARTO_DATA_DIR_NOT_PROVIDED;
-        }
-        if (vcc.map_rate_sec < 0) {
-            throw VIAM_CARTO_MAP_RATE_SEC_INVALID;
-        }
-    }
 
     if (c.camera.empty()) {
         throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
@@ -189,73 +176,10 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     lib = pVCL;
     config = from_viam_carto_config(c);
     algo_config = ac;
-    path_to_internal_state = config.data_dir + "/internal_state";
     path_to_internal_state_file = config.existing_map;
 };
 
 CartoFacade::~CartoFacade() { bdestroy(config.component_reference); }
-
-void setup_filesystem(std::string data_dir,
-                      std::string path_to_internal_state) {
-    // setup internal state directory if it doesn't exist
-    auto perms =
-        fs::perms::group_all | fs::perms::owner_all | fs::perms::others_read;
-    try {
-        // if directory doesn't exist, create it with expected structure
-        if (!fs::is_directory(data_dir)) {
-            VLOG(1) << "data_dir doesn't exist. Creating " << data_dir;
-            fs::create_directory(data_dir);
-            VLOG(1) << "setting data_dir permissions";
-            fs::permissions(data_dir, perms);
-        }
-        if (!fs::is_directory(path_to_internal_state)) {
-            VLOG(1) << "data_dir's internal_state directory, doesn't exist. "
-                       "Creating "
-                    << path_to_internal_state;
-            fs::create_directory(path_to_internal_state);
-            VLOG(1)
-                << "setting data_dir's internal_state directory's permissions";
-            fs::permissions(path_to_internal_state, perms);
-        }
-    } catch (std::exception &e) {
-        LOG(ERROR) << e.what();
-        throw VIAM_CARTO_DATA_DIR_FILE_SYSTEM_ERROR;
-    }
-}
-
-std::vector<std::string> list_sorted_files_in_directory(std::string directory) {
-    std::vector<std::string> file_paths;
-
-    for (const auto &entry : fs::directory_iterator(directory)) {
-        file_paths.push_back((entry.path()).string());
-    }
-
-    sort(file_paths.begin(), file_paths.end());
-    return file_paths;
-}
-
-std::string get_latest_internal_state_filename(
-    std::string path_to_internal_state) {
-    std::string latest_internal_state_filename;
-
-    std::vector<std::string> internal_state_filename =
-        list_sorted_files_in_directory(path_to_internal_state);
-    bool found_internal_state = false;
-    for (int i = internal_state_filename.size() - 1; i >= 0; i--) {
-        if (internal_state_filename.at(i).find(".pbstream") !=
-            std::string::npos) {
-            latest_internal_state_filename = internal_state_filename.at(i);
-            found_internal_state = true;
-            break;
-        }
-    }
-    if (!found_internal_state) {
-        throw std::runtime_error(
-            "cannot find internal state but they should be present");
-    }
-
-    return latest_internal_state_filename;
-}
 
 void CartoFacade::IOInit() {
     if (state != CartoFacadeState::INITIALIZED) {
@@ -263,26 +187,10 @@ void CartoFacade::IOInit() {
                    << CartoFacadeState::INITIALIZED;
         throw VIAM_CARTO_NOT_IN_INITIALIZED_STATE;
     }
-    if (config.cloud_story_enabled == true) {
-        slam_mode = determine_slam_mode_cloud_story_enabled(
-            path_to_internal_state_file, config.enable_mapping);
-    } else {
-        // Detect if data_dir has deprecated format
-        if (fs::is_directory(config.data_dir + "/data")) {
-            LOG(ERROR)
-                << "data directory " << config.data_dir
-                << " is invalid as it contains deprecated format i.e. /data "
-                   "subdirectory";
-            throw VIAM_CARTO_DATA_DIR_INVALID_DEPRECATED_STRUCTURE;
-        }
-        // Setup file system for saving internal state
-        setup_filesystem(config.data_dir, path_to_internal_state);
-        slam_mode =
-            determine_slam_mode(path_to_internal_state, config.map_rate_sec);
-    }
+    slam_mode =
+        determine_slam_mode(path_to_internal_state_file, config.enable_mapping);
 
     VLOG(1) << "slam mode: " << slam_mode;
-    // TODO: Make this API user configurable
     auto cd = find_lua_files();
     if (cd.empty()) {
         throw VIAM_CARTO_LUA_CONFIG_NOT_FOUND;
@@ -321,23 +229,13 @@ void CartoFacade::IOInit() {
         map_builder.BuildMapBuilder();
     }
 
-    // TODO: google cartographer will terminate the program if
-    // the internal state is invalid
-    // see https://viam.atlassian.net/browse/RSDK-3553
     if (slam_mode == viam::carto_facade::SlamMode::UPDATING ||
         slam_mode == viam::carto_facade::SlamMode::LOCALIZING) {
-        // Check if there is an apriori map (internal state) in the
-        // path_to_internal_state directory or existing_map path
-        std::string latest_internal_state_filename;
-        if (config.cloud_story_enabled) {
-            latest_internal_state_filename = config.existing_map;
-        } else {
-            latest_internal_state_filename =
-                get_latest_internal_state_filename(path_to_internal_state);
+        // Check if apriori map file exists
+        std::ifstream f(path_to_internal_state_file);
+        if (!f.good()) {
+            throw VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR;
         }
-
-        VLOG(1) << "latest_internal_state_filename: "
-                << latest_internal_state_filename;
         // load_frozen_trajectory has to be true for LOCALIZING slam mode,
         // and false for UPDATING slam mode.
         bool load_frozen_trajectory =
@@ -351,13 +249,13 @@ void CartoFacade::IOInit() {
             optimization_lock.lock();
             // Load apriori map (internal state)
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.LoadMapFromFile(latest_internal_state_filename,
+            map_builder.LoadMapFromFile(config.existing_map,
                                         load_frozen_trajectory,
                                         algo_config.optimize_on_start);
         } else {
             // Load apriori map (internal state)
             std::lock_guard<std::mutex> lk(map_builder_mutex);
-            map_builder.LoadMapFromFile(latest_internal_state_filename,
+            map_builder.LoadMapFromFile(config.existing_map,
                                         load_frozen_trajectory,
                                         algo_config.optimize_on_start);
         }
@@ -682,14 +580,8 @@ void CartoFacade::GetInternalState(viam_carto_get_internal_state_response *r) {
     }
     boost::uuids::uuid uuid = boost::uuids::random_generator()();
 
-    std::string filename;
-    if (config.cloud_story_enabled) {
-        filename = "temp_internal_state_" + boost::uuids::to_string(uuid) +
-                   ".pbstream";
-    } else {
-        filename = path_to_internal_state + "/" + "temp_internal_state_" +
-                   boost::uuids::to_string(uuid) + ".pbstream";
-    }
+    std::string filename = "/tmp/temp_internal_state_" +
+                           boost::uuids::to_string(uuid) + ".pbstream";
 
     {
         std::lock_guard<std::mutex> lk(map_builder_mutex);
@@ -719,67 +611,7 @@ void CartoFacade::Start() {
         throw VIAM_CARTO_NOT_IN_IO_INITIALIZED_STATE;
     }
     state = CartoFacadeState::STARTED;
-    if (!config.cloud_story_enabled) {
-        StartSaveInternalState();
-    }
 };
-
-void CartoFacade::StartSaveInternalState() {
-    if (config.map_rate_sec == std::chrono::seconds(0)) {
-        return;
-    }
-    thread_save_internal_state = std::make_unique<std::thread>(
-        [&]() { this->SaveInternalStateOnInterval(); });
-}
-
-void CartoFacade::StopSaveInternalState() {
-    if (config.map_rate_sec == std::chrono::seconds(0)) {
-        return;
-    }
-    thread_save_internal_state->join();
-}
-
-void CartoFacade::SaveInternalStateOnInterval() {
-    auto check_for_shutdown_interval_usec =
-        std::chrono::microseconds(checkForShutdownIntervalMicroseconds);
-    while (state == CartoFacadeState::STARTED) {
-        auto start = std::chrono::high_resolution_clock::now();
-        // Sleep for config.map_rate_sec duration, but check frequently for
-        // shutdown
-        while (state == CartoFacadeState::STARTED) {
-            std::chrono::duration<double, std::milli> time_elapsed_msec =
-                std::chrono::high_resolution_clock::now() - start;
-            if (time_elapsed_msec >= config.map_rate_sec) {
-                break;
-            }
-            if (config.map_rate_sec - time_elapsed_msec >=
-                check_for_shutdown_interval_usec) {
-                std::this_thread::sleep_for(check_for_shutdown_interval_usec);
-            } else {
-                std::this_thread::sleep_for(config.map_rate_sec -
-                                            time_elapsed_msec);
-                break;
-            }
-        }
-
-        // Breakout without saving if the session has ended
-
-        if (state != CartoFacadeState::STARTED) {
-            LOG(INFO) << "Saving final optimized internal state";
-        }
-        std::time_t t = std::time(nullptr);
-        const std::string filename_with_timestamp =
-            viam::carto_facade::io::MakeFilenameWithTimestamp(
-                path_to_internal_state, t);
-
-        std::lock_guard<std::mutex> lk(map_builder_mutex);
-        map_builder.SaveMapToFile(true, filename_with_timestamp);
-        if (state != CartoFacadeState::STARTED) {
-            LOG(INFO) << "Finished saving final optimized internal state";
-            break;
-        }
-    }
-}
 
 void CartoFacade::Stop() {
     if (state != CartoFacadeState::STARTED) {
@@ -788,9 +620,6 @@ void CartoFacade::Stop() {
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
     state = CartoFacadeState::IO_INITIALIZED;
-    if (!config.cloud_story_enabled) {
-        StopSaveInternalState();
-    }
 };
 
 void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
@@ -942,40 +771,6 @@ void CartoFacade::AddOdometerReading(const viam_carto_odometer_reading *sr) {
 };
 
 viam::carto_facade::SlamMode determine_slam_mode(
-    std::string path_to_internal_state, std::chrono::seconds map_rate_sec) {
-    // Check if there is an apriori map (internal state) in the
-    // path_to_internal_state directory
-    std::vector<std::string> internal_state_filenames =
-        list_sorted_files_in_directory(path_to_internal_state);
-
-    // Check if there is a *.pbstream internal state in the
-    // path_to_internal_state directory
-    for (auto filename : internal_state_filenames) {
-        if (filename.find(".pbstream") != std::string::npos) {
-            // There is an apriori map (internal state) present, so we're
-            // running either in updating or localization mode.
-            if (map_rate_sec.count() == 0) {
-                // This log line is needed by rdk integration tests.
-                LOG(INFO) << "Running in localization only mode";
-                return viam::carto_facade::SlamMode::LOCALIZING;
-            }
-            // This log line is needed by rdk integration tests.
-            LOG(INFO) << "Running in updating mode";
-            return viam::carto_facade::SlamMode::UPDATING;
-        }
-    }
-    if (map_rate_sec.count() == 0) {
-        LOG(ERROR)
-            << "set to localization mode (map_rate_sec = 0) but "
-               "couldn't find apriori map (internal state) to localize on";
-        throw VIAM_CARTO_SLAM_MODE_INVALID;
-    }
-    // This log line is needed by rdk integration tests.
-    LOG(INFO) << "Running in mapping mode";
-    return viam::carto_facade::SlamMode::MAPPING;
-}
-
-viam::carto_facade::SlamMode determine_slam_mode_cloud_story_enabled(
     std::string path_to_internal_state_file, bool enable_mapping) {
     // Check if an existing map has been provided
     if (path_to_internal_state_file.size() != 0) {

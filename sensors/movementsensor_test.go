@@ -57,12 +57,12 @@ func TestNewMovementSensor(t *testing.T) {
 
 		actualReading, err := actualMs.TimedMovementSensorReading(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, actualReading.TimedIMUResponse.LinearAcceleration, test.ShouldResemble, s.LinAcc)
+		test.That(t, actualReading.TimedIMUResponse.LinearAcceleration, test.ShouldResemble, s.TestLinAcc)
 		test.That(t, actualReading.TimedIMUResponse.AngularVelocity, test.ShouldResemble,
 			spatialmath.AngularVelocity{
-				X: rdkutils.DegToRad(s.AngVel.X),
-				Y: rdkutils.DegToRad(s.AngVel.Y),
-				Z: rdkutils.DegToRad(s.AngVel.Z),
+				X: rdkutils.DegToRad(s.TestAngVel.X),
+				Y: rdkutils.DegToRad(s.TestAngVel.Y),
+				Z: rdkutils.DegToRad(s.TestAngVel.Z),
 			})
 		test.That(t, actualReading.TimedOdometerResponse, test.ShouldBeNil)
 	})
@@ -76,8 +76,8 @@ func TestNewMovementSensor(t *testing.T) {
 
 		actualReading, err := actualMs.TimedMovementSensorReading(context.Background())
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, actualReading.TimedOdometerResponse.Position, test.ShouldResemble, s.Position)
-		test.That(t, actualReading.TimedOdometerResponse.Orientation, test.ShouldResemble, s.Orientation)
+		test.That(t, actualReading.TimedOdometerResponse.Position, test.ShouldResemble, s.TestPosition)
+		test.That(t, actualReading.TimedOdometerResponse.Orientation, test.ShouldResemble, s.TestOrientation)
 		test.That(t, actualReading.TimedIMUResponse, test.ShouldBeNil)
 	})
 }
@@ -107,7 +107,7 @@ func TestProperties(t *testing.T) {
 	})
 
 	t.Run("both IMU and odometer supported", func(t *testing.T) {
-		lidar, movementSensor := s.GoodLidar, s.MovementSensorBothIMUAndOdometer
+		lidar, movementSensor := s.GoodLidar, s.GoodMovementSensorBothIMUAndOdometer
 		deps := s.SetupDeps(lidar, movementSensor)
 		actualMovementSensor, err := s.NewMovementSensor(ctx, deps, string(movementSensor), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -160,12 +160,12 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		afterReading := time.Now().UTC()
 
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, actualReading.TimedIMUResponse.LinearAcceleration, test.ShouldResemble, s.LinAcc)
+		test.That(t, actualReading.TimedIMUResponse.LinearAcceleration, test.ShouldResemble, s.TestLinAcc)
 		test.That(t, actualReading.TimedIMUResponse.AngularVelocity, test.ShouldResemble,
 			spatialmath.AngularVelocity{
-				X: rdkutils.DegToRad(s.AngVel.X),
-				Y: rdkutils.DegToRad(s.AngVel.Y),
-				Z: rdkutils.DegToRad(s.AngVel.Z),
+				X: rdkutils.DegToRad(s.TestAngVel.X),
+				Y: rdkutils.DegToRad(s.TestAngVel.Y),
+				Z: rdkutils.DegToRad(s.TestAngVel.Z),
 			})
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.After(beforeReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedIMUResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
@@ -189,8 +189,8 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		afterReading := time.Now().UTC()
 
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, actualReading.TimedOdometerResponse.Position, test.ShouldResemble, s.Position)
-		test.That(t, actualReading.TimedOdometerResponse.Orientation, test.ShouldResemble, s.Orientation)
+		test.That(t, actualReading.TimedOdometerResponse.Position, test.ShouldResemble, s.TestPosition)
+		test.That(t, actualReading.TimedOdometerResponse.Orientation, test.ShouldResemble, s.TestOrientation)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.After(beforeReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
@@ -200,7 +200,7 @@ func TestTimedMovementSensorReading(t *testing.T) {
 
 	t.Run("when a movemement sensor that supports both an odometer and an IMU succeeds,"+
 		" returns current time in UTC and the reading", func(t *testing.T) {
-		lidar, odometer := s.GoodLidar, s.MovementSensorBothIMUAndOdometer
+		lidar, odometer := s.GoodLidar, s.GoodMovementSensorBothIMUAndOdometer
 		deps := s.SetupDeps(lidar, odometer)
 		actualOdometer, err := s.NewMovementSensor(ctx, deps, string(odometer), testDataFrequencyHz, logger)
 		test.That(t, err, test.ShouldBeNil)
@@ -214,8 +214,8 @@ func TestTimedMovementSensorReading(t *testing.T) {
 		afterReading := time.Now().UTC()
 
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, actualReading.TimedOdometerResponse.Position, test.ShouldResemble, s.Position)
-		test.That(t, actualReading.TimedOdometerResponse.Orientation, test.ShouldResemble, s.Orientation)
+		test.That(t, actualReading.TimedOdometerResponse.Position, test.ShouldResemble, s.TestPosition)
+		test.That(t, actualReading.TimedOdometerResponse.Orientation, test.ShouldResemble, s.TestOrientation)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.After(beforeReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Before(afterReading), test.ShouldBeTrue)
 		test.That(t, actualReading.TimedOdometerResponse.ReadingTime.Location(), test.ShouldEqual, time.UTC)
