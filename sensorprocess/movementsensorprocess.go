@@ -31,7 +31,7 @@ func (config *Config) StartMovementSensor(ctx context.Context) {
 // addMovementSensorReadingInOnline attempts to get and add a movement sensor reading to the
 // cartofacade.
 func (config *Config) addMovementSensorReadingInOnline(ctx context.Context) error {
-	// get next movement sensor data response; ignoring status since it is always false
+	// get next movement sensor data response
 	movementSensorReading, err := config.MovementSensor.TimedMovementSensorReading(ctx)
 	if err != nil {
 		if errors.Is(err, replaymovementsensor.ErrEndOfDataset) {
