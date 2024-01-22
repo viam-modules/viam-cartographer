@@ -595,7 +595,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	return toChunkedFunc(pc), nil
 }
 
-func (cartoSvc *CartographerService) slamPathPointCloud(ctx context.Context) ([]byte, error) {
+func (cartoSvc *CartographerService) slamPathPointCloud() ([]byte, error) {
 	var pc = pointcloud.NewWithPrealloc(len(cartoSvc.positionHistory))
 
 	for _, point := range cartoSvc.positionHistory {
@@ -725,7 +725,7 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 	}
 
 	if _, ok := req[PositionHistoryGetCommand]; ok {
-		pc, err := cartoSvc.slamPathPointCloud(ctx)
+		pc, err := cartoSvc.slamPathPointCloud()
 		if err != nil {
 			return nil, errors.Wrap(ErrBadSlamPathPointCloud, err.Error())
 		}
