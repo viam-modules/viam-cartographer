@@ -60,12 +60,16 @@ const (
 
 	// JobDoneCommand is the string that needs to be sent to DoCommand to find out if the job has finished.
 	JobDoneCommand = "job_done"
+	// PositionHistoryGetCommand will return the point cloud merged with the position history
+	PositionHistoryGetCommand = "position_history_get"
+	// PositionHistoryEnableCommand will change whether or not the UI will get the PositionHistory
+	PositionHistoryEnableCommand = "position_history_enable"
+	// PositionHistoryValue will change whether or not the UI will get the PositionHistory
+	PositionHistoryValueCommand = "position_history_value"
 	// SuccessMessage is sent back after a successful DoCommand request.
 	SuccessMessage = "success"
 	// PostprocessToggleResponseKey is the key sent back for the toggle postprocess command.
 	PostprocessToggleResponseKey = "postprocessed"
-	// GetPositionAdjustedPointCloud will return the point cloud merged with the position history
-	GetSlamPathPointCloud = "slam_path_point_cloud"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -516,7 +520,8 @@ type CartographerService struct {
 	postprocessingTasks     []postprocess.Task
 	postprocessedPointCloud *[]byte
 
-	positionHistory []r3.Vector
+	positionHistory        []r3.Vector
+	positionHistoryEnabled atomic.Bool
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -703,12 +708,25 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 		return map[string]interface{}{JobDoneCommand: cartoSvc.jobDone.Load()}, nil
 	}
 
-	if _, ok := req[GetSlamPathPointCloud]; ok {
+	if _, ok := req[PositionHistoryValueCommand]; ok {
+		return map[string]interface{}{
+			PositionHistoryValueCommand: cartoSvc.positionHistoryEnabled.Load(),
+		}, nil
+	}
+
+	if _, ok := req[PositionHistoryEnableCommand]; ok {
+		cartoSvc.positionHistoryEnabled.Store(true)
+		return map[string]interface{}{
+			PositionHistoryEnableCommand: SuccessMessage,
+		}, nil
+	}
+
+	if _, ok := req[PositionHistoryGetCommand]; ok {
 		pc, err := cartoSvc.slamPathPointCloud(ctx)
 		if err != nil {
 			return nil, errors.Wrap(ErrBadSlamPathPointCloud, err.Error())
 		}
-		return map[string]interface{}{GetSlamPathPointCloud: pc}, nil
+		return map[string]interface{}{PositionHistoryGetCommand: pc}, nil
 	}
 
 	if _, ok := req[postprocess.ToggleCommand]; ok {
