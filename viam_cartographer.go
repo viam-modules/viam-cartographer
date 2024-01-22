@@ -5,6 +5,8 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"image/color"
+	"math"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -18,6 +20,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	viamgrpc "go.viam.com/rdk/grpc"
 	"go.viam.com/rdk/logging"
+	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
@@ -39,10 +42,12 @@ var (
 	ErrUseCloudSlamEnabled = errors.Errorf("resource (%s) unavailable, configured with use_cloud_slam set to true", Model.String())
 	// ErrNoPostprocessingToUndo denotes that the points have not been properly formatted.
 	ErrNoPostprocessingToUndo = errors.New("there are no postprocessing tasks to undo")
-	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
+	// ErrBadPostprocessingPointsFormat denotes that the postprocesing points have not been correctly provided.
 	ErrBadPostprocessingPointsFormat = errors.New("invalid postprocessing points format")
-	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
+	// ErrBadPostprocessingPointsFormat denotes that the postprocesing points have not been correctly provided.
 	ErrBadPostprocessingPath = errors.New("could not parse path to pcd")
+	// ErrBadSlamPathPointCloud denotes that the slam path point cloud has not been correctly received.
+	ErrBadSlamPathPointCloud = errors.New("could not get slam path point cloud")
 )
 
 const (
@@ -59,6 +64,8 @@ const (
 	SuccessMessage = "success"
 	// PostprocessToggleResponseKey is the key sent back for the toggle postprocess command.
 	PostprocessToggleResponseKey = "postprocessed"
+	// GetPositionAdjustedPointCloud will return the point cloud merged with the position history
+	GetSlamPathPointCloud = "slam_path_point_cloud"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -257,6 +264,7 @@ func New(
 		mapTimestamp:               time.Now().UTC(),
 		enableMapping:              optionalConfigParams.EnableMapping,
 		existingMap:                optionalConfigParams.ExistingMap,
+		positionHistory:            []r3.Vector{},
 	}
 
 	defer func() {
@@ -508,6 +516,8 @@ type CartographerService struct {
 	postprocessingTasks     []postprocess.Task
 	postprocessedPointCloud *[]byte
 
+	positionHistory []r3.Vector
+
 	useCloudSlam  bool
 	enableMapping bool
 	existingMap   string
@@ -528,7 +538,10 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 		return nil, "", err
 	}
 
-	pose := spatialmath.NewPoseFromPoint(r3.Vector{X: pos.X, Y: pos.Y, Z: pos.Z})
+	vec := r3.Vector{X: pos.X, Y: pos.Y, Z: pos.Z}
+	cartoSvc.positionHistory = append(cartoSvc.positionHistory, vec)
+
+	pose := spatialmath.NewPoseFromPoint(vec)
 	returnedExt := map[string]interface{}{
 		"quat": map[string]interface{}{
 			"real": pos.Real,
@@ -575,6 +588,29 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 	}
 
 	return toChunkedFunc(pc), nil
+}
+
+func (cartoSvc *CartographerService) slamPathPointCloud(ctx context.Context) ([]byte, error) {
+	var pc = pointcloud.NewWithPrealloc(len(cartoSvc.positionHistory))
+
+	for _, point := range cartoSvc.positionHistory {
+		pc.Set(point, pointcloud.NewColoredData(color.NRGBA{G: math.MaxUint8}))
+	}
+
+	var buf bytes.Buffer
+	err := pointcloud.ToPCD(pc, &buf, pointcloud.PCDBinary)
+	if err != nil {
+		return nil, err
+	}
+
+	slamPathBytes := make([]byte, buf.Len())
+	updatedReader := bytes.NewReader(buf.Bytes())
+	_, err = updatedReader.Read(slamPathBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	return slamPathBytes, nil
 }
 
 // InternalState creates a request, calls the slam algorithms InternalState endpoint and returns a callback
@@ -665,6 +701,14 @@ func (cartoSvc *CartographerService) DoCommand(ctx context.Context, req map[stri
 
 	if _, ok := req[JobDoneCommand]; ok {
 		return map[string]interface{}{JobDoneCommand: cartoSvc.jobDone.Load()}, nil
+	}
+
+	if _, ok := req[GetSlamPathPointCloud]; ok {
+		pc, err := cartoSvc.slamPathPointCloud(ctx)
+		if err != nil {
+			return nil, errors.Wrap(ErrBadSlamPathPointCloud, err.Error())
+		}
+		return map[string]interface{}{GetSlamPathPointCloud: pc}, nil
 	}
 
 	if _, ok := req[postprocess.ToggleCommand]; ok {
