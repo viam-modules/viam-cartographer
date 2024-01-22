@@ -34,9 +34,27 @@ const (
 )
 
 var (
-	_zeroTime = time.Time{}
-	_true     = true
-	_false    = false
+	_zeroTime       = time.Time{}
+	_true           = true
+	_false          = false
+	emptyPointCloud = []byte{
+		86, 69, 82, 83, 73, 79, 78, 32,
+		46, 55, 10, 70, 73, 69, 76, 68,
+		83, 32, 120, 32, 121, 32, 122,
+		10, 83, 73, 90, 69, 32, 52, 32,
+		52, 32, 52, 10, 84, 89, 80, 69,
+		32, 70, 32, 70, 32, 70, 10, 67,
+		79, 85, 78, 84, 32, 49, 32, 49,
+		32, 49, 10, 87, 73, 68, 84, 72,
+		32, 48, 10, 72, 69, 73, 71, 72,
+		84, 32, 49, 10, 86, 73, 69, 87,
+		80, 79, 73, 78, 84, 32, 48, 32,
+		48, 32, 48, 32, 49, 32, 48, 32,
+		48, 32, 48, 10, 80, 79, 73, 78,
+		84, 83, 32, 48, 10, 68, 65, 84,
+		65, 32, 98, 105, 110, 97, 114,
+		121, 10,
+	}
 )
 
 func TestNew(t *testing.T) {
@@ -517,5 +535,41 @@ func TestDoCommand(t *testing.T) {
 			test.That(t, err.Error(), test.ShouldContainSubstring, viamcartographer.ErrBadPostprocessingPath.Error())
 			test.That(t, resp, test.ShouldBeNil)
 		})
+	t.Run("position history value and enable return expectedly", func(t *testing.T) {
+		cmd := map[string]interface{}{viamcartographer.PositionHistoryValueCommand: ""}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(
+			t,
+			resp, test.ShouldResemble,
+			map[string]interface{}{viamcartographer.PositionHistoryValueCommand: false},
+		)
+
+		cmd = map[string]interface{}{viamcartographer.PositionHistoryEnableCommand: ""}
+		resp, err = svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(
+			t,
+			resp, test.ShouldResemble,
+			map[string]interface{}{viamcartographer.PositionHistoryEnableCommand: viamcartographer.SuccessMessage},
+		)
+
+		cmd = map[string]interface{}{viamcartographer.PositionHistoryValueCommand: ""}
+		resp, err = svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(
+			t,
+			resp, test.ShouldResemble,
+			map[string]interface{}{viamcartographer.PositionHistoryValueCommand: true},
+		)
+	})
+	t.Run("position history get returns a byte slice of the pointcloud", func(t *testing.T) {
+		cmd := map[string]interface{}{viamcartographer.PositionHistoryGetCommand: ""}
+		resp, err := svc.DoCommand(context.Background(), cmd)
+		test.That(t, err, test.ShouldBeNil)
+		val, ok := resp[viamcartographer.PositionHistoryGetCommand]
+		test.That(t, ok, test.ShouldBeTrue)
+		test.That(t, val, test.ShouldResemble, emptyPointCloud)
+	})
 	test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 }
