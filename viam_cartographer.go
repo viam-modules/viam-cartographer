@@ -64,7 +64,7 @@ const (
 	PositionHistoryGetCommand = "position_history_get"
 	// PositionHistoryEnableCommand will change whether or not the UI will get the PositionHistory
 	PositionHistoryEnableCommand = "position_history_enable"
-	// PositionHistoryValue will change whether or not the UI will get the PositionHistory
+	// PositionHistoryValueCommand will change whether or not the UI will get the PositionHistory
 	PositionHistoryValueCommand = "position_history_value"
 	// SuccessMessage is sent back after a successful DoCommand request.
 	SuccessMessage = "success"
@@ -599,7 +599,10 @@ func (cartoSvc *CartographerService) slamPathPointCloud(ctx context.Context) ([]
 	var pc = pointcloud.NewWithPrealloc(len(cartoSvc.positionHistory))
 
 	for _, point := range cartoSvc.positionHistory {
-		pc.Set(point, pointcloud.NewColoredData(color.NRGBA{G: math.MaxUint8}))
+		err := pc.Set(point, pointcloud.NewColoredData(color.NRGBA{G: math.MaxUint8}))
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	var buf bytes.Buffer
