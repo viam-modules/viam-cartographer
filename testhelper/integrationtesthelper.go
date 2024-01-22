@@ -116,10 +116,10 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expec
 
 // Checks the cartographer map and confirms there at least 100 map points.
 func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) {
-	prop, err := svc.Properties(context.Background())
+	props, err := svc.Properties(context.Background())
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, prop.cloud_slam, test.ShouldBeFalse)
-	test.That(t, prop.mapping_mode, test.ShouldEqual)
+	test.That(t, props.CloudSlam, test.ShouldBeFalse)
+	test.That(t, props.MappingMode, test.ShouldEqual)
 
 	pcd, err := slam.PointCloudMapFull(context.Background(), svc)
 	test.That(t, err, test.ShouldBeNil)
