@@ -60,11 +60,11 @@ const (
 
 	// JobDoneCommand is the string that needs to be sent to DoCommand to find out if the job has finished.
 	JobDoneCommand = "job_done"
-	// PositionHistoryGetCommand will return the point cloud merged with the position history
+	// PositionHistoryGetCommand will return the point cloud merged with the position history.
 	PositionHistoryGetCommand = "position_history_get"
-	// PositionHistoryEnableCommand will change whether or not the UI will get the PositionHistory
+	// PositionHistoryEnableCommand will set the boolean that enables position rendering on the UI to true.
 	PositionHistoryEnableCommand = "position_history_enable"
-	// PositionHistoryValueCommand will change whether or not the UI will get the PositionHistory
+	// PositionHistoryValueCommand will change whether or not the UI will render the Position History.
 	PositionHistoryValueCommand = "position_history_value"
 	// SuccessMessage is sent back after a successful DoCommand request.
 	SuccessMessage = "success"
