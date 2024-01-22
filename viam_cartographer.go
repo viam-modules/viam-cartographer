@@ -596,7 +596,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 }
 
 func (cartoSvc *CartographerService) slamPathPointCloud() ([]byte, error) {
-	var pc = pointcloud.NewWithPrealloc(len(cartoSvc.positionHistory))
+	pc := pointcloud.NewWithPrealloc(len(cartoSvc.positionHistory))
 
 	for _, point := range cartoSvc.positionHistory {
 		err := pc.Set(point, pointcloud.NewColoredData(color.NRGBA{G: math.MaxUint8}))
