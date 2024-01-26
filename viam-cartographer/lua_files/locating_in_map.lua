@@ -12,8 +12,25 @@ TRAJECTORY_BUILDER.trajectory_builder_2d.use_imu_data = false
 TRAJECTORY_BUILDER.trajectory_builder_2d.use_online_correlative_scan_matching = true
 TRAJECTORY_BUILDER.trajectory_builder_2d.min_range = 0.2
 TRAJECTORY_BUILDER.trajectory_builder_2d.max_range = 25.
-TRAJECTORY_BUILDER.trajectory_builder_2d.missing_data_ray_length = 25 -- DO NOT CHANGE
+TRAJECTORY_BUILDER.trajectory_builder_2d.missing_data_ray_length = 22 -- DO NOT CHANGE
 
+TRAJECTORY_BUILDER.initial_trajectory_pose = {
+  relative_pose = {
+    translation = {
+      x = 10000,
+      y = 10000,
+      z = 0
+    },
+    rotation = {
+      x = 0,
+      y = 0,
+      z = 1,
+      w = 0
+    }
+  },
+  to_trajectory_id = 0,
+  timestamp = 0
+}
 -- tuneable:
 TRAJECTORY_BUILDER.pure_localization_trimmer = {
   max_submaps_to_keep = 3,
