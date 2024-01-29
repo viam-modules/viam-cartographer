@@ -139,13 +139,13 @@ BOOST_AUTO_TEST_SUITE(CartoFacadeCPPAPI);
 
 BOOST_AUTO_TEST_CASE(CartoFacade_lib_init_terminate) {
     viam_carto_lib *lib;
-    BOOST_TEST(FLAGS_logtostderr == 0);
+    BOOST_TEST(FLAGS_logtostdout == 0);
     BOOST_TEST(viam_carto_lib_init(nullptr, 0, 0) == VIAM_CARTO_LIB_INVALID);
     BOOST_TEST(viam_carto_lib_terminate(nullptr) == VIAM_CARTO_LIB_INVALID);
     viam_carto_lib *invalidlib = nullptr;
     BOOST_TEST(viam_carto_lib_terminate(&invalidlib) == VIAM_CARTO_LIB_INVALID);
 
-    BOOST_TEST(FLAGS_logtostderr == 0);
+    BOOST_TEST(FLAGS_logtostdout == 0);
     BOOST_TEST(FLAGS_v == 0);
     BOOST_TEST(FLAGS_minloglevel == 0);
     BOOST_TEST(viam_carto_lib_init(&lib, 2, 3) == VIAM_CARTO_SUCCESS);
@@ -153,13 +153,13 @@ BOOST_AUTO_TEST_CASE(CartoFacade_lib_init_terminate) {
     BOOST_TEST(lib->minloglevel == 2);
     BOOST_TEST(lib->verbose == 3);
     // begin global side effects
-    BOOST_TEST(FLAGS_logtostderr == 1);
+    BOOST_TEST(FLAGS_logtostdout == 1);
     BOOST_TEST(FLAGS_minloglevel == 2);
     BOOST_TEST(FLAGS_v == 3);
     // end global side effects
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
     BOOST_TEST(lib == nullptr);
-    BOOST_TEST(FLAGS_logtostderr == 0);
+    BOOST_TEST(FLAGS_logtostdout == 0);
     BOOST_TEST(FLAGS_v == 0);
     BOOST_TEST(FLAGS_minloglevel == 0);
 }

@@ -824,7 +824,7 @@ extern int viam_carto_lib_init(viam_carto_lib **ppVCL, int minloglevel,
         return VIAM_CARTO_OUT_OF_MEMORY;
     }
     google::InitGoogleLogging("cartographer");
-    FLAGS_logtostderr = 1;
+    FLAGS_logtostdout = 1;
     FLAGS_minloglevel = minloglevel;
     FLAGS_v = verbose;
     vcl->minloglevel = minloglevel;
@@ -844,7 +844,7 @@ extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
         return VIAM_CARTO_LIB_INVALID;
     }
 
-    FLAGS_logtostderr = 0;
+    FLAGS_logtostdout = 0;
     FLAGS_minloglevel = 0;
     FLAGS_v = 0;
     google::ShutdownGoogleLogging();
