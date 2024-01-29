@@ -844,7 +844,7 @@ extern int viam_carto_lib_terminate(viam_carto_lib **ppVCL) {
         return VIAM_CARTO_LIB_INVALID;
     }
 
-    FLAGS_logtostderr = 0;
+    FLAGS_logtostdout = 0;
     FLAGS_minloglevel = 0;
     FLAGS_v = 0;
     google::ShutdownGoogleLogging();
