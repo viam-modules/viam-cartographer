@@ -28,8 +28,8 @@ TRAJECTORY_BUILDER.initial_trajectory_pose = {
       w = 0
     }
   },
-  to_trajectory_id = 0,
-  timestamp = 0
+  to_trajectory_id = 0, -- 0
+  timestamp = 0 -- timestamp
 }
 -- tuneable:
 TRAJECTORY_BUILDER.pure_localization_trimmer = {
