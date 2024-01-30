@@ -240,8 +240,8 @@ func integrationTimedLidar(
 }
 
 // IntegrationCartographer is responsible for running a viam-cartographer process using the desired mock sensors. Once started it will
-// wait for all data to be processed by monitor sensor channels. After data has been fully processed, the endpoints Position,
-// PointCloudMap, InternalState are evaluated and the process is closed out. The final internal state of cartographer is then returned.
+// wait for all data to be processed by monitoring sensor channels. After data has been fully processed, the endpoints Position,
+// PointCloudMap, and InternalState are evaluated, and the process is closed out. The final internal state of cartographer is then returned.
 func IntegrationCartographer(
 	t *testing.T,
 	existingMap string,
