@@ -229,7 +229,8 @@ void CartoFacade::IOInit() {
 
         if (algo_config.has_initial_trajectory_pose) {
             if (slam_mode == viam::carto_facade::SlamMode::MAPPING) {
-                VLOG(1) << "initial starting pose can not be set in mapping mode, skipping";
+                VLOG(1) << "initial starting pose can not be set in mapping "
+                           "mode, skipping";
             } else {
                 map_builder.OverwriteInitialStartTrajectory(
                     algo_config.initial_trajectory_pose_x,

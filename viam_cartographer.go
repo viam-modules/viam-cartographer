@@ -5,7 +5,6 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -45,9 +44,8 @@ var (
 	ErrBadPostprocessingPointsFormat = errors.New("invalid postprocessing points format")
 	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
 	ErrBadPostprocessingPath = errors.New("could not parse path to pcd")
-	// startPosRegex contains the regex formula for extracting the optional initial_starting_pose values from the config
+	// startPosRegex contains the regex formula for extracting the optional initial_starting_pose values from the config.
 	startPosRegex = regexp.MustCompile(`X:(\d+(?:\.\d+)?),\s*Y:(\d+(?:\.\d+)?),\s*Theta:(\d+(?:\.\d+)?)`)
-)
 )
 
 const (
@@ -396,9 +394,7 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 			}
 			cartoAlgoCfg.RotationWeight = fVal
 		case "initial_starting_pose":
-			pattern := regexp.MustCompile(`X:(\d+(?:\.\d+)?),\s*Y:(\d+(?:\.\d+)?),\s*Theta:(\d+(?:\.\d+)?)`)
-			matches := pattern.FindStringSubmatch(val)
-
+			matches := startPosRegex.FindStringSubmatch(val)
 			if len(matches) > 0 {
 				fValX, err := strconv.ParseFloat(matches[1], 64)
 				if err != nil {
