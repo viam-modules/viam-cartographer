@@ -116,33 +116,10 @@ void MapBuilder::StartTrajectoryBuilder(bool use_imu_data) {
     if (use_imu_data) {
         sensorList.insert(kIMUSensorId);
     }
-
-    //cartographer::mapping::PoseGraphInterface::InitialTrajectoryPose init_trajectory_pose; 
-    //init_trajectory_pose.to_trajectory_id = 0;
-    //init_trajectory_pose.to_trajectory_id = 0;
-
-    VLOG(1) << "has_initial_trajectory_pose: " << trajectory_builder_options_.has_initial_trajectory_pose();
-    VLOG(1) << "to_trajectory_id: " << trajectory_builder_options_.initial_trajectory_pose().to_trajectory_id();
-    // VLOG(1) << "pose: " << trajectory_builder_options_.initial_trajectory_pose().relative_pose();
-    // VLOG(1) << "time: " << trajectory_builder_options_.initial_trajectory_pose().time();
-
     trajectory_id = map_builder_->AddTrajectoryBuilder(
         sensorList, trajectory_builder_options_, GetLocalSlamResultCallback());
 
     VLOG(1) << "Using trajectory ID: " << trajectory_id;
-
-    VLOG(1) << "voxel_filter_size: " <<  trajectory_builder_options_.trajectory_builder_2d_options().voxel_filter_size() << "\n";
-
-    VLOG(1) << "has_initial_trajectory_pose: " << trajectory_builder_options_.has_initial_trajectory_pose();
-    // VLOG(1) << "initial_trajectory_pose: " << trajectory_builder_options_.initial_trajectory_pose;
-
-    // const auto& initial_trajectory_pose = trajectory_options.initial_trajectory_pose();
-    // pose_graph_->SetInitialTrajectoryPose(
-    //     trajectory_id, initial_trajectory_pose.to_trajectory_id(),
-    //     transform::ToRigid3(initial_trajectory_pose.relative_pose()),
-    //     common::FromUniversal(initial_trajectory_pose.timestamp()));
-    // trajectory_id (HAVE)
-    // initial_trajectory_pose (NEED)
 
     trajectory_builder = map_builder_->GetTrajectoryBuilder(trajectory_id);
 }

@@ -102,12 +102,6 @@ type CartoConfig struct {
 	ExistingMap   string
 }
 
-type Pose2D struct {
-	X     float32
-	Y     float32
-	Theta float32
-}
-
 // CartoAlgoConfig contains config values from app
 type CartoAlgoConfig struct {
 	OptimizeOnStart      bool
@@ -430,7 +424,6 @@ func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac.initial_trajectory_pose_y = C.double(acfg.InitialTrajectoryPoseY)
 	vcac.initial_trajectory_pose_theta = C.double(acfg.InitialTrajectoryPoseTheta)
 
-	vcac.rotation_weight = C.double(acfg.RotationWeight)
 	return vcac
 }
 
