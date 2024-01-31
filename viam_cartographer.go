@@ -5,8 +5,10 @@ package viamcartographer
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"sync"
 	"sync/atomic"
@@ -43,6 +45,9 @@ var (
 	ErrBadPostprocessingPointsFormat = errors.New("invalid postprocessing points format")
 	// ErrBadPostprocessingPointsFormat denotest that the postprocesing points have not been correctly provided.
 	ErrBadPostprocessingPath = errors.New("could not parse path to pcd")
+	// startPosRegex contains the regex formula for extracting the optional initial_starting_pose values from the config
+	startPosRegex = regexp.MustCompile(`X:(\d+(?:\.\d+)?),\s*Y:(\d+(?:\.\d+)?),\s*Theta:(\d+(?:\.\d+)?)`)
+)
 )
 
 const (
@@ -390,6 +395,31 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 				return cartoAlgoCfg, err
 			}
 			cartoAlgoCfg.RotationWeight = fVal
+		case "initial_starting_pose":
+			pattern := regexp.MustCompile(`X:(\d+(?:\.\d+)?),\s*Y:(\d+(?:\.\d+)?),\s*Theta:(\d+(?:\.\d+)?)`)
+			matches := pattern.FindStringSubmatch(val)
+
+			if len(matches) > 0 {
+				fValX, err := strconv.ParseFloat(matches[1], 64)
+				if err != nil {
+					return cartoAlgoCfg, err
+				}
+				fValY, err := strconv.ParseFloat(matches[2], 64)
+				if err != nil {
+					return cartoAlgoCfg, err
+				}
+				fValTheta, err := strconv.ParseFloat(matches[3], 64)
+				if err != nil {
+					return cartoAlgoCfg, err
+				}
+
+				cartoAlgoCfg.HasInitialTrajectoryPose = true
+				cartoAlgoCfg.InitialTrajectoryPoseX = fValX
+				cartoAlgoCfg.InitialTrajectoryPoseY = fValY
+				cartoAlgoCfg.InitialTrajectoryPoseTheta = fValTheta
+			} else {
+				return cartoAlgoCfg, errors.Errorf("initial_starting_pose needs to be in format 'X:<val>, Y:<val>, Theta:<val>, but received %v", val)
+			}
 			// ignore mode as it is a special case
 		case "mode":
 		default:

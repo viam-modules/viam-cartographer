@@ -102,6 +102,12 @@ type CartoConfig struct {
 	ExistingMap   string
 }
 
+type Pose2D struct {
+	X     float32
+	Y     float32
+	Theta float32
+}
+
 // CartoAlgoConfig contains config values from app
 type CartoAlgoConfig struct {
 	OptimizeOnStart      bool
@@ -118,6 +124,11 @@ type CartoAlgoConfig struct {
 	OccupiedSpaceWeight  float64
 	TranslationWeight    float64
 	RotationWeight       float64
+
+	HasInitialTrajectoryPose   bool
+	InitialTrajectoryPoseX     float64
+	InitialTrajectoryPoseY     float64
+	InitialTrajectoryPoseTheta float64
 }
 
 // NewLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
@@ -412,6 +423,13 @@ func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac.min_added_submaps_count = C.int(acfg.MinAddedSubmapsCount)
 	vcac.occupied_space_weight = C.double(acfg.OccupiedSpaceWeight)
 	vcac.translation_weight = C.double(acfg.TranslationWeight)
+	vcac.rotation_weight = C.double(acfg.RotationWeight)
+
+	vcac.has_initial_trajectory_pose = C.bool(acfg.HasInitialTrajectoryPose)
+	vcac.initial_trajectory_pose_x = C.double(acfg.InitialTrajectoryPoseX)
+	vcac.initial_trajectory_pose_y = C.double(acfg.InitialTrajectoryPoseY)
+	vcac.initial_trajectory_pose_theta = C.double(acfg.InitialTrajectoryPoseTheta)
+
 	vcac.rotation_weight = C.double(acfg.RotationWeight)
 	return vcac
 }

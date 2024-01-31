@@ -268,6 +268,30 @@ void MapBuilder::OverwriteRotationWeight(double value) {
     mutable_ceres_scan_matcher_options->set_rotation_weight(value);
 }
 
+void MapBuilder::OverwriteInitialStartTrajectory(double x, double y, double theta) {
+    auto mutable_initial_trajectory_pose = trajectory_builder_options_.mutable_initial_trajectory_pose();
+
+    // relative pose
+    auto relative_pose = mutable_initial_trajectory_pose->mutable_relative_pose();
+
+    auto* relative_pose_translation = relative_pose->mutable_translation();
+    relative_pose_translation->set_x(x);
+    relative_pose_translation->set_y(y);
+    relative_pose_translation->set_z(0);
+
+    auto* relative_pose_rotation = relative_pose->mutable_rotation();
+    relative_pose_rotation->set_x(0);
+    relative_pose_rotation->set_y(0);
+    relative_pose_rotation->set_z(1);
+    relative_pose_rotation->set_w(theta);
+    
+    // to_trajectory id
+    mutable_initial_trajectory_pose->set_to_trajectory_id(0);
+
+    // timestamp
+    mutable_initial_trajectory_pose->set_timestamp(0);
+}
+
 int MapBuilder::GetOptimizeEveryNNodes() {
     return map_builder_options_.pose_graph_options().optimize_every_n_nodes();
 }

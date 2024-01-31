@@ -226,6 +226,18 @@ void CartoFacade::IOInit() {
             algo_config.occupied_space_weight);
         map_builder.OverwriteTranslationWeight(algo_config.translation_weight);
         map_builder.OverwriteRotationWeight(algo_config.rotation_weight);
+
+        if (algo_config.has_initial_trajectory_pose) {
+            if (slam_mode == viam::carto_facade::SlamMode::MAPPING) {
+                VLOG(1) << "initial starting pose can not be set in mapping mode, skipping";
+            } else {
+                map_builder.OverwriteInitialStartTrajectory(
+                    algo_config.initial_trajectory_pose_x,
+                    algo_config.initial_trajectory_pose_y,
+                    algo_config.initial_trajectory_pose_theta);
+            }
+        }
+
         map_builder.BuildMapBuilder();
     }
 
