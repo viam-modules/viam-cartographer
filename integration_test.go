@@ -19,7 +19,7 @@ import (
 	"github.com/viamrobotics/viam-cartographer/testhelper"
 )
 
-// Saves cartographer's internal state in the data directory.
+// saveInternalState saves cartographer's internal state in the data directory.
 func saveInternalState(t *testing.T, internalState []byte, dataDir string) string {
 	timeStamp := time.Now().UTC()
 	internalStateDir := filepath.Join(dataDir, "internal_state")
@@ -45,7 +45,7 @@ func TestIntegrationCartographer(t *testing.T) {
 		mode        cartofacade.SlamMode
 		subAlgo     viamcartographer.SubAlgo
 	}{
-		// Online sensor
+		// Online run with lidar only
 		{
 			description: "online sensor mapping mode 2D",
 			online:      true,
@@ -67,7 +67,7 @@ func TestIntegrationCartographer(t *testing.T) {
 			mode:        cartofacade.UpdatingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
-		// Offline sensor
+		// Offline run with lidar only
 		{
 			description: "offline sensor mapping mode 2D",
 			online:      false,
@@ -82,7 +82,7 @@ func TestIntegrationCartographer(t *testing.T) {
 			mode:        cartofacade.UpdatingMode,
 			subAlgo:     viamcartographer.Dim2d,
 		},
-		// Online with imu sensor
+		// Online run with lidar + imu
 		{
 			description: "online with imu sensor mapping mode 2D",
 			online:      true,
@@ -109,6 +109,9 @@ func TestIntegrationCartographer(t *testing.T) {
 	// Loop over defined test cases, resetting the directories between slam sessions
 	for _, tt := range cases {
 		t.Run(tt.description, func(t *testing.T) {
+			// 1. Run cartographer in mapping mode
+			enableMapping := true
+
 			// Prep first run directory
 			dataDirectory1, err := os.MkdirTemp("", "*")
 			test.That(t, err, test.ShouldBeNil)
@@ -117,18 +120,21 @@ func TestIntegrationCartographer(t *testing.T) {
 				test.That(t, err, test.ShouldBeNil)
 			}()
 
-			// Enable mapping mode
-			enableMapping := true
-
 			// Run mapping test
 			internalState := testhelper.IntegrationCartographer(
 				t, "", tt.subAlgo, logger, tt.online,
 				tt.imuEnabled, enableMapping, cartofacade.MappingMode,
 			)
 
-			// Return if in mapping mode as there are no further actions required
+			// 2. Return if we're only testing mapping mode, as we are done with
+			// mapping at this point
 			if tt.mode == cartofacade.MappingMode {
 				return
+			}
+
+			// 3. Run cartographer either in localizing or updating mode
+			if tt.mode == cartofacade.LocalizingMode {
+				enableMapping = false
 			}
 
 			// Prep second run directory
@@ -143,10 +149,7 @@ func TestIntegrationCartographer(t *testing.T) {
 			existingMap := saveInternalState(t, internalState, dataDirectory2)
 			test.That(t, existingMap, test.ShouldNotEqual, "")
 
-			// Run follow up updating or localizing test
-			if tt.mode == cartofacade.LocalizingMode {
-				enableMapping = false
-			}
+			// Run follow-up updating or localizing test
 			testhelper.IntegrationCartographer(
 				t, existingMap, tt.subAlgo, logger,
 				tt.online, tt.imuEnabled, enableMapping, tt.mode,

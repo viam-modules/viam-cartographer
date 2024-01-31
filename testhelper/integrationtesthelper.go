@@ -36,14 +36,13 @@ import (
 )
 
 const (
-	// NumPointClouds is the amount of mock lidar data saved in the mock_data/lidar slam artifact
-	// directory used for integration tests.
-	NumPointClouds = 10
-	// NumIMUData is the amount of mock IMU data saved in the mock_data/imu/data.txt slam artifact
-	// file used for integration tests.
+	// NumPointCloudFiles is the number of mock lidar data files we want to use for the
+	// integration tests. The files are stored in the mock_data/lidar slam artifact directory.
+	NumPointCloudFiles = 10
+	// NumIMUData is the amount of mock IMU data we want to use for the integration tests.
+	// The data is stored in the mock_data/imu/data.txt slam artifact file.
 	NumIMUData = 40
-	// Path to slam mock data used for integration tests artifact path.
-	// artifact.MustPath("viam-cartographer/mock_lidar").
+	// mockDataPath is the path to slam mock data used for integration tests artifact path.
 	mockDataPath                      = "viam-cartographer/mock_data"
 	sensorDataIngestionWaitTime       = 50 * time.Millisecond
 	defaultLidarTimeInterval          = 200
@@ -172,8 +171,7 @@ func integrationTimedLidar(
 	timeTracker *timeTracker,
 ) (s.TimedLidar, error) {
 	// Check that the required amount of lidar data is present
-	err := mockLidarReadingsValid()
-	if err != nil {
+	if err := mockLidarReadingsValid(); err != nil {
 		return nil, err
 	}
 
@@ -212,7 +210,7 @@ func integrationTimedLidar(
 		// checks if LastLidarTime has been defined. If so, simulate endOfDataSet error.
 		t.Logf("TimedLidarReading Mock i: %d, closed: %v, readingTime: %s\n", i, timeTracker.lidarDone,
 			timeTracker.lidarTime.String())
-		if i >= NumPointClouds || timeTracker.imuDone {
+		if i >= NumPointCloudFiles || timeTracker.imuDone {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
 			if !timeTracker.lidarDone {
 				done <- struct{}{}
@@ -516,10 +514,10 @@ func mockLidarReadingsValid() error {
 			files = append(files, f.Name())
 		}
 	}
-	if len(files) < NumPointClouds {
-		return errors.Errorf("expected at least %v lidar readings for integration test", NumPointClouds)
+	if len(files) < NumPointCloudFiles {
+		return errors.Errorf("expected at least %v lidar reading files for integration test", NumPointCloudFiles)
 	}
-	for i := 0; i < NumPointClouds; i++ {
+	for i := 0; i < NumPointCloudFiles; i++ {
 		found := false
 		expectedFile := fmt.Sprintf("%d.pcd", i)
 		for _, file := range files {
