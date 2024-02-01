@@ -142,8 +142,7 @@ type timeTracker struct {
 	lidarTime     time.Time
 	nextLidarTime time.Time
 
-	imuTime     time.Time
-	nextImuTime time.Time
+	imuTime time.Time
 
 	lidarDone bool
 	imuDone   bool
@@ -270,6 +269,9 @@ func IntegrationCartographer(
 	lidarDone := make(chan struct{})
 	lidarReadingInterval := time.Millisecond * defaultLidarTimeInterval
 	timeTracker.lidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
+
+	// We're using LidarWithErroringFunctions as a placeholder for deps. We're defining and
+	// using the injection lidar to overwrite this lidar later on.
 	if !online {
 		attrCfg.Camera = map[string]string{
 			"name":              string(LidarWithErroringFunctions),
@@ -287,6 +289,8 @@ func IntegrationCartographer(
 	// Add imu component to config (optional)
 	imuDone := make(chan struct{})
 	if useIMU {
+		// We're using MovementSensorWithErroringFunctions as a placeholder for deps.
+		// We're defining and using the injection movement sensor to overwrite this lidar later on.
 		if !online {
 			attrCfg.MovementSensor = map[string]string{
 				"name":              string(MovementSensorWithErroringFunctions),
@@ -305,12 +309,12 @@ func IntegrationCartographer(
 	timedLidar, err := integrationTimedLidar(t, attrCfg.Camera,
 		lidarReadingInterval, lidarDone, &timeTracker)
 	test.That(t, err, test.ShouldBeNil)
-	timedIMU, err := integrationTimedIMU(t, attrCfg.MovementSensor,
-		movementSensorReadingInterval, imuDone, &timeTracker)
-	test.That(t, err, test.ShouldBeNil)
 
-	if !useIMU {
-		test.That(t, timedIMU, test.ShouldBeNil)
+	var timedIMU s.TimedMovementSensor = nil
+	if useIMU {
+		timedIMU, err = integrationTimedIMU(t, attrCfg.MovementSensor,
+			movementSensorReadingInterval, imuDone, &timeTracker)
+		test.That(t, err, test.ShouldBeNil)
 	}
 
 	// Start SLAM Service
@@ -429,7 +433,6 @@ func integrationTimedIMU(
 		// Advance the data index and update time tracker (manual timestamps occurs here)
 		i++
 		timeTracker.imuTime = timeTracker.imuTime.Add(sensorReadingInterval)
-		timeTracker.nextImuTime = timeTracker.imuTime.Add(sensorReadingInterval)
 
 		return resp, nil
 	}
