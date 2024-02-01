@@ -132,6 +132,10 @@ viam_carto_algo_config viam_carto_algo_config_setup(bool use_imu_data) {
     ac.occupied_space_weight = 20.0;
     ac.translation_weight = 10.0;
     ac.rotation_weight = 1.0;
+    ac.has_initial_trajectory_pose = false;
+    ac.initial_trajectory_pose_x = 0;
+    ac.initial_trajectory_pose_y = 0;
+    ac.initial_trajectory_pose_theta = 0;
     return ac;
 }
 
