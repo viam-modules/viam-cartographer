@@ -152,6 +152,11 @@ typedef struct viam_carto_algo_config {
     double occupied_space_weight;
     double translation_weight;
     double rotation_weight;
+    bool has_initial_trajectory_pose;
+    double initial_trajectory_pose_x;
+    double initial_trajectory_pose_y;
+    double initial_trajectory_pose_theta;
+
 } viam_carto_algo_config;
 
 typedef struct viam_carto_config {

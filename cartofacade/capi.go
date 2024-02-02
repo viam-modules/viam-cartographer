@@ -118,6 +118,11 @@ type CartoAlgoConfig struct {
 	OccupiedSpaceWeight  float64
 	TranslationWeight    float64
 	RotationWeight       float64
+
+	HasInitialTrajectoryPose   bool
+	InitialTrajectoryPoseX     float64
+	InitialTrajectoryPoseY     float64
+	InitialTrajectoryPoseTheta float64
 }
 
 // NewLib calls viam_carto_lib_init and returns a pointer to a viam carto lib object.
@@ -399,6 +404,8 @@ func getConfig(cfg CartoConfig) (C.viam_carto_config, error) {
 
 func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac := C.viam_carto_algo_config{}
+
+	// Cartographer tuning parameters
 	vcac.optimize_on_start = C.bool(acfg.OptimizeOnStart)
 	vcac.optimize_every_n_nodes = C.int(acfg.OptimizeEveryNNodes)
 	vcac.num_range_data = C.int(acfg.NumRangeData)
@@ -413,6 +420,13 @@ func toAlgoConfig(acfg CartoAlgoConfig) C.viam_carto_algo_config {
 	vcac.occupied_space_weight = C.double(acfg.OccupiedSpaceWeight)
 	vcac.translation_weight = C.double(acfg.TranslationWeight)
 	vcac.rotation_weight = C.double(acfg.RotationWeight)
+
+	// Values used to define starting position
+	vcac.has_initial_trajectory_pose = C.bool(acfg.HasInitialTrajectoryPose)
+	vcac.initial_trajectory_pose_x = C.double(acfg.InitialTrajectoryPoseX)
+	vcac.initial_trajectory_pose_y = C.double(acfg.InitialTrajectoryPoseY)
+	vcac.initial_trajectory_pose_theta = C.double(acfg.InitialTrajectoryPoseTheta)
+
 	return vcac
 }
 

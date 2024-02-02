@@ -83,6 +83,7 @@ class MapBuilder {
     void OverwriteOccupiedSpaceWeight(double value);
     void OverwriteTranslationWeight(double value);
     void OverwriteRotationWeight(double value);
+    void OverwriteInitialStartTrajectory(double x, double y, double theta);
 
     // Getter functions to return the exposed cartographer parameters.
     int GetOptimizeEveryNNodes();
