@@ -192,15 +192,14 @@ func integrationTimedLidar(
 			for {
 				timeTracker.mu.Lock()
 				if !timeTracker.lidarTime.After(timeTracker.imuTime) {
-					time.Sleep(sensorDataIngestionWaitTime)
 					break
 				}
 				timeTracker.mu.Unlock()
 			}
 		} else {
 			timeTracker.mu.Lock()
-			time.Sleep(sensorDataIngestionWaitTime)
 		}
+		time.Sleep(sensorDataIngestionWaitTime)
 
 		// Communicate that all lidar readings have been sent to cartographer or if the last IMU reading has been sent,
 		// checks if LastLidarTime has been defined. If so, simulate endOfDataSet error.
