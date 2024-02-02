@@ -168,6 +168,7 @@ func integrationTimedLidar(
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *timeTracker,
+	useIMU bool,
 ) (s.TimedLidar, error) {
 	// Check that the required amount of lidar data is present
 	if err := mockLidarReadingsValid(); err != nil {
@@ -186,23 +187,21 @@ func integrationTimedLidar(
 	injectLidar.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 	injectLidar.TimedLidarReadingFunc = func(ctx context.Context) (s.TimedLidarReadingResponse, error) {
 		defer timeTracker.mu.Unlock()
-		/*
-			Holds the process until for all necessary IMU data has been sent to cartographer. Only applicable
-			when the IMU is present (timeTracker.NextImuTime has been defined) and is always true in the first iteration.
-			This and the manual definition of timestamps allow for consistent results.
-		*/
-		for {
-			timeTracker.mu.Lock()
-			if timeTracker.imuTime == undefinedTime {
-				time.Sleep(sensorDataIngestionWaitTime)
-				break
-			}
 
-			if i <= 1 || !timeTracker.lidarTime.After(timeTracker.imuTime) {
-				time.Sleep(sensorDataIngestionWaitTime)
-				break
+		if useIMU && i > 1 {
+			// Holds the process until IMU data has been sent to cartographer. Is always true in the first
+			// iteration. This and the manual definition of timestamps allow for consistent results.
+			for {
+				timeTracker.mu.Lock()
+				if !timeTracker.lidarTime.After(timeTracker.imuTime) {
+					time.Sleep(sensorDataIngestionWaitTime)
+					break
+				}
+				timeTracker.mu.Unlock()
 			}
-			timeTracker.mu.Unlock()
+		} else {
+			timeTracker.mu.Lock()
+			time.Sleep(sensorDataIngestionWaitTime)
 		}
 
 		// Communicate that all lidar readings have been sent to cartographer or if the last IMU reading has been sent,
@@ -308,7 +307,7 @@ func IntegrationCartographer(
 
 	// Start Sensors
 	timedLidar, err := integrationTimedLidar(t, attrCfg.Camera,
-		lidarReadingInterval, lidarDone, &timeTracker)
+		lidarReadingInterval, lidarDone, &timeTracker, useIMU)
 	test.That(t, err, test.ShouldBeNil)
 
 	var timedIMU s.TimedMovementSensor = nil
