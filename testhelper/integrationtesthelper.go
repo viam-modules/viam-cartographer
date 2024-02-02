@@ -186,7 +186,7 @@ func integrationTimedLidar(
 	injectLidar.TimedLidarReadingFunc = func(ctx context.Context) (s.TimedLidarReadingResponse, error) {
 		defer timeTracker.mu.Unlock()
 
-		if useIMU && i > 1 {
+		if useIMU {
 			// Holds the process until IMU data has been sent to cartographer. Is always true in the first
 			// iteration. This and the manual definition of timestamps allow for consistent results.
 			for {
@@ -399,7 +399,7 @@ func integrationTimedIMU(
 		// results.
 		for {
 			timeTracker.mu.Lock()
-			if i == 0 || timeTracker.imuTime.Before(timeTracker.nextLidarTime) {
+			if timeTracker.imuTime.Before(timeTracker.nextLidarTime) {
 				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
