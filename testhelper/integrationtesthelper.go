@@ -397,11 +397,9 @@ func integrationTimedIMU(
 	injectIMU.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
 	injectIMU.TimedMovementSensorReadingFunc = func(ctx context.Context) (s.TimedMovementSensorReadingResponse, error) {
 		defer timeTracker.mu.Unlock()
-		/*
-			Holds the process until for all necessary lidar data has been sent to cartographer. Is always
-			true in the first iteration. This and the manual definition of timestamps allow for consistent
-			results.
-		*/
+		// Holds the process until for all necessary lidar data has been sent to cartographer. Is always
+		// true in the first iteration. This and the manual definition of timestamps allow for consistent
+		// results.
 		for {
 			timeTracker.mu.Lock()
 			if i == 0 || timeTracker.imuTime.Before(timeTracker.nextLidarTime) {
