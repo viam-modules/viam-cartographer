@@ -271,7 +271,7 @@ func IntegrationCartographer(
 	timeTracker.lidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 
 	// We're using LidarWithErroringFunctions as a placeholder for deps. We're defining and
-	// using the injection lidar to overwrite this lidar later on.
+	// using the injection lidar to overwrite this lidar when we create the slam service.
 	if !online {
 		attrCfg.Camera = map[string]string{
 			"name":              string(LidarWithErroringFunctions),
@@ -290,7 +290,8 @@ func IntegrationCartographer(
 	imuDone := make(chan struct{})
 	if useIMU {
 		// We're using MovementSensorWithErroringFunctions as a placeholder for deps.
-		// We're defining and using the injection movement sensor to overwrite this lidar later on.
+		// We're defining and using the injection movement sensor to overwrite this movement
+		// sensor when we create the slam service.
 		if !online {
 			attrCfg.MovementSensor = map[string]string{
 				"name":              string(MovementSensorWithErroringFunctions),
