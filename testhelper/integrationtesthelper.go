@@ -50,8 +50,6 @@ const (
 	testTimeout                       = 20 * time.Second
 )
 
-var undefinedTime = time.Time{}
-
 // Test final position and orientation are at approximately the expected values.
 func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expectedComponentRef string) {
 	var expectedPos r3.Vector
@@ -310,7 +308,7 @@ func IntegrationCartographer(
 		lidarReadingInterval, lidarDone, &timeTracker, useIMU)
 	test.That(t, err, test.ShouldBeNil)
 
-	var timedIMU s.TimedMovementSensor = nil
+	var timedIMU s.TimedMovementSensor
 	if useIMU {
 		timedIMU, err = integrationTimedIMU(t, attrCfg.MovementSensor,
 			movementSensorReadingInterval, imuDone, &timeTracker)
