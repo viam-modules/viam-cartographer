@@ -299,7 +299,7 @@ func IntegrationCartographer(
 				"data_frequency_hz": strconv.Itoa(defaultMovementSensorTimeInterval),
 			}
 		}
-		timeTracker.imuTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
+		timeTracker.imuTime = timeTracker.lidarTime
 	}
 
 	// Start Sensors
