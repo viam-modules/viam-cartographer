@@ -459,8 +459,8 @@ func createTimedLidarReadingResponse(t *testing.T, i uint64, timeTracker *timeTr
 	}
 
 	buf := new(bytes.Buffer)
-	err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary)
-	if err != nil {
+
+	if err = pointcloud.ToPCD(readingPc, buf, pointcloud.PCDBinary); err != nil {
 		t.Error("TEST FAILED TimedLidarReading Mock failed to parse pcd")
 		return s.TimedLidarReadingResponse{}, err
 	}
