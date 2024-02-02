@@ -394,17 +394,17 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 			}
 			cartoAlgoCfg.RotationWeight = fVal
 		case "initial_starting_pose":
-			matches := startPosRegex.FindStringSubmatch(val)
-			if len(matches) > 0 {
-				fValX, err := strconv.ParseFloat(matches[1], 64)
+			fVals := startPosRegex.FindStringSubmatch(val)
+			if len(fVals) > 0 {
+				fValX, err := strconv.ParseFloat(fVals[1], 64)
 				if err != nil {
 					return cartoAlgoCfg, err
 				}
-				fValY, err := strconv.ParseFloat(matches[2], 64)
+				fValY, err := strconv.ParseFloat(fVals[2], 64)
 				if err != nil {
 					return cartoAlgoCfg, err
 				}
-				fValTheta, err := strconv.ParseFloat(matches[3], 64)
+				fValTheta, err := strconv.ParseFloat(fVals[3], 64)
 				if err != nil {
 					return cartoAlgoCfg, err
 				}

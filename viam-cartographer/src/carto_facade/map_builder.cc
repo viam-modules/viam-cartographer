@@ -250,7 +250,7 @@ void MapBuilder::OverwriteInitialStartTrajectory(double x, double y,
     auto mutable_initial_trajectory_pose =
         trajectory_builder_options_.mutable_initial_trajectory_pose();
 
-    // relative pose
+    // Set relative_pose to the 2d position described by the given x,y and theta
     auto relative_pose =
         mutable_initial_trajectory_pose->mutable_relative_pose();
 
@@ -265,10 +265,9 @@ void MapBuilder::OverwriteInitialStartTrajectory(double x, double y,
     relative_pose_rotation->set_z(1);
     relative_pose_rotation->set_w(theta);
 
-    // to_trajectory id
+    // Set to_trajectory_id and timestamp to zero to make given pose relative to
+    // first trajectory's starting point, i.e. the origin
     mutable_initial_trajectory_pose->set_to_trajectory_id(0);
-
-    // timestamp
     mutable_initial_trajectory_pose->set_timestamp(0);
 }
 
