@@ -45,8 +45,8 @@ const (
 	// mockDataPath is the path to slam mock data used for integration tests artifact path.
 	mockDataPath                      = "viam-cartographer/mock_data"
 	sensorDataIngestionWaitTime       = 50 * time.Millisecond
-	defaultLidarTimeInterval          = 200
-	defaultMovementSensorTimeInterval = 50
+	defaultLidarTimeInterval          = 200 * time.Millisecond
+	defaultMovementSensorTimeInterval = 50 * time.Millisecond
 	testTimeout                       = 20 * time.Second
 )
 
@@ -263,11 +263,12 @@ func IntegrationCartographer(
 
 	// Add lidar component to config (required)
 	lidarDone := make(chan struct{})
-	lidarReadingInterval := time.Millisecond * defaultLidarTimeInterval
 	timeTracker.lidarTime = time.Date(2021, 8, 15, 14, 30, 45, 1, time.UTC)
 
 	// We're using LidarWithErroringFunctions as a placeholder for deps. We're defining and
 	// using the injection lidar to overwrite this lidar when we create the slam service.
+	// The typical data_frequency_hz for a lidar is 5 Hz. We're setting it here to 200 Hz
+	// to speed up the tests.
 	if !online {
 		attrCfg.Camera = map[string]string{
 			"name":              string(LidarWithErroringFunctions),
@@ -276,11 +277,9 @@ func IntegrationCartographer(
 	} else {
 		attrCfg.Camera = map[string]string{
 			"name":              string(LidarWithErroringFunctions),
-			"data_frequency_hz": strconv.Itoa(defaultLidarTimeInterval),
+			"data_frequency_hz": "200",
 		}
 	}
-
-	movementSensorReadingInterval := time.Millisecond * defaultMovementSensorTimeInterval
 
 	// Add imu component to config (optional)
 	imuDone := make(chan struct{})
@@ -288,6 +287,8 @@ func IntegrationCartographer(
 		// We're using MovementSensorWithErroringFunctions as a placeholder for deps.
 		// We're defining and using the injection movement sensor to overwrite this movement
 		// sensor when we create the slam service.
+		// The typical data_frequency_hz for a movement sensor is 5 Hz. We're setting it
+		// here to 200 Hz to speed up the tests.
 		if !online {
 			attrCfg.MovementSensor = map[string]string{
 				"name":              string(MovementSensorWithErroringFunctions),
@@ -296,7 +297,7 @@ func IntegrationCartographer(
 		} else {
 			attrCfg.MovementSensor = map[string]string{
 				"name":              string(MovementSensorWithErroringFunctions),
-				"data_frequency_hz": strconv.Itoa(defaultMovementSensorTimeInterval),
+				"data_frequency_hz": "200",
 			}
 		}
 		timeTracker.imuTime = timeTracker.lidarTime
@@ -304,13 +305,13 @@ func IntegrationCartographer(
 
 	// Start Sensors
 	timedLidar, err := integrationTimedLidar(t, attrCfg.Camera,
-		lidarReadingInterval, lidarDone, &timeTracker, useIMU)
+		defaultLidarTimeInterval, lidarDone, &timeTracker, useIMU)
 	test.That(t, err, test.ShouldBeNil)
 
 	var timedIMU s.TimedMovementSensor
 	if useIMU {
 		timedIMU, err = integrationTimedIMU(t, attrCfg.MovementSensor,
-			movementSensorReadingInterval, imuDone, &timeTracker)
+			defaultMovementSensorTimeInterval, imuDone, &timeTracker)
 		test.That(t, err, test.ShouldBeNil)
 	}
 
