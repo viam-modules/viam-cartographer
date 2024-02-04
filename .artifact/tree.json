@@ -76,6 +76,12 @@
           "hash": "10e2501cedc4900d542e81e6f4391189",
           "size": 9916
         }
+      },
+      "movement_sensor": {
+        "data.txt": {
+          "hash": "2b41e7cb9d3f9db51a3fd94f23766e50",
+          "size": 4242
+        }
       }
     },
     "mock_lidar": {
