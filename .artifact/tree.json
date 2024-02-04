@@ -1,12 +1,6 @@
 {
   "viam-cartographer": {
     "mock_data": {
-      "imu": {
-        "data.txt": {
-          "hash": "2b41e7cb9d3f9db51a3fd94f23766e50",
-          "size": 4242
-        }
-      },
       "lidar": {
         "0.pcd": {
           "hash": "32b95e765b10c1cfc6097eebc74bbe64",
