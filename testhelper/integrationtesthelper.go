@@ -49,76 +49,79 @@ const (
 	defaultLidarTimeInterval          = 200 * time.Millisecond
 	defaultMovementSensorTimeInterval = 50 * time.Millisecond
 	testTimeout                       = 20 * time.Second
+	darwin                            = "darwin"
+	linux                             = "linux"
 )
 
-type Time struct {
+type dataTime struct {
 	Seconds int `json:"seconds"`
 	Nanos   int `json:"nanos"`
 }
 
-type Coordinate struct {
+type coordinate struct {
 	Latitude  float64 `json:"latitude"`
 	Longitude float64 `json:"longitude"`
 }
 
-type AngularVelocity struct {
+type angularVelocity struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
 	Z float64 `json:"z"`
 }
 
-type LinearAcceleration struct {
+type linearAcceleration struct {
 	X float64 `json:"x"`
 	Y float64 `json:"y"`
 	Z float64 `json:"z"`
 }
 
-type Orientation struct {
+type orientation struct {
 	Ox    float64 `json:"o_x"`
 	Oy    float64 `json:"o_y"`
 	Oz    float64 `json:"o_z"`
 	Theta float64 `json:"theta"`
 }
 
-type AngVelData struct {
+type angVelData struct {
 	MetaDataIndex int             `json:"MetadataIndex"`
-	TimeReceived  Time            `json:"TimeReceived"`
-	TimeRequested Time            `json:"TimeRequested"`
-	AngVel        AngularVelocity `json:"angular_velocity"`
+	TimeReceived  dataTime        `json:"TimeReceived"`
+	TimeRequested dataTime        `json:"TimeRequested"`
+	AngVel        angularVelocity `json:"angular_velocity"`
 }
 
-type LinAccData struct {
+type linAccData struct {
 	MetaDataIndex int                `json:"MetadataIndex"`
-	TimeReceived  Time               `json:"TimeReceived"`
-	TimeRequested Time               `json:"TimeRequested"`
-	LinAcc        LinearAcceleration `json:"linear_acceleration"`
+	TimeReceived  dataTime           `json:"TimeReceived"`
+	TimeRequested dataTime           `json:"TimeRequested"`
+	LinAcc        linearAcceleration `json:"linear_acceleration"`
 }
 
-type OrientationData struct {
+type orientationData struct {
 	MetaDataIndex int         `json:"MetadataIndex"`
-	TimeReceived  Time        `json:"TimeReceived"`
-	TimeRequested Time        `json:"TimeRequested"`
-	Orientation   Orientation `json:"orientation"`
+	TimeReceived  dataTime    `json:"TimeReceived"`
+	TimeRequested dataTime    `json:"TimeRequested"`
+	Orientation   orientation `json:"orientation"`
 }
 
-type PosData struct {
+type posData struct {
 	MetaDataIndex int        `json:"MetadataIndex"`
-	TimeReceived  Time       `json:"TimeReceived"`
-	TimeRequested Time       `json:"TimeRequested"`
+	TimeReceived  dataTime   `json:"TimeReceived"`
+	TimeRequested dataTime   `json:"TimeRequested"`
 	AltitudeM     int        `json:"altitude_m"`
-	Coordinate    Coordinate `json:"coordinate"`
+	Coordinate    coordinate `json:"coordinate"`
 }
 
-type MovementSensorData struct {
-	AngVelData      []AngVelData      `json:"AngVelData"`
-	LinAccData      []LinAccData      `json:"LinAccData"`
-	OrientationData []OrientationData `json:"OrientationData"`
-	PosData         []PosData         `json:"PosData"`
+type movementSensorData struct {
+	AngVelData      []angVelData      `json:"AngVelData"`
+	LinAccData      []linAccData      `json:"LinAccData"`
+	OrientationData []orientationData `json:"OrientationData"`
+	PosData         []posData         `json:"PosData"`
 }
 
 // Test final position and orientation are at approximately the expected values.
 func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
-	useOdometer bool, expectedComponentRef string) {
+	useOdometer bool, expectedComponentRef string,
+) {
 	var expectedPos r3.Vector
 	var expectedOri *spatialmath.R4AA
 	tolerancePos := 0.001
@@ -127,7 +130,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 	// Online && Offline run with lidar only
 	if !useIMU && !useOdometer {
 		switch {
-		case runtime.GOOS == "darwin":
+		case runtime.GOOS == darwin:
 			expectedPos = r3.Vector{X: 1.9166854207566584, Y: 4.0381299349907644, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0,
@@ -135,7 +138,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 				RZ:    1,
 				Theta: 0.0006629744894043836,
 			}
-		case runtime.GOOS == "linux":
+		case runtime.GOOS == linux:
 			expectedPos = r3.Vector{X: -5.149871228951607, Y: -1.824249792681155, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0,
@@ -149,7 +152,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 	// Online run with lidar + imu
 	if useIMU && !useOdometer {
 		switch {
-		case runtime.GOOS == "darwin":
+		case runtime.GOOS == darwin:
 			expectedPos = r3.Vector{X: 1.6456359928659154, Y: 7.359399690067484, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0.9862302383600338,
@@ -157,7 +160,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 				RZ:    -0.02462219273278937,
 				Theta: 0.025088490446011937,
 			}
-		case runtime.GOOS == "linux":
+		case runtime.GOOS == linux:
 			expectedPos = r3.Vector{X: -7.219897923472782, Y: -1.0853619028673704, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0.9992897370543805,
@@ -171,7 +174,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 	// Online run with lidar + odometer
 	if !useIMU && useOdometer {
 		switch {
-		case runtime.GOOS == "darwin":
+		case runtime.GOOS == darwin:
 			expectedPos = r3.Vector{X: 1.6456359928659154, Y: 7.359399690067484, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0.9862302383600338,
@@ -179,7 +182,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 				RZ:    -0.02462219273278937,
 				Theta: 0.025088490446011937,
 			}
-		case runtime.GOOS == "linux":
+		case runtime.GOOS == linux:
 			expectedPos = r3.Vector{X: -5.149871228951607, Y: -1.824249792681155, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0,
@@ -519,10 +522,7 @@ func integrationTimedMovementSensor(
 		}
 
 		// Get next movement sensor data
-		resp, err := createTimedMovementSensorReadingResponse(t, mockDataset, i, timeTracker, useIMU, useOdometer)
-		if err != nil {
-			return resp, err
-		}
+		resp := createTimedMovementSensorReadingResponse(mockDataset, i, timeTracker, useIMU, useOdometer)
 
 		// Advance the data index and update time tracker (manual timestamps occurs here)
 		i++
@@ -567,10 +567,9 @@ func createTimedLidarReadingResponse(t *testing.T, i uint64, timeTracker *timeTr
 	return resp, nil
 }
 
-func createTimedMovementSensorReadingResponse(t *testing.T, data MovementSensorData, i uint64,
-	timeTracker *timeTracker, useIMU bool, useOdometer bool,
-) (s.TimedMovementSensorReadingResponse, error) {
-
+func createTimedMovementSensorReadingResponse(data movementSensorData, i uint64,
+	timeTracker *timeTracker, useIMU, useOdometer bool,
+) s.TimedMovementSensorReadingResponse {
 	var timedIMUResponse s.TimedIMUReadingResponse
 	if useIMU {
 		// linear acceleration
@@ -628,7 +627,7 @@ func createTimedMovementSensorReadingResponse(t *testing.T, data MovementSensorD
 		TimedIMUResponse:      &timedIMUResponse,
 		TimedOdometerResponse: &timedOdometerResponse,
 	}
-	return resp, nil
+	return resp
 }
 
 func mockLidarReadingsValid() error {
@@ -663,33 +662,42 @@ func mockLidarReadingsValid() error {
 	return nil
 }
 
-func mockMovementSensorReadingsValid(t *testing.T) (MovementSensorData, error) {
+func mockMovementSensorReadingsValid(t *testing.T) (movementSensorData, error) {
 	file, err := os.Open(artifact.MustPath(mockDataPath + "/movement_sensor/data.json"))
 	if err != nil {
 		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to open data file")
-		return MovementSensorData{}, err
+		return movementSensorData{}, err
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Error("TEST FAILED TimedMovementSensorReading Mock failed to close data file")
+		}
+		test.That(t, err, test.ShouldBeNil)
+	}()
 
-	byteValue, _ := io.ReadAll(file)
+	byteValue, err := io.ReadAll(file)
+	if err != nil {
+		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to read data file")
+		return movementSensorData{}, err
+	}
 
-	var data MovementSensorData
+	var data movementSensorData
 
 	if err = json.Unmarshal(byteValue, &data); err != nil {
 		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to unmarshal json")
-		return MovementSensorData{}, err
+		return movementSensorData{}, err
 	}
 
 	if len(data.AngVelData) != len(data.LinAccData) &&
 		len(data.AngVelData) != len(data.OrientationData) &&
 		len(data.AngVelData) != len(data.PosData) {
 		err = errors.New("TEST FAILED TimedMovementSensorReading movement sensor readings don't contain same number of data")
-		return MovementSensorData{}, err
+		return movementSensorData{}, err
 	}
 
 	if len(data.AngVelData) < NumMovementSensorData {
 		err = errors.Errorf("expected at least %v movement sensor readings for integration test", NumMovementSensorData)
-		return MovementSensorData{}, err
+		return movementSensorData{}, err
 	}
 	return data, nil
 }
