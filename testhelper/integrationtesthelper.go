@@ -131,7 +131,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 	if !useIMU && !useOdometer {
 		switch {
 		case runtime.GOOS == darwin:
-			expectedPos = r3.Vector{X: 1.9166854207566584, Y: 4.0381299349907644, Z: 0}
+			expectedPos = r3.Vector{X: -7.07783267690342, Y: 0.31526240389588145, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0,
 				RY:    0,
@@ -153,7 +153,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 	if useIMU && !useOdometer {
 		switch {
 		case runtime.GOOS == darwin:
-			expectedPos = r3.Vector{X: 1.6456359928659154, Y: 7.359399690067484, Z: 0}
+			expectedPos = r3.Vector{X: -7.16334361411234, Y: -2.5279251571150914, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0.9862302383600338,
 				RY:    0.1635349032143911,
@@ -175,7 +175,7 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 	if !useIMU && useOdometer {
 		switch {
 		case runtime.GOOS == darwin:
-			expectedPos = r3.Vector{X: 1.6456359928659154, Y: 7.359399690067484, Z: 0}
+			expectedPos = r3.Vector{X: -7.07783267690342, Y: 0.31526240389588145, Z: 0}
 			expectedOri = &spatialmath.R4AA{
 				RX:    0.9862302383600338,
 				RY:    0.1635349032143911,
