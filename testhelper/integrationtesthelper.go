@@ -277,7 +277,7 @@ func IntegrationCartographer(
 	} else {
 		attrCfg.Camera = map[string]string{
 			"name":              string(LidarWithErroringFunctions),
-			"data_frequency_hz": "200",
+			"data_frequency_hz": "5",
 		}
 	}
 
@@ -297,7 +297,7 @@ func IntegrationCartographer(
 		} else {
 			attrCfg.MovementSensor = map[string]string{
 				"name":              string(MovementSensorWithErroringFunctions),
-				"data_frequency_hz": "200",
+				"data_frequency_hz": "20",
 			}
 		}
 		timeTracker.imuTime = timeTracker.lidarTime
