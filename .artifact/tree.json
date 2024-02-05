@@ -3,78 +3,110 @@
     "mock_data": {
       "lidar": {
         "0.pcd": {
-          "hash": "32b95e765b10c1cfc6097eebc74bbe64",
-          "size": 9880
+          "hash": "0838b9c727eb21b4be3d32da19e1fe65",
+          "size": 10552
         },
         "1.pcd": {
-          "hash": "a038d9f7ad0356704d512402ead3665b",
-          "size": 9928
+          "hash": "0b4e2ac3711a739d036350b1fee22831",
+          "size": 10540
         },
         "10.pcd": {
-          "hash": "7ffd7681874dd36a8c435a4718e472bc",
-          "size": 10000
+          "hash": "9408cb3b80adf85eb0795971e9750d86",
+          "size": 10600
         },
         "11.pcd": {
-          "hash": "ef95af97b5ed0bc9587cb19dd487f03e",
-          "size": 9880
+          "hash": "67a93a1db6dd4198d789754dd0b4c623",
+          "size": 10576
         },
         "12.pcd": {
-          "hash": "592da217520e0a6874ce8387451b59aa",
-          "size": 9868
+          "hash": "8e4ba9157a183e1d1aa98edc5e83cc35",
+          "size": 10540
         },
         "13.pcd": {
-          "hash": "1a696bfed9c0cc93d16f76f8c3e295f8",
-          "size": 10000
+          "hash": "465d7c0354e1f6debe945a5fbe4324b0",
+          "size": 10516
         },
         "14.pcd": {
-          "hash": "3049df7aa2bcde37d068979abc869a3a",
-          "size": 9952
+          "hash": "343347479fb6e51d76f69cb98107c241",
+          "size": 10516
         },
         "15.pcd": {
-          "hash": "f001078e01a4104fdfca8294eef99210",
-          "size": 9952
+          "hash": "418ff56640c2e4a43d4d07f65d832c7f",
+          "size": 10420
         },
         "16.pcd": {
-          "hash": "e1b7aa85857575d275a40b61ed896400",
-          "size": 9964
+          "hash": "736126e567c2dd8393d6352bf036c233",
+          "size": 10504
+        },
+        "17.pcd": {
+          "hash": "682652cb63690ea1ec0f6844c18809af",
+          "size": 10480
+        },
+        "18.pcd": {
+          "hash": "557f5d2bfab449bff5119a311a956670",
+          "size": 10576
+        },
+        "19.pcd": {
+          "hash": "018c35c0e1faaeba790f52b4fd83bdd5",
+          "size": 10444
         },
         "2.pcd": {
-          "hash": "924d493bc3ba60a72cb3acad7205663e",
-          "size": 9952
+          "hash": "259e785a76168e8b2e25b492fa2d756c",
+          "size": 10672
+        },
+        "20.pcd": {
+          "hash": "fc1a0f2aabc31aca30156517915b7666",
+          "size": 10588
+        },
+        "21.pcd": {
+          "hash": "ce786fb3f9cbc787532fe6f2e57de99e",
+          "size": 10588
+        },
+        "22.pcd": {
+          "hash": "cdffc050fc48d6136df41c7b39beef64",
+          "size": 10564
+        },
+        "23.pcd": {
+          "hash": "dc8c03849eb2865decd7a91bdb310dea",
+          "size": 10456
+        },
+        "24.pcd": {
+          "hash": "4882f67815571e06addc11c3717fa392",
+          "size": 10540
         },
         "3.pcd": {
-          "hash": "be52a00e9edab3873e76bc38283e956d",
-          "size": 10036
+          "hash": "3d1a8c15d952165c774dc6d66b3d8256",
+          "size": 10600
         },
         "4.pcd": {
-          "hash": "d38b3e6275ada37dfd3a5b1ad8518b41",
-          "size": 10012
+          "hash": "1498dee299cf2230a01d0775fc44976a",
+          "size": 10576
         },
         "5.pcd": {
-          "hash": "41ecd45e566babf33d0e46b57f7f5d91",
-          "size": 9964
+          "hash": "4b21a6c54555315ccbd3cfe392582126",
+          "size": 10540
         },
         "6.pcd": {
-          "hash": "5076d6681530bd995e9155f70dc5fd41",
-          "size": 9928
+          "hash": "df021a65d96fd300fe7750699f0374b5",
+          "size": 10636
         },
         "7.pcd": {
-          "hash": "6738b43810d9bdb2f93c392d6a71b96b",
-          "size": 10000
+          "hash": "4d2d7a83d0c89755dd6fa94994964567",
+          "size": 10660
         },
         "8.pcd": {
-          "hash": "fc8e932ef4ceac3abcb3dc85fc5f970e",
-          "size": 10060
+          "hash": "8989472cd9965a69f4d9058bdd0ed01a",
+          "size": 10564
         },
         "9.pcd": {
-          "hash": "10e2501cedc4900d542e81e6f4391189",
-          "size": 9916
+          "hash": "f3ad8d8e418edf32572b9b68a14a1031",
+          "size": 10648
         }
       },
       "movement_sensor": {
-        "data.txt": {
-          "hash": "2b41e7cb9d3f9db51a3fd94f23766e50",
-          "size": 4242
+        "data.json": {
+          "hash": "f0019788f20b52758820f80bc68fb982",
+          "size": 85313
         }
       }
     },

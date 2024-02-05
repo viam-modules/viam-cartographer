@@ -48,7 +48,7 @@ func TestIntegrationCartographer(t *testing.T) {
 	}{
 		// Online run with lidar only
 		{
-			description:     "online sensor mapping mode 2D",
+			description:     "online mapping mode 2D with lidar only",
 			online:          true,
 			imuEnabled:      false,
 			odometerEnabled: false,
@@ -56,7 +56,7 @@ func TestIntegrationCartographer(t *testing.T) {
 			subAlgo:         viamcartographer.Dim2d,
 		},
 		{
-			description:     "online sensor localizing mode 2D",
+			description:     "online localizing mode 2D with lidar only",
 			online:          true,
 			imuEnabled:      false,
 			odometerEnabled: false,
@@ -64,7 +64,7 @@ func TestIntegrationCartographer(t *testing.T) {
 			subAlgo:         viamcartographer.Dim2d,
 		},
 		{
-			description:     "online sensor updating mode 2D",
+			description:     "online updating mode 2D with lidar only",
 			online:          true,
 			imuEnabled:      false,
 			odometerEnabled: false,
@@ -73,7 +73,7 @@ func TestIntegrationCartographer(t *testing.T) {
 		},
 		// Offline run with lidar only
 		{
-			description:     "offline sensor mapping mode 2D",
+			description:     "offline mapping mode 2D with lidar only",
 			online:          false,
 			imuEnabled:      false,
 			odometerEnabled: false,
@@ -81,7 +81,7 @@ func TestIntegrationCartographer(t *testing.T) {
 			subAlgo:         viamcartographer.Dim2d,
 		},
 		{
-			description:     "offline sensor updating mode 2D",
+			description:     "offline updating mode 2D with lidar only",
 			online:          false,
 			imuEnabled:      false,
 			odometerEnabled: false,
@@ -90,7 +90,7 @@ func TestIntegrationCartographer(t *testing.T) {
 		},
 		// Online run with lidar + imu
 		{
-			description:     "online with imu sensor mapping mode 2D",
+			description:     "online mapping mode 2D with lidar + imu",
 			online:          true,
 			imuEnabled:      true,
 			odometerEnabled: false,
@@ -98,7 +98,7 @@ func TestIntegrationCartographer(t *testing.T) {
 			subAlgo:         viamcartographer.Dim2d,
 		},
 		{
-			description:     "online with imu sensor localizing mode 2D",
+			description:     "online localizing mode 2D with lidar + imu",
 			online:          true,
 			imuEnabled:      true,
 			odometerEnabled: false,
@@ -106,38 +106,38 @@ func TestIntegrationCartographer(t *testing.T) {
 			subAlgo:         viamcartographer.Dim2d,
 		},
 		{
-			description:     "online with imu sensor updating mode 2D",
+			description:     "online updating mode 2D with lidar + imu",
 			online:          true,
 			imuEnabled:      true,
 			odometerEnabled: false,
 			mode:            cartofacade.UpdatingMode,
 			subAlgo:         viamcartographer.Dim2d,
 		},
-		// // Online run with lidar + odometer
-		// {
-		// 	description:     "online with odometer sensor mapping mode 2D",
-		// 	online:          true,
-		// 	imuEnabled:      false,
-		// 	odometerEnabled: true,
-		// 	mode:            cartofacade.MappingMode,
-		// 	subAlgo:         viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description:     "online with odometer sensor localizing mode 2D",
-		// 	online:          true,
-		// 	imuEnabled:      false,
-		// 	odometerEnabled: true,
-		// 	mode:            cartofacade.LocalizingMode,
-		// 	subAlgo:         viamcartographer.Dim2d,
-		// },
-		// {
-		// 	description:     "online with odometer sensor updating mode 2D",
-		// 	online:          true,
-		// 	imuEnabled:      false,
-		// 	odometerEnabled: true,
-		// 	mode:            cartofacade.UpdatingMode,
-		// 	subAlgo:         viamcartographer.Dim2d,
-		// },
+		// Online run with lidar + odometer
+		{
+			description:     "online mapping mode 2D with lidar + odometer",
+			online:          true,
+			imuEnabled:      false,
+			odometerEnabled: true,
+			mode:            cartofacade.MappingMode,
+			subAlgo:         viamcartographer.Dim2d,
+		},
+		{
+			description:     "online localizing mode 2D with lidar + odometer",
+			online:          true,
+			imuEnabled:      false,
+			odometerEnabled: true,
+			mode:            cartofacade.LocalizingMode,
+			subAlgo:         viamcartographer.Dim2d,
+		},
+		{
+			description:     "online updating mode 2D with lidar + odometer",
+			online:          true,
+			imuEnabled:      false,
+			odometerEnabled: true,
+			mode:            cartofacade.UpdatingMode,
+			subAlgo:         viamcartographer.Dim2d,
+		},
 	}
 
 	// Loop over defined test cases, resetting the directories between slam sessions
