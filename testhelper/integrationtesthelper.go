@@ -119,7 +119,7 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	props, err := svc.Properties(context.Background())
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, props.CloudSlam, test.ShouldBeFalse)
-	test.That(t, props.MappingMode, test.ShouldEqual)
+	test.That(t, props.MappingMode == slam.MappingModeLocalizationOnly, test.ShouldEqual, localizationMode)
 
 	pcd, err := slam.PointCloudMapFull(context.Background(), svc)
 	test.That(t, err, test.ShouldBeNil)

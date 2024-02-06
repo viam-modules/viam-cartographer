@@ -3,13 +3,14 @@
 // certain exported functions which we do not want to make available to the user. It also runs integration tests
 // that test the interaction with the core C++ viam-cartographer code and the Golang implementation of the
 // cartographer slam service.
+//
+//nolint:dupl
 package viamcartographer_test
 
 import (
 	"context"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/pkg/errors"
 	viamgrpc "go.viam.com/rdk/grpc"
@@ -34,9 +35,8 @@ const (
 )
 
 var (
-	_zeroTime = time.Time{}
-	_true     = true
-	_false    = false
+	_true  = true
+	_false = false
 )
 
 func TestNew(t *testing.T) {
