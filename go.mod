@@ -327,3 +327,5 @@ require (
 	periph.io/x/conn/v3 v3.7.0 // indirect
 	periph.io/x/host/v3 v3.8.2 // indirect
 )
+
+replace golang.org/x/exp => golang.org/x/exp v0.0.0-20230321023759-10a507213a29
