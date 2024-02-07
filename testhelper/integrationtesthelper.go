@@ -2,14 +2,14 @@
 package testhelper
 
 import (
-	"bufio"
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"reflect"
-	"regexp"
 	"runtime"
 	"strconv"
 	"sync"
@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/golang/geo/r3"
+	geo "github.com/kellydunn/golang-geo"
 	"github.com/pkg/errors"
 	replaylidar "go.viam.com/rdk/components/camera/replaypcd"
 	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
@@ -39,57 +40,156 @@ const (
 	// NumPointCloudFiles is the number of mock lidar data files we want to use for the
 	// integration tests. The files are stored in the mock_data/lidar slam artifact directory.
 	NumPointCloudFiles = 10
-	// NumIMUData is the amount of mock IMU data we want to use for the integration tests.
-	// The data is stored in the mock_data/imu/data.txt slam artifact file.
-	NumIMUData = 40
+	// NumMovementSensorData is the amount of mock movement sensor data we want to use for the
+	// integration tests. The data is stored in the mock_data/movement_sensor/data.txt slam artifact file.
+	NumMovementSensorData = 40
 	// mockDataPath is the path to slam mock data used for integration tests artifact path.
 	mockDataPath                      = "viam-cartographer/mock_data"
 	sensorDataIngestionWaitTime       = 50 * time.Millisecond
 	defaultLidarTimeInterval          = 200 * time.Millisecond
 	defaultMovementSensorTimeInterval = 50 * time.Millisecond
 	testTimeout                       = 20 * time.Second
+	darwin                            = "darwin"
+	linux                             = "linux"
 )
 
+type dataTime struct {
+	Seconds int `json:"seconds"`
+	Nanos   int `json:"nanos"`
+}
+
+type coordinate struct {
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+}
+
+type angularVelocity struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+}
+
+type linearAcceleration struct {
+	X float64 `json:"x"`
+	Y float64 `json:"y"`
+	Z float64 `json:"z"`
+}
+
+type orientation struct {
+	Ox    float64 `json:"o_x"`
+	Oy    float64 `json:"o_y"`
+	Oz    float64 `json:"o_z"`
+	Theta float64 `json:"theta"`
+}
+
+type angVelData struct {
+	MetaDataIndex int             `json:"MetadataIndex"`
+	TimeReceived  dataTime        `json:"TimeReceived"`
+	TimeRequested dataTime        `json:"TimeRequested"`
+	AngVel        angularVelocity `json:"angular_velocity"`
+}
+
+type linAccData struct {
+	MetaDataIndex int                `json:"MetadataIndex"`
+	TimeReceived  dataTime           `json:"TimeReceived"`
+	TimeRequested dataTime           `json:"TimeRequested"`
+	LinAcc        linearAcceleration `json:"linear_acceleration"`
+}
+
+type orientationData struct {
+	MetaDataIndex int         `json:"MetadataIndex"`
+	TimeReceived  dataTime    `json:"TimeReceived"`
+	TimeRequested dataTime    `json:"TimeRequested"`
+	Orientation   orientation `json:"orientation"`
+}
+
+type posData struct {
+	MetaDataIndex int        `json:"MetadataIndex"`
+	TimeReceived  dataTime   `json:"TimeReceived"`
+	TimeRequested dataTime   `json:"TimeRequested"`
+	AltitudeM     int        `json:"altitude_m"`
+	Coordinate    coordinate `json:"coordinate"`
+}
+
+type movementSensorData struct {
+	AngVelData      []angVelData      `json:"AngVelData"`
+	LinAccData      []linAccData      `json:"LinAccData"`
+	OrientationData []orientationData `json:"OrientationData"`
+	PosData         []posData         `json:"PosData"`
+}
+
 // Test final position and orientation are at approximately the expected values.
-func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool, expectedComponentRef string) {
+func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
+	useOdometer bool, expectedComponentRef string,
+) {
 	var expectedPos r3.Vector
 	var expectedOri *spatialmath.R4AA
 	tolerancePos := 0.001
 	toleranceOri := 0.001
 
-	switch {
-	case runtime.GOOS == "darwin" && !useIMU:
-		expectedPos = r3.Vector{X: 1.9166854207566584, Y: 4.0381299349907644, Z: 0}
-		expectedOri = &spatialmath.R4AA{
-			RX:    0,
-			RY:    0,
-			RZ:    1,
-			Theta: 0.0006629744894043836,
+	// Online && Offline run with lidar only
+	if !useIMU && !useOdometer {
+		switch {
+		case runtime.GOOS == darwin:
+			expectedPos = r3.Vector{X: -7.07783267690342, Y: 0.31526240389588145, Z: 0}
+			expectedOri = &spatialmath.R4AA{
+				RX:    0,
+				RY:    0,
+				RZ:    1,
+				Theta: 0.0006629744894043836,
+			}
+		case runtime.GOOS == linux:
+			expectedPos = r3.Vector{X: -5.149871228951607, Y: -1.824249792681155, Z: 0}
+			expectedOri = &spatialmath.R4AA{
+				RX:    0,
+				RY:    0,
+				RZ:    1,
+				Theta: 0.0023832043348390474,
+			}
 		}
-	case runtime.GOOS == "linux" && !useIMU:
-		expectedPos = r3.Vector{X: 7.507596391989648, Y: 3.193198802065579, Z: 0}
-		expectedOri = &spatialmath.R4AA{
-			RX:    0,
-			RY:    0,
-			RZ:    1,
-			Theta: 0.001955831550003536,
-		}
+	}
 
-	case runtime.GOOS == "darwin" && useIMU:
-		expectedPos = r3.Vector{X: 1.6456359928659154, Y: 7.359399690067484, Z: 0}
-		expectedOri = &spatialmath.R4AA{
-			RX:    0.9862302383600338,
-			RY:    0.1635349032143911,
-			RZ:    -0.02462219273278937,
-			Theta: 0.025088490446011937,
+	// Online run with lidar + imu
+	if useIMU && !useOdometer {
+		switch {
+		case runtime.GOOS == darwin:
+			expectedPos = r3.Vector{X: -7.16334361411234, Y: -2.5279251571150914, Z: 0}
+			expectedOri = &spatialmath.R4AA{
+				RX:    0.9989830277954124,
+				RY:    -0.00410173338481965,
+				RZ:    0.04490084587121006,
+				Theta: 0.08559995790680923,
+			}
+		case runtime.GOOS == linux:
+			expectedPos = r3.Vector{X: -7.219897923472782, Y: -1.0853619028673704, Z: 0}
+			expectedOri = &spatialmath.R4AA{
+				RX:    0.9992897370543805,
+				RY:    -0.004423527448316455,
+				RZ:    0.0374226378372907,
+				Theta: 0.08557355172549885,
+			}
 		}
-	case runtime.GOOS == "linux" && useIMU:
-		expectedPos = r3.Vector{X: 5.360365602699378, Y: 4.487447113637527, Z: 0}
-		expectedOri = &spatialmath.R4AA{
-			RX:    0.9792752063682609,
-			RY:    0.16419980776934567,
-			RZ:    0.11856851741044075,
-			Theta: 0.02525907400623705,
+	}
+
+	// Online run with lidar + odometer
+	if !useIMU && useOdometer {
+		switch {
+		case runtime.GOOS == darwin:
+			expectedPos = r3.Vector{X: -7.07783267690342, Y: 0.31526240389588145, Z: 0}
+			expectedOri = &spatialmath.R4AA{
+				RX:    0,
+				RY:    0,
+				RZ:    1,
+				Theta: 0.0014138664695204745,
+			}
+		case runtime.GOOS == linux:
+			expectedPos = r3.Vector{X: -5.149871228951607, Y: -1.824249792681155, Z: 0}
+			expectedOri = &spatialmath.R4AA{
+				RX:    0,
+				RY:    0,
+				RZ:    1,
+				Theta: 0.0023832043348390474,
+			}
 		}
 	}
 
@@ -128,17 +228,17 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
 }
 
-// timeTracker stores the current and next timestamps for both IMU and lidar. These are used to manually
-// set the timestamp of each set of data being sent to cartographer and ensure proper ordering between them.
-// This allows for consistent testing.
+// timeTracker stores the current and next timestamps for both the movement sensor and the lidar.
+// These are used to manually set the timestamp of each set of data being sent to cartographer
+// and ensure proper ordering between them. This allows for consistent testing.
 type timeTracker struct {
 	lidarTime     time.Time
 	nextLidarTime time.Time
 
-	imuTime time.Time
+	movementSensorTime time.Time
 
-	lidarDone bool
-	imuDone   bool
+	lidarDone          bool
+	movementSensorDone bool
 
 	mu *sync.Mutex
 }
@@ -161,7 +261,7 @@ func integrationTimedLidar(
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *timeTracker,
-	useIMU bool,
+	useMovementSensor bool,
 ) (s.TimedLidar, error) {
 	// Check that the required amount of lidar data is present
 	if err := mockLidarReadingsValid(); err != nil {
@@ -181,12 +281,12 @@ func integrationTimedLidar(
 	injectLidar.TimedLidarReadingFunc = func(ctx context.Context) (s.TimedLidarReadingResponse, error) {
 		defer timeTracker.mu.Unlock()
 
-		if useIMU {
-			// Holds the process until IMU data has been sent to cartographer. Is always true in the first
-			// iteration. This and the manual definition of timestamps allow for consistent results.
+		if useMovementSensor {
+			// Holds the process until movement sensor data has been sent to cartographer. Is always true
+			// in the first iteration. This and the manual definition of timestamps allow for consistent results.
 			for {
 				timeTracker.mu.Lock()
-				if !timeTracker.lidarTime.After(timeTracker.imuTime) {
+				if !timeTracker.lidarTime.After(timeTracker.movementSensorTime) {
 					break
 				}
 				timeTracker.mu.Unlock()
@@ -196,11 +296,9 @@ func integrationTimedLidar(
 		}
 		time.Sleep(sensorDataIngestionWaitTime)
 
-		// Communicate that all lidar readings have been sent to cartographer or if the last IMU reading has been sent,
-		// checks if LastLidarTime has been defined. If so, simulate endOfDataSet error.
-		t.Logf("TimedLidarReading Mock i: %d, closed: %v, readingTime: %s\n", i, timeTracker.lidarDone,
-			timeTracker.lidarTime.String())
-		if i >= NumPointCloudFiles || timeTracker.imuDone {
+		// Return the ErrEndOfDataset if all lidar readings have been sent to cartographer or if the
+		// movement sensor is done.
+		if i >= NumPointCloudFiles || timeTracker.movementSensorDone {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
 			if !timeTracker.lidarDone {
 				done <- struct{}{}
@@ -237,6 +335,7 @@ func IntegrationCartographer(
 	logger logging.Logger,
 	online bool,
 	useIMU bool,
+	useOdometer bool,
 	enableMapping bool,
 	expectedMode cartofacade.SlamMode,
 ) []byte {
@@ -276,12 +375,12 @@ func IntegrationCartographer(
 		}
 	}
 
-	// Add imu component to config (optional)
-	imuDone := make(chan struct{})
-	if useIMU {
+	// Add movement sensor component to config (optional)
+	movementSensorDone := make(chan struct{})
+	if useIMU || useOdometer {
 		// We're using MovementSensorWithErroringFunctions as a placeholder for deps.
-		// We're defining and using the injection movement sensor to overwrite this movement
-		// sensor when we create the slam service.
+		// We're defining and using the injection movement sensor
+		// to overwrite this movement sensor when we create the slam service.
 		// The typical data_frequency_hz for a movement sensor is 5 Hz. We're setting it
 		// here to 200 Hz to speed up the tests.
 		if !online {
@@ -295,23 +394,24 @@ func IntegrationCartographer(
 				"data_frequency_hz": "20",
 			}
 		}
-		timeTracker.imuTime = timeTracker.lidarTime
+		timeTracker.movementSensorTime = timeTracker.lidarTime
 	}
 
 	// Start Sensors
 	timedLidar, err := integrationTimedLidar(t, attrCfg.Camera,
-		defaultLidarTimeInterval, lidarDone, &timeTracker, useIMU)
+		defaultLidarTimeInterval, lidarDone, &timeTracker, useIMU || useOdometer)
 	test.That(t, err, test.ShouldBeNil)
 
-	var timedIMU s.TimedMovementSensor
-	if useIMU {
-		timedIMU, err = integrationTimedIMU(t, attrCfg.MovementSensor,
-			defaultMovementSensorTimeInterval, imuDone, &timeTracker)
+	var timedMovementSensor s.TimedMovementSensor
+	if useIMU || useOdometer {
+		timedMovementSensor, err = integrationTimedMovementSensor(t, attrCfg.MovementSensor,
+			defaultMovementSensorTimeInterval, movementSensorDone, &timeTracker,
+			useIMU, useOdometer)
 		test.That(t, err, test.ShouldBeNil)
 	}
 
 	// Start SLAM Service
-	svc, err := CreateIntegrationSLAMService(t, attrCfg, timedLidar, timedIMU, logger)
+	svc, err := CreateIntegrationSLAMService(t, attrCfg, timedLidar, timedMovementSensor, logger)
 	test.That(t, err, test.ShouldBeNil)
 
 	cSvc, ok := svc.(*viamcartographer.CartographerService)
@@ -327,15 +427,15 @@ func IntegrationCartographer(
 	t.Logf("lidar sensor process duration %dms (timeout = %dms)", time.Since(start).Milliseconds(), testTimeout.Milliseconds())
 	test.That(t, finishedProcessingLidarData, test.ShouldBeTrue)
 
-	if useIMU {
-		finishedProcessingIMUData := utils.SelectContextOrWaitChan(ctx, imuDone)
-		t.Logf("imu sensor process duration %dms (timeout = %dms)", time.Since(start).Milliseconds(), testTimeout.Milliseconds())
-		test.That(t, finishedProcessingIMUData, test.ShouldBeTrue)
+	if useIMU || useOdometer {
+		finishedProcessingMsData := utils.SelectContextOrWaitChan(ctx, movementSensorDone)
+		t.Logf("movement sensor process duration %dms (timeout = %dms)", time.Since(start).Milliseconds(), testTimeout.Milliseconds())
+		test.That(t, finishedProcessingMsData, test.ShouldBeTrue)
 	}
 	t.Logf("sensor processes have completed, all data has been ingested")
 
 	// Test end points and retrieve internal state
-	testCartographerPosition(t, svc, useIMU, attrCfg.Camera["name"])
+	testCartographerPosition(t, svc, useIMU, useOdometer, attrCfg.Camera["name"])
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
 
 	internalState, err := slam.InternalStateFull(context.Background(), svc)
@@ -351,30 +451,33 @@ func IntegrationCartographer(
 	return internalState
 }
 
-// integrationTimedIMU returns a mock timed IMU sensor.
-// When the mock is called, it returns the next mock IMU readings, with the
-// ReadingTime incremented by the sensorReadingInterval.
+// integrationTimedMovementSensor returns a mock timed movement sensor.
+// When the mock is called, it returns the next mock movement sensor readings,
+// with the ReadingTime incremented by the sensorReadingInterval.
 // The Replay sensor field of the mock readings will match the replay parameter.
-// When the end of the mock IMU readings is reached, the done channel
-// is written to once so the caller can detect when all IMU readings have been emitted
-// from the mock. This is intended to match the same "end of dataset" behavior of a
-// replay sensor.
+// When the end of the mock movement sensor readings is reached, the done channel
+// is written to once so the caller can detect when all movement sensor readings
+// have been emitted from the mock. This is intended to match the same
+// "end of dataset" behavior of a replay sensor.
 // It is important to provide deterministic time information to cartographer to
 // ensure test outputs of cartographer are deterministic.
-func integrationTimedIMU(
+func integrationTimedMovementSensor(
 	t *testing.T,
 	movementSensor map[string]string,
 	sensorReadingInterval time.Duration,
 	done chan struct{},
 	timeTracker *timeTracker,
+	useIMU bool,
+	useOdometer bool,
 ) (s.TimedMovementSensor, error) {
-	// Return nil if IMU is not requested
+	// Return nil if movement sensor is not defined
 	if movementSensor["name"] == "" {
 		return nil, nil
 	}
 
-	// Check that the required amount of IMU data is present and create a mock dataset from provided mock data artifact file.
-	mockDataset, err := mockIMUReadingsValid(t)
+	// Check that the required amount of movement sensor data is present and
+	// create a mock dataset from provided mock data artifact file.
+	mockDataset, err := mockMovementSensorReadingsValid(t)
 	if err != nil {
 		return nil, err
 	}
@@ -385,55 +488,51 @@ func integrationTimedIMU(
 	}
 
 	var i uint64
-	injectIMU := &inject.TimedMovementSensor{}
-	injectIMU.NameFunc = func() string { return movementSensor["name"] }
-	injectIMU.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
-	injectIMU.TimedMovementSensorReadingFunc = func(ctx context.Context) (s.TimedMovementSensorReadingResponse, error) {
+	injectMovementSensor := &inject.TimedMovementSensor{}
+	injectMovementSensor.NameFunc = func() string { return movementSensor["name"] }
+	injectMovementSensor.DataFrequencyHzFunc = func() int { return dataFrequencyHz }
+	injectMovementSensor.TimedMovementSensorReadingFunc = func(ctx context.Context) (s.TimedMovementSensorReadingResponse, error) {
 		defer timeTracker.mu.Unlock()
 		// Holds the process until for all necessary lidar data has been sent to cartographer. Is always
 		// true in the first iteration. This and the manual definition of timestamps allow for consistent
 		// results.
 		for {
 			timeTracker.mu.Lock()
-			if timeTracker.imuTime.Before(timeTracker.nextLidarTime) {
+			if timeTracker.movementSensorTime.Before(timeTracker.nextLidarTime) {
 				time.Sleep(sensorDataIngestionWaitTime)
 				break
 			}
 			timeTracker.mu.Unlock()
 		}
 
-		// Communicate that all desired IMU readings have been sent or to cartographer or if the last lidar reading
-		// has been sent by, checks if lastLidarTime has been defined. If so, simulate endOfDataSet error.
-		t.Logf("TimedMovementSensorReading Mock i: %d, closed: %v, readingTime: %s\n", i, timeTracker.imuDone,
-			timeTracker.imuTime.String())
-		if int(i) >= len(mockDataset) || timeTracker.lidarDone {
+		// Return the ErrEndOfDataset if all movement sensor readings have been sent to cartographer or if the
+		// lidar is done.
+		if int(i) >= len(mockDataset.AngVelData) || timeTracker.lidarDone {
 			// Sends a signal to the integration sensor's done channel the first time end of dataset has been sent
-			if !timeTracker.imuDone {
+			if !timeTracker.movementSensorDone {
 				done <- struct{}{}
-				timeTracker.imuDone = true
+				timeTracker.movementSensorDone = true
 			}
 			return s.TimedMovementSensorReadingResponse{}, replaymovementsensor.ErrEndOfDataset
 		}
 
-		// Get next IMU data
-		resp, err := createTimedMovementSensorReadingResponse(t, mockDataset[i], timeTracker)
-		if err != nil {
-			return resp, err
-		}
+		// Get next movement sensor data
+		resp := createTimedMovementSensorReadingResponse(mockDataset, i, timeTracker, useIMU, useOdometer)
 
 		// Advance the data index and update time tracker (manual timestamps occurs here)
 		i++
-		timeTracker.imuTime = timeTracker.imuTime.Add(sensorReadingInterval)
+		timeTracker.movementSensorTime = timeTracker.movementSensorTime.Add(sensorReadingInterval)
 
 		return resp, nil
 	}
-	injectIMU.PropertiesFunc = func() s.MovementSensorProperties {
+	injectMovementSensor.PropertiesFunc = func() s.MovementSensorProperties {
 		return s.MovementSensorProperties{
-			IMUSupported: true,
+			IMUSupported:      useIMU,
+			OdometerSupported: useOdometer,
 		}
 	}
 
-	return injectIMU, nil
+	return injectMovementSensor, nil
 }
 
 func createTimedLidarReadingResponse(t *testing.T, i uint64, timeTracker *timeTracker,
@@ -463,37 +562,67 @@ func createTimedLidarReadingResponse(t *testing.T, i uint64, timeTracker *timeTr
 	return resp, nil
 }
 
-func createTimedMovementSensorReadingResponse(t *testing.T, line string, timeTracker *timeTracker,
-) (s.TimedMovementSensorReadingResponse, error) {
-	re := regexp.MustCompile(`[-+]?\d*\.?\d+`)
-	matches := re.FindAllString(line, -1)
+func createTimedMovementSensorReadingResponse(data movementSensorData, i uint64,
+	timeTracker *timeTracker, useIMU, useOdometer bool,
+) s.TimedMovementSensorReadingResponse {
+	var timedIMUResponse s.TimedIMUReadingResponse
+	if useIMU {
+		// linear acceleration
+		linAccX := data.LinAccData[i].LinAcc.X
+		linAccY := data.LinAccData[i].LinAcc.Y
+		linAccZ := data.LinAccData[i].LinAcc.Z
 
-	linAccX, err1 := strconv.ParseFloat(matches[0], 64)
-	linAccY, err2 := strconv.ParseFloat(matches[1], 64)
-	linAccZ, err3 := strconv.ParseFloat(matches[2], 64)
-	if err1 != nil || err2 != nil || err3 != nil {
-		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to parse linear acceleration")
-		return s.TimedMovementSensorReadingResponse{}, errors.New("error parsing linear acceleration from file")
-	}
-	linAcc := r3.Vector{X: linAccX, Y: linAccY, Z: linAccZ}
+		linAcc := r3.Vector{X: linAccX, Y: linAccY, Z: linAccZ}
 
-	angVelX, err1 := strconv.ParseFloat(matches[3], 64)
-	angVelY, err2 := strconv.ParseFloat(matches[4], 64)
-	angVelZ, err3 := strconv.ParseFloat(matches[5], 64)
-	if err1 != nil || err2 != nil || err3 != nil {
-		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to parse angular velocity")
-		return s.TimedMovementSensorReadingResponse{}, errors.New("error parsing angular velocity from file")
-	}
-	angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
+		// angular velocity
+		angVelX := data.AngVelData[i].AngVel.X
+		angVelY := data.AngVelData[i].AngVel.Y
+		angVelZ := data.AngVelData[i].AngVel.Z
 
-	resp := s.TimedMovementSensorReadingResponse{
-		TimedIMUResponse: &s.TimedIMUReadingResponse{
+		angVel := spatialmath.AngularVelocity{X: angVelX, Y: angVelY, Z: angVelZ}
+
+		// timed imu response
+		timedIMUResponse = s.TimedIMUReadingResponse{
 			LinearAcceleration: linAcc,
 			AngularVelocity:    angVel,
-			ReadingTime:        timeTracker.imuTime,
-		},
+			ReadingTime:        timeTracker.movementSensorTime,
+		}
 	}
-	return resp, nil
+
+	var timedOdometerResponse s.TimedOdometerReadingResponse
+	if useOdometer {
+		// position
+		latitude := data.PosData[i].Coordinate.Latitude
+		longitude := data.PosData[i].Coordinate.Longitude
+
+		position := geo.NewPoint(latitude, longitude)
+
+		// orientation
+		ox := data.OrientationData[i].Orientation.Ox
+		oy := data.OrientationData[i].Orientation.Oy
+		oz := data.OrientationData[i].Orientation.Oz
+		theta := data.OrientationData[i].Orientation.Theta
+
+		orientation := &spatialmath.OrientationVector{
+			Theta: theta,
+			OX:    ox,
+			OY:    oy,
+			OZ:    oz,
+		}
+
+		// timed odometer response
+		timedOdometerResponse = s.TimedOdometerReadingResponse{
+			Position:    position,
+			Orientation: orientation,
+			ReadingTime: timeTracker.movementSensorTime,
+		}
+	}
+
+	resp := s.TimedMovementSensorReadingResponse{
+		TimedIMUResponse:      &timedIMUResponse,
+		TimedOdometerResponse: &timedOdometerResponse,
+	}
+	return resp
 }
 
 func mockLidarReadingsValid() error {
@@ -528,23 +657,44 @@ func mockLidarReadingsValid() error {
 	return nil
 }
 
-func mockIMUReadingsValid(t *testing.T) ([]string, error) {
-	file, err := os.Open(artifact.MustPath(mockDataPath + "/imu/data.txt"))
+func mockMovementSensorReadingsValid(t *testing.T) (movementSensorData, error) {
+	file, err := os.Open(artifact.MustPath(mockDataPath + "/movement_sensor/data.json"))
 	if err != nil {
-		t.Error("TEST FAILED TimedIMUSensorReading Mock failed to open data file")
-		return []string{}, err
+		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to open data file")
+		return movementSensorData{}, err
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			t.Error("TEST FAILED TimedMovementSensorReading Mock failed to close data file")
+		}
+		test.That(t, err, test.ShouldBeNil)
+	}()
+
+	byteValue, err := io.ReadAll(file)
+	if err != nil {
+		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to read data file")
+		return movementSensorData{}, err
 	}
 
-	mockDatasetScanner := bufio.NewScanner(file)
-	mockDatasetScanner.Split(bufio.ScanLines)
-	var mockDataset []string
+	var data movementSensorData
 
-	for mockDatasetScanner.Scan() {
-		mockDataset = append(mockDataset, mockDatasetScanner.Text())
+	if err = json.Unmarshal(byteValue, &data); err != nil {
+		t.Error("TEST FAILED TimedMovementSensorReading Mock failed to unmarshal json")
+		return movementSensorData{}, err
 	}
 
-	if len(mockDataset) < NumIMUData {
-		return []string{}, errors.Errorf("expected at least %v imu readings for integration test", NumIMUData)
+	expectedDataNum := len(data.AngVelData)
+	if expectedDataNum < NumMovementSensorData {
+		err = errors.Errorf("expected at least %v movement sensor readings for integration test", NumMovementSensorData)
+		return movementSensorData{}, err
 	}
-	return mockDataset, nil
+
+	if expectedDataNum != len(data.LinAccData) &&
+		expectedDataNum != len(data.OrientationData) &&
+		expectedDataNum != len(data.PosData) {
+		err = errors.New("TEST FAILED TimedMovementSensorReading movement sensor readings don't contain same number of data")
+		return movementSensorData{}, err
+	}
+
+	return data, nil
 }
