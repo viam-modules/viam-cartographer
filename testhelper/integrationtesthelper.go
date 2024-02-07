@@ -688,16 +688,18 @@ func mockMovementSensorReadingsValid(t *testing.T) (movementSensorData, error) {
 		return movementSensorData{}, err
 	}
 
-	if len(data.AngVelData) != len(data.LinAccData) &&
-		len(data.AngVelData) != len(data.OrientationData) &&
-		len(data.AngVelData) != len(data.PosData) {
+	expectedDataNum := len(data.AngVelData)
+	if expectedDataNum < NumMovementSensorData {
+		err = errors.Errorf("expected at least %v movement sensor readings for integration test", NumMovementSensorData)
+		return movementSensorData{}, err
+	}
+
+	if expectedDataNum != len(data.LinAccData) &&
+		expectedDataNum != len(data.OrientationData) &&
+		expectedDataNum != len(data.PosData) {
 		err = errors.New("TEST FAILED TimedMovementSensorReading movement sensor readings don't contain same number of data")
 		return movementSensorData{}, err
 	}
 
-	if len(data.AngVelData) < NumMovementSensorData {
-		err = errors.Errorf("expected at least %v movement sensor readings for integration test", NumMovementSensorData)
-		return movementSensorData{}, err
-	}
 	return data, nil
 }
