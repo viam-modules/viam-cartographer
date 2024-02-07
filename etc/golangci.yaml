@@ -7,7 +7,6 @@ run:
 linters:
   enable-all: true
   disable:
-    - gomoddirectives
     - asasalint
     - containedctx
     - contextcheck
