@@ -583,7 +583,7 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		return toChunkedFunc(*cartoSvc.postprocessedPointCloud), nil
 	}
 
-	pc, err := cartoSvc.cartofacade.PointCloudMap(ctx, cartoSvc.cartoFacadeTimeout)
+	pc, err := cartoSvc.cartofacade.PointCloudMap(ctx, cartoSvc.cartoFacadeInternalTimeout)
 	if err != nil {
 		return nil, err
 	}
@@ -611,7 +611,7 @@ func (cartoSvc *CartographerService) InternalState(ctx context.Context) (func() 
 		return nil, err
 	}
 
-	is, err := cartoSvc.cartofacade.InternalState(ctx, cartoSvc.cartoFacadeTimeout)
+	is, err := cartoSvc.cartofacade.InternalState(ctx, cartoSvc.cartoFacadeInternalTimeout)
 	if err != nil {
 		return nil, err
 	}
