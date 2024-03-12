@@ -194,7 +194,7 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		existingMap, fsCleanupFunc := testhelper.InitInternalState(t, false)
+		existingMap, fsCleanupFunc := testhelper.InitInternalState(t, true)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
