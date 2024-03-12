@@ -271,19 +271,19 @@ func New(
 		}
 	}()
 
-	// if we have an existing map, check if there is an edited map within the package
-	if cartoSvc.existingMap != "" {
-		packageDir := filepath.Dir(svcConfig.ExistingMap)
+	// // if we have an existing map, check if there is an edited map within the package
+	// if cartoSvc.existingMap != "" {
+	// 	packageDir := filepath.Dir(svcConfig.ExistingMap)
 
-		packageDir = filepath.Clean(packageDir + editedMapName)
-		bytes, err := os.ReadFile(packageDir)
-		if err != nil {
-			return nil, err
-		}
-		if len(bytes) > 0 {
-			cartoSvc.editedMap = &bytes
-		}
-	}
+	// 	packageDir = filepath.Clean(packageDir + editedMapName)
+	// 	bytes, err := os.ReadFile(packageDir)
+	// 	if err != nil && !errors.Is(err, os.ErrNotExist) {
+	// 		return nil, err
+	// 	}
+	// 	if len(bytes) > 0 {
+	// 		cartoSvc.editedMap = &bytes
+	// 	}
+	// }
 
 	// do not initialize CartoFacade or Sensor Processes when using cloudslam
 	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
@@ -595,6 +595,9 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context, returnEd
 		cartoSvc.postprocessedPointCloud != nil to check that the pointcloud has been set.
 		cartoSvc.postprocessed.Load() to check if postprocessed has not been toggled off.
 	*/
+	if returnEditedMap && cartoSvc.editedMap != nil {
+		return toChunkedFunc(*cartoSvc.editedMap), nil
+	}
 	if cartoSvc.existingMap != "" && !cartoSvc.enableMapping && cartoSvc.postprocessedPointCloud != nil && cartoSvc.postprocessed.Load() {
 		return toChunkedFunc(*cartoSvc.postprocessedPointCloud), nil
 	}

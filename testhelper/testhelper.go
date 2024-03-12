@@ -264,15 +264,15 @@ func InitInternalState(t *testing.T, includeEditedMap bool) (string, func()) {
 	err = os.WriteFile(filename, internalState, os.ModePerm)
 	test.That(t, err, test.ShouldBeNil)
 
-	if includeEditedMap {
-		file := "viam-cartographer/mock_lidar/0.pcd"
-		editedPCD, err := os.ReadFile(artifact.MustPath(file))
-		test.That(t, err, test.ShouldBeNil)
+	// if includeEditedMap {
+	// 	file := "viam-cartographer/mock_lidar/0.pcd"
+	// 	editedPCD, err := os.ReadFile(artifact.MustPath(file))
+	// 	test.That(t, err, test.ShouldBeNil)
 
-		filename := filepath.Join(dataDirectory+"/internal_state", "edited-map.pcd")
-		err = os.WriteFile(filename, editedPCD, os.ModePerm)
-		test.That(t, err, test.ShouldBeNil)
-	}
+	// 	filename := filepath.Join(dataDirectory+"/internal_state", "edited-map.pcd")
+	// 	err = os.WriteFile(filename, editedPCD, os.ModePerm)
+	// 	test.That(t, err, test.ShouldBeNil)
+	// }
 
 	return filename, func() {
 		err := os.RemoveAll(dataDirectory)
