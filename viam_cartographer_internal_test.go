@@ -246,13 +246,16 @@ func TestPointCloudMapEndpoint(t *testing.T) {
 	mockCartoFacade := &cartofacade.Mock{}
 	pathToFileLargerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_0.pcd"
 	pathToFileSmallerThanChunkSize := "viam-cartographer/outputs/viam-office-02-22-3/pointcloud/pointcloud_1.pcd"
+	pointCloudFunc := func(ctx context.Context) (func() ([]byte, error), error) {
+		return svc.PointCloudMap(ctx, false)
+	}
 	testApisThatReturnCallbackFuncs(
 		t,
 		svc,
 		mockCartoFacade,
 		pathToFileLargerThanChunkSize,
 		pathToFileSmallerThanChunkSize,
-		svc.PointCloudMap,
+		pointCloudFunc,
 		setMockPointCloudFunc,
 	)
 
@@ -266,7 +269,7 @@ func TestPointCloudMapEndpoint(t *testing.T) {
 			return nil, errors.New("test")
 		}
 
-		callback, err := svc.PointCloudMap(context.Background())
+		callback, err := svc.PointCloudMap(context.Background(), false)
 		test.That(t, callback, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, errors.New("test"))
 	})

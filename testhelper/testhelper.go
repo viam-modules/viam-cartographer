@@ -247,7 +247,7 @@ func InitTestCL(t *testing.T, logger logging.Logger) func() {
 // InitInternalState creates the internal state directory witghin a temp directory
 // with an internal state pbstream file & returns the data directory & a function
 // to delete the data directory.
-func InitInternalState(t *testing.T) (string, func()) {
+func InitInternalState(t *testing.T, includeEditedMap bool) (string, func()) {
 	dataDirectory, err := os.MkdirTemp("", "*")
 	test.That(t, err, test.ShouldBeNil)
 
@@ -263,6 +263,16 @@ func InitInternalState(t *testing.T) (string, func()) {
 	filename := CreateTimestampFilename(dataDirectory+"/internal_state", "internal_state", ".pbstream", timestamp)
 	err = os.WriteFile(filename, internalState, os.ModePerm)
 	test.That(t, err, test.ShouldBeNil)
+
+	if includeEditedMap {
+		file := "viam-cartographer/mock_lidar/0.pcd"
+		editedPCD, err := os.ReadFile(artifact.MustPath(file))
+		test.That(t, err, test.ShouldBeNil)
+
+		filename := filepath.Join(dataDirectory+"/internal_state", "edited-map.pcd")
+		err = os.WriteFile(filename, editedPCD, os.ModePerm)
+		test.That(t, err, test.ShouldBeNil)
+	}
 
 	return filename, func() {
 		err := os.RemoveAll(dataDirectory)

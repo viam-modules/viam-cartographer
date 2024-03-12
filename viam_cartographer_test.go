@@ -62,7 +62,7 @@ func TestNew(t *testing.T) {
 		test.That(t, componentRef, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
-		gpcmF, err := svc.PointCloudMap(ctx)
+		gpcmF, err := svc.PointCloudMap(ctx, false)
 		test.That(t, gpcmF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
@@ -141,7 +141,7 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		existingMap, fsCleanupFunc := testhelper.InitInternalState(t)
+		existingMap, fsCleanupFunc := testhelper.InitInternalState(t, false)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -166,7 +166,7 @@ func TestNew(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
 		// Test pointcloud map
-		pcmFunc, err := svc.PointCloudMap(context.Background())
+		pcmFunc, err := svc.PointCloudMap(context.Background(), false)
 		test.That(t, err, test.ShouldBeNil)
 
 		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
@@ -194,7 +194,7 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		existingMap, fsCleanupFunc := testhelper.InitInternalState(t)
+		existingMap, fsCleanupFunc := testhelper.InitInternalState(t, false)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -219,12 +219,21 @@ func TestNew(t *testing.T) {
 		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
 		// Test pointcloud map
-		pcmFunc, err := svc.PointCloudMap(context.Background())
+		pcmFunc, err := svc.PointCloudMap(context.Background(), false)
 		test.That(t, err, test.ShouldBeNil)
 
 		pcm, err := slam.HelperConcatenateChunksToFull(pcmFunc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcm, test.ShouldNotBeNil)
+
+		// Test returning edited pointcloud map
+		pcmEditedFunc, err := svc.PointCloudMap(context.Background(), true)
+		test.That(t, err, test.ShouldBeNil)
+
+		pcmEdited, err := slam.HelperConcatenateChunksToFull(pcmEditedFunc)
+		test.That(t, err, test.ShouldBeNil)
+		test.That(t, pcmEdited, test.ShouldNotBeNil)
+		test.That(t, pcmEdited, test.ShouldNotResemble, pcm)
 
 		// Test internal state
 		isFunc, err := svc.InternalState(context.Background())
@@ -265,7 +274,7 @@ func TestNew(t *testing.T) {
 		termFunc := testhelper.InitTestCL(t, logger)
 		defer termFunc()
 
-		_, fsCleanupFunc := testhelper.InitInternalState(t)
+		_, fsCleanupFunc := testhelper.InitInternalState(t, false)
 		defer fsCleanupFunc()
 
 		attrCfg := &vcConfig.Config{
@@ -312,7 +321,7 @@ func TestClose(t *testing.T) {
 		test.That(t, componentRef, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 
-		gpcmF, err := svc.PointCloudMap(ctx)
+		gpcmF, err := svc.PointCloudMap(ctx, false)
 		test.That(t, gpcmF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 

@@ -12,7 +12,7 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
-	go.viam.com/api v0.1.257
+	go.viam.com/api v0.1.271
 	go.viam.com/rdk v0.20.1-0.20240207164326-b493060b7606
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
 	go.viam.com/utils v0.1.60
@@ -327,3 +327,7 @@ require (
 	periph.io/x/conn/v3 v3.7.0 // indirect
 	periph.io/x/host/v3 v3.8.2 // indirect
 )
+
+replace go.viam.com/rdk => github.com/JohnN193/rdk v0.0.0-20240311213552-c4ac09d9dcc0
+
+replace go.viam.com/api => github.com/JohnN193/api v0.0.0-20240311155802-c955ca9433b3
