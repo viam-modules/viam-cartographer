@@ -302,7 +302,7 @@ struct tagbstring {
     }
 #define btfromblkrtrimws(t, s, l)                            \
     {                                                        \
-        int bstrtmp_len = (l) - 1;                           \
+        int bstrtmp_len = (l)-1;                             \
         unsigned char *bstrtmp_s = (s);                      \
         if (bstrtmp_s && bstrtmp_len >= 0) {                 \
             for (; bstrtmp_len >= 0; bstrtmp_len--) {        \
@@ -315,7 +315,7 @@ struct tagbstring {
     }
 #define btfromblktrimws(t, s, l)                                \
     {                                                           \
-        int bstrtmp_idx = 0, bstrtmp_len = (l) - 1;             \
+        int bstrtmp_idx = 0, bstrtmp_len = (l)-1;               \
         unsigned char *bstrtmp_s = (s);                         \
         if (bstrtmp_s && bstrtmp_len >= 0) {                    \
             for (; bstrtmp_idx <= bstrtmp_len; bstrtmp_idx++) { \
