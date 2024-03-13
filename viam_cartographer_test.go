@@ -4,7 +4,7 @@
 // that test the interaction with the core C++ viam-cartographer code and the Golang implementation of the
 // cartographer slam service.
 //
-//nolint:dupl
+
 package viamcartographer_test
 
 import (

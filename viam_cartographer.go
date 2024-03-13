@@ -62,7 +62,7 @@ const (
 	SuccessMessage = "success"
 	// PostprocessToggleResponseKey is the key sent back for the toggle postprocess command.
 	PostprocessToggleResponseKey = "postprocessed"
-	editedMapName                = "/edited-map.pcd"
+	editedMapName                = "edited-map.pcd"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -275,8 +275,8 @@ func New(
 	if cartoSvc.existingMap != "" {
 		packageDir := filepath.Dir(svcConfig.ExistingMap)
 
-		packageDir = filepath.Clean(packageDir + editedMapName)
-		bytes, err := os.ReadFile(packageDir)
+		filePath := filepath.Clean(filepath.Join(packageDir, editedMapName))
+		bytes, err := os.ReadFile(filePath)
 		if err != nil && !errors.Is(err, os.ErrNotExist) {
 			return nil, err
 		}
