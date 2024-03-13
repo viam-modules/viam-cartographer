@@ -244,7 +244,7 @@ func InitTestCL(t *testing.T, logger logging.Logger) func() {
 	}
 }
 
-// InitInternalState creates the internal state directory witghin a temp directory
+// InitInternalState creates the internal state directory within a temp directory
 // with an internal state pbstream file & returns the data directory & a function
 // to delete the data directory.
 func InitInternalState(t *testing.T, includeEditedMap bool) (string, func()) {
