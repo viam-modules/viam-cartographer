@@ -62,6 +62,7 @@ const (
 	SuccessMessage = "success"
 	// PostprocessToggleResponseKey is the key sent back for the toggle postprocess command.
 	PostprocessToggleResponseKey = "postprocessed"
+	editedMapName                = "edited-map.pcd"
 )
 
 var defaultCartoAlgoCfg = cartofacade.CartoAlgoConfig{
@@ -269,6 +270,20 @@ func New(
 			}
 		}
 	}()
+
+	// if we have an existing map, check if there is an edited map within the package
+	if cartoSvc.existingMap != "" {
+		packageDir := filepath.Dir(svcConfig.ExistingMap)
+
+		filePath := filepath.Clean(filepath.Join(packageDir, editedMapName))
+		bytes, err := os.ReadFile(filePath)
+		if err != nil && !errors.Is(err, os.ErrNotExist) {
+			return nil, err
+		}
+		if len(bytes) > 0 {
+			cartoSvc.editedMap = &bytes
+		}
+	}
 
 	// do not initialize CartoFacade or Sensor Processes when using cloudslam
 	if svcConfig.UseCloudSlam != nil && *svcConfig.UseCloudSlam {
@@ -531,6 +546,7 @@ type CartographerService struct {
 	postprocessed           atomic.Bool
 	postprocessingTasks     []postprocess.Task
 	postprocessedPointCloud *[]byte
+	editedMap               *[]byte
 
 	useCloudSlam  bool
 	enableMapping bool
@@ -566,7 +582,7 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 
 // PointCloudMap creates a request calls the slam algorithms PointCloudMap endpoint and returns a callback
 // function which will return the next chunk of the current pointcloud map.
-func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() ([]byte, error), error) {
+func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context, returnEditedMap bool) (func() ([]byte, error), error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::PointCloudMap")
 	defer span.End()
 
@@ -579,6 +595,9 @@ func (cartoSvc *CartographerService) PointCloudMap(ctx context.Context) (func() 
 		cartoSvc.postprocessedPointCloud != nil to check that the pointcloud has been set.
 		cartoSvc.postprocessed.Load() to check if postprocessed has not been toggled off.
 	*/
+	if returnEditedMap && cartoSvc.editedMap != nil {
+		return toChunkedFunc(*cartoSvc.editedMap), nil
+	}
 	if cartoSvc.existingMap != "" && !cartoSvc.enableMapping && cartoSvc.postprocessedPointCloud != nil && cartoSvc.postprocessed.Load() {
 		return toChunkedFunc(*cartoSvc.postprocessedPointCloud), nil
 	}
