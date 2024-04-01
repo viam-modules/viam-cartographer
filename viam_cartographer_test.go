@@ -133,6 +133,12 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, prop.CloudSlam, test.ShouldBeFalse)
 		test.That(t, prop.MappingMode, test.ShouldEqual, slam.MappingModeNewMap)
+		sensorInfo := prop.SensorInfo
+		test.That(t, len(sensorInfo), test.ShouldEqual, 2)
+		test.That(t, sensorInfo[0].Name, test.ShouldEqual, string(s.GoodLidar))
+		test.That(t, sensorInfo[0].Type, test.ShouldEqual, slam.SensorTypeCamera)
+		test.That(t, sensorInfo[1].Name, test.ShouldEqual, string(s.GoodIMU))
+		test.That(t, sensorInfo[1].Type, test.ShouldEqual, slam.SensorTypeMovementSensor)
 
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
@@ -186,6 +192,10 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, prop.CloudSlam, test.ShouldBeFalse)
 		test.That(t, prop.MappingMode, test.ShouldEqual, slam.MappingModeLocalizationOnly)
+		sensorInfo := prop.SensorInfo
+		test.That(t, len(sensorInfo), test.ShouldEqual, 1)
+		test.That(t, sensorInfo[0].Name, test.ShouldEqual, string(s.GoodLidar))
+		test.That(t, sensorInfo[0].Type, test.ShouldEqual, slam.SensorTypeCamera)
 
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
@@ -248,6 +258,10 @@ func TestNew(t *testing.T) {
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, prop.CloudSlam, test.ShouldBeFalse)
 		test.That(t, prop.MappingMode, test.ShouldEqual, slam.MappingModeUpdateExistingMap)
+		sensorInfo := prop.SensorInfo
+		test.That(t, len(sensorInfo), test.ShouldEqual, 1)
+		test.That(t, sensorInfo[0].Name, test.ShouldEqual, string(s.GoodLidar))
+		test.That(t, sensorInfo[0].Type, test.ShouldEqual, slam.SensorTypeCamera)
 
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 	})
