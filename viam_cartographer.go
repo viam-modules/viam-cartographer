@@ -55,6 +55,7 @@ const (
 	defaultCartoFacadeTimeout            = 5 * time.Minute
 	defaultCartoFacadeInternalTimeout    = 15 * time.Minute
 	chunkSizeBytes                       = 1 * 1024 * 1024
+	internalStateFileType                = ".pbstream"
 
 	// JobDoneCommand is the string that needs to be sent to DoCommand to find out if the job has finished.
 	JobDoneCommand = "job_done"
@@ -664,7 +665,12 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 	}
 
 	props := slam.Properties{
-		CloudSlam: cartoSvc.useCloudSlam,
+		CloudSlam:             cartoSvc.useCloudSlam,
+		InternalStateFileType: internalStateFileType,
+	}
+	props.SensorInfo = append(props.SensorInfo, slam.SensorInfo{Name: cartoSvc.lidar.Name(), Type: slam.SensorTypeCamera})
+	if cartoSvc.movementSensor != nil {
+		props.SensorInfo = append(props.SensorInfo, slam.SensorInfo{Name: cartoSvc.movementSensor.Name(), Type: slam.SensorTypeMovementSensor})
 	}
 
 	if cartoSvc.enableMapping && cartoSvc.existingMap == "" {

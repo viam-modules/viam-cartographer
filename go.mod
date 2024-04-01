@@ -1,6 +1,6 @@
 module github.com/viamrobotics/viam-cartographer
 
-go 1.19
+go 1.21
 
 require (
 	github.com/edaniels/golinters v0.0.5-0.20220906153528-641155550742
@@ -12,10 +12,10 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
-	go.viam.com/api v0.1.274
-	go.viam.com/rdk v0.22.1-0.20240313160439-a7914ad18f7c
+	go.viam.com/api v0.1.277
+	go.viam.com/rdk v0.24.0-rc0.0.20240401155759-8d571b7f949a
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.60
+	go.viam.com/utils v0.1.71
 )
 
 require (
@@ -287,7 +287,6 @@ require (
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/goleak v1.2.1 // indirect
 	go4.org/unsafe/assume-no-moving-gc v0.0.0-20231121144256-b99613f794b6 // indirect
-	goji.io v2.0.2+incompatible // indirect
 	golang.org/x/crypto v0.16.0 // indirect
 	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
 	golang.org/x/exp/typeparams v0.0.0-20230203172020-98cc5a0785f9 // indirect

@@ -110,7 +110,7 @@ cartographer-module: viam-cartographer/build/unit_tests
 	absl_version=$$(brew list --versions abseil 2>/dev/null | head -n1 | grep -oE '[0-9]{8}' || echo 20010101); \
 	export CGO_LDFLAGS="$$CGO_LDFLAGS $(CGO_BUILD_LDFLAGS)"; \
 	test "$$absl_version" -gt "20230801" && export CGO_LDFLAGS="$$CGO_LDFLAGS -labsl_log_internal_message -labsl_log_internal_check_op" || true; \
-	go build $(GO_BUILD_LDFLAGS) -o $(BIN_OUTPUT_PATH)/cartographer-module module/main.go
+	go build $(GO_BUILD_LDFLAGS) -tags osusergo,netgo -o $(BIN_OUTPUT_PATH)/cartographer-module module/main.go
 
 # Ideally build-asan would be added to build-debug, but can't yet 
 # as these options they fail on arm64 linux. This is b/c that 
