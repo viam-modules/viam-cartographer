@@ -660,8 +660,9 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 	_, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Properties")
 	defer span.End()
 
-	if err := cartoSvc.isOpenAndRunningLocally("Properties"); err != nil {
-		return slam.Properties{}, err
+	if cartoSvc.closed {
+		cartoSvc.logger.Warn("Properties called after closed")
+		return slam.Properties{}, ErrClosed
 	}
 
 	props := slam.Properties{

@@ -70,10 +70,6 @@ func TestNew(t *testing.T) {
 		test.That(t, gisF, test.ShouldBeNil)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
-		prop, err := svc.Properties(ctx)
-		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
-		test.That(t, prop, test.ShouldResemble, slam.Properties{})
-
 		cmd := map[string]interface{}{}
 		resp, err := svc.DoCommand(ctx, cmd)
 		test.That(t, resp, test.ShouldBeNil)
