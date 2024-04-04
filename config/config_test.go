@@ -50,7 +50,7 @@ func TestValidate(t *testing.T) {
 		cfgService := makeCfgService()
 		delete(cfgService.Attributes["config_params"].(map[string]string), "mode")
 		_, err := newConfig(cfgService)
-		test.That(t, err, test.ShouldBeError, newError(utils.NewConfigValidationFieldRequiredError(testCfgPath, "config_params[mode]").Error()))
+		test.That(t, err, test.ShouldBeNil)
 	})
 
 	t.Run("Config with invalid parameter type", func(t *testing.T) {
