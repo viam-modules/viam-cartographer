@@ -193,6 +193,9 @@ func New(
 	}
 
 	subAlgo := SubAlgo(svcConfig.ConfigParams["mode"])
+	if subAlgo == "" {
+		subAlgo = Dim2d
+	}
 	if subAlgo != Dim2d {
 		return nil, errors.Errorf("%v does not have a 'mode: %v'",
 			c.Model.Name, svcConfig.ConfigParams["mode"])
