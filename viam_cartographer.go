@@ -337,16 +337,24 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 			}
 			cartoAlgoCfg.MissingDataRayLength = float32(fVal)
 		case "max_range":
+
 			fVal, err := strconv.ParseFloat(val, 32)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
 			cartoAlgoCfg.MaxRange = float32(fVal)
 		case "max_range_meters":
-			fVal, err := strconv.ParseFloat(val, 32)
-			if err != nil {
-				return cartoAlgoCfg, err
+			var fVal float64
+			var err error
+			if val == "" {
+				fVal = float64(defaultCartoAlgoCfg.MaxRange)
+			} else {
+				fVal, err = strconv.ParseFloat(val, 32)
+				if err != nil {
+					return cartoAlgoCfg, err
+				}
 			}
+
 			cartoAlgoCfg.MaxRange = float32(fVal)
 		case "min_range":
 			fVal, err := strconv.ParseFloat(val, 32)
@@ -355,9 +363,15 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 			}
 			cartoAlgoCfg.MinRange = float32(fVal)
 		case "min_range_meters":
-			fVal, err := strconv.ParseFloat(val, 32)
-			if err != nil {
-				return cartoAlgoCfg, err
+			var fVal float64
+			var err error
+			if val == "" {
+				fVal = float64(defaultCartoAlgoCfg.MinRange)
+			} else {
+				fVal, err = strconv.ParseFloat(val, 32)
+				if err != nil {
+					return cartoAlgoCfg, err
+				}
 			}
 			cartoAlgoCfg.MinRange = float32(fVal)
 		case "max_submaps_to_keep":
@@ -669,6 +683,8 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 		CloudSlam:             cartoSvc.useCloudSlam,
 		InternalStateFileType: internalStateFileType,
 	}
+	cartoSvc.logger.Info(cartoSvc.lidar)
+	cartoSvc.logger.Info("lidar name: ", cartoSvc.lidar.Name())
 	props.SensorInfo = append(props.SensorInfo, slam.SensorInfo{Name: cartoSvc.lidar.Name(), Type: slam.SensorTypeCamera})
 	if cartoSvc.movementSensor != nil {
 		props.SensorInfo = append(props.SensorInfo, slam.SensorInfo{Name: cartoSvc.movementSensor.Name(), Type: slam.SensorTypeMovementSensor})
