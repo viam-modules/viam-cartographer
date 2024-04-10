@@ -294,6 +294,8 @@ func New(
 			logger:         logger,
 			lidar:          timedLidar,
 			movementSensor: timedMovementSensor,
+			enableMapping:  optionalConfigParams.EnableMapping,
+			existingMap:    optionalConfigParams.ExistingMap,
 		}, nil
 	}
 
