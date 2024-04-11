@@ -312,22 +312,20 @@ func New(
 func parseFloat32OrDefault(val string, defaultVal float32) (float32, error) {
 	if val == "" {
 		return defaultVal, nil
-	} else {
-		fVal, err := strconv.ParseFloat(val, 32)
-		if err != nil {
-			return 0, err
-		}
-		return float32(fVal), nil
 	}
+	fVal, err := strconv.ParseFloat(val, 32)
+	if err != nil {
+		return 0, err
+	}
+	return float32(fVal), nil
 }
 
 // Checks if val is empty, and parses the float64 if there is a value.
 func parseFloat64OrDefault(val string, defaultVal float64) (float64, error) {
 	if val == "" {
 		return defaultVal, nil
-	} else {
-		return strconv.ParseFloat(val, 64)
 	}
+	return strconv.ParseFloat(val, 64)
 }
 
 func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger) (cartofacade.CartoAlgoConfig, error) {
