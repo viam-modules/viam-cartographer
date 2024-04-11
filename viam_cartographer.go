@@ -687,8 +687,7 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 		CloudSlam:             cartoSvc.useCloudSlam,
 		InternalStateFileType: internalStateFileType,
 	}
-	cartoSvc.logger.Info(cartoSvc.lidar)
-	cartoSvc.logger.Info("lidar name: ", cartoSvc.lidar.Name())
+
 	props.SensorInfo = append(props.SensorInfo, slam.SensorInfo{Name: cartoSvc.lidar.Name(), Type: slam.SensorTypeCamera})
 	if cartoSvc.movementSensor != nil {
 		props.SensorInfo = append(props.SensorInfo, slam.SensorInfo{Name: cartoSvc.movementSensor.Name(), Type: slam.SensorTypeMovementSensor})
