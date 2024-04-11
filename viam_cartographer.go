@@ -328,6 +328,14 @@ func parseFloat64OrDefault(val string, defaultVal float64) (float64, error) {
 	return strconv.ParseFloat(val, 64)
 }
 
+// Checks if val is empty, and parses the Int if there is a value.
+func parseIntOrDefault(val string, defaultVal int) (int, error) {
+	if val == "" {
+		return defaultVal, nil
+	}
+	return strconv.Atoi(val)
+}
+
 func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger) (cartofacade.CartoAlgoConfig, error) {
 	cartoAlgoCfg := defaultCartoAlgoCfg
 	var err error
@@ -338,17 +346,15 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 				cartoAlgoCfg.OptimizeOnStart = true
 			}
 		case "optimize_every_n_nodes":
-			iVal, err := strconv.Atoi(val)
+			cartoAlgoCfg.OptimizeEveryNNodes, err = parseIntOrDefault(val, defaultCartoAlgoCfg.OptimizeEveryNNodes)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.OptimizeEveryNNodes = iVal
 		case "num_range_data":
-			iVal, err := strconv.Atoi(val)
+			cartoAlgoCfg.NumRangeData, err = parseIntOrDefault(val, defaultCartoAlgoCfg.NumRangeData)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.NumRangeData = iVal
 		case "missing_data_ray_length_meters":
 			cartoAlgoCfg.MissingDataRayLength, err = parseFloat32OrDefault(val, defaultCartoAlgoCfg.MissingDataRayLength)
 			if err != nil {
@@ -380,17 +386,15 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 				return cartoAlgoCfg, err
 			}
 		case "max_submaps_to_keep":
-			iVal, err := strconv.Atoi(val)
+			cartoAlgoCfg.MaxSubmapsToKeep, err = parseIntOrDefault(val, defaultCartoAlgoCfg.MaxSubmapsToKeep)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MaxSubmapsToKeep = iVal
 		case "fresh_submaps_count":
-			iVal, err := strconv.Atoi(val)
+			cartoAlgoCfg.FreshSubmapsCount, err = parseIntOrDefault(val, defaultCartoAlgoCfg.FreshSubmapsCount)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.FreshSubmapsCount = iVal
 		case "min_covered_area":
 			cartoAlgoCfg.MinCoveredArea, err = parseFloat64OrDefault(val, defaultCartoAlgoCfg.MinCoveredArea)
 			if err != nil {
@@ -402,11 +406,10 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 				return cartoAlgoCfg, err
 			}
 		case "min_added_submaps_count":
-			iVal, err := strconv.Atoi(val)
+			cartoAlgoCfg.MinAddedSubmapsCount, err = parseIntOrDefault(val, defaultCartoAlgoCfg.MinAddedSubmapsCount)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MinAddedSubmapsCount = iVal
 		case "occupied_space_weight":
 			cartoAlgoCfg.OccupiedSpaceWeight, err = parseFloat64OrDefault(val, defaultCartoAlgoCfg.OccupiedSpaceWeight)
 			if err != nil {
