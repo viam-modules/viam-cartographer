@@ -308,8 +308,31 @@ func New(
 	return cartoSvc, nil
 }
 
+// Checks if val is empty, and parses the float32 if there is a value.
+func parseFloat32OrDefault(val string, defaultVal float32) (float32, error) {
+	if val == "" {
+		return defaultVal, nil
+	} else {
+		fVal, err := strconv.ParseFloat(val, 32)
+		if err != nil {
+			return 0, err
+		}
+		return float32(fVal), nil
+	}
+}
+
+// Checks if val is empty, and parses the float64 if there is a value.
+func parseFloat64OrDefault(val string, defaultVal float64) (float64, error) {
+	if val == "" {
+		return defaultVal, nil
+	} else {
+		return strconv.ParseFloat(val, 64)
+	}
+}
+
 func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger) (cartofacade.CartoAlgoConfig, error) {
 	cartoAlgoCfg := defaultCartoAlgoCfg
+	var err error
 	for k, val := range configParams {
 		switch k {
 		case "optimize_on_start":
@@ -329,55 +352,35 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 			}
 			cartoAlgoCfg.NumRangeData = iVal
 		case "missing_data_ray_length_meters":
-			fVal, err := strconv.ParseFloat(val, 32)
+			cartoAlgoCfg.MissingDataRayLength, err = parseFloat32OrDefault(val, defaultCartoAlgoCfg.MissingDataRayLength)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MissingDataRayLength = float32(fVal)
 		case "missing_data_ray_length":
-			fVal, err := strconv.ParseFloat(val, 32)
+			cartoAlgoCfg.MissingDataRayLength, err = parseFloat32OrDefault(val, defaultCartoAlgoCfg.MissingDataRayLength)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MissingDataRayLength = float32(fVal)
 		case "max_range":
-
-			fVal, err := strconv.ParseFloat(val, 32)
+			cartoAlgoCfg.MaxRange, err = parseFloat32OrDefault(val, defaultCartoAlgoCfg.MaxRange)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MaxRange = float32(fVal)
 		case "max_range_meters":
-			var fVal float64
-			var err error
-			if val == "" {
-				fVal = float64(defaultCartoAlgoCfg.MaxRange)
-			} else {
-				fVal, err = strconv.ParseFloat(val, 32)
-				if err != nil {
-					return cartoAlgoCfg, err
-				}
-			}
-
-			cartoAlgoCfg.MaxRange = float32(fVal)
-		case "min_range":
-			fVal, err := strconv.ParseFloat(val, 32)
+			cartoAlgoCfg.MaxRange, err = parseFloat32OrDefault(val, defaultCartoAlgoCfg.MaxRange)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MinRange = float32(fVal)
-		case "min_range_meters":
-			var fVal float64
-			var err error
-			if val == "" {
-				fVal = float64(defaultCartoAlgoCfg.MinRange)
-			} else {
-				fVal, err = strconv.ParseFloat(val, 32)
-				if err != nil {
-					return cartoAlgoCfg, err
-				}
+		case "min_range":
+			cartoAlgoCfg.MinRange, err = parseFloat32OrDefault(val, defaultCartoAlgoCfg.MinRange)
+			if err != nil {
+				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MinRange = float32(fVal)
+		case "min_range_meters":
+			cartoAlgoCfg.MinRange, err = parseFloat32OrDefault(val, defaultCartoAlgoCfg.MinRange)
+			if err != nil {
+				return cartoAlgoCfg, err
+			}
 		case "max_submaps_to_keep":
 			iVal, err := strconv.Atoi(val)
 			if err != nil {
@@ -391,17 +394,15 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 			}
 			cartoAlgoCfg.FreshSubmapsCount = iVal
 		case "min_covered_area":
-			fVal, err := strconv.ParseFloat(val, 64)
+			cartoAlgoCfg.MinCoveredArea, err = parseFloat64OrDefault(val, defaultCartoAlgoCfg.MinCoveredArea)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MinCoveredArea = fVal
 		case "min_covered_area_meters_squared":
-			fVal, err := strconv.ParseFloat(val, 64)
+			cartoAlgoCfg.MinCoveredArea, err = parseFloat64OrDefault(val, defaultCartoAlgoCfg.MinCoveredArea)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.MinCoveredArea = fVal
 		case "min_added_submaps_count":
 			iVal, err := strconv.Atoi(val)
 			if err != nil {
@@ -409,23 +410,20 @@ func parseCartoAlgoConfig(configParams map[string]string, logger logging.Logger)
 			}
 			cartoAlgoCfg.MinAddedSubmapsCount = iVal
 		case "occupied_space_weight":
-			fVal, err := strconv.ParseFloat(val, 64)
+			cartoAlgoCfg.OccupiedSpaceWeight, err = parseFloat64OrDefault(val, defaultCartoAlgoCfg.OccupiedSpaceWeight)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.OccupiedSpaceWeight = fVal
 		case "translation_weight":
-			fVal, err := strconv.ParseFloat(val, 64)
+			cartoAlgoCfg.TranslationWeight, err = parseFloat64OrDefault(val, defaultCartoAlgoCfg.TranslationWeight)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.TranslationWeight = fVal
 		case "rotation_weight":
-			fVal, err := strconv.ParseFloat(val, 64)
+			cartoAlgoCfg.RotationWeight, err = parseFloat64OrDefault(val, defaultCartoAlgoCfg.RotationWeight)
 			if err != nil {
 				return cartoAlgoCfg, err
 			}
-			cartoAlgoCfg.RotationWeight = fVal
 		case "initial_starting_pose":
 			fVals := startPosRegex.FindStringSubmatch(val)
 			if len(fVals) > 0 {
