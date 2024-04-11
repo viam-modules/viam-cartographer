@@ -437,7 +437,7 @@ func TestParseCartoAlgoConfig(t *testing.T) {
 
 		cartoAlgoConfig, err := parseCartoAlgoConfig(configParams, logger)
 		test.That(t, err, test.ShouldBeError, errors.New("strconv.Atoi: parsing \"hihi\": invalid syntax"))
-		test.That(t, cartoAlgoConfig, test.ShouldResemble, defaultCartoAlgoCfg)
+		test.That(t, cartoAlgoConfig, test.ShouldResemble, 0)
 	})
 }
 
