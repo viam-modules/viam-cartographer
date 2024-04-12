@@ -65,11 +65,6 @@ func (config *Config) Validate(path string) ([]string, error) {
 		deps = append(deps, movementSensorName)
 	}
 
-	mode, ok := config.ConfigParams["mode"]
-	if !ok || mode == "" {
-		return nil, utils.NewConfigValidationFieldRequiredError(path, "config_params[mode]")
-	}
-
 	return deps, nil
 }
 
