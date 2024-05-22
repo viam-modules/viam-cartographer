@@ -12,10 +12,10 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.26.0
-	go.viam.com/api v0.1.302
-	go.viam.com/rdk v0.24.0-rc0.0.20240401155759-8d571b7f949a
+	go.viam.com/api v0.1.306
+	go.viam.com/rdk v0.27.1-0.20240522203844-a757dc6cec7c
 	go.viam.com/test v1.1.1-0.20220913152726-5da9916c08a2
-	go.viam.com/utils v0.1.77
+	go.viam.com/utils v0.1.79
 )
 
 require (
@@ -333,5 +333,3 @@ require (
 	periph.io/x/conn/v3 v3.7.0 // indirect
 	periph.io/x/host/v3 v3.8.2 // indirect
 )
-
-replace go.viam.com/rdk => github.com/martha-johnston/rdk v0.0.0-20240521190302-426d8d594230
