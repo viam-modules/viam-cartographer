@@ -57,9 +57,8 @@ func TestNew(t *testing.T) {
 		svc, err := testhelper.CreateSLAMService(t, attrCfg, logger)
 		test.That(t, err, test.ShouldBeNil)
 
-		pose, componentRef, err := svc.Position(ctx)
+		pose, err := svc.Position(ctx)
 		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentRef, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrUseCloudSlamEnabled)
 
 		gpcmF, err := svc.PointCloudMap(ctx, false)
@@ -175,9 +174,8 @@ func TestNew(t *testing.T) {
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.LocalizingMode)
 
 		// Test position
-		pose, componentReference, err := svc.Position(context.Background())
+		pose, err := svc.Position(context.Background())
 		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldNotBeNil)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
@@ -232,9 +230,8 @@ func TestNew(t *testing.T) {
 		test.That(t, cs.SlamMode, test.ShouldEqual, cartofacade.UpdatingMode)
 
 		// Test position
-		pose, componentReference, err := svc.Position(context.Background())
+		pose, err := svc.Position(context.Background())
 		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldNotBeNil)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "VIAM_CARTO_GET_POSITION_NOT_INITIALIZED")
 
@@ -340,9 +337,8 @@ func TestClose(t *testing.T) {
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 		test.That(t, svc.Close(context.Background()), test.ShouldBeNil)
 
-		pose, componentRef, err := svc.Position(ctx)
+		pose, err := svc.Position(ctx)
 		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentRef, test.ShouldBeEmpty)
 		test.That(t, err, test.ShouldBeError, viamcartographer.ErrClosed)
 
 		gpcmF, err := svc.PointCloudMap(ctx, false)

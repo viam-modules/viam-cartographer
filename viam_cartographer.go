@@ -577,17 +577,17 @@ type CartographerService struct {
 
 // Position forwards the request for positional data to the slam library's gRPC service. Once a response is received,
 // it is unpacked into a Pose and a component reference string.
-func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.Pose, string, error) {
+func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.Pose, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Position")
 	defer span.End()
 
 	if err := cartoSvc.isOpenAndRunningLocally("Position"); err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	pos, err := cartoSvc.cartofacade.Position(ctx, cartoSvc.cartoFacadeTimeout)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 
 	pose := spatialmath.NewPoseFromPoint(r3.Vector{X: pos.X, Y: pos.Y, Z: pos.Z})
@@ -599,7 +599,7 @@ func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.
 			"kmag": pos.Kmag,
 		},
 	}
-	return CheckQuaternionFromClientAlgo(pose, cartoSvc.lidar.Name(), returnedExt)
+	return CheckQuaternionFromClientAlgo(pose, returnedExt)
 }
 
 // PointCloudMap creates a request calls the slam algorithms PointCloudMap endpoint and returns a callback
@@ -812,9 +812,9 @@ func (cartoSvc *CartographerService) Close(ctx context.Context) error {
 
 // CheckQuaternionFromClientAlgo checks to see if the internal SLAM algorithm sent a quaternion. If it did,
 // return the updated pose.
-func CheckQuaternionFromClientAlgo(pose spatialmath.Pose, componentReference string,
+func CheckQuaternionFromClientAlgo(pose spatialmath.Pose,
 	returnedExt map[string]interface{},
-) (spatialmath.Pose, string, error) {
+) (spatialmath.Pose, error) {
 	// check if extra contains a quaternion. If no quaternion is found, throw an error
 	if val, ok := returnedExt["quat"]; ok {
 		q := val.(map[string]interface{})
@@ -825,13 +825,13 @@ func CheckQuaternionFromClientAlgo(pose spatialmath.Pose, componentReference str
 		valKMag, ok4 := q["kmag"].(float64)
 
 		if !ok1 || !ok2 || !ok3 || !ok4 {
-			return nil, "", errors.Errorf("error getting SLAM position: quaternion given, but invalid format detected, %v", q)
+			return nil, errors.Errorf("error getting SLAM position: quaternion given, but invalid format detected, %v", q)
 		}
 		actualPose := spatialmath.NewPose(pose.Point(),
 			&spatialmath.Quaternion{Real: valReal, Imag: valIMag, Jmag: valJMag, Kmag: valKMag})
-		return actualPose, componentReference, nil
+		return actualPose, nil
 	}
-	return nil, "", errors.Errorf("error getting SLAM position: quaternion not given, %v", returnedExt)
+	return nil, errors.Errorf("error getting SLAM position: quaternion not given, %v", returnedExt)
 }
 
 // checkCloseAndCloudStatus returns an error if the cartographer service has been previously closed or is being run in the cloud.
