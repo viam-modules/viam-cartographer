@@ -489,12 +489,11 @@ func initCartoFacade(ctx context.Context, cartoSvc *CartographerService) error {
 	}
 
 	cartoCfg := cartofacade.CartoConfig{
-		Camera:             cartoSvc.lidar.Name(),
-		MovementSensor:     movementSensorName,
-		ComponentReference: cartoSvc.lidar.Name(),
-		LidarConfig:        cartofacade.TwoD,
-		EnableMapping:      cartoSvc.enableMapping,
-		ExistingMap:        cartoSvc.existingMap,
+		Camera:         cartoSvc.lidar.Name(),
+		MovementSensor: movementSensorName,
+		LidarConfig:    cartofacade.TwoD,
+		EnableMapping:  cartoSvc.enableMapping,
+		ExistingMap:    cartoSvc.existingMap,
 	}
 
 	cf := cartofacade.New(&cartoLib, cartoCfg, cartoAlgoConfig)
@@ -576,7 +575,7 @@ type CartographerService struct {
 }
 
 // Position forwards the request for positional data to the slam library's gRPC service. Once a response is received,
-// it is unpacked into a Pose and a component reference string.
+// it is unpacked into a Pose.
 func (cartoSvc *CartographerService) Position(ctx context.Context) (spatialmath.Pose, error) {
 	ctx, span := trace.StartSpan(ctx, "viamcartographer::CartographerService::Position")
 	defer span.End()

@@ -249,7 +249,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
 
     // TODO: Move all suite level setup & teardown to boost test hook
     // Teardown
-    viam_carto_config_teardown(vcc_empty_component_ref);
     viam_carto_config_teardown(vcc_invalid_lidar_config);
     viam_carto_config_teardown(vcc_invalid_movement_sensor_config);
     viam_carto_config_teardown(vcc_with_movement_sensor_succ);
@@ -490,7 +489,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_without_movement_sensor) {
     BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
     BOOST_TEST((cf->config.camera) == camera);
     BOOST_TEST((cf->config.movement_sensor) == movement_sensor);
-    BOOST_TEST(to_std_string(cf->config.component_reference) == "lidar");
     BOOST_TEST((cf->config.lidar_config) == VIAM_CARTO_THREE_D);
 
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
@@ -764,7 +762,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag == 0);
         BOOST_TEST(pr.real == 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
                    VIAM_CARTO_SUCCESS);
@@ -820,7 +817,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
         BOOST_TEST(pr.jmag == 0);
         BOOST_TEST(pr.kmag != 0);
         BOOST_TEST(pr.real != 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
                    VIAM_CARTO_SUCCESS);
@@ -907,14 +903,12 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config_without_movement_sensor) {
 
     struct config c = viam::carto_facade::from_viam_carto_config(vcc);
 
-    BOOST_TEST(to_std_string(c.component_reference) == "lidar");
     BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
     BOOST_TEST(c.camera == "lidar");
     BOOST_TEST(c.movement_sensor == "");
     BOOST_TEST(c.enable_mapping == true);
 
     viam_carto_config_teardown(vcc);
-    BOOST_TEST(bdestroy(c.component_reference) == BSTR_OK);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);
@@ -993,7 +987,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_terminate_with_movement_sensor) {
     BOOST_TEST(((cf->state) == CartoFacadeState::IO_INITIALIZED));
     BOOST_TEST((cf->config.camera) == camera);
     BOOST_TEST((cf->config.movement_sensor) == movement_sensor);
-    BOOST_TEST(to_std_string(cf->config.component_reference) == "lidar");
     BOOST_TEST((cf->config.lidar_config) == VIAM_CARTO_THREE_D);
 
     BOOST_TEST(viam_carto_terminate(&vc) == VIAM_CARTO_SUCCESS);
@@ -1346,7 +1339,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(pr.jmag != 0);
         BOOST_TEST(pr.kmag != 0);
         BOOST_TEST(pr.real != 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
                    VIAM_CARTO_SUCCESS);
@@ -1402,7 +1394,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(pr.jmag != 0);
         BOOST_TEST(pr.kmag != 0);
         BOOST_TEST(pr.real != 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
                    VIAM_CARTO_SUCCESS);
@@ -1459,7 +1450,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
         BOOST_TEST(pr.jmag != 0);
         BOOST_TEST(pr.kmag != 0);
         BOOST_TEST(pr.real != 1);
-        BOOST_TEST(to_std_string(pr.component_reference) == "lidar");
 
         BOOST_TEST(viam_carto_get_position_response_destroy(&pr) ==
                    VIAM_CARTO_SUCCESS);
@@ -1589,14 +1579,12 @@ BOOST_AUTO_TEST_CASE(CartoFacade_config_with_movement_sensor) {
 
     struct config c = viam::carto_facade::from_viam_carto_config(vcc);
 
-    BOOST_TEST(to_std_string(c.component_reference) == "lidar");
     BOOST_TEST(c.lidar_config == VIAM_CARTO_THREE_D);
     BOOST_TEST(c.camera == "lidar");
     BOOST_TEST(c.movement_sensor == "movement_sensor");
     BOOST_TEST(c.enable_mapping == true);
 
     viam_carto_config_teardown(vcc);
-    BOOST_TEST(bdestroy(c.component_reference) == BSTR_OK);
 
     // library terminate
     BOOST_TEST(viam_carto_lib_terminate(&lib) == VIAM_CARTO_SUCCESS);

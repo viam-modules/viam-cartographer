@@ -55,8 +55,6 @@ typedef struct viam_carto_get_position_response {
     double imag;
     double jmag;
     double kmag;
-
-    bstring component_reference;
 } viam_carto_get_position_response;
 
 typedef struct viam_carto_get_point_cloud_map_response {
@@ -372,7 +370,6 @@ static const double resolutionMeters = 0.05;
 typedef struct config {
     std::string camera;
     std::string movement_sensor;
-    bstring component_reference;
     viam_carto_LIDAR_CONFIG lidar_config;
     bool enable_mapping;
     std::string existing_map;
@@ -411,7 +408,7 @@ class CartoFacade {
 
     // GetPosition returns the relative pose of the robot w.r.t the "origin"
     // of the map, which is the starting point from where the map was initially
-    // created along with a component reference.
+    // created
     void GetPosition(viam_carto_get_position_response *r);
 
     // GetPointCloudMap returns a stream of the current sampled pointcloud

@@ -77,8 +77,6 @@ type Position struct {
 	Imag float64
 	Jmag float64
 	Kmag float64
-
-	ComponentReference string
 }
 
 // LidarConfig represents the lidar configuration
@@ -93,10 +91,9 @@ const (
 
 // CartoConfig contains config values from app
 type CartoConfig struct {
-	Camera             string
-	MovementSensor     string
-	ComponentReference string
-	LidarConfig        LidarConfig
+	Camera         string
+	MovementSensor string
+	LidarConfig    LidarConfig
 
 	EnableMapping bool
 	ExistingMap   string
@@ -440,8 +437,6 @@ func toPositionResponse(value C.viam_carto_get_position_response) Position {
 		Imag: float64(value.imag),
 		Jmag: float64(value.jmag),
 		Kmag: float64(value.kmag),
-
-		ComponentReference: bstringToGoString(value.component_reference),
 	}
 }
 
