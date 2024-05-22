@@ -3,12 +3,11 @@ package cartofacade
 // GetTestConfig gets a sample config for testing purposes.
 func GetTestConfig(cameraName, movementSensorName, filename string, enableMapping bool) CartoConfig {
 	return CartoConfig{
-		Camera:             cameraName,
-		MovementSensor:     movementSensorName,
-		ComponentReference: "component",
-		LidarConfig:        TwoD,
-		EnableMapping:      enableMapping,
-		ExistingMap:        filename,
+		Camera:         cameraName,
+		MovementSensor: movementSensorName,
+		LidarConfig:    TwoD,
+		EnableMapping:  enableMapping,
+		ExistingMap:    filename,
 	}
 }
 
