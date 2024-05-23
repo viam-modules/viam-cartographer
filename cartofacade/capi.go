@@ -355,8 +355,6 @@ func getTestPositionResponse() C.viam_carto_get_position_response {
 
 	gpr.real = C.double(1100)
 
-	gpr.component_reference = goStringToBstring("C++ component reference")
-
 	return gpr
 }
 
@@ -518,8 +516,6 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_SLAM_MODE_INVALID")
 	case C.VIAM_CARTO_LIDAR_CONFIG_INVALID:
 		return errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID")
-	case C.VIAM_CARTO_COMPONENT_REFERENCE_INVALID:
-		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID")
 	case C.VIAM_CARTO_LUA_CONFIG_NOT_FOUND:
 		return errors.New("VIAM_CARTO_LUA_CONFIG_NOT_FOUND")
 	case C.VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR:
