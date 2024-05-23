@@ -185,7 +185,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
         VIAM_CARTO_THREE_D, no_camera, no_movement_sensor, true, "");
 
     BOOST_TEST(viam_carto_init(&vc, lib, vcc_empty_component_ref, ac) ==
-               VIAM_CARTO_COMPONENT_REFERENCE_INVALID);
+               VIAM_CARTO_LIDAR_CONFIG_INVALID);
 
     ac = viam_carto_algo_config_setup(true);
     // Test config validation with invalid lidar config

@@ -117,7 +117,7 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.lidar_config = vcc.lidar_config;
 
     if (c.camera.empty()) {
-        throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
+        throw VIAM_CARTO_LIDAR_CONFIG_INVALID;
     }
     validate_lidar_config(c.lidar_config);
 
@@ -640,6 +640,16 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
+
+    bstring camera_sensor = to_bstring(config.camera);
+    bool known_sensor = biseq(camera_sensor, sr->lidar);
+    bdestroy(camera_sensor);
+     if (!known_sensor) {
+        VLOG(1) << "expected sensor: " << to_std_string(sr->lidar) << " to be "
+                << config.camera;
+        throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
+    }
+    
     std::string lidar_reading = to_std_string(sr->lidar_reading);
     if (lidar_reading.length() == 0) {
         throw VIAM_CARTO_LIDAR_READING_EMPTY;

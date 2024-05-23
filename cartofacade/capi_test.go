@@ -214,7 +214,7 @@ func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 		cfgBad := GetBadTestConfig()
 		vc, err = NewCarto(cfgBad, algoCfg, &pvcl)
 		// initialize viam_carto incorrectly
-		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID"))
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
 		algoCfg = GetTestAlgoConfig(false)
