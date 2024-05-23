@@ -181,10 +181,10 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
 
     // Test config validation with no camera
     struct viam_carto_algo_config ac = viam_carto_algo_config_setup(false);
-    struct viam_carto_config vcc_empty_component_ref = viam_carto_config_setup(
+    struct viam_carto_config vcc_no_sensors = viam_carto_config_setup(
         VIAM_CARTO_THREE_D, no_camera, no_movement_sensor, true, "");
 
-    BOOST_TEST(viam_carto_init(&vc, lib, vcc_empty_component_ref, ac) ==
+    BOOST_TEST(viam_carto_init(&vc, lib, vcc_no_sensors, ac) ==
                VIAM_CARTO_LIDAR_CONFIG_INVALID);
 
     ac = viam_carto_algo_config_setup(true);
