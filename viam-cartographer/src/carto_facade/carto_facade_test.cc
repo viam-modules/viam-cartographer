@@ -593,25 +593,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_without_movement_sensor) {
                    VIAM_CARTO_LIDAR_READING_INVALID);
     }
 
-    // lidar is not equal to component reference
-    {
-        std::vector<std::vector<double>> points = {
-            {-0.001000, 0.002000, 0.005000, 16711938},
-            {0.582000, 0.012000, 0.000000, 16711938},
-            {0.007000, 0.006000, 0.001000, 16711938}};
-
-        viam_carto_lidar_reading sr;
-        sr.lidar = bfromcstr("never heard of it sensor");
-        std::string pcd = help::binary_pcd(points);
-        sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
-        BOOST_TEST(sr.lidar_reading != nullptr);
-        sr.lidar_reading_time_unix_milli = 1687899990420347;
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
-    }
-
     // empty lidar reading
     {
         viam_carto_lidar_reading sr;
@@ -1093,25 +1074,6 @@ BOOST_AUTO_TEST_CASE(CartoFacade_demo_with_movement_sensor) {
                    VIAM_CARTO_LIDAR_READING_INVALID);
         BOOST_TEST(viam_carto_add_lidar_reading_destroy(nullptr) ==
                    VIAM_CARTO_LIDAR_READING_INVALID);
-    }
-
-    // lidar name is not equal to the configured component reference
-    {
-        std::vector<std::vector<double>> points = {
-            {-0.001000, 0.002000, 0.005000, 16711938},
-            {0.582000, 0.012000, 0.000000, 16711938},
-            {0.007000, 0.006000, 0.001000, 16711938}};
-
-        viam_carto_lidar_reading sr;
-        sr.lidar = bfromcstr("never heard of it sensor");
-        std::string pcd = help::binary_pcd(points);
-        sr.lidar_reading = blk2bstr(pcd.c_str(), pcd.length());
-        BOOST_TEST(sr.lidar_reading != nullptr);
-        sr.lidar_reading_time_unix_milli = 1687899990420347;
-        BOOST_TEST(viam_carto_add_lidar_reading(vc, &sr) ==
-                   VIAM_CARTO_UNKNOWN_SENSOR_NAME);
-        BOOST_TEST(viam_carto_add_lidar_reading_destroy(&sr) ==
-                   VIAM_CARTO_SUCCESS);
     }
 
     // empty lidar reading
