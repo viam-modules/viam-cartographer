@@ -138,12 +138,12 @@ var (
 		IMUWithErroringFunctions:             getIMUWithErroringFunctions,
 		ReplayIMU:                            func() *inject.MovementSensor { return getReplayIMU(TestTimestamp) },
 		InvalidReplayIMU:                     func() *inject.MovementSensor { return getReplayIMU(BadTime) },
-		FinishedReplayIMU:                    func() *inject.MovementSensor { return getFinishedReplayIMU() },
+		FinishedReplayIMU:                    getFinishedReplayIMU,
 		GoodOdometer:                         getGoodOdometer,
 		OdometerWithErroringFunctions:        getOdometerWithErroringFunctions,
 		ReplayOdometer:                       func() *inject.MovementSensor { return getReplayOdometer(TestTimestamp) },
 		InvalidReplayOdometer:                func() *inject.MovementSensor { return getReplayOdometer(BadTime) },
-		FinishedReplayOdometer:               func() *inject.MovementSensor { return getFinishedReplayOdometer() },
+		FinishedReplayOdometer:               getFinishedReplayOdometer,
 		MovementSensorNotIMUNotOdometer:      getMovementSensorNotIMUAndNotOdometer,
 		GoodMovementSensorBothIMUAndOdometer: getGoodMovementSensorBothIMUAndOdometer,
 		MovementSensorBothIMUAndOdometerWithErroringFunctions: getMovementSensorBothIMUAndOdometerWithErroringFunctions,
@@ -151,7 +151,7 @@ var (
 		MovementSensorWithInvalidProperties:                   getMovementSensorWithInvalidProperties,
 		ReplayMovementSensorBothIMUAndOdometer:                func() *inject.MovementSensor { return getReplayMovementSensor(TestTimestamp) },
 		InvalidReplayMovementSensorBothIMUAndOdometer:         func() *inject.MovementSensor { return getReplayMovementSensor(BadTime) },
-		FinishedReplayMovementSensor:                          func() *inject.MovementSensor { return getFinishedReplayMovementSensor() },
+		FinishedReplayMovementSensor:                          getFinishedReplayMovementSensor,
 	}
 )
 

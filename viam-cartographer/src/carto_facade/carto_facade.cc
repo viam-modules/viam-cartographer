@@ -178,7 +178,7 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     path_to_internal_state_file = config.existing_map;
 };
 
-CartoFacade::~CartoFacade() {  }
+CartoFacade::~CartoFacade() {}
 
 void CartoFacade::IOInit() {
     if (state != CartoFacadeState::INITIALIZED) {
@@ -644,12 +644,12 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
     bstring camera_sensor = to_bstring(config.camera);
     bool known_sensor = biseq(camera_sensor, sr->lidar);
     bdestroy(camera_sensor);
-     if (!known_sensor) {
+    if (!known_sensor) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->lidar) << " to be "
                 << config.camera;
         throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
     }
-    
+
     std::string lidar_reading = to_std_string(sr->lidar_reading);
     if (lidar_reading.length() == 0) {
         throw VIAM_CARTO_LIDAR_READING_EMPTY;

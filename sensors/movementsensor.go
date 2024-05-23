@@ -324,11 +324,12 @@ func NewMovementSensor(
 }
 
 func averageReadingTimes(a, b time.Time) time.Time {
-	if b.Equal(a) {
+	switch {
+	case b.Equal(a):
 		return a
-	} else if b.After(a) {
+	case b.After(a):
 		return a.Add(b.Sub(a) / 2)
-	} else {
+	default:
 		return b.Add(a.Sub(b) / 2)
 	}
 }

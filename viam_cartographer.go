@@ -695,13 +695,14 @@ func (cartoSvc *CartographerService) Properties(ctx context.Context) (slam.Prope
 		props.SensorInfo = append(props.SensorInfo, slam.SensorInfo{Name: cartoSvc.movementSensor.Name(), Type: slam.SensorTypeMovementSensor})
 	}
 
-	if cartoSvc.enableMapping && cartoSvc.existingMap == "" {
+	switch {
+	case cartoSvc.enableMapping && cartoSvc.existingMap == "":
 		props.MappingMode = slam.MappingModeNewMap
-	} else if cartoSvc.enableMapping && cartoSvc.existingMap != "" {
+	case cartoSvc.enableMapping && cartoSvc.existingMap != "":
 		props.MappingMode = slam.MappingModeUpdateExistingMap
-	} else if !cartoSvc.enableMapping && cartoSvc.existingMap != "" {
+	case !cartoSvc.enableMapping && cartoSvc.existingMap != "":
 		props.MappingMode = slam.MappingModeLocalizationOnly
-	} else {
+	default:
 		return slam.Properties{}, errors.New("invalid mode: localizing requires an existing map")
 	}
 
