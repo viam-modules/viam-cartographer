@@ -48,20 +48,18 @@ func checkPositionOutputs(
 	mockCartoFacade *cartofacade.Mock,
 	inputPose *commonv1.Pose,
 	inputQuat map[string]interface{},
-	inputComponentRef string,
 	svc *CartographerService,
 	pos cartofacade.Position,
 ) {
 	setMockPositionFunc(mockCartoFacade, pos)
 
-	pose, componentReference, err := svc.Position(context.Background())
+	pose, err := svc.Position(context.Background())
 	test.That(t, err, test.ShouldBeNil)
 	expectedPose := spatialmath.NewPose(
 		r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
 		makeQuaternionFromGenericMap(inputQuat),
 	)
 	test.That(t, pose, test.ShouldResemble, expectedPose)
-	test.That(t, componentReference, test.ShouldEqual, inputComponentRef)
 }
 
 func TestPositionEndpoint(t *testing.T) {
@@ -100,7 +98,7 @@ func TestPositionEndpoint(t *testing.T) {
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, lidarName, svc, originPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, svc, originPos)
 	})
 
 	t.Run("origin pose success", func(t *testing.T) {
@@ -111,7 +109,7 @@ func TestPositionEndpoint(t *testing.T) {
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, lidarName, svc, originPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, svc, originPos)
 	})
 
 	t.Run("non origin pose success", func(t *testing.T) {
@@ -122,7 +120,7 @@ func TestPositionEndpoint(t *testing.T) {
 		inputPose = commonv1.Pose{X: 5, Y: 5, Z: 5, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 1.0, "jmag": 0.0, "kmag": 0.0}
 
-		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, lidarName, svc, nonOriginPos)
+		checkPositionOutputs(t, mockCartoFacade, &inputPose, inputQuat, svc, nonOriginPos)
 	})
 
 	t.Run("error case", func(t *testing.T) {
@@ -140,11 +138,10 @@ func TestPositionEndpoint(t *testing.T) {
 
 		inputPose = commonv1.Pose{X: 0, Y: 0, Z: 0, OX: 0, OY: 0, OZ: 1, Theta: 0}
 		inputQuat = map[string]interface{}{"real": 1.0, "imag": 0.0, "jmag": 0.0, "kmag": 0.0}
-		pose, componentReference, err := svc.Position(context.Background())
+		pose, err := svc.Position(context.Background())
 
 		test.That(t, err, test.ShouldBeError, errors.New("testError"))
 		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentReference, test.ShouldEqual, "")
 	})
 }
 
@@ -443,7 +440,6 @@ func TestParseCartoAlgoConfig(t *testing.T) {
 
 func TestBuiltinQuaternion(t *testing.T) {
 	poseSucc := spatialmath.NewPose(r3.Vector{X: 1, Y: 2, Z: 3}, &spatialmath.OrientationVector{Theta: math.Pi / 2, OX: 0, OY: 0, OZ: -1})
-	componentRefSucc := "cam"
 	t.Run("test successful quaternion from internal server", func(t *testing.T) {
 		returnedExtSucc := map[string]interface{}{
 			"quat": map[string]interface{}{
@@ -454,10 +450,9 @@ func TestBuiltinQuaternion(t *testing.T) {
 			},
 		}
 
-		pose, componentRef, err := CheckQuaternionFromClientAlgo(poseSucc, componentRefSucc, returnedExtSucc)
+		pose, err := CheckQuaternionFromClientAlgo(poseSucc, returnedExtSucc)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, spatialmath.PoseAlmostEqual(poseSucc, pose), test.ShouldBeTrue)
-		test.That(t, componentRef, test.ShouldEqual, componentRefSucc)
 	})
 
 	t.Run("test failure due to quaternion not being given", func(t *testing.T) {
@@ -470,10 +465,9 @@ func TestBuiltinQuaternion(t *testing.T) {
 			},
 		}
 
-		pose, componentRef, err := CheckQuaternionFromClientAlgo(poseSucc, componentRefSucc, returnedExtFail)
+		pose, err := CheckQuaternionFromClientAlgo(poseSucc, returnedExtFail)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error getting SLAM position: quaternion not given")
 		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentRef, test.ShouldBeEmpty)
 	})
 
 	t.Run("test failure due to invalid quaternion format", func(t *testing.T) {
@@ -486,9 +480,8 @@ func TestBuiltinQuaternion(t *testing.T) {
 			},
 		}
 
-		pose, componentRef, err := CheckQuaternionFromClientAlgo(poseSucc, componentRefSucc, returnedExtFail)
+		pose, err := CheckQuaternionFromClientAlgo(poseSucc, returnedExtFail)
 		test.That(t, err.Error(), test.ShouldContainSubstring, "error getting SLAM position: quaternion given, but invalid format detected")
 		test.That(t, pose, test.ShouldBeNil)
-		test.That(t, componentRef, test.ShouldBeEmpty)
 	})
 }

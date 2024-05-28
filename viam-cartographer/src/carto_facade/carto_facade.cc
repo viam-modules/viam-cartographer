@@ -117,10 +117,9 @@ config from_viam_carto_config(viam_carto_config vcc) {
     c.lidar_config = vcc.lidar_config;
 
     if (c.camera.empty()) {
-        throw VIAM_CARTO_COMPONENT_REFERENCE_INVALID;
+        throw VIAM_CARTO_LIDAR_CONFIG_INVALID;
     }
     validate_lidar_config(c.lidar_config);
-    c.component_reference = bstrcpy(vcc.camera);
 
     return c;
 };
@@ -179,7 +178,7 @@ CartoFacade::CartoFacade(viam_carto_lib *pVCL, const viam_carto_config c,
     path_to_internal_state_file = config.existing_map;
 };
 
-CartoFacade::~CartoFacade() { bdestroy(config.component_reference); }
+CartoFacade::~CartoFacade() {}
 
 void CartoFacade::IOInit() {
     if (state != CartoFacadeState::INITIALIZED) {
@@ -538,7 +537,6 @@ void CartoFacade::GetPosition(viam_carto_get_position_response *r) {
     r->imag = pos_quat.x();
     r->jmag = pos_quat.y();
     r->kmag = pos_quat.z();
-    r->component_reference = bstrcpy(config.component_reference);
 };
 
 void CartoFacade::GetPointCloudMap(viam_carto_get_point_cloud_map_response *r) {
@@ -642,11 +640,16 @@ void CartoFacade::AddLidarReading(const viam_carto_lidar_reading *sr) {
                    << CartoFacadeState::STARTED;
         throw VIAM_CARTO_NOT_IN_STARTED_STATE;
     }
-    if (biseq(config.component_reference, sr->lidar) == false) {
+
+    bstring camera_sensor = to_bstring(config.camera);
+    bool known_sensor = biseq(camera_sensor, sr->lidar);
+    bdestroy(camera_sensor);
+    if (!known_sensor) {
         VLOG(1) << "expected sensor: " << to_std_string(sr->lidar) << " to be "
-                << config.component_reference;
+                << config.camera;
         throw VIAM_CARTO_UNKNOWN_SENSOR_NAME;
     }
+
     std::string lidar_reading = to_std_string(sr->lidar_reading);
     if (lidar_reading.length() == 0) {
         throw VIAM_CARTO_LIDAR_READING_EMPTY;
@@ -1135,12 +1138,6 @@ extern int viam_carto_get_position_response_destroy(
         return VIAM_CARTO_GET_POSITION_RESPONSE_INVALID;
     }
     int return_code = VIAM_CARTO_SUCCESS;
-    int rc = BSTR_OK;
-    rc = bdestroy(r->component_reference);
-    if (rc != BSTR_OK) {
-        return_code = VIAM_CARTO_DESTRUCTOR_ERROR;
-    }
-    r->component_reference = nullptr;
     return return_code;
 };
 

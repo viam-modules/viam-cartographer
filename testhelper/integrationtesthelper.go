@@ -120,7 +120,7 @@ type movementSensorData struct {
 
 // Test final position and orientation are at approximately the expected values.
 func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
-	useOdometer bool, expectedComponentRef string,
+	useOdometer bool,
 ) {
 	var expectedPos r3.Vector
 	var expectedOri *spatialmath.R4AA
@@ -193,9 +193,8 @@ func testCartographerPosition(t *testing.T, svc slam.Service, useIMU bool,
 		}
 	}
 
-	position, componentRef, err := svc.Position(context.Background())
+	position, err := svc.Position(context.Background())
 	test.That(t, err, test.ShouldBeNil)
-	test.That(t, componentRef, test.ShouldEqual, expectedComponentRef)
 
 	pos := position.Point()
 	t.Logf("Position point: (%v, %v, %v)", pos.X, pos.Y, pos.Z)
@@ -435,7 +434,7 @@ func IntegrationCartographer(
 	t.Logf("sensor processes have completed, all data has been ingested")
 
 	// Test end points and retrieve internal state
-	testCartographerPosition(t, svc, useIMU, useOdometer, attrCfg.Camera["name"])
+	testCartographerPosition(t, svc, useIMU, useOdometer)
 	testCartographerMap(t, svc, cSvc.SlamMode == cartofacade.LocalizingMode)
 
 	internalState, err := slam.InternalStateFull(context.Background(), svc)

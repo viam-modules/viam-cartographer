@@ -77,8 +77,6 @@ type Position struct {
 	Imag float64
 	Jmag float64
 	Kmag float64
-
-	ComponentReference string
 }
 
 // LidarConfig represents the lidar configuration
@@ -93,10 +91,9 @@ const (
 
 // CartoConfig contains config values from app
 type CartoConfig struct {
-	Camera             string
-	MovementSensor     string
-	ComponentReference string
-	LidarConfig        LidarConfig
+	Camera         string
+	MovementSensor string
+	LidarConfig    LidarConfig
 
 	EnableMapping bool
 	ExistingMap   string
@@ -358,8 +355,6 @@ func getTestPositionResponse() C.viam_carto_get_position_response {
 
 	gpr.real = C.double(1100)
 
-	gpr.component_reference = goStringToBstring("C++ component reference")
-
 	return gpr
 }
 
@@ -440,8 +435,6 @@ func toPositionResponse(value C.viam_carto_get_position_response) Position {
 		Imag: float64(value.imag),
 		Jmag: float64(value.jmag),
 		Kmag: float64(value.kmag),
-
-		ComponentReference: bstringToGoString(value.component_reference),
 	}
 }
 
@@ -523,8 +516,6 @@ func toError(status C.int) error {
 		return errors.New("VIAM_CARTO_SLAM_MODE_INVALID")
 	case C.VIAM_CARTO_LIDAR_CONFIG_INVALID:
 		return errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID")
-	case C.VIAM_CARTO_COMPONENT_REFERENCE_INVALID:
-		return errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID")
 	case C.VIAM_CARTO_LUA_CONFIG_NOT_FOUND:
 		return errors.New("VIAM_CARTO_LUA_CONFIG_NOT_FOUND")
 	case C.VIAM_CARTO_INTERNAL_STATE_FILE_SYSTEM_ERROR:

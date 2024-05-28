@@ -119,7 +119,6 @@ func TestPositionResponse(t *testing.T) {
 	gpr := getTestPositionResponse()
 	t.Run("position response properly converted between C and go", func(t *testing.T) {
 		holder := toPositionResponse(gpr)
-		test.That(t, holder.ComponentReference, test.ShouldEqual, "C++ component reference")
 
 		test.That(t, holder.X, test.ShouldEqual, 100)
 		test.That(t, holder.Y, test.ShouldEqual, 200)
@@ -215,7 +214,7 @@ func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 		cfgBad := GetBadTestConfig()
 		vc, err = NewCarto(cfgBad, algoCfg, &pvcl)
 		// initialize viam_carto incorrectly
-		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_COMPONENT_REFERENCE_INVALID"))
+		test.That(t, err, test.ShouldResemble, errors.New("VIAM_CARTO_LIDAR_CONFIG_INVALID"))
 		test.That(t, vc, test.ShouldNotBeNil)
 
 		algoCfg = GetTestAlgoConfig(false)
@@ -342,7 +341,6 @@ func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 		// test position zeroed
 		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "my-lidar")
 		positionIsZero(t, position)
 
 		// test pointCloudMap now returns a non empty result
@@ -369,7 +367,6 @@ func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 		// test position, is no longer zeroed
 		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "my-lidar")
 		test.That(t, position.X, test.ShouldNotEqual, 0)
 		test.That(t, position.Y, test.ShouldNotEqual, 0)
 		test.That(t, position.Z, test.ShouldEqual, 0)
@@ -604,7 +601,6 @@ func TestCGoAPIWithMovementSensor(t *testing.T) {
 		// test position is not zeroed
 		position, err = vc.position()
 		test.That(t, err, test.ShouldBeNil)
-		test.That(t, position.ComponentReference, test.ShouldEqual, "my-lidar")
 		test.That(t, r3.Vector{X: position.X, Y: position.Y, Z: position.Z}, test.ShouldNotResemble, r3.Vector{X: 0, Y: 0, Z: 0})
 
 		// test pointCloudMap returns a non empty result

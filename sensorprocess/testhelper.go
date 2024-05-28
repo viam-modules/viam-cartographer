@@ -111,14 +111,15 @@ func validAddLidarReadingInOnlineTestHelper(
 		test.That(t, call.timeout, test.ShouldEqual, config.Timeout)
 	}
 
-	if testLidar == s.GoodLidar {
+	switch {
+	case testLidar == s.GoodLidar:
 		test.That(t, calls[0].currentReading.ReadingTime.Before(calls[1].currentReading.ReadingTime), test.ShouldBeTrue)
 		test.That(t, calls[1].currentReading.ReadingTime.Before(calls[2].currentReading.ReadingTime), test.ShouldBeTrue)
-	} else if testLidar == s.ReplayLidar {
+	case testLidar == s.ReplayLidar:
 		readingTime, err := time.Parse(time.RFC3339Nano, s.TestTimestamp)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, calls[0].currentReading.ReadingTime.Equal(readingTime), test.ShouldBeTrue)
-	} else {
+	default:
 		t.Errorf("no timestamp tests provided for %v", string(testLidar))
 	}
 }
