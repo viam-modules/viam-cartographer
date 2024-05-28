@@ -250,6 +250,7 @@ BOOST_AUTO_TEST_CASE(CartoFacade_init_validate) {
     // TODO: Move all suite level setup & teardown to boost test hook
     // Teardown
     viam_carto_config_teardown(vcc_invalid_lidar_config);
+    viam_carto_config_teardown(vcc_no_sensors);
     viam_carto_config_teardown(vcc_invalid_movement_sensor_config);
     viam_carto_config_teardown(vcc_with_movement_sensor_succ);
     viam_carto_config_teardown(vcc_without_movement_sensor_succ);
