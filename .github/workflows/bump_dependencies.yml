@@ -25,7 +25,8 @@ jobs:
       id: gobump
       run: |
         sudo chown -R testbot .
-        sudo -u testbot bash -lc 'go get -u .'
+        sudo -u testbot bash -lc 'go get go.viam.com/rdk'
+        sudo -u testbot bash -lc 'go get go.viam.com/api'
         GEN_DIFF=$(git status -s)
         
         if [ -n "$GEN_DIFF" ]; then

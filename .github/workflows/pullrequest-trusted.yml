@@ -8,7 +8,6 @@ concurrency:
 on:
   pull_request_target:
     branches: [ 'main' ]
-    types: [ 'labeled' ]
 
 # To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
 # and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
@@ -16,16 +15,16 @@ on:
 
 jobs:
   test:
-    if: github.event.label.name == 'safe to test' || 
+    if: | 
       contains(github.event.pull_request.labels.*.name, 'appimage') || 
       contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
+    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@workflow-updates
 
   # This lets people add an "appimage" tag to have appimages built for the PR
   appimage:
     needs: [test]
     if: |
-      always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
+      always() && !cancelled() &&
       !contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') &&
       contains(github.event.pull_request.labels.*.name, 'appimage') && needs.test.result == 'success'
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
@@ -36,7 +35,7 @@ jobs:
 
   appimage-ignore-tests:
     if: |
-       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
+       always() && !cancelled() &&
        contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
     uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
     with:
