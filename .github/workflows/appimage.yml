@@ -12,8 +12,14 @@ on:
         required: true
         type: string
     secrets:
-      GCP_CREDENTIALS:
+      GCP_WORKLOAD_IDENTITY_PROVIDER:
         required: true
+      GCP_SERVICE_ACCOUNT:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   appimage:
