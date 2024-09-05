@@ -20,7 +20,7 @@ import (
 	geo "github.com/kellydunn/golang-geo"
 	"go.viam.com/rdk/spatialmath"
 
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 // CartoLib holds the c type viam_carto_lib

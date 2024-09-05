@@ -14,10 +14,10 @@ on:
 
 jobs:
   test:
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@main
+    uses: ./.github/workflows/test.yml
 
   appimage:
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: ./.github/workflows/appimage.yml
     needs: test
     with:
       release_type: 'rc'

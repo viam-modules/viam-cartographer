@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 // RequestMock represents a fake instance of a request.

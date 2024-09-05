@@ -12,9 +12,9 @@ import (
 	"go.viam.com/rdk/spatialmath"
 	"go.viam.com/test"
 
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
-	"github.com/viamrobotics/viam-cartographer/sensors/inject"
+	"github.com/viam-modules/viam-cartographer/cartofacade"
+	s "github.com/viam-modules/viam-cartographer/sensors"
+	"github.com/viam-modules/viam-cartographer/sensors/inject"
 )
 
 func TestStartMovementSensor(t *testing.T) {

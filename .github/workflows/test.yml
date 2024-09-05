@@ -92,7 +92,7 @@ jobs:
     - name: make setup-cpp-debug test-cpp-valgrind
       # Currently we only run valgrind on arm64 as x86
       # doesn't valgrind clean due to what appears to be a bug in GLOG
-      # https://github.com/viamrobotics/viam-cartographer/actions/runs/5156238014/jobs/9287413446
+      # https://github.com/viam-modules/viam-cartographer/actions/runs/5156238014/jobs/9287413446
       if: matrix.platform != 'amd64'
       run: |
         sudo -u testbot bash -lc 'make setup-cpp-debug && make test-cpp-valgrind'

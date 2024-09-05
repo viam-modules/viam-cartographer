@@ -17,8 +17,8 @@ import (
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/sensors/inject"
+	"github.com/viam-modules/viam-cartographer/cartofacade"
+	"github.com/viam-modules/viam-cartographer/sensors/inject"
 )
 
 func makeQuaternionFromGenericMap(quat map[string]interface{}) spatialmath.Orientation {

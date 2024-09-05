@@ -10,7 +10,7 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/utils"
 
-	viamcartographer "github.com/viamrobotics/viam-cartographer"
+	viamcartographer "github.com/viam-modules/viam-cartographer"
 )
 
 // Versioning variables which are replaced by LD flags.

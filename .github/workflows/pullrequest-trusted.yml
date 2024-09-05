@@ -9,16 +9,12 @@ on:
   pull_request_target:
     branches: [ 'main' ]
 
-# To test workflow updates you need to work in a branch directly on viamrobotics/viam-cartographer
-# and tag your working branch instead of @main in any viamrobotics/viam-cartographer "uses" below.
-# Don't forget to tag back to @main before merge.
-
 jobs:
   test:
     if: | 
       contains(github.event.pull_request.labels.*.name, 'appimage') || 
       contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
-    uses: viamrobotics/viam-cartographer/.github/workflows/test.yml@workflow-updates
+    uses: ./.github/workflows/test.yml
 
   # This lets people add an "appimage" tag to have appimages built for the PR
   appimage:
@@ -27,7 +23,7 @@ jobs:
       always() && !cancelled() &&
       !contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') &&
       contains(github.event.pull_request.labels.*.name, 'appimage') && needs.test.result == 'success'
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: ./.github/workflows/appimage.yml
     with:
       release_type: 'pr'
     secrets:
@@ -37,7 +33,7 @@ jobs:
     if: |
        always() && !cancelled() &&
        contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
-    uses: viamrobotics/viam-cartographer/.github/workflows/appimage.yml@main
+    uses: ./.github/workflows/appimage.yml
     with:
       release_type: 'pr'
     secrets:

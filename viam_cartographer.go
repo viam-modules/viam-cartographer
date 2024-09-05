@@ -23,11 +23,11 @@ import (
 	"go.viam.com/rdk/services/slam"
 	"go.viam.com/rdk/spatialmath"
 
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/postprocess"
-	"github.com/viamrobotics/viam-cartographer/sensorprocess"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	"github.com/viam-modules/viam-cartographer/cartofacade"
+	vcConfig "github.com/viam-modules/viam-cartographer/config"
+	"github.com/viam-modules/viam-cartographer/postprocess"
+	"github.com/viam-modules/viam-cartographer/sensorprocess"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 // Model is the model name of cartographer.

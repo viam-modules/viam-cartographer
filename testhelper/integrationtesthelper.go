@@ -29,11 +29,11 @@ import (
 	"go.viam.com/utils"
 	"go.viam.com/utils/artifact"
 
-	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
-	"github.com/viamrobotics/viam-cartographer/sensors/inject"
+	viamcartographer "github.com/viam-modules/viam-cartographer"
+	"github.com/viam-modules/viam-cartographer/cartofacade"
+	vcConfig "github.com/viam-modules/viam-cartographer/config"
+	s "github.com/viam-modules/viam-cartographer/sensors"
+	"github.com/viam-modules/viam-cartographer/sensors/inject"
 )
 
 const (
