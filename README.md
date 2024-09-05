@@ -2,7 +2,7 @@
 
 ## User documentation
 
-For user documentation, see [Cartographer Modular Resource](https://docs.viam.com/services/slam/cartographer/).
+For user documentation, see [Cartographer Modular Resource](https://docs.viam.com/services/slam/cartographer/). For CloudSLAM documentation, see [CloudSLAM docs](https://docs.viam.com/services/slam/cloudslam/)
 
 ## (In)stability Notice
 > **Warning**
