@@ -3,7 +3,7 @@ package inject
 import (
 	"context"
 
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 // TimedMovementSensor is an injected TimedMovementSensor.

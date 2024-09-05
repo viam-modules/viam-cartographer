@@ -23,9 +23,9 @@ import (
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 
-	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	viamcartographer "github.com/viam-modules/viam-cartographer"
+	vcConfig "github.com/viam-modules/viam-cartographer/config"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 const (

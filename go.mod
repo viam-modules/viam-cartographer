@@ -1,4 +1,4 @@
-module github.com/viamrobotics/viam-cartographer
+module github.com/viam-modules/viam-cartographer
 
 go 1.21
 

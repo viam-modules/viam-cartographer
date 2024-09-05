@@ -10,7 +10,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 var emptyRequestParams = map[RequestParamType]interface{}{}

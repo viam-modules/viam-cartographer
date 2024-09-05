@@ -14,7 +14,7 @@ import (
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 func positionIsZero(t *testing.T, position Position) {

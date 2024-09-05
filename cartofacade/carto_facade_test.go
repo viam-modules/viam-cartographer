@@ -18,7 +18,7 @@ import (
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 const timeoutErrMessage = "timeout reading from cartographer"

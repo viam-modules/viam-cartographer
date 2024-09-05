@@ -60,7 +60,7 @@ linters-settings:
     sections:
       - standard
       - default
-      - prefix(github.com/viamrobotics/viam-cartographer)
+      - prefix(github.com/viam-modules/viam-cartographer)
   gocritic:
     enabled-tags:
     disabled-checks:

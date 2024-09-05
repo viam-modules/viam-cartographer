@@ -14,9 +14,9 @@ import (
 	"go.viam.com/rdk/logging"
 	"go.viam.com/test"
 
-	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	"github.com/viamrobotics/viam-cartographer/testhelper"
+	viamcartographer "github.com/viam-modules/viam-cartographer"
+	"github.com/viam-modules/viam-cartographer/cartofacade"
+	"github.com/viam-modules/viam-cartographer/testhelper"
 )
 
 // saveInternalState saves cartographer's internal state in the data directory.

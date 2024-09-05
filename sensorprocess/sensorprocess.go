@@ -12,8 +12,8 @@ import (
 	replaymovementsensor "go.viam.com/rdk/components/movementsensor/replay"
 	"go.viam.com/rdk/logging"
 
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	"github.com/viam-modules/viam-cartographer/cartofacade"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 type sensorType int64

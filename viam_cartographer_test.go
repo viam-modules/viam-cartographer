@@ -19,12 +19,12 @@ import (
 	"go.viam.com/test"
 	"go.viam.com/utils/artifact"
 
-	viamcartographer "github.com/viamrobotics/viam-cartographer"
-	"github.com/viamrobotics/viam-cartographer/cartofacade"
-	vcConfig "github.com/viamrobotics/viam-cartographer/config"
-	"github.com/viamrobotics/viam-cartographer/postprocess"
-	s "github.com/viamrobotics/viam-cartographer/sensors"
-	"github.com/viamrobotics/viam-cartographer/testhelper"
+	viamcartographer "github.com/viam-modules/viam-cartographer"
+	"github.com/viam-modules/viam-cartographer/cartofacade"
+	vcConfig "github.com/viam-modules/viam-cartographer/config"
+	"github.com/viam-modules/viam-cartographer/postprocess"
+	s "github.com/viam-modules/viam-cartographer/sensors"
+	"github.com/viam-modules/viam-cartographer/testhelper"
 )
 
 const (

@@ -5,7 +5,6 @@ concurrency:
 
 on:
   workflow_dispatch:
-  push:
   release:
     types: [released]
 
@@ -82,5 +81,5 @@ jobs:
       with:
         platform: linux/${{ matrix.platform }}
         version: ${{ steps.stripped-version.outputs.version }}
-        key-id: ${{ secrets.viam_key_id }}
-        key-value: ${{ secrets.viam_key_value }}
+        key-id: ${{ secrets.VIAM_DEV_API_KEY_ID }}
+        key-value: ${{ secrets.VIAM_DEV_API_KEY }}

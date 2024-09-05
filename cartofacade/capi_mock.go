@@ -2,7 +2,7 @@
 package cartofacade
 
 import (
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 // CartoLibMock represents a fake instance of cartofacade.

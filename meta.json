@@ -1,7 +1,7 @@
 {
   "module_id": "viam:cartographer",
   "visibility": "public",
-  "url": "https://github.com/viamrobotics/viam-cartographer",
+  "url": "https://github.com/viam-modules/viam-cartographer",
   "description": "Go module for Google Cartographer",
   "models": [
     {

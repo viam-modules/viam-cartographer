@@ -9,7 +9,7 @@ import (
 	"go.viam.com/rdk/logging"
 	"go.viam.com/test"
 
-	s "github.com/viamrobotics/viam-cartographer/sensors"
+	s "github.com/viam-modules/viam-cartographer/sensors"
 )
 
 func TestNewLidar(t *testing.T) {
