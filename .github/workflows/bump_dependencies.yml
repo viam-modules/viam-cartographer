@@ -42,6 +42,7 @@ jobs:
           base: main
           title: Automated Go Dependencies Update
           body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging.
+          reviewers: JohnN193
 
   slack-workflow-status:
       if: ${{ failure() }} 
