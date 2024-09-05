@@ -7,7 +7,7 @@ concurrency:
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, unlabeled, labeled]
+    types: [opened, synchronize, reopened, labeled]
     branches: [ 'main' ]
 
 jobs:
