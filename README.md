@@ -15,8 +15,6 @@ And Mapping ([SLAM](https://en.wikipedia.org/wiki/Simultaneous_localization_and_
 
 ## Getting started
 
-yo
-
 ### Stable AppImages
 
 Install viam-cartographer:
@@ -60,7 +58,7 @@ Note that AppImages require FUSE to run. See [documentation](https://docs.viam.c
 
 #### Download
 ```bash
-git clone --recurse-submodules https://github.com/viam-modules/viam-cartographer.git
+git clone --recurse-submodules https://github.com/viamrobotics/viam-cartographer.git
 ```
 
 If you happened to use `git clone` only, you won't see the `cartographer` folder and will need to fetch it:
