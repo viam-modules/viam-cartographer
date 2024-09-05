@@ -60,10 +60,13 @@ jobs:
       run: |
         sudo -u testbot bash -lc 'make setup'
 
-    - name: Authorize GCP Upload
-      uses: google-github-actions/auth@v1
+    - id: 'auth'
+      name: 'Authenticate to Google Cloud'
+      uses: 'google-github-actions/auth@v1'
       with:
-        credentials_json: '${{ secrets.GCP_CREDENTIALS }}'
+        create_credentials_file: true
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
 
     - name: Build and Package (PR)
       if: inputs.release_type == 'pr'
