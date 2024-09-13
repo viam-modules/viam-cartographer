@@ -13,7 +13,7 @@ jobs:
   bump-versions:
     name: Bump Package Versions
     if: github.repository_owner == 'viam-modules'
-    runs-on: [self-hosted, x64]
+    runs-on: ubuntu-latest
     container:
       image: ghcr.io/viamrobotics/rdk-devenv:amd64-cache
     timeout-minutes: 10
