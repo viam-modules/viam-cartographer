@@ -3,7 +3,6 @@ package postprocess
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"image/color"
 	"math"
 	"testing"
@@ -52,13 +51,13 @@ func TestParseDoCommand(t *testing.T) {
 			err: errYNotFloat64,
 		},
 	} {
-		t.Run(fmt.Sprintf("%s for Add task", tc.msg), func(t *testing.T) {
+		t.Run(tc.msg+" for Add task", func(t *testing.T) {
 			task, err := ParseDoCommand(tc.cmd, Add)
 			test.That(t, err, test.ShouldBeError, tc.err)
 			test.That(t, task, test.ShouldResemble, Task{})
 		})
 
-		t.Run(fmt.Sprintf("%s for Remove task", tc.msg), func(t *testing.T) {
+		t.Run(tc.msg+" for Remove task", func(t *testing.T) {
 			task, err := ParseDoCommand(tc.cmd, Remove)
 			test.That(t, err, test.ShouldBeError, tc.err)
 			test.That(t, task, test.ShouldResemble, Task{})

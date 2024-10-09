@@ -58,9 +58,9 @@ type CartoInterface interface {
 	start() error
 	stop() error
 	terminate() error
-	addLidarReading(string, s.TimedLidarReadingResponse) error
-	addIMUReading(string, s.TimedIMUReadingResponse) error
-	addOdometerReading(string, s.TimedOdometerReadingResponse) error
+	addLidarReading(lidar string, reading s.TimedLidarReadingResponse) error
+	addIMUReading(movementSensor string, reading s.TimedIMUReadingResponse) error
+	addOdometerReading(movementSensor string, reading s.TimedOdometerReadingResponse) error
 	position() (Position, error)
 	pointCloudMap() ([]byte, error)
 	internalState() ([]byte, error)

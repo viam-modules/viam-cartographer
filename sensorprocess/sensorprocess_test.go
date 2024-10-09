@@ -3,7 +3,7 @@ package sensorprocess
 import (
 	"context"
 	"errors"
-	"fmt"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -264,7 +264,7 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 				cf.AddLidarReadingFunc = func(ctx context.Context, timeout time.Duration,
 					lidarName string, currentReading s.TimedLidarReadingResponse,
 				) error {
-					actualDataInsertions = append(actualDataInsertions, "lidar: "+fmt.Sprint(tt.lidarReadingTimeAddedMs[numLidarData-1]))
+					actualDataInsertions = append(actualDataInsertions, "lidar: "+strconv.Itoa(tt.lidarReadingTimeAddedMs[numLidarData-1]))
 					countAddedLidarData++
 					return nil
 				}
@@ -273,7 +273,7 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 				cf.AddIMUReadingFunc = func(ctx context.Context, timeout time.Duration,
 					imuName string, currentReading s.TimedIMUReadingResponse,
 				) error {
-					actualDataInsertions = append(actualDataInsertions, "imu: "+fmt.Sprint(tt.msReadingTimeAddedMs[numMovementSensorData-1]))
+					actualDataInsertions = append(actualDataInsertions, "imu: "+strconv.Itoa(tt.msReadingTimeAddedMs[numMovementSensorData-1]))
 					countAddedIMUData++
 					return nil
 				}
@@ -282,7 +282,7 @@ func TestStartOfflineSensorProcess(t *testing.T) {
 				cf.AddOdometerReadingFunc = func(ctx context.Context, timeout time.Duration,
 					odometerName string, currentReading s.TimedOdometerReadingResponse,
 				) error {
-					actualDataInsertions = append(actualDataInsertions, "odometer: "+fmt.Sprint(tt.msReadingTimeAddedMs[numMovementSensorData-1]))
+					actualDataInsertions = append(actualDataInsertions, "odometer: "+strconv.Itoa(tt.msReadingTimeAddedMs[numMovementSensorData-1]))
 					countAddedOdometerData++
 					return nil
 				}
