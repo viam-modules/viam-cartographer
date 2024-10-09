@@ -471,7 +471,7 @@ func integrationTimedMovementSensor(
 ) (s.TimedMovementSensor, error) {
 	// Return nil if movement sensor is not defined
 	if movementSensor["name"] == "" {
-		return nil, fmt.Errorf("movement sensor is undefined: %v", movementSensor["name"])
+		return nil, errors.New("movement sensor is undefined")
 	}
 
 	// Check that the required amount of movement sensor data is present and
