@@ -35,6 +35,7 @@ linters:
     - maintidx
     - maligned
     - makezero
+    - mnd
     - musttag
     - nakedret
     - nestif
@@ -70,7 +71,9 @@ linters-settings:
     extra-rules: true
   gosec:
     excludes:
-      - G601
+      - G115 # TODO(go1.23): maybe reenable
+      - G301
+      - G306
   govet:
     enable-all: true
     disable:

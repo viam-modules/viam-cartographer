@@ -8,17 +8,11 @@ if(DEFINED ENV{API_SOURCE_DIR})
 else()
   set(API_SOURCE_DIR ${PROJECT_SOURCE_DIR}/..)
 endif()
-set(GRPC_SRC_DIR ${API_SOURCE_DIR}/grpc/cpp/gen)
 
-if(NOT EXISTS ${GRPC_SRC_DIR})
-message(FATAL_ERROR
-  "RDK C++ gRPC gen files not found. Please specify the absolute path to your API_SOURCE_DIR e.g. 'export API_SOURCE_DIR=/home/user/api'"
-)
-endif()
+
 
 message("PROJECT SOURCE DIR: " ${PROJECT_SOURCE_DIR})
 message("API SOURCE DIR: " ${API_SOURCE_DIR})
-message("GRPC SOURCE DIR: " ${GRPC_SRC_DIR})
 
 
 # dependencies
@@ -52,20 +46,8 @@ list(APPEND ALL_LIBRARY_HDRS ${ALL_VIAM_HDRS})
 list(APPEND ALL_LIBRARY_SRCS ${ALL_VIAM_SRCS})
 list(APPEND ALL_LIBRARY_SRCS ${ALL_VIAM_C_SRCS})
 
-# add grpc/API sources
-set(GRPC_SRCS
-  ${GRPC_SRC_DIR}/service/slam/v1/slam.grpc.pb.cc
-  ${GRPC_SRC_DIR}/service/slam/v1/slam.pb.cc
-  ${GRPC_SRC_DIR}/common/v1/common.grpc.pb.cc
-  ${GRPC_SRC_DIR}/common/v1/common.pb.cc
-  ${GRPC_SRC_DIR}/google/api/annotations.pb.cc
-  ${GRPC_SRC_DIR}/google/api/httpbody.pb.cc
-  ${GRPC_SRC_DIR}/google/api/http.pb.cc
-)
-
 # the viam-cartographer library
-add_library(${PROJECT_NAME} STATIC ${ALL_LIBRARY_HDRS} ${ALL_LIBRARY_SRCS} ${GRPC_SRCS})
-target_include_directories(${PROJECT_NAME} PUBLIC $<BUILD_INTERFACE:${GRPC_SRC_DIR}>)
+add_library(${PROJECT_NAME} STATIC ${ALL_LIBRARY_HDRS} ${ALL_LIBRARY_SRCS})
 target_link_libraries(${PROJECT_NAME} PUBLIC
   cartographer
   ${GRPCPP_LIBRARIES}

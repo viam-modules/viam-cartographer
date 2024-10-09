@@ -56,7 +56,7 @@ func checkPositionOutputs(
 	pose, err := svc.Position(context.Background())
 	test.That(t, err, test.ShouldBeNil)
 	expectedPose := spatialmath.NewPose(
-		r3.Vector{X: inputPose.X, Y: inputPose.Y, Z: inputPose.Z},
+		r3.Vector{X: inputPose.GetX(), Y: inputPose.GetY(), Z: inputPose.GetZ()},
 		makeQuaternionFromGenericMap(inputQuat),
 	)
 	test.That(t, pose, test.ShouldResemble, expectedPose)

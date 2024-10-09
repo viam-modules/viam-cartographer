@@ -27,6 +27,7 @@ jobs:
         sudo chown -R testbot .
         sudo -u testbot bash -lc 'go get go.viam.com/rdk'
         sudo -u testbot bash -lc 'go get go.viam.com/api'
+        sudo -u testbot bash -lc 'go mod tidy'
         GEN_DIFF=$(git status -s)
         
         if [ -n "$GEN_DIFF" ]; then
@@ -43,6 +44,7 @@ jobs:
           title: Automated Go Dependencies Update
           body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging.
           reviewers: JohnN193
+          draft: always-true
 
   slack-workflow-status:
       if: ${{ failure() }} 

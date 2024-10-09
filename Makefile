@@ -100,7 +100,7 @@ endif
 
 build: cartographer-module
 
-viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
+viam-cartographer/build/unit_tests: ensure-submodule-initialized
 	cd viam-cartographer && cmake -B$(BUILD_DIR) -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build $(BUILD_DIR)
 
 cartographer-module: viam-cartographer/build/unit_tests

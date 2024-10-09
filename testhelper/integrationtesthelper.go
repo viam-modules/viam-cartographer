@@ -471,7 +471,7 @@ func integrationTimedMovementSensor(
 ) (s.TimedMovementSensor, error) {
 	// Return nil if movement sensor is not defined
 	if movementSensor["name"] == "" {
-		return nil, nil
+		return nil, errors.New("movement sensor is undefined")
 	}
 
 	// Check that the required amount of movement sensor data is present and
@@ -639,7 +639,7 @@ func mockLidarReadingsValid() error {
 	if len(files) < NumPointCloudFiles {
 		return errors.Errorf("expected at least %v lidar reading files for integration test", NumPointCloudFiles)
 	}
-	for i := 0; i < NumPointCloudFiles; i++ {
+	for i := range NumPointCloudFiles {
 		found := false
 		expectedFile := fmt.Sprintf("%d.pcd", i)
 		for _, file := range files {
