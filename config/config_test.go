@@ -60,7 +60,7 @@ func TestValidate(t *testing.T) {
 		cfgService.Attributes[key] = true
 
 		_, err := newConfig(cfgService)
-		msg := fmt.Sprintf("1 error(s) decoding:\n\n* '%s' expected type 'string', got unconvertible type 'bool', value: 'true'", key)
+		msg := fmt.Sprintf("decoding failed due to the following error(s):\n\n'%s' expected type 'string', got unconvertible type 'bool', value: 'true'", key)
 		expE := newError(msg)
 		test.That(t, err, test.ShouldBeError, expE)
 

@@ -80,7 +80,7 @@ $(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint:
 
 lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: install-dependencies ensure-submodule-initialized
+setup: install-dependencies ensure-submodule-initialized artifact-pull
 
 install-dependencies:
 ifneq (, $(shell which brew))
