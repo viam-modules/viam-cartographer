@@ -80,7 +80,7 @@ $(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint:
 
 lint: ensure-submodule-initialized lint-cpp lint-go
 
-setup: install-dependencies ensure-submodule-initialized artifact-pull
+setup: install-dependencies ensure-submodule-initialized
 
 install-dependencies:
 ifneq (, $(shell which brew))
@@ -100,7 +100,7 @@ endif
 
 build: cartographer-module
 
-viam-cartographer/build/unit_tests: ensure-submodule-initialized grpc/buf
+viam-cartographer/build/unit_tests: ensure-submodule-initialized
 	cd viam-cartographer && cmake -B$(BUILD_DIR) -G Ninja ${EXTRA_CMAKE_FLAGS} && cmake --build $(BUILD_DIR)
 
 cartographer-module: viam-cartographer/build/unit_tests
