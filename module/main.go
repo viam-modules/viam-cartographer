@@ -52,7 +52,7 @@ func mainWithArgs(ctx context.Context, args []string, logger logging.Logger) err
 	}()
 
 	// Instantiate the module
-	cartoModule, err := module.NewModuleFromArgs(ctx, logger)
+	cartoModule, err := module.NewModuleFromArgs(ctx)
 	if err != nil {
 		return err
 	}
