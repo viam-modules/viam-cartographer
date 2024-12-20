@@ -61,8 +61,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: appimage-${{ matrix.platform }}
-        path: module.tar.gz
-        overwrite: true
+        path: appimage-${{ matrix.platform }}.tar.gz
 
   upload:
     needs: appimage
