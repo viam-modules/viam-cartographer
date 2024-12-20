@@ -74,6 +74,8 @@ jobs:
     - uses: actions/download-artifact@v4
       with:
         name: appimage-${{ matrix.platform }}
+        pattern: appimage-*
+        merge-multiple: true
     - id: stripped-version
       run: echo version=${VERSION#v} >> $GITHUB_OUTPUT
     - uses: viamrobotics/upload-module@main
