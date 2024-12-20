@@ -62,6 +62,7 @@ jobs:
       with:
         name: appimage-${{ matrix.platform }}
         path: module.tar.gz
+        overwrite: true
 
   upload:
     needs: appimage
