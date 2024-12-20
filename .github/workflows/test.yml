@@ -37,7 +37,7 @@ jobs:
     - name: Upload PR variables
       uses: actions/upload-artifact@v4
       with:
-        name: pr-variables-${{ matrix.platform }}
+        name: pr-variables
         path: |
          pr.env
         retention-days: 1
