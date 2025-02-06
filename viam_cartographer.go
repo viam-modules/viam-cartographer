@@ -308,7 +308,7 @@ func New(
 	}
 
 	initSensorProcesses(cancelSensorProcessCtx, cartoSvc)
-
+	logger.Info("Starting Cartographer")
 	return cartoSvc, nil
 }
 
