@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	"go.viam.com/rdk/components/camera"
 	"go.viam.com/rdk/components/movementsensor"
-	"go.viam.com/rdk/gostream"
 	"go.viam.com/rdk/logging"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
@@ -80,10 +79,6 @@ func getLidarWithErroringFunctions(t *testing.T) *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		t.Error("TEST FAILED stub lidar NextPointCloud called")
-		return nil, errors.New("invalid sensor")
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		t.Error("TEST FAILED stub lidar Stream called")
 		return nil, errors.New("invalid sensor")
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {

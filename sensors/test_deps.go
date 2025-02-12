@@ -12,7 +12,6 @@ import (
 	"go.viam.com/rdk/components/camera/replaypcd"
 	"go.viam.com/rdk/components/movementsensor"
 	"go.viam.com/rdk/components/movementsensor/replay"
-	"go.viam.com/rdk/gostream"
 	"go.viam.com/rdk/pointcloud"
 	"go.viam.com/rdk/resource"
 	"go.viam.com/rdk/rimage/transform"
@@ -174,9 +173,6 @@ func getGoodLidar() *inject.Camera {
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return pointcloud.New(), nil
 	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
@@ -196,9 +192,6 @@ func getWarmingUpLidar() *inject.Camera {
 		}
 		return pointcloud.New(), nil
 	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
@@ -211,9 +204,6 @@ func getWarmingUpLidar() *inject.Camera {
 func getLidarWithErroringFunctions() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return nil, errors.New(InvalidSensorTestErrMsg)
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
 		return nil, errors.New(InvalidSensorTestErrMsg)
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
@@ -229,9 +219,6 @@ func getLidarWithInvalidProperties() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return pointcloud.New(), nil
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
@@ -251,9 +238,6 @@ func getReplayLidar(testTime string) *inject.Camera {
 		}
 		return pointcloud.New(), nil
 	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
-	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
 	}
@@ -267,9 +251,6 @@ func getFinishedReplayLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
 		return nil, replaypcd.ErrEndOfDataset
-	}
-	cam.StreamFunc = func(ctx context.Context, errHandlers ...gostream.ErrorHandler) (gostream.VideoStream, error) {
-		return nil, errors.New("lidar not camera")
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
