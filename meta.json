@@ -9,11 +9,5 @@
       "model": "viam:slam:cartographer"
     }
   ],
-  "entrypoint": "cartographer-module.AppImage",
-  "build": {
-    "setup": "make setup",
-    "build": "make appimage && cp etc/packaging/appimages/deploy/cartographer-module-*.AppImage cartographer-module.AppImage && tar czf module.tar.gz cartographer-module.AppImage",
-    "path": "module.tar.gz",
-    "arch": ["linux/amd64", "linux/arm64"]
-  }
+  "entrypoint": "cartographer-module.AppImage"
 }
