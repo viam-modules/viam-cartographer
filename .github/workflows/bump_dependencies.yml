@@ -1,64 +1,14 @@
 name: Bump Versions
 
-concurrency: 
+concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 on:
   schedule:
-    - cron: '30 17 * * WED' # 12:30 EST on wednesdays
+    - cron: '30 17 * * WED' # 12:30 EST on Wednesdays
   workflow_dispatch:
 
 jobs:
   bump-versions:
-    name: Bump Package Versions
-    if: github.repository_owner == 'viam-modules'
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/viamrobotics/rdk-devenv:amd64-cache
-    timeout-minutes: 10
-
-    steps:
-    - name: Check out code
-      uses: actions/checkout@v3
-    - name: Update go dependencies
-      id: gobump
-      run: |
-        sudo chown -R testbot .
-        sudo -u testbot bash -lc 'go get go.viam.com/rdk'
-        sudo -u testbot bash -lc 'go get go.viam.com/api'
-        sudo -u testbot bash -lc 'go mod tidy'
-        GEN_DIFF=$(git status -s)
-        
-        if [ -n "$GEN_DIFF" ]; then
-            echo "needs_pr=1" >> $GITHUB_OUTPUT
-        fi
-    - name: Add + Commit + Open PR
-      if: steps.gobump.outputs.needs_pr == 1
-      uses: peter-evans/create-pull-request@v5
-      with:
-          commit-message: '[WORKFLOW] Updating go dependencies'
-          branch: 'workflow/update-dependencies'
-          delete-branch: true
-          base: main
-          title: Automated Go Dependencies Update
-          body: This is an auto-generated PR to update go dependencies. Please confirm tests are passing before merging.
-          reviewers: JohnN193
-          draft: true
-
-  slack-workflow-status:
-      if: ${{ failure() }} 
-      name: Post Workflow Status To Slack
-      needs:
-        - bump-versions
-      runs-on: ubuntu-latest
-      permissions:
-        actions: 'read'
-      steps:
-        - name: Slack Workflow Notification
-          uses: Gamesight/slack-workflow-status@master
-          with:
-            repo_token: ${{secrets.GITHUB_TOKEN}}
-            slack_webhook_url: ${{secrets.SLACK_WEBHOOK_URL}}
-            channel: '#team-slam-github-notifs'
-            name: 'Workflow Status'
+    uses: viam-modules/common-workflows/.github/workflows/bump_go_dependencies.yaml@main
