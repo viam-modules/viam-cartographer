@@ -9,7 +9,7 @@ script:
  - cp ../../../viam-cartographer/lua_files/* $TARGET_APPDIR/usr/share/cartographer/lua_files
  - mkdir -p $TARGET_APPDIR/usr/share/icons/viam/256x256/apps/
  - cp ./viam-server.png $TARGET_APPDIR/usr/share/icons/viam/256x256/apps/viam-server.png
- - GOBIN=$TARGET_APPDIR/usr/bin/ go install github.com/Otterverse/aix@latest
+ - GOBIN=$TARGET_APPDIR/usr/bin/ go install github.com/viamrobotics/aix@latest
  - chmod 755 $TARGET_APPDIR/usr/bin/*
 
 AppDir:
