@@ -67,15 +67,14 @@ lint-cpp:
 		-and \( -iname '*.h' -o -iname '*.cpp' -o -iname '*.cc' \) \
 		| xargs clang-format -i --style="{BasedOnStyle: Google, IndentWidth: 4}"
 
-lint-go: $(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint
+lint-go: $(TOOL_BIN)/combined $(TOOL_BIN)/actionlint
 	go vet -vettool=$(TOOL_BIN)/combined ./...
-	GOGC=50 golangci-lint run -v --fix --config=./etc/golangci.yaml
+	GOGC=50 go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2 run -v --fix --config=./etc/golangci.yaml --timeout=5m
 	actionlint
 
-$(TOOL_BIN)/combined $(TOOL_BIN)/golangci-lint $(TOOL_BIN)/actionlint:
+$(TOOL_BIN)/combined $(TOOL_BIN)/actionlint:
 	go install \
 		github.com/edaniels/golinters/cmd/combined \
-		github.com/golangci/golangci-lint/cmd/golangci-lint \
 		github.com/rhysd/actionlint/cmd/actionlint
 
 lint: ensure-submodule-initialized lint-cpp lint-go
