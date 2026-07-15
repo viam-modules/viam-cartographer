@@ -34,7 +34,7 @@ func positionIsZero(t *testing.T, position Position) {
 func confirmBinaryCompressedUnsupported(t *testing.T) {
 	file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
 	test.That(t, err, test.ShouldBeNil)
-	pc, err := pointcloud.ReadPCD(file)
+	pc, err := pointcloud.ReadPCD(file, pointcloud.BasicType)
 	test.That(t, err, test.ShouldBeNil)
 
 	buf := new(bytes.Buffer)
@@ -47,7 +47,7 @@ func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.
 	file, err := os.Open(artifact.MustPath(pcdPath))
 	test.That(t, err, test.ShouldBeNil)
 
-	pc, err := pointcloud.ReadPCD(file)
+	pc, err := pointcloud.ReadPCD(file, pointcloud.BasicType)
 	test.That(t, err, test.ShouldBeNil)
 
 	buf := new(bytes.Buffer)
@@ -347,7 +347,7 @@ func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 		pcd, err = vc.pointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
-		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
+		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd), pointcloud.BasicType)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
@@ -384,7 +384,7 @@ func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 		pcd, err = vc.pointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
-		pc, err = pointcloud.ReadPCD(bytes.NewReader(pcd))
+		pc, err = pointcloud.ReadPCD(bytes.NewReader(pcd), pointcloud.BasicType)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 
@@ -607,7 +607,7 @@ func TestCGoAPIWithMovementSensor(t *testing.T) {
 		pcd, err = vc.pointCloudMap()
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pcd, test.ShouldNotBeNil)
-		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
+		pc, err := pointcloud.ReadPCD(bytes.NewReader(pcd), pointcloud.BasicType)
 		test.That(t, err, test.ShouldBeNil)
 		test.That(t, pc.Size(), test.ShouldNotEqual, 0)
 

@@ -53,7 +53,7 @@ func (lidar Lidar) TimedLidarReading(ctx context.Context) (TimedLidarReadingResp
 	testIsReplaySensor := false
 
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata)
+	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata, nil)
 	if err != nil {
 		return TimedLidarReadingResponse{}, errors.Wrap(err, "NextPointCloud error")
 	}

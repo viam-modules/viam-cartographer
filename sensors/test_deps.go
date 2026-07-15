@@ -170,8 +170,8 @@ func SetupDeps(lidarName, movementSensorName TestSensor) resource.Dependencies {
 
 func getGoodLidar() *inject.Camera {
 	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return pointcloud.New(), nil
+	cam.NextPointCloudFunc = func(ctx context.Context, extra map[string]interface{}) (pointcloud.PointCloud, error) {
+		return pointcloud.NewBasicEmpty(), nil
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
@@ -185,12 +185,12 @@ func getGoodLidar() *inject.Camera {
 func getWarmingUpLidar() *inject.Camera {
 	cam := &inject.Camera{}
 	counter := 0
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+	cam.NextPointCloudFunc = func(ctx context.Context, extra map[string]interface{}) (pointcloud.PointCloud, error) {
 		counter++
 		if counter == 1 {
 			return nil, errors.Errorf("warming up %d", counter)
 		}
-		return pointcloud.New(), nil
+		return pointcloud.NewBasicEmpty(), nil
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
@@ -203,7 +203,7 @@ func getWarmingUpLidar() *inject.Camera {
 
 func getLidarWithErroringFunctions() *inject.Camera {
 	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+	cam.NextPointCloudFunc = func(ctx context.Context, extra map[string]interface{}) (pointcloud.PointCloud, error) {
 		return nil, errors.New(InvalidSensorTestErrMsg)
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
@@ -217,8 +217,8 @@ func getLidarWithErroringFunctions() *inject.Camera {
 
 func getLidarWithInvalidProperties() *inject.Camera {
 	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
-		return pointcloud.New(), nil
+	cam.NextPointCloudFunc = func(ctx context.Context, extra map[string]interface{}) (pointcloud.PointCloud, error) {
+		return pointcloud.NewBasicEmpty(), nil
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
@@ -231,12 +231,12 @@ func getLidarWithInvalidProperties() *inject.Camera {
 
 func getReplayLidar(testTime string) *inject.Camera {
 	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+	cam.NextPointCloudFunc = func(ctx context.Context, extra map[string]interface{}) (pointcloud.PointCloud, error) {
 		md := ctx.Value(contextutils.MetadataContextKey)
 		if mdMap, ok := md.(map[string][]string); ok {
 			mdMap[contextutils.TimeRequestedMetadataKey] = []string{testTime}
 		}
-		return pointcloud.New(), nil
+		return pointcloud.NewBasicEmpty(), nil
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
 		return nil, transform.NewNoIntrinsicsError("")
@@ -249,7 +249,7 @@ func getReplayLidar(testTime string) *inject.Camera {
 
 func getFinishedReplayLidar() *inject.Camera {
 	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+	cam.NextPointCloudFunc = func(ctx context.Context, extra map[string]interface{}) (pointcloud.PointCloud, error) {
 		return nil, replaypcd.ErrEndOfDataset
 	}
 	cam.ProjectorFunc = func(ctx context.Context) (transform.Projector, error) {
