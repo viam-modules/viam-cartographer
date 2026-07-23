@@ -60,8 +60,8 @@ func TestValidate(t *testing.T) {
 		cfgService.Attributes[key] = true
 
 		_, err := newConfig(cfgService)
-		msg := fmt.Sprintf("decoding failed due to the following error(s):\n\n'%s' expected type 'string'"+
-			", got unconvertible type 'bool', value: 'true'", key)
+		msg := fmt.Sprintf("decoding failed due to the following error(s): '%s' expected type 'string'"+
+			", got unconvertible type 'bool'", key)
 		expE := newError(msg)
 		test.That(t, err, test.ShouldBeError, expE)
 
@@ -265,7 +265,7 @@ func newConfig(conf resource.Config) (*Config, error) {
 		return &Config{}, newError(err.Error())
 	}
 
-	if _, err := slamConf.Validate("services.slam.attributes.fake"); err != nil {
+	if _, _, err := slamConf.Validate("services.slam.attributes.fake"); err != nil {
 		return &Config{}, newError(err.Error())
 	}
 

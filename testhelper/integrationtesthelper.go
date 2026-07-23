@@ -221,7 +221,7 @@ func testCartographerMap(t *testing.T, svc slam.Service, localizationMode bool) 
 	test.That(t, err, test.ShouldBeNil)
 	test.That(t, pcd, test.ShouldNotBeNil)
 
-	pointcloud, err := pointcloud.ReadPCD(bytes.NewReader(pcd))
+	pointcloud, err := pointcloud.ReadPCD(bytes.NewReader(pcd), pointcloud.BasicType)
 	test.That(t, err, test.ShouldBeNil)
 	t.Logf("Pointcloud points: %v", pointcloud.Size())
 	test.That(t, pointcloud.Size(), test.ShouldBeGreaterThanOrEqualTo, 100)
@@ -541,7 +541,7 @@ func createTimedLidarReadingResponse(t *testing.T, i uint64, timeTracker *timeTr
 		t.Error("TEST FAILED TimedLidarReading Mock failed to open pcd file")
 		return s.TimedLidarReadingResponse{}, err
 	}
-	readingPc, err := pointcloud.ReadPCD(file)
+	readingPc, err := pointcloud.ReadPCD(file, pointcloud.BasicType)
 	if err != nil {
 		t.Error("TEST FAILED TimedLidarReading Mock failed to read pcd")
 		return s.TimedLidarReadingResponse{}, err

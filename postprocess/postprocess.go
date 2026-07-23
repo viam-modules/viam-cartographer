@@ -137,7 +137,7 @@ func updatePointCloudWithAddedPoints(updatedData *[]byte, points []r3.Vector) er
 	}
 
 	reader := bytes.NewReader(*updatedData)
-	pc, err := pointcloud.ReadPCD(reader)
+	pc, err := pointcloud.ReadPCD(reader, pointcloud.BasicType)
 	if err != nil {
 		return err
 	}
@@ -180,12 +180,12 @@ func updatePointCloudWithRemovedPoints(updatedData *[]byte, points []r3.Vector) 
 	}
 
 	reader := bytes.NewReader(*updatedData)
-	pc, err := pointcloud.ReadPCD(reader)
+	pc, err := pointcloud.ReadPCD(reader, pointcloud.BasicType)
 	if err != nil {
 		return err
 	}
 
-	updatedPC := pointcloud.NewWithPrealloc(pc.Size() - len(points))
+	updatedPC := pointcloud.NewBasicPointCloud(pc.Size() - len(points))
 	pointsVisited := 0
 
 	filterRemovedPoints := func(p r3.Vector, d pointcloud.Data) bool {

@@ -1,5 +1,6 @@
 BUILD_CHANNEL?=local
 BUILD_DIR = build/$(shell uname -s)-$(shell uname -m)
+GOVERSION = $(shell grep '^go .\..' go.mod | head -n1 | cut -d' ' -f2)
 BIN_OUTPUT_PATH = bin/$(shell uname -s)-$(shell uname -m)
 TOOL_BIN := $(shell pwd)/bin/tools/$(shell uname -s)-$(shell uname -m)
 GIT_REVISION := $(shell git rev-parse HEAD | tr -d '\n')
@@ -69,7 +70,7 @@ lint-cpp:
 
 lint-go: $(TOOL_BIN)/combined $(TOOL_BIN)/actionlint
 	go vet -vettool=$(TOOL_BIN)/combined ./...
-	GOGC=50 go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2 run -v --fix --config=./etc/golangci.yaml --timeout=5m
+	GOTOOLCHAIN=go$(GOVERSION) GOGC=50 go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2 run -v --fix --config=./etc/golangci.yaml --timeout=5m
 	actionlint
 
 $(TOOL_BIN)/combined $(TOOL_BIN)/actionlint:

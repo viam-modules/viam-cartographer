@@ -77,7 +77,7 @@ func SetupStubDeps(lidarName, movementSensorName s.TestSensor, t *testing.T) res
 
 func getLidarWithErroringFunctions(t *testing.T) *inject.Camera {
 	cam := &inject.Camera{}
-	cam.NextPointCloudFunc = func(ctx context.Context) (pointcloud.PointCloud, error) {
+	cam.NextPointCloudFunc = func(ctx context.Context, extra map[string]interface{}) (pointcloud.PointCloud, error) {
 		t.Error("TEST FAILED stub lidar NextPointCloud called")
 		return nil, errors.New("invalid sensor")
 	}
@@ -133,7 +133,7 @@ func CreateIntegrationSLAMService(
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
 
-	sensorDeps, err := cfg.Validate("path")
+	sensorDeps, _, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}
@@ -176,7 +176,7 @@ func CreateSLAMService(
 	ctx := context.Background()
 	cfgService := resource.Config{Name: "test", API: slam.API, Model: viamcartographer.Model}
 	cfgService.ConvertedAttributes = cfg
-	sensorDeps, err := cfg.Validate("path")
+	sensorDeps, _, err := cfg.Validate("path")
 	if err != nil {
 		return nil, err
 	}

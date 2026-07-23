@@ -42,20 +42,20 @@ var (
 )
 
 // Validate creates the list of implicit dependencies.
-func (config *Config) Validate(path string) ([]string, error) {
+func (config *Config) Validate(path string) ([]string, []string, error) {
 	var deps []string
 	cameraName, ok := config.Camera["name"]
 	if !ok {
-		return nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
+		return nil, nil, utils.NewConfigValidationError(path, errCameraMustHaveName)
 	}
 	dataFreqHz, ok := config.Camera["data_frequency_hz"]
 	if ok {
 		dataFreqHz, err := strconv.Atoi(dataFreqHz)
 		if err != nil {
-			return nil, errors.New("camera[data_frequency_hz] must only contain digits")
+			return nil, nil, errors.New("camera[data_frequency_hz] must only contain digits")
 		}
 		if dataFreqHz < 0 {
-			return nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
+			return nil, nil, errors.New("cannot specify camera[data_frequency_hz] less than zero")
 		}
 	}
 	deps = append(deps, cameraName)
@@ -65,7 +65,7 @@ func (config *Config) Validate(path string) ([]string, error) {
 		deps = append(deps, movementSensorName)
 	}
 
-	return deps, nil
+	return deps, nil, nil
 }
 
 // GetOptionalParameters sets any unset optional config parameters to the values passed to this function,

@@ -296,7 +296,7 @@ func NewMovementSensor(
 	if movementSensorName == "" {
 		return &MovementSensor{}, nil
 	}
-	movementSensor, err := movementsensor.FromDependencies(deps, movementSensorName)
+	movementSensor, err := movementsensor.FromProvider(deps, movementSensorName)
 	if err != nil {
 		return &MovementSensor{}, errors.Wrapf(err, "error getting movement sensor \"%v\" for slam service", movementSensorName)
 	}
