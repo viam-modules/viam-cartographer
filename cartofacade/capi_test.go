@@ -28,20 +28,9 @@ func positionIsZero(t *testing.T, position Position) {
 	test.That(t, position.Real, test.ShouldEqual, 1)
 }
 
-// confirm the pointcloud package still doesn't support binary compressed
-// pointclouds. If it does, we need to implement:
-// https://viam.atlassian.net/browse/RSDK-3753
-func confirmBinaryCompressedUnsupported(t *testing.T) {
-	file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
-	test.That(t, err, test.ShouldBeNil)
-	pc, err := pointcloud.ReadPCD(file, pointcloud.BasicType)
-	test.That(t, err, test.ShouldBeNil)
-
-	buf := new(bytes.Buffer)
-	err = pointcloud.ToPCD(pc, buf, pointcloud.PCDCompressed)
-	test.That(t, err, test.ShouldBeError)
-	test.That(t, err.Error(), test.ShouldResemble, "compressed PCD not yet implemented")
-}
+// NOTE: As of go.viam.com/rdk v1.0.0, the pointcloud package DOES support binary
+// compressed pointclouds (see pointcloud.writePCDCompressed / readPCDCompressed).
+// Need to implement binary compressed pointclouds still: https://viam.atlassian.net/browse/RSDK-3753.
 
 func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.Time, pcdType pointcloud.PCDType) {
 	file, err := os.Open(artifact.MustPath(pcdPath))
@@ -297,8 +286,6 @@ func TestCGoAPIWithoutMovementSensor(t *testing.T) {
 		test.That(t, len(internalState), test.ShouldEqual, len(lastInternalState))
 		lastInternalState = internalState
 
-		confirmBinaryCompressedUnsupported(t)
-
 		// NOTE: This test is very carefully created in order to not hit
 		// cases where cartographer won't update the map for whatever reason.
 		// For example, if you change the time increments from 2 seconds to 1
@@ -511,8 +498,6 @@ func TestCGoAPIWithMovementSensor(t *testing.T) {
 		test.That(t, internalState, test.ShouldNotBeNil)
 		test.That(t, len(internalState), test.ShouldEqual, len(lastInternalState))
 		lastInternalState = internalState
-
-		confirmBinaryCompressedUnsupported(t)
 
 		// NOTE: This test is very carefully created in order to not hit
 		// cases where cartographer won't update the map for whatever reason.

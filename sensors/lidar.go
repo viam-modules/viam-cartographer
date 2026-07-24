@@ -83,7 +83,7 @@ func NewLidar(
 ) (TimedLidar, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
-	lidar, err := camera.FromDependencies(deps, cameraName)
+	lidar, err := camera.FromProvider(deps, cameraName)
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
 	}
