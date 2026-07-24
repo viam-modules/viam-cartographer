@@ -53,7 +53,7 @@ func (lidar Lidar) TimedLidarReading(ctx context.Context) (TimedLidarReadingResp
 	testIsReplaySensor := false
 
 	ctxWithMetadata, md := contextutils.ContextWithMetadata(ctx)
-	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata)
+	readingPc, err := lidar.Lidar.NextPointCloud(ctxWithMetadata, nil)
 	if err != nil {
 		return TimedLidarReadingResponse{}, errors.Wrap(err, "NextPointCloud error")
 	}
@@ -83,7 +83,7 @@ func NewLidar(
 ) (TimedLidar, error) {
 	_, span := trace.StartSpan(ctx, "viamcartographer::sensors::NewLidar")
 	defer span.End()
-	lidar, err := camera.FromDependencies(deps, cameraName)
+	lidar, err := camera.FromProvider(deps, cameraName)
 	if err != nil {
 		return Lidar{}, errors.Wrapf(err, "error getting lidar camera %v for slam service", cameraName)
 	}

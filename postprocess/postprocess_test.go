@@ -155,7 +155,7 @@ func TestUpdatePointCloud(t *testing.T) {
 }
 
 func vecSliceToBytes(points []r3.Vector, outputData *[]byte) error {
-	pc := pointcloud.NewWithPrealloc(len(points))
+	pc := pointcloud.NewBasicPointCloud(len(points))
 	for _, p := range points {
 		pc.Set(p, pointcloud.NewColoredData(color.NRGBA{B: fullConfidence, R: math.MaxUint8}))
 	}

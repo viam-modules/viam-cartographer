@@ -316,7 +316,7 @@ func TestAddLidarReading(t *testing.T) {
 	file, err := os.Open(artifact.MustPath("viam-cartographer/mock_lidar/0.pcd"))
 	test.That(t, err, test.ShouldBeNil)
 	buf := new(bytes.Buffer)
-	pc, err := pointcloud.ReadPCD(file)
+	pc, err := pointcloud.ReadPCD(file, pointcloud.BasicType)
 	test.That(t, err, test.ShouldBeNil)
 	err = pointcloud.ToPCD(pc, buf, 0)
 	test.That(t, err, test.ShouldBeNil)
