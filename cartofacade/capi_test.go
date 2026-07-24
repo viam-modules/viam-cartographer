@@ -28,6 +28,10 @@ func positionIsZero(t *testing.T, position Position) {
 	test.That(t, position.Real, test.ShouldEqual, 1)
 }
 
+// NOTE: As of go.viam.com/rdk v1.0.0, the pointcloud package DOES support binary
+// compressed pointclouds (see pointcloud.writePCDCompressed / readPCDCompressed).
+// Need to implement binary compressed pointclouds still: https://viam.atlassian.net/browse/RSDK-3753.
+
 func testAddLidarReading(t *testing.T, vc Carto, pcdPath string, timestamp time.Time, pcdType pointcloud.PCDType) {
 	file, err := os.Open(artifact.MustPath(pcdPath))
 	test.That(t, err, test.ShouldBeNil)
