@@ -7,18 +7,20 @@ concurrency:
 
 on:
   pull_request_target:
-    types: [opened, synchronize, reopened, labeled, ready_for_review]
+    # gated by the 'safe to test' label (see pr-labeler.yml)
+    types: [ labeled ]
     branches: [ 'main' ]
 
 jobs:
   test:
+    if: github.event.label.name == 'safe to test' && contains(github.event.pull_request.labels.*.name, 'safe to test')
     uses: ./.github/workflows/test.yml
 
   # This lets people add an "appimage" tag to have appimages built for the PR
   appimage:
     needs: [test]
     if: |
-      always() && !cancelled() &&
+      always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
       !contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests') &&
       contains(github.event.pull_request.labels.*.name, 'appimage') && needs.test.result == 'success'
     uses: ./.github/workflows/appimage.yml
@@ -30,7 +32,7 @@ jobs:
 
   appimage-ignore-tests:
     if: |
-       always() && !cancelled() &&
+       always() && !cancelled() && contains(github.event.pull_request.labels.*.name, 'safe to test') &&
        contains(github.event.pull_request.labels.*.name, 'appimage-ignore-tests')
     uses: ./.github/workflows/appimage.yml
     with:

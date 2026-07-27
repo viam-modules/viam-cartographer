@@ -1,0 +1,13 @@
+name: PR Test Label Manager
+
+on:
+  pull_request_target:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+jobs:
+  label:
+    uses: viam-modules/common-workflows/.github/workflows/pr-labeler.yaml@main
+    secrets:
+      APP_ID: ${{ secrets.CI_GITHUB_APP_ID }}
+      APP_PRIVATE_KEY: ${{ secrets.CI_GITHUB_APP_PRIVATE_KEY }}
