@@ -71,7 +71,8 @@ lint-cpp:
 lint-go: $(TOOL_BIN)/combined $(TOOL_BIN)/actionlint
 	go vet -vettool=$(TOOL_BIN)/combined ./...
 	GOTOOLCHAIN=go$(GOVERSION) GOGC=50 go run github.com/golangci/golangci-lint/cmd/golangci-lint@v1.62.2 run -v --fix --config=./etc/golangci.yaml --timeout=5m
-	actionlint
+	# drop the -ignore once actionlint's checkout schema learns allow-unsafe-pr-checkout
+	actionlint -ignore 'input "allow-unsafe-pr-checkout" is not defined'
 
 $(TOOL_BIN)/combined $(TOOL_BIN)/actionlint:
 	go install \

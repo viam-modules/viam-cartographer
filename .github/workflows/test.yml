@@ -54,6 +54,8 @@ jobs:
       with:
         ref: ${{ github.event.pull_request.head.sha }}
         submodules: recursive
+        # safe: gated by the 'safe to test' label (pr-labeler.yml)
+        allow-unsafe-pr-checkout: true
 
     - name: apt update
       run: |
