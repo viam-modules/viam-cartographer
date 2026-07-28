@@ -17,9 +17,11 @@ jobs:
         with:
           run_id: ${{ github.event.workflow_run.id }}
           name: pr-variables
+          # absent when the appimage jobs skipped (no 'appimage' label)
+          if_no_artifact_found: ignore
 
       - name: Restore Environment
-        run: cat pr.env >> "${GITHUB_ENV}"
+        run: if [ -f pr.env ]; then cat pr.env >> "${GITHUB_ENV}"; fi
 
       - name: Add AppImage Links
         if: ${{ env.APPIMAGE }}
