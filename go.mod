@@ -11,10 +11,10 @@ require (
 	go.opencensus.io v0.24.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.28.0
-	go.viam.com/api v0.1.588
-	go.viam.com/rdk v1.10.0
+	go.viam.com/api v0.1.590
+	go.viam.com/rdk v1.11.0
 	go.viam.com/test v1.2.5
-	go.viam.com/utils v0.13.0
+	go.viam.com/utils v0.13.2
 )
 
 require (
